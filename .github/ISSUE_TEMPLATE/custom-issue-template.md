@@ -12,8 +12,8 @@ Provide a description
 
 ## Tasks
 
-- [x] ~~Task 1 (Completed)~~
-- [ ] Task 2 (Pending)
+- [x] Task 1 
+- [ ] Task 2
 
 ## Estimated Time
 Provide an estimation for time 
