@@ -9,7 +9,6 @@ assignees: ''
 ## Issue Description
 Provide a description 
 
-
 ## Tasks
 
 - [x] Task 1 
@@ -19,9 +18,11 @@ Provide a description
 Provide an estimation for time 
 
 ## Deadline
-Specify the deadline 
+dd/mm/yyyy 
 
 ## Reviewer Assignment
 
-Reviewer: @username
-Review Deadline: <!-- Specify the review deadline -->
+Reviewer: @username <!-- Always assign someone --> <br />
+Review Deadline: dd/mm/yyyy <!-- Specify the review deadline -->
+
+<!-- DON'T FORGET TO LINK YOUR ISSUE TO THE CORRESPONDING PART IN THE MEETING NOTES -->
