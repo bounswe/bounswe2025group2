@@ -1,10 +1,9 @@
-from django.contrib import admin
-# import the user model
-
 from django.urls import path, include
-from .views import users
+from . import views
 
 urlpatterns = [
-    # create a mock endpoint for the api
-    path('users/', users, name='users'),
+    path('register/', views.register, name='register'),
+    path('verify-email/<str:uidb64>/<str:token>/', views.verify_email, name='verify_email'),
+    path('login/', views.user_login, name='login'),
+    path('logout/', views.user_logout, name='logout'),
 ]
