@@ -32,9 +32,7 @@ ALLOWED_HOSTS = ['localhost', '127.0.0.1']
 
 # For now, we are allowing all hosts. In production, we should specify your domain.
 CORS_ALLOW_ALL_ORIGINS = True
-CORS_ALLOWED_ORIGINS = [
-    'http://localhost:3000',
-]
+# CORS_ALLOWED_ORIGINS = ['http://localhost:3000']
 CORS_ALLOW_CREDENTIALS = True
 
 CSRF_TRUSTED_ORIGINS = ['http://localhost:3000']

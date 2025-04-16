@@ -25,15 +25,19 @@ def register(request):
         uid = urlsafe_base64_encode(force_bytes(user.pk))
         current_site = get_current_site(request)
         verification_url = f'http://{current_site.domain}/api/verify-email/{uid}/{token}/'
-        
-        # Send verification email
-        send_mail(
-            subject='Verify your email',
-            message=f'Please click the link to verify your email: {verification_url}',
-            from_email =None,
-            recipient_list=[user.email],
-            fail_silently=False,
-        )
+
+        try:
+            # Send verification email
+            send_mail(
+                subject='Verify your email',
+                message=f'Please click the link to verify your email: {verification_url}',
+                from_email =None,
+                recipient_list=[user.email],
+                fail_silently=False,
+            )
+        except:
+            # Handle email sending error if needed
+            pass
         
         return Response({
             'message': 'Registration successful. Please check your email to verify your account.',
