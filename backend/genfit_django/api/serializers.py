@@ -48,3 +48,36 @@ class UserLoginSerializer(serializers.Serializer):
     username = serializers.CharField()
     password = serializers.CharField()
     remember_me = serializers.BooleanField(default=False)
+
+
+from .models import Notification
+
+class NotificationSerializer(serializers.ModelSerializer):
+    sender_username = serializers.CharField(source='sender.username', read_only=True, allow_null=True)
+    recipient_username = serializers.CharField(source='recipient.username', read_only=True)
+
+    class Meta:
+        model = Notification
+        fields = [
+            'id', 
+            'sender_username',
+            'recipient_username', 
+            'notification_type',
+            'title',
+            'message',
+            'related_object_id',
+            'related_object_type',
+            'is_read',
+            'is_email_sent',
+            'created_at'
+        ]
+        read_only_fields = ['id', 'created_at', 'is_email_sent']
+
+    def create(self, validated_data):
+        notification = Notification.objects.create(**validated_data)
+        return notification
+
+    def update(self, instance, validated_data):
+        instance.is_read = validated_data.get('is_read', instance.is_read)
+        instance.save()
+        return instance
