@@ -108,7 +108,7 @@ from .serializers import NotificationSerializer
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def get_user_notifications(request):
-    notifications = request.user.notifications.all()
+    notifications = request.user.notifications.all().order_by('-created_at')
     serializer = NotificationSerializer(notifications, many=True)
     return Response(serializer.data)
 
@@ -120,7 +120,7 @@ def get_user_notifications(request):
 @permission_classes([IsAuthenticated])
 def get_single_notification(request, notification_id):
     try:
-        notification = request.user.notifications.get(id=some_id)
+        notification = request.user.notifications.get(id=notification_id)
         serializer = NotificationSerializer(notification)
         return Response(serializer.data)
     except Notification.DoesNotExist:
@@ -132,7 +132,7 @@ def get_single_notification(request, notification_id):
 @permission_classes([IsAuthenticated])
 def mark_notification_read(request, notification_id):
     try:
-        notification = request.user.notifications.get(id=some_id)
+        notification = request.user.notifications.get(id=notification_id)
         notification.is_read = True
         notification.save()
         return Response({'message': 'Notification marked as read'})
