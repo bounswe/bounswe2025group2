@@ -98,8 +98,6 @@ def user_logout(request):
 
 
 
-
-
 from .models import Notification
 from .serializers import NotificationSerializer
 
@@ -111,8 +109,6 @@ def get_user_notifications(request):
     notifications = request.user.notifications.all().order_by('-created_at')
     serializer = NotificationSerializer(notifications, many=True)
     return Response(serializer.data)
-
-
 
 
 # Get a single notification
