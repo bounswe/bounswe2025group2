@@ -9,7 +9,9 @@ from django.contrib.auth.tokens import default_token_generator
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.utils.encoding import force_bytes, force_str
 from django.contrib.sites.shortcuts import get_current_site
-from .serializers import UserRegistrationSerializer, UserLoginSerializer
+from .serializers import UserRegistrationSerializer, UserLoginSerializer, NotificationSerializer
+from .models import Notification
+
 
 User = get_user_model()
 
@@ -91,5 +93,41 @@ def user_logout(request):
     return Response({'message': 'Logged out successfully'}, status=status.HTTP_200_OK)
 
 
+# Get all notifications for a single user
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_user_notifications(request):
+    notifications = request.user.notifications.all().order_by('-created_at')
+    serializer = NotificationSerializer(notifications, many=True)
+    return Response(serializer.data)
 
+# Get a single notification
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_single_notification(request, notification_id):
+    try:
+        notification = request.user.notifications.get(id=notification_id)
+        serializer = NotificationSerializer(notification)
+        return Response(serializer.data)
+    except Exception as e:
+        return Response({'error': f'Notification not found. {e}'}, status=status.HTTP_404_NOT_FOUND)
 
+@api_view(['PATCH'])
+@permission_classes([IsAuthenticated])
+def mark_notification_read(request, notification_id):
+    try:
+        notification = request.user.notifications.get(id=notification_id)
+        notification.is_read = True
+        notification.save()
+        return Response({'message': 'Notification marked as read'})
+    except Exception as e:
+        return Response({'error': f'Notification not found {e}'}, status=status.HTTP_404_NOT_FOUND)
+
+@api_view(['PATCH'])
+@permission_classes([IsAuthenticated])
+def mark_all_notifications_read(request):
+    try:
+        request.user.notifications.all().update(is_read=True)
+        return Response({'message': 'All notifications marked as read'})
+    except Exception as e:
+        return Response({'error': f'Error marking notifications as read: {e}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
