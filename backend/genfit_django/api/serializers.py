@@ -1,6 +1,8 @@
 from rest_framework import serializers
 from django.core.validators import RegexValidator
 from django.contrib.auth import get_user_model
+from .models import Notification
+
 
 User = get_user_model()
 
@@ -49,8 +51,6 @@ class UserLoginSerializer(serializers.Serializer):
     password = serializers.CharField()
     remember_me = serializers.BooleanField(default=False)
 
-
-from .models import Notification
 
 class NotificationSerializer(serializers.ModelSerializer):
     sender_username = serializers.CharField(source='sender.username', read_only=True, allow_null=True)

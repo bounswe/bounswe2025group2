@@ -1,10 +1,7 @@
 from django.core.mail import send_mail
 from django.conf import settings
 from django.core.exceptions import ValidationError
-import logging
 from .models import Notification
-
-logger = logging.getLogger(__name__)
 
 def create_notification(recipient, notification_type, title, message, sender=None, related_object_id=None, related_object_type=None, send_email=False):
     # Validate notification type
@@ -34,10 +31,9 @@ def create_notification(recipient, notification_type, title, message, sender=Non
                 notification.is_email_sent = True
                 notification.save()
             except Exception as e:
-                logger.error(f"Failed to send email notification: {str(e)}")
+                print("Failed to send email:", str(e))
 
         return notification
 
     except Exception as e:
-        logger.error(f"Failed to create notification: {str(e)}")
-        raise
+        print("Failed to create notification:", str(e))
