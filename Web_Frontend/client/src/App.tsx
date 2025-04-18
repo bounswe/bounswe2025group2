@@ -9,6 +9,7 @@ import MentorsPage from "@/pages/mentors-page";
 import ProgramsPage from "@/pages/programs-page";
 import GoalsPage from "@/pages/goals-page";
 import ChallengesPage from "@/pages/challenges-page";
+import NotificationsPage from "@/pages/notifications-page";
 import { ProtectedRoute } from "./lib/protected-route";
 import { AuthProvider } from "./hooks/use-auth";
 
@@ -21,6 +22,7 @@ function Router() {
       <ProtectedRoute path="/communities" component={ForumPage} />
       <ProtectedRoute path="/profile/:username" component={ProfilePage} />
       <ProtectedRoute path="/mentors" component={MentorsPage} />
+      <ProtectedRoute path="/notifications" component={NotificationsPage} />
       <ProtectedRoute path="/programs" component={ProgramsPage} />
       <ProtectedRoute path="/programs/:id" component={ProgramsPage} />
       <ProtectedRoute path="/goals" component={GoalsPage} />

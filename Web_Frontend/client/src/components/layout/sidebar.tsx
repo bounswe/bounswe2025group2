@@ -12,7 +12,8 @@ import {
   BarChart2,
   Award,
   FileText,
-  LogOut
+  LogOut,
+  Bell
 } from "lucide-react";
 
 type SidebarProps = {
@@ -68,6 +69,12 @@ export default function Sidebar({ activeTab = "home" }: SidebarProps) {
       label: "My Goals", 
       icon: <BarChart2 className="h-5 w-5 mr-3" />, 
       id: "goals" 
+    },
+    {
+      href: "/notifications",
+      label: "Notifications",
+      icon: <Bell className="h-5 w-5 mr-3" />,
+      id: "notifications"
     },
     { 
       href: "/challenges", 
