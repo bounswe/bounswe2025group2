@@ -1,27 +1,27 @@
 const lightColors = {
     background: '#f0f0f0',
     text: '#000000',
-    subText: '#4e6e4d',
-    subText2: '#a8cba0',
-    image: '#4e6e4d',
-    mentionText: '#1b3a1a',
-    navBar: '#a8cba0',
-    border: '#4e6e4d',
-    active: '#1b3a1a',
-    passive: '#85a77f'
+    subText: '#800000',
+    subText2: '#8d0000',
+    image: '#800000',
+    mentionText: '#740000',
+    navBar: '#f0f0f0',
+    border: '#800000',
+    active: '#740000',
+    passive: '#9a0000'
   };
   
   const darkColors = {
-    background: '#2c2c2c',
+    background: '#111111',
     text: '#ffffff',
-    subText: '#a8cba0',
-    subText2: '#4e6e4d',
-    image: '#4e6e4d',
-    mentionText: '#4e6e4d',
-    navBar: '#1b3a1a',
+    subText: '#777777',
+    subText2: '#999999',
+    image: '#777777',
+    mentionText: '#e18d58',
+    navBar: '#333333',
     border: '#f0f0f0',
-    active: '#a8cba0',
-    passive: '#4e6e4d'
+    active: '#777777',
+    passive: '#555555'
   };
   
   export default {

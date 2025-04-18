@@ -7,6 +7,7 @@ export type RootStackParamList = {
   AddNew: undefined;
   Mentors: undefined;
   Chats: undefined;
+  Settings: undefined;
 };
 
 export type RootTabScreenProps<T extends keyof RootStackParamList> = BottomTabScreenProps<RootStackParamList, T>; 

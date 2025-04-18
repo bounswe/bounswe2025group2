@@ -8,6 +8,7 @@ import Communities from '../Pages/Communities';
 import AddNew from '../Pages/Add New';
 import Mentors from '../Pages/Mentors';
 import Chats from '../Pages/Chats';
+import Settings from '../Pages/Settings';
 import Layout from '../components/Layout';
 import BottomBar from '../components/BottomBar';
 
@@ -36,6 +37,7 @@ const AppNavigator = () => {
         <Tab.Screen name="AddNew" component={withLayout(AddNew)} />
         <Tab.Screen name="Mentors" component={withLayout(Mentors)} />
         <Tab.Screen name="Chats" component={withLayout(Chats)} />
+        <Tab.Screen name="Settings" component={withLayout(Settings)} />
       </Tab.Navigator>
     </View>
   );
