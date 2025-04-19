@@ -1,16 +1,23 @@
 import React from 'react';
-import { View, StyleSheet, Image } from 'react-native';
+import { View, StyleSheet, Image, Pressable } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../context/ThemeContext';
 import CustomText from './CustomText';
+import { useNavigation } from '@react-navigation/native';
+import { RootStackParamList } from '../types/navigation';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 // Import SVG icons
 import MenuIcon from '../assets/images/menu.svg';
 import SearchIcon from '../assets/images/search.svg';
+import SettingsIcon from '../assets/images/settings.svg';
+
+type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
 const TopBar = () => {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
+  const navigation = useNavigation<NavigationProp>();
   const CONTENT_HEIGHT = 49; // Height of the actual content area
 
   return (
@@ -27,10 +34,13 @@ const TopBar = () => {
     >
       <View style={styles.leftSection}>
         <MenuIcon width={42} height={42} fill={colors.border} />
-        <CustomText style={[styles.appTitle, { color: colors.border }]}>Generic_Sports_App</CustomText>
+        <CustomText style={[styles.appTitle, { color: colors.border }]}>GenFit</CustomText>
       </View>
       <View style={styles.rightSection}>
         <SearchIcon width={36} height={36} fill={colors.border} />
+        <Pressable onPress={() => navigation.navigate('Settings')}>
+          <SettingsIcon width={36} height={36} fill={colors.border} />
+        </Pressable>
         <View style={[styles.profileContainer, { borderColor: colors.border }]}>
           <Image 
             source={require('../assets/temp_images/profile.png')}
