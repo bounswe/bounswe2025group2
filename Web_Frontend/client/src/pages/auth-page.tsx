@@ -45,7 +45,6 @@ const registerSchema = z.object({
   name: z.string().optional(),
 });
 
-
 type LoginFormValues = z.infer<typeof loginSchema>;
 type RegisterFormValues = z.infer<typeof registerSchema>;
 
@@ -74,7 +73,7 @@ export default function AuthPage() {
       username: "",
       email: "",
       password: "",
-      name: "",      
+      name: "",
     },
   });
 
@@ -113,8 +112,11 @@ export default function AuthPage() {
             )}>
               GenFit
             </h1>
-            <p className="text-muted-foreground md:text-lg">
-              Connect with local sports programs, mentors, and coaches to achieve your fitness goals 
+            <p className={cn(
+              "md:text-lg",
+              theme === 'dark' ? 'text-white/70' : 'text-[#800000]'
+            )}>
+              Connect with fitness programs, mentors, and coaches to achieve your health and wellness goals
             </p>
           </div>
           <div className={cn(
@@ -313,20 +315,25 @@ export default function AuthPage() {
                         className="accent-primary"/>
                         <Label htmlFor="rememberMe">Remember Me</Label>
                       </div>
-                      <Button
-  type="submit"
-  className="w-full bg-secondary hover:bg-secondary-dark"
-  disabled={loginMutation.isPending}
->
-  {loginMutation.isPending ? (
-    <>
-      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-      Logging in...
-    </>
-  ) : (
-    "Login"
-  )}
-</Button>
+                    <Button
+                      type="submit"
+                      className={cn(
+                        "w-full bg-nav-bg border",
+                        theme === 'dark'
+                          ? 'border-[#e18d58] text-white hover:bg-[#e18d58]/20'
+                          : 'border-[#800000] text-[#800000] hover:bg-active'
+                      )}
+                      disabled={loginMutation.isPending}
+                    >
+                      {loginMutation.isPending ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Logging in...
+                        </>
+                      ) : (
+                        "Login"
+                      )}
+                    </Button>
                   </form>
                 </CardContent>
                 <CardFooter className="flex flex-col">
@@ -485,4 +492,3 @@ export default function AuthPage() {
     </div>
   );
 }
-
