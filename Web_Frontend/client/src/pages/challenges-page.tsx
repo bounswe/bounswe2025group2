@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import Sidebar from "@/components/layout/sidebar";
@@ -41,6 +41,202 @@ import {
   UserPlus,
   BarChart2
 } from "lucide-react";
+import { useTheme } from "@/theme/ThemeContext";
+import { cn } from "@/lib/utils";
+import { format } from "date-fns";
+
+interface Challenge {
+  id: string;
+  title: string;
+  description: string;
+  startDate: string;
+  endDate: string;
+  targetValue: number;
+  type: string;
+  unit: string;
+  participants: Array<{
+    userId: string;
+    progress: number;
+  }>;
+}
+
+interface ChallengeCardProps {
+  challenge: Challenge;
+  onJoin: () => void;
+  onUpdateProgress: (value: number) => void;
+  hasJoined: boolean;
+}
+
+const ChallengeCard: React.FC<ChallengeCardProps> = ({ challenge, onJoin, onUpdateProgress, hasJoined }) => {
+  const { theme } = useTheme();
+  const queryClient = useQueryClient();
+  const [progress, setProgress] = useState(0);
+
+  const formatDate = (date: string) => {
+    return format(new Date(date), "MMM d, yyyy");
+  };
+
+  const getUserProgress = (challengeId: string) => {
+    const participant = challenge.participants.find(p => p.userId === "currentUserId"); // Replace with actual user ID
+    return participant ? (participant.progress / challenge.targetValue) * 100 : 0;
+  };
+
+  const updateProgressMutation = useMutation({
+    mutationFn: async (newProgress: number) => {
+      const res = await apiRequest(
+        "POST", 
+        `/api/challenges/${challenge.id}/progress`,
+        { progress: newProgress }
+      );
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/challenges"] });
+      setProgress(progress);
+    }
+  });
+
+  const handleProgressUpdate = (newProgress: number) => {
+    setProgress(newProgress);
+    onUpdateProgress(newProgress);
+    updateProgressMutation.mutate(newProgress);
+  };
+
+  const joinChallengeMutation = useMutation({
+    mutationFn: async () => {
+      // This should be replaced with actual API call
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      onJoin();
+    }
+  });
+
+  return (
+    <Card className={cn(
+      "bg-nav-bg border",
+      theme === 'dark' ? 'border-[#e18d58]' : 'border-[#800000]'
+    )}>
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <Badge variant="outline" className={cn(
+            "bg-nav-bg border",
+            theme === 'dark' ? 'text-white border-[#e18d58]' : 'text-[#800000] border-[#800000]'
+          )}>
+            {challenge.type}
+          </Badge>
+          <div className="flex items-center gap-2">
+            <Calendar className={cn(
+              "h-4 w-4",
+              theme === 'dark' ? 'text-[#e18d58]' : 'text-[#800000]'
+            )} />
+            <span className={cn(
+              "text-sm",
+              theme === 'dark' ? 'text-white' : 'text-[#800000]'
+            )}>
+              {formatDate(challenge.startDate)}
+            </span>
+          </div>
+        </div>
+        <CardTitle className={cn(
+          "text-lg font-semibold mt-2",
+          theme === 'dark' ? 'text-white' : 'text-[#800000]'
+        )}>
+          {challenge.title}
+        </CardTitle>
+        <div className="flex items-center gap-4 mt-2">
+          <div className="flex items-center gap-1">
+            <Trophy className={cn(
+              "h-4 w-4",
+              theme === 'dark' ? 'text-[#e18d58]' : 'text-[#800000]'
+            )} />
+            <span className={cn(
+              "text-sm",
+              theme === 'dark' ? 'text-white' : 'text-[#800000]'
+            )}>
+              {challenge.targetValue} {challenge.unit}
+            </span>
+          </div>
+          <div className="flex items-center gap-1">
+            <Users className={cn(
+              "h-4 w-4",
+              theme === 'dark' ? 'text-[#e18d58]' : 'text-[#800000]'
+            )} />
+            <span className={cn(
+              "text-sm",
+              theme === 'dark' ? 'text-white' : 'text-[#800000]'
+            )}>
+              {challenge.participants.length} participants
+            </span>
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-4">
+          {hasJoined && (
+            <div>
+              <div className="flex justify-between text-sm mb-1">
+                <span className={cn(
+                  theme === 'dark' ? 'text-white' : 'text-[#800000]'
+                )}>Your Progress</span>
+                <span className={cn(
+                  theme === 'dark' ? 'text-white' : 'text-[#800000]'
+                )}>
+                  {getUserProgress(challenge.id.toString())}/{challenge.targetValue} {challenge.unit}
+                </span>
+              </div>
+              <Progress 
+                value={getUserProgress(challenge.id.toString())}
+                className={cn(
+                  "h-2",
+                  theme === 'dark' 
+                    ? 'bg-background [&>[role=progressbar]]:bg-[#e18d58]' 
+                    : 'bg-background [&>[role=progressbar]]:bg-[#800000]'
+                )}
+              />
+            </div>
+          )}
+        </div>
+      </CardContent>
+      <CardFooter>
+        {hasJoined ? (
+          <Button 
+            className={cn(
+              "w-full bg-nav-bg",
+              theme === 'dark' 
+                ? 'border-[#e18d58] text-white hover:bg-[#e18d58]/20' 
+                : 'border-[#800000] text-[#800000] hover:bg-active'
+            )}
+            onClick={() => handleProgressUpdate(getUserProgress(challenge.id.toString()))}
+          >
+            Update Progress
+          </Button>
+        ) : (
+          <Button 
+            className={cn(
+              "w-full bg-nav-bg",
+              theme === 'dark' 
+                ? 'border-[#e18d58] text-white hover:bg-[#e18d58]/20' 
+                : 'border-[#800000] text-[#800000] hover:bg-active'
+            )}
+            onClick={() => joinChallengeMutation.mutate()}
+            disabled={joinChallengeMutation.isPending}
+          >
+            {joinChallengeMutation.isPending ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Joining...
+              </>
+            ) : (
+              <>
+                <UserPlus className="h-4 w-4 mr-2" />
+                Join Challenge
+              </>
+            )}
+          </Button>
+        )}
+      </CardFooter>
+    </Card>
+  );
+};
 
 export default function ChallengesPage() {
   const { user } = useAuth();
@@ -57,6 +253,8 @@ export default function ChallengesPage() {
     startDate: "",
     endDate: ""
   });
+  
+  const { theme } = useTheme();
   
   // Format date to YYYY-MM-DD
   const formatDateForInput = (date: Date) => {
@@ -116,18 +314,6 @@ export default function ChallengesPage() {
     }
   });
 
-  // Join challenge mutation
-  const joinChallengeMutation = useMutation({
-    mutationFn: async (challengeId: number) => {
-      const res = await apiRequest("POST", `/api/challenges/${challengeId}/join`, {});
-      return res.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/challenges"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/challenges/participants"] });
-    }
-  });
-
   // Update challenge progress mutation
   const updateProgressMutation = useMutation({
     mutationFn: async ({ challengeId, progress }: { challengeId: number, progress: number }) => {
@@ -139,6 +325,18 @@ export default function ChallengesPage() {
       queryClient.invalidateQueries({ queryKey: ["/api/challenges/participants"] });
       setUpdateProgressOpen(null);
       setProgressValue("");
+    }
+  });
+
+  // Join challenge mutation
+  const joinChallengeMutation = useMutation({
+    mutationFn: async (challengeId: number) => {
+      const res = await apiRequest("POST", `/api/challenges/${challengeId}/join`, {});
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/challenges"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/challenges/participants"] });
     }
   });
 
@@ -165,10 +363,6 @@ export default function ChallengesPage() {
     });
   };
 
-  const handleJoinChallenge = (challengeId: number) => {
-    joinChallengeMutation.mutate(challengeId);
-  };
-
   const handleUpdateProgress = (challengeId: number) => {
     if (!progressValue || isNaN(parseFloat(progressValue))) return;
     
@@ -176,6 +370,10 @@ export default function ChallengesPage() {
       challengeId,
       progress: parseFloat(progressValue)
     });
+  };
+
+  const handleJoinChallenge = (challengeId: number) => {
+    joinChallengeMutation.mutate(challengeId);
   };
 
   // Filter challenges based on active tab
@@ -197,98 +395,141 @@ export default function ChallengesPage() {
     );
   };
 
-  // Get user's progress in a challenge
-  const getUserProgress = (challengeId: number) => {
-    if (!participants) return 0;
-    const participation = participants.find((p: any) => 
-      p.challengeId === challengeId && p.userId === user?.id
-    );
-    return participation ? participation.progress : 0;
-  };
-
-  // Format date
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { 
-      year: 'numeric', 
-      month: 'short', 
-      day: 'numeric'
-    });
-  };
-
   return (
     <div className="min-h-screen bg-background">
       <MobileHeader />
       <div className="flex mt-14">
         <Sidebar activeTab="challenges" />
         <main className="flex-1 md:ml-56 p-4 pb-20">
-          <div className="max-w-5xl mx-auto">
+          <div className="max-w-6xl mx-auto">
             {/* Header */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4">
               <div>
-                <h2 className="text-2xl font-semibold text-secondary-dark">Fitness Challenges</h2>
-                <p className="text-muted-foreground">Compete with others and track your progress</p>
+                <h2 className={cn(
+                  "text-2xl font-semibold",
+                  theme === 'dark' ? 'text-white' : 'text-[#800000]'
+                )}>Fitness Challenges</h2>
+                <p className={cn(
+                  theme === 'dark' ? 'text-white/70' : 'text-[#800000]/70'
+                )}>Compete with others and track your progress</p>
               </div>
               
               <Button 
-                className="bg-secondary text-white hover:bg-secondary-dark"
                 onClick={() => setNewChallengeOpen(true)}
+                className={cn(
+                  "bg-nav-bg",
+                  theme === 'dark' 
+                    ? 'border-[#e18d58] text-white hover:bg-[#e18d58]/20' 
+                    : 'border-[#800000] text-[#800000] hover:bg-active'
+                )}
               >
-                <Plus className="h-4 w-4 mr-2" />
+                <Plus className="mr-2 h-4 w-4" />
                 Create Challenge
               </Button>
             </div>
             
-            {/* Challenges Tabs */}
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-              <TabsList className="grid grid-cols-4 mb-6">
-                <TabsTrigger value="active">Active</TabsTrigger>
-                <TabsTrigger value="upcoming">Upcoming</TabsTrigger>
-                <TabsTrigger value="completed">Completed</TabsTrigger>
-                <TabsTrigger value="all">All Challenges</TabsTrigger>
+            {/* Challenge Tabs */}
+            <Tabs defaultValue="active" className="mb-6" onValueChange={setActiveTab}>
+              <TabsList className={cn(
+                "bg-nav-bg w-full border rounded-lg p-1",
+                theme === 'dark' ? 'border-[#e18d58]' : 'border-[#800000]'
+              )}>
+                <TabsTrigger 
+                  value="active"
+                  className={cn(
+                    "flex-1 data-[state=active]:bg-[#800000] data-[state=active]:text-white",
+                    theme === 'dark' 
+                      ? 'text-white data-[state=active]:bg-[#e18d58]' 
+                      : 'text-[#800000]'
+                  )}
+                >
+                  Active
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="upcoming"
+                  className={cn(
+                    "flex-1 data-[state=active]:bg-[#800000] data-[state=active]:text-white",
+                    theme === 'dark' 
+                      ? 'text-white data-[state=active]:bg-[#e18d58]' 
+                      : 'text-[#800000]'
+                  )}
+                >
+                  Upcoming
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="completed"
+                  className={cn(
+                    "flex-1 data-[state=active]:bg-[#800000] data-[state=active]:text-white",
+                    theme === 'dark' 
+                      ? 'text-white data-[state=active]:bg-[#e18d58]' 
+                      : 'text-[#800000]'
+                  )}
+                >
+                  Completed
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="all"
+                  className={cn(
+                    "flex-1 data-[state=active]:bg-[#800000] data-[state=active]:text-white",
+                    theme === 'dark' 
+                      ? 'text-white data-[state=active]:bg-[#e18d58]' 
+                      : 'text-[#800000]'
+                  )}
+                >
+                  All Challenges
+                </TabsTrigger>
               </TabsList>
               
-              <TabsContent value={activeTab}>
-                {isLoading ? (
-                  <div className="flex justify-center py-12">
-                    <Loader2 className="h-8 w-8 animate-spin text-secondary" />
-                  </div>
-                ) : filteredChallenges.length > 0 ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {filteredChallenges.map((challenge: any) => (
-                      <ChallengeCard 
-                        key={challenge.id} 
-                        challenge={challenge}
-                        hasJoined={hasJoinedChallenge(challenge.id)}
-                        userProgress={getUserProgress(challenge.id)}
-                        onJoin={handleJoinChallenge}
-                        onUpdateProgress={() => setUpdateProgressOpen(challenge.id)}
-                      />
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-12 bg-card rounded-xl border border-border">
-                    <div className="flex justify-center mb-4">
-                      <div className="bg-muted h-16 w-16 rounded-full flex items-center justify-center">
-                        <Trophy className="h-8 w-8 text-muted-foreground" />
-                      </div>
+              {/* Challenge Grid */}
+              {isLoading ? (
+                <div className="flex justify-center py-12">
+                  <Loader2 className={cn(
+                    "h-8 w-8 animate-spin",
+                    theme === 'dark' ? 'text-[#e18d58]' : 'text-[#800000]'
+                  )} />
+                </div>
+              ) : filteredChallenges.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {filteredChallenges.map((challenge: any) => (
+                    <ChallengeCard 
+                      key={challenge.id} 
+                      challenge={challenge}
+                      onJoin={() => handleJoinChallenge(challenge.id)}
+                      onUpdateProgress={(value) => {
+                        setUpdateProgressOpen(challenge.id);
+                      }}
+                      hasJoined={hasJoinedChallenge(challenge.id)}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <div className={cn(
+                  "text-center py-12 bg-nav-bg rounded-xl border",
+                  theme === 'dark' ? 'border-[#e18d58] text-white' : 'border-[#800000] text-[#800000]'
+                )}>
+                  <div className="flex justify-center mb-4">
+                    <div className={cn(
+                      "bg-background h-16 w-16 rounded-full flex items-center justify-center border",
+                      theme === 'dark' ? 'border-[#e18d58]' : 'border-[#800000]'
+                    )}>
+                      <Trophy className={cn(
+                        "h-8 w-8",
+                        theme === 'dark' ? 'text-[#e18d58]' : 'text-[#800000]'
+                      )} />
                     </div>
-                    <h3 className="text-lg font-medium mb-2">No {activeTab} Challenges Found</h3>
-                    <p className="text-muted-foreground max-w-md mx-auto mb-6">
-                      {activeTab === "active" && "There are no active challenges at the moment."}
-                      {activeTab === "upcoming" && "There are no upcoming challenges scheduled."}
-                      {activeTab === "completed" && "There are no completed challenges yet."}
-                      {activeTab === "all" && "There are no challenges available. Be the first to create one!"}
-                    </p>
-                    <Button 
-                      className="bg-secondary text-white hover:bg-secondary-dark"
-                      onClick={() => setNewChallengeOpen(true)}
-                    >
-                      Create a Challenge
-                    </Button>
                   </div>
-                )}
-              </TabsContent>
+                  <h3 className={cn(
+                    "text-lg font-medium mb-2",
+                    theme === 'dark' ? 'text-white' : 'text-[#800000]'
+                  )}>No active Challenges Found</h3>
+                  <p className={cn(
+                    "max-w-md mx-auto mb-6",
+                    theme === 'dark' ? 'text-white/70' : 'text-[#800000]/70'
+                  )}>
+                    There are no active challenges at the moment.
+                  </p>
+                </div>
+              )}
             </Tabs>
           </div>
         </main>
@@ -514,178 +755,5 @@ export default function ChallengesPage() {
         </DialogContent>
       </Dialog>
     </div>
-  );
-}
-
-function ChallengeCard({ 
-  challenge, 
-  hasJoined, 
-  userProgress,
-  onJoin,
-  onUpdateProgress
-}: { 
-  challenge: any;
-  hasJoined: boolean;
-  userProgress: number;
-  onJoin: (challengeId: number) => void;
-  onUpdateProgress: () => void;
-}) {
-  const [showLeaderboard, setShowLeaderboard] = useState(false);
-  
-  // Calculate challenge progress percentage
-  const progressPercentage = Math.min(
-    Math.round((userProgress / challenge.targetValue) * 100),
-    100
-  );
-
-  // Calculate days remaining
-  const getDaysRemaining = () => {
-    const end = new Date(challenge.endDate);
-    const today = new Date();
-    const diffTime = end.getTime() - today.getTime();
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    
-    return diffDays > 0 ? diffDays : 0;
-  };
-
-  const daysRemaining = getDaysRemaining();
-  
-  // Check if challenge is active
-  const isActive = () => {
-    const now = new Date();
-    const start = new Date(challenge.startDate);
-    const end = new Date(challenge.endDate);
-    
-    return now >= start && now <= end && challenge.status === "active";
-  };
-
-  // Mock leaderboard data (replace with real data)
-  const leaderboardData = [
-    { rank: 1, username: "JohnDoe", progress: 8500, profileImage: "" },
-    { rank: 2, username: "FitnessFan22", progress: 7200, profileImage: "" },
-    { rank: 3, username: "RunnerGirl", progress: 6800, profileImage: "" },
-    { rank: 4, username: "SportsMaster", progress: 5500, profileImage: "" },
-    { rank: 5, username: "ActiveKid", progress: 4200, profileImage: "" }
-  ];
-
-  return (
-    <Card>
-      <CardHeader>
-        <div className="flex justify-between items-start">
-          <div>
-            <CardTitle className="text-lg">{challenge.title}</CardTitle>
-            <div className="mt-1 flex items-center text-sm text-muted-foreground">
-              <Calendar className="h-4 w-4 mr-1" />
-              <span>
-                {new Date(challenge.startDate).toLocaleDateString()} - {new Date(challenge.endDate).toLocaleDateString()}
-              </span>
-            </div>
-          </div>
-          <Badge variant={challenge.status === "active" ? "default" : "outline"}>
-            {challenge.status}
-          </Badge>
-        </div>
-      </CardHeader>
-      <CardContent>
-        <p className="text-sm text-foreground mb-4">{challenge.description}</p>
-        
-        <div className="bg-muted p-3 rounded-md grid grid-cols-3 gap-2 mb-4">
-          <div className="text-center">
-            <div className="text-sm text-muted-foreground">Target</div>
-            <div className="font-semibold">
-              {challenge.targetValue} <span className="text-xs">{challenge.unit}</span>
-            </div>
-          </div>
-          <div className="text-center">
-            <div className="text-sm text-muted-foreground">Participants</div>
-            <div className="font-semibold">
-              {challenge.participantCount || "24"}
-            </div>
-          </div>
-          <div className="text-center">
-            <div className="text-sm text-muted-foreground">Time Left</div>
-            <div className="font-semibold">
-              {daysRemaining} <span className="text-xs">days</span>
-            </div>
-          </div>
-        </div>
-        
-        {hasJoined && (
-          <div className="mb-4">
-            <div className="flex justify-between items-center mb-1 text-sm">
-              <span>Your Progress</span>
-              <span>{userProgress} / {challenge.targetValue} {challenge.unit}</span>
-            </div>
-            <Progress value={progressPercentage} className="h-2" />
-          </div>
-        )}
-        
-        {showLeaderboard && (
-          <div className="mb-4">
-            <h4 className="font-medium text-sm mb-2 flex items-center">
-              <Trophy className="h-4 w-4 mr-1 text-yellow-500" />
-              Leaderboard
-            </h4>
-            <div className="space-y-2 max-h-40 overflow-y-auto">
-              {leaderboardData.map((entry, index) => (
-                <div 
-                  key={index} 
-                  className="flex items-center justify-between p-2 rounded-md bg-background text-sm"
-                >
-                  <div className="flex items-center">
-                    <span className="w-5 font-medium">{entry.rank}</span>
-                    <Avatar className="h-6 w-6 mr-2">
-                      <AvatarImage src={entry.profileImage} />
-                      <AvatarFallback>{entry.username[0]}</AvatarFallback>
-                    </Avatar>
-                    <span>{entry.username}</span>
-                  </div>
-                  <span>{entry.progress} {challenge.unit}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-      </CardContent>
-      <CardFooter className="flex flex-col gap-2">
-        <div className="w-full flex gap-2">
-          {!hasJoined ? (
-            <Button 
-              className="flex-1 bg-secondary text-white hover:bg-secondary-dark"
-              onClick={() => onJoin(challenge.id)}
-            >
-              <UserPlus className="h-4 w-4 mr-2" />
-              Join Challenge
-            </Button>
-          ) : isActive() ? (
-            <Button 
-              className="flex-1 bg-secondary text-white hover:bg-secondary-dark"
-              onClick={onUpdateProgress}
-            >
-              <BarChart2 className="h-4 w-4 mr-2" />
-              Update Progress
-            </Button>
-          ) : (
-            <Button 
-              className="flex-1"
-              variant="outline"
-              disabled
-            >
-              {new Date() < new Date(challenge.startDate) 
-                ? "Starting soon" 
-                : "Challenge ended"}
-            </Button>
-          )}
-          
-          <Button 
-            variant="outline" 
-            onClick={() => setShowLeaderboard(!showLeaderboard)}
-            className="flex-1"
-          >
-            {showLeaderboard ? "Hide Leaderboard" : "View Leaderboard"}
-          </Button>
-        </div>
-      </CardFooter>
-    </Card>
   );
 }

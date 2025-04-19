@@ -94,36 +94,36 @@ export default function ForumThreadCard({ thread, showFullThread = false }: Foru
   };
 
   return (
-    <div className="bg-white rounded-xl border border-neutral-200 mb-4 overflow-hidden">
+    <div className="bg-nav-bg rounded-xl border border-[#800000] mb-4 overflow-hidden">
       <div className="p-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center">
-            <Link href={`/forum/${thread.id}`} className="text-secondary font-medium hover:text-secondary-dark">
+            <Link href={`/forum/${thread.id}`} className="text-[#800000] font-bold hover:text-[#800000]/80">
               /{thread.category}
             </Link>
             <button 
-              className={`ml-2 rounded-full ${isFollowing ? 'text-secondary-dark' : 'text-neutral-500 hover:text-secondary-dark'}`}
+              className={`ml-2 rounded-full ${isFollowing ? 'text-[#800000]' : 'text-[#800000]/70 hover:text-[#800000]'}`}
               onClick={() => followMutation.mutate()}
             >
               <Bookmark className="h-4 w-4" fill={isFollowing ? 'currentColor' : 'none'} />
             </button>
           </div>
           
-          <div className="flex items-center text-neutral-500">
+          <div className="flex items-center text-[#800000]">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className="ml-1 p-1 rounded-full hover:bg-neutral-100">
+                <button className="ml-1 p-1 rounded-full hover:bg-background">
                   <MoreVertical className="h-5 w-5" />
                 </button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => bookmarkMutation.mutate()}>
+              <DropdownMenuContent align="end" className="bg-nav-bg border-[#800000]">
+                <DropdownMenuItem className="text-[#800000] hover:bg-background focus:bg-background focus:text-[#800000]" onClick={() => bookmarkMutation.mutate()}>
                   {isBookmarked ? "Remove Bookmark" : "Bookmark Thread"}
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => followMutation.mutate()}>
+                <DropdownMenuItem className="text-[#800000] hover:bg-background focus:bg-background focus:text-[#800000]" onClick={() => followMutation.mutate()}>
                   {isFollowing ? "Unfollow Thread" : "Follow Thread"}
                 </DropdownMenuItem>
-                <DropdownMenuItem>Report Thread</DropdownMenuItem>
+                <DropdownMenuItem className="text-[#800000] hover:bg-background focus:bg-background focus:text-[#800000]">Report Thread</DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
@@ -148,9 +148,11 @@ export default function ForumThreadCard({ thread, showFullThread = false }: Foru
           <div className="mt-4 pl-12">
             <div className="flex">
               <div className="flex-shrink-0 mr-3">
-                <Avatar className="h-8 w-8">
+                <Avatar className="h-8 w-8 border border-[#800000]">
                   <AvatarImage src={user?.profileImage} alt={user?.username} />
-                  <AvatarFallback>{user?.username?.[0]?.toUpperCase() || "U"}</AvatarFallback>
+                  <AvatarFallback className="bg-nav-bg text-[#800000]">
+                    {user?.username ? user.username[0].toUpperCase() : "U"}
+                  </AvatarFallback>
                 </Avatar>
               </div>
               
@@ -159,19 +161,20 @@ export default function ForumThreadCard({ thread, showFullThread = false }: Foru
                   placeholder="Write your reply..."
                   value={replyContent}
                   onChange={(e) => setReplyContent(e.target.value)}
-                  className="min-h-[80px] mb-2"
+                  className="min-h-[80px] mb-2 bg-nav-bg border-[#800000] text-[#800000] placeholder:text-[#800000]/70"
                 />
                 <div className="flex justify-end gap-2">
                   <Button 
                     variant="outline" 
                     size="sm"
+                    className="border-[#800000] text-[#800000] hover:bg-background"
                     onClick={() => setReplyingTo(null)}
                   >
                     Cancel
                   </Button>
                   <Button 
                     size="sm"
-                    className="bg-secondary text-white hover:bg-secondary-dark"
+                    className="bg-nav-bg border border-[#800000] text-[#800000] hover:bg-background font-bold"
                     onClick={() => handleReply(firstPost.id)}
                     disabled={replyMutation.isPending || !replyContent.trim()}
                   >
@@ -186,7 +189,7 @@ export default function ForumThreadCard({ thread, showFullThread = false }: Foru
         {/* Show more link */}
         {!showFullThread && (
           <div className="mt-4 text-center">
-            <Link href={`/forum/${thread.id}`} className="text-sm text-secondary hover:text-secondary-dark">
+            <Link href={`/forum/${thread.id}`} className="text-sm text-[#800000] hover:text-[#800000]/80">
               See this thread in full context &gt;
             </Link>
           </div>

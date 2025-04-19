@@ -8,6 +8,7 @@ import { useQuery } from "@tanstack/react-query";
 import { getQueryFn } from "@/lib/queryClient";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useTheme } from "@/theme/ThemeContext";
 import {
   Card,
   CardContent,
@@ -19,6 +20,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { cn } from "@/lib/utils";
 
 const loginSchema = z.object({
   username: z.string().min(1, "Username is required"),
@@ -48,6 +50,7 @@ type RegisterFormValues = z.infer<typeof registerSchema>;
 export default function AuthPage() {
   const [activeTab, setActiveTab] = useState<string>("login");
   const { user, loginMutation, registerMutation } = useAuth();
+  const { theme } = useTheme();
   const { refetch } = useQuery({
     queryKey: ['/api/user'],
     enabled: loginMutation.isSuccess || registerMutation.isSuccess, 
@@ -97,20 +100,32 @@ export default function AuthPage() {
   }
 
   return (
-    <div className="flex min-h-screen w-full items-center justify-center bg-muted">
+    <div className="flex min-h-screen w-full items-center justify-center bg-background">
       <div className="grid w-full max-w-6xl gap-6 px-4 md:grid-cols-2 md:gap-12 lg:gap-16">
         <div className="flex flex-col justify-center space-y-6">
           <div className="space-y-2">
-            <h1 className="text-3xl font-bold tracking-tight text-secondary-dark md:text-4xl lg:text-5xl">
-              SportsMentor
+            <h1 className={cn(
+              "text-3xl font-bold tracking-tight md:text-4xl lg:text-5xl",
+              theme === 'dark' ? 'text-[#e18d58]' : 'text-[#800000]'
+            )}>
+              GenFit
             </h1>
-            <p className="text-muted-foreground md:text-lg">
-              Connect with local sports programs, mentors, and coaches to achieve your fitness goals
+            <p className={cn(
+              "md:text-lg",
+              theme === 'dark' ? 'text-white/70' : 'text-[#800000]'
+            )}>
+              Connect with fitness programs, mentors, and coaches to achieve your health and wellness goals
             </p>
           </div>
-          <div className="space-y-4 text-muted-foreground">
+          <div className={cn(
+            "space-y-4",
+            theme === 'dark' ? 'text-white/70' : 'text-[#800000]'
+          )}>
             <div className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary">
+              <div className={cn(
+                "flex h-8 w-8 items-center justify-center rounded-full bg-nav-bg border",
+                theme === 'dark' ? 'border-[#e18d58]' : 'border-[#800000]'
+              )}>
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   width="18"
@@ -121,16 +136,19 @@ export default function AuthPage() {
                   strokeWidth="2"
                   strokeLinecap="round"
                   strokeLinejoin="round"
-                  className="text-secondary-dark"
+                  className={theme === 'dark' ? 'text-[#e18d58]' : 'text-[#800000]'}
                 >
                   <path d="M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20Z" />
                   <path d="m9 12 2 2 4-4" />
                 </svg>
               </div>
-              <span>Find free and low-cost sports programs near you</span>
+              <span>Find free and low-cost fitness programs near you</span>
             </div>
             <div className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary">
+              <div className={cn(
+                "flex h-8 w-8 items-center justify-center rounded-full bg-nav-bg border",
+                theme === 'dark' ? 'border-[#e18d58]' : 'border-[#800000]'
+              )}>
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   width="18"
@@ -141,7 +159,7 @@ export default function AuthPage() {
                   strokeWidth="2"
                   strokeLinecap="round"
                   strokeLinejoin="round"
-                  className="text-secondary-dark"
+                  className={theme === 'dark' ? 'text-[#e18d58]' : 'text-[#800000]'}
                 >
                   <path d="M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20Z" />
                   <path d="m9 12 2 2 4-4" />
@@ -150,7 +168,10 @@ export default function AuthPage() {
               <span>Connect with experienced mentors and coaches</span>
             </div>
             <div className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary">
+              <div className={cn(
+                "flex h-8 w-8 items-center justify-center rounded-full bg-nav-bg border",
+                theme === 'dark' ? 'border-[#e18d58]' : 'border-[#800000]'
+              )}>
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   width="18"
@@ -161,7 +182,7 @@ export default function AuthPage() {
                   strokeWidth="2"
                   strokeLinecap="round"
                   strokeLinejoin="round"
-                  className="text-secondary-dark"
+                  className={theme === 'dark' ? 'text-[#e18d58]' : 'text-[#800000]'}
                 >
                   <path d="M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20Z" />
                   <path d="m9 12 2 2 4-4" />
@@ -170,7 +191,10 @@ export default function AuthPage() {
               <span>Set fitness goals and track your progress</span>
             </div>
             <div className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary">
+              <div className={cn(
+                "flex h-8 w-8 items-center justify-center rounded-full bg-nav-bg border",
+                theme === 'dark' ? 'border-[#e18d58]' : 'border-[#800000]'
+              )}>
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   width="18"
@@ -181,7 +205,7 @@ export default function AuthPage() {
                   strokeWidth="2"
                   strokeLinecap="round"
                   strokeLinejoin="round"
-                  className="text-secondary-dark"
+                  className={theme === 'dark' ? 'text-[#e18d58]' : 'text-[#800000]'}
                 >
                   <path d="M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20Z" />
                   <path d="m9 12 2 2 4-4" />
@@ -192,56 +216,103 @@ export default function AuthPage() {
           </div>
         </div>
         <div className="flex items-center justify-center">
-          <Card className="w-full max-w-md">
+          <Card className={cn(
+            "w-full max-w-md border",
+            theme === 'dark' ? 'bg-nav-bg border-[#e18d58]' : 'bg-background border-[#800000]'
+          )}>
             <CardHeader>
-              <CardTitle className="text-2xl">Welcome to SportsMentor</CardTitle>
-              <CardDescription>
+              <CardTitle className={cn(
+                "text-2xl",
+                theme === 'dark' ? 'text-[#e18d58]' : 'text-[#800000]'
+              )}>Welcome to GenFit</CardTitle>
+              <CardDescription className={cn(
+                theme === 'dark' ? 'text-white/70' : 'text-[#800000]/70'
+              )}>
                 Connect with programs, coaches, and peers to achieve your fitness goals
               </CardDescription>
             </CardHeader>
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="login">Login</TabsTrigger>
-                <TabsTrigger value="register">Register</TabsTrigger>
+              <TabsList className={cn(
+                "grid w-full grid-cols-2 bg-nav-bg border-b",
+                theme === 'dark' ? 'border-[#e18d58]' : 'border-[#800000]'
+              )}>
+                <TabsTrigger 
+                  value="login"
+                  className={cn(
+                    "data-[state=active]:font-bold",
+                    theme === 'dark'
+                      ? 'text-white data-[state=active]:text-[#e18d58] data-[state=active]:bg-[#e18d58]/20'
+                      : 'text-[#800000] data-[state=active]:bg-active'
+                  )}
+                >
+                  Login
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="register"
+                  className={cn(
+                    "data-[state=active]:font-bold",
+                    theme === 'dark'
+                      ? 'text-white data-[state=active]:text-[#e18d58] data-[state=active]:bg-[#e18d58]/20'
+                      : 'text-[#800000] data-[state=active]:bg-active'
+                  )}
+                >
+                  Register
+                </TabsTrigger>
               </TabsList>
               <TabsContent value="login">
                 <CardContent className="p-6">
                   <form onSubmit={loginForm.handleSubmit(onLoginSubmit)} className="space-y-4">
                     <div className="space-y-2">
-                      <Label htmlFor="username">Username or Email</Label>
+                      <Label htmlFor="username" className={cn(
+                        theme === 'dark' ? 'text-white/70' : 'text-[#800000]'
+                      )}>Username or Email</Label>
                       <Input
                         id="username"
                         placeholder="Enter your username or email"
+                        className={cn(
+                          "bg-nav-bg border",
+                          theme === 'dark' 
+                            ? 'border-[#e18d58] text-white placeholder:text-white/50' 
+                            : 'border-[#800000] text-[#800000] placeholder:text-[#800000]/50'
+                        )}
                         {...loginForm.register("username")}
                       />
                       {loginForm.formState.errors.username && (
-                        <p className="text-sm text-destructive">
+                        <p className="text-sm text-red-500">
                           {loginForm.formState.errors.username.message}
                         </p>
                       )}
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="password">Password</Label>
+                      <Label htmlFor="password" className={cn(
+                        theme === 'dark' ? 'text-white/70' : 'text-[#800000]'
+                      )}>Password</Label>
                       <Input
                         id="password"
                         type="password"
                         placeholder="Enter your password"
+                        className={cn(
+                          "bg-nav-bg border",
+                          theme === 'dark' 
+                            ? 'border-[#e18d58] text-white placeholder:text-white/50' 
+                            : 'border-[#800000] text-[#800000] placeholder:text-[#800000]/50'
+                        )}
                         {...loginForm.register("password")}
                       />
                       {loginForm.formState.errors.password && (
-                        <p className="text-sm text-destructive">
+                        <p className="text-sm text-red-500">
                           {loginForm.formState.errors.password.message}
-                        </p>
-                      )}
-                      {loginMutation.isError && (
-                        <p className="text-sm text-destructive">
-                          {loginMutation.error?.message || "Invalid username or password"}
                         </p>
                       )}
                     </div>
                     <Button
                       type="submit"
-                      className="w-full bg-secondary hover:bg-secondary-dark"
+                      className={cn(
+                        "w-full bg-nav-bg border",
+                        theme === 'dark'
+                          ? 'border-[#e18d58] text-white hover:bg-[#e18d58]/20'
+                          : 'border-[#800000] text-[#800000] hover:bg-active'
+                      )}
                       disabled={loginMutation.isPending}
                     >
                       {loginMutation.isPending ? (
@@ -256,11 +327,20 @@ export default function AuthPage() {
                   </form>
                 </CardContent>
                 <CardFooter className="flex flex-col">
-                  <p className="text-sm text-muted-foreground">
+                  <p className={cn(
+                    "text-sm",
+                    theme === 'dark' ? 'text-white/70' : 'text-[#800000]'
+                  )}>
                     Don't have an account?{" "}
-                    <Button variant="link" onClick={() => setActiveTab("register")} className="p-0">
+                    <button
+                      onClick={() => setActiveTab("register")}
+                      className={cn(
+                        "font-medium hover:underline",
+                        theme === 'dark' ? 'text-[#e18d58]' : 'text-[#800000]'
+                      )}
+                    >
                       Register
-                    </Button>
+                    </button>
                   </p>
                 </CardFooter>
               </TabsContent>
@@ -268,65 +348,102 @@ export default function AuthPage() {
                 <CardContent className="p-6">
                   <form onSubmit={registerForm.handleSubmit(onRegisterSubmit)} className="space-y-4">
                     <div className="space-y-2">
-                      <Label htmlFor="name">Full Name (Optional)</Label>
+                      <Label htmlFor="name" className={cn(
+                        theme === 'dark' ? 'text-white/70' : 'text-[#800000]'
+                      )}>Full Name (Optional)</Label>
                       <Input
                         id="name"
                         placeholder="Enter your full name"
+                        className={cn(
+                          "bg-nav-bg border",
+                          theme === 'dark' 
+                            ? 'border-[#e18d58] text-white placeholder:text-white/50' 
+                            : 'border-[#800000] text-[#800000] placeholder:text-[#800000]/50'
+                        )}
                         {...registerForm.register("name")}
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="username">Username</Label>
+                      <Label htmlFor="username" className={cn(
+                        theme === 'dark' ? 'text-white/70' : 'text-[#800000]'
+                      )}>Username</Label>
                       <Input
                         id="username"
                         placeholder="Choose a username"
+                        className={cn(
+                          "bg-nav-bg border",
+                          theme === 'dark' 
+                            ? 'border-[#e18d58] text-white placeholder:text-white/50' 
+                            : 'border-[#800000] text-[#800000] placeholder:text-[#800000]/50'
+                        )}
                         {...registerForm.register("username")}
                       />
                       {registerForm.formState.errors.username && (
-                        <p className="text-sm text-destructive">
+                        <p className="text-sm text-red-500">
                           {registerForm.formState.errors.username.message}
                         </p>
                       )}
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="email">Email</Label>
+                      <Label htmlFor="email" className={cn(
+                        theme === 'dark' ? 'text-white/70' : 'text-[#800000]'
+                      )}>Email</Label>
                       <Input
                         id="email"
                         type="email"
                         placeholder="Enter your email"
+                        className={cn(
+                          "bg-nav-bg border",
+                          theme === 'dark' 
+                            ? 'border-[#e18d58] text-white placeholder:text-white/50' 
+                            : 'border-[#800000] text-[#800000] placeholder:text-[#800000]/50'
+                        )}
                         {...registerForm.register("email")}
                       />
                       {registerForm.formState.errors.email && (
-                        <p className="text-sm text-destructive">
+                        <p className="text-sm text-red-500">
                           {registerForm.formState.errors.email.message}
                         </p>
                       )}
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="password">Password</Label>
+                      <Label htmlFor="password" className={cn(
+                        theme === 'dark' ? 'text-white/70' : 'text-[#800000]'
+                      )}>Password</Label>
                       <Input
                         id="password"
                         type="password"
                         placeholder="Create a password"
+                        className={cn(
+                          "bg-nav-bg border",
+                          theme === 'dark' 
+                            ? 'border-[#e18d58] text-white placeholder:text-white/50' 
+                            : 'border-[#800000] text-[#800000] placeholder:text-[#800000]/50'
+                        )}
                         {...registerForm.register("password")}
                       />
                       {registerForm.formState.errors.password && (
-                        <p className="text-sm text-destructive">
+                        <p className="text-sm text-red-500">
                           {registerForm.formState.errors.password.message}
                         </p>
                       )}
-                      <p className="text-xs text-muted-foreground">
+                      <p className="text-xs text-sub">
                         Password must be at least 8 characters with at least one letter and one number
                       </p>
                       {registerMutation.isError && (
-                        <p className="text-sm text-destructive">
+                        <p className="text-sm text-red-500">
                           {registerMutation.error?.message || "Registration failed"}
                         </p>
                       )}
                     </div>
                     <Button
                       type="submit"
-                      className="w-full bg-secondary hover:bg-secondary-dark"
+                      className={cn(
+                        "w-full bg-nav-bg border",
+                        theme === 'dark'
+                          ? 'border-[#e18d58] text-white hover:bg-[#e18d58]/20'
+                          : 'border-[#800000] text-[#800000] hover:bg-active'
+                      )}
                       disabled={registerMutation.isPending}
                     >
                       {registerMutation.isPending ? (
@@ -341,11 +458,20 @@ export default function AuthPage() {
                   </form>
                 </CardContent>
                 <CardFooter className="flex flex-col">
-                  <p className="text-sm text-muted-foreground">
+                  <p className={cn(
+                    "text-sm",
+                    theme === 'dark' ? 'text-white/70' : 'text-[#800000]'
+                  )}>
                     Already have an account?{" "}
-                    <Button variant="link" onClick={() => setActiveTab("login")} className="p-0">
+                    <button
+                      onClick={() => setActiveTab("login")}
+                      className={cn(
+                        "font-medium hover:underline",
+                        theme === 'dark' ? 'text-[#e18d58]' : 'text-[#800000]'
+                      )}
+                    >
                       Login
-                    </Button>
+                    </button>
                   </p>
                 </CardFooter>
               </TabsContent>

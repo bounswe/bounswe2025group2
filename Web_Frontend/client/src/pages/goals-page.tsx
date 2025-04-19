@@ -38,6 +38,8 @@ import {
   Calendar,
   BarChart2
 } from "lucide-react";
+import { useTheme } from "@/theme/ThemeContext";
+import { cn } from "@/lib/utils";
 
 export default function GoalsPage() {
   const { user } = useAuth();
@@ -51,6 +53,8 @@ export default function GoalsPage() {
     endDate: "",
     mentorId: undefined as number | undefined
   });
+  
+  const { theme } = useTheme();
   
   // Fetch user goals
   const { data: goals, isLoading } = useQuery({
@@ -151,12 +155,22 @@ export default function GoalsPage() {
             {/* Header */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4">
               <div>
-                <h2 className="text-2xl font-semibold text-secondary-dark">My Fitness Goals</h2>
-                <p className="text-muted-foreground">Track and manage your personal fitness journey</p>
+                <h1 className={cn(
+                  "text-2xl md:text-3xl font-bold",
+                  theme === 'dark' ? 'text-white' : 'text-[#800000]'
+                )}>My Fitness Goals</h1>
+                <p className={cn(
+                  theme === 'dark' ? 'text-white/70' : 'text-[#800000]/70'
+                )}>Track and manage your personal fitness journey</p>
               </div>
               
               <Button 
-                className="bg-secondary text-white hover:bg-secondary-dark"
+                className={cn(
+                  "bg-nav-bg border font-bold",
+                  theme === 'dark' 
+                    ? 'border-[#e18d58] text-white hover:bg-[#e18d58]/20' 
+                    : 'border-[#800000] text-[#800000] hover:bg-background'
+                )}
                 onClick={() => setNewGoalOpen(true)}
               >
                 <Plus className="h-4 w-4 mr-2" />
@@ -166,57 +180,117 @@ export default function GoalsPage() {
             
             {/* Stats Cards */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-              <Card>
+              <Card className={cn(
+                "bg-nav-bg",
+                theme === 'dark' ? 'border-[#e18d58]' : 'border-[#800000]'
+              )}>
                 <CardContent className="pt-6">
                   <div className="flex items-center">
-                    <div className="bg-primary p-2 rounded-full mr-4">
-                      <Target className="h-5 w-5 text-secondary-dark" />
+                    <div className={cn(
+                      "bg-background border p-2 rounded-full mr-4",
+                      theme === 'dark' ? 'border-[#e18d58]' : 'border-[#800000]'
+                    )}>
+                      <Target className={cn(
+                        "h-5 w-5",
+                        theme === 'dark' ? 'text-[#e18d58]' : 'text-[#800000]'
+                      )} />
                     </div>
                     <div>
-                      <p className="text-sm text-muted-foreground">Active Goals</p>
-                      <h3 className="text-2xl font-bold">{activeGoalsCount}</h3>
+                      <p className={cn(
+                        "text-sm",
+                        theme === 'dark' ? 'text-white/70' : 'text-[#800000]/70'
+                      )}>Active Goals</p>
+                      <h3 className={cn(
+                        "text-2xl font-bold",
+                        theme === 'dark' ? 'text-white' : 'text-[#800000]'
+                      )}>{activeGoalsCount}</h3>
                     </div>
                   </div>
                 </CardContent>
               </Card>
               
-              <Card>
+              <Card className={cn(
+                "bg-nav-bg",
+                theme === 'dark' ? 'border-[#e18d58]' : 'border-[#800000]'
+              )}>
                 <CardContent className="pt-6">
                   <div className="flex items-center">
-                    <div className="bg-primary p-2 rounded-full mr-4">
-                      <Medal className="h-5 w-5 text-secondary-dark" />
+                    <div className={cn(
+                      "bg-background border p-2 rounded-full mr-4",
+                      theme === 'dark' ? 'border-[#e18d58]' : 'border-[#800000]'
+                    )}>
+                      <Medal className={cn(
+                        "h-5 w-5",
+                        theme === 'dark' ? 'text-[#e18d58]' : 'text-[#800000]'
+                      )} />
                     </div>
                     <div>
-                      <p className="text-sm text-muted-foreground">Completed</p>
-                      <h3 className="text-2xl font-bold">{completedGoalsCount}</h3>
+                      <p className={cn(
+                        "text-sm",
+                        theme === 'dark' ? 'text-white/70' : 'text-[#800000]/70'
+                      )}>Completed</p>
+                      <h3 className={cn(
+                        "text-2xl font-bold",
+                        theme === 'dark' ? 'text-white' : 'text-[#800000]'
+                      )}>{completedGoalsCount}</h3>
                     </div>
                   </div>
                 </CardContent>
               </Card>
               
-              <Card>
+              <Card className={cn(
+                "bg-nav-bg",
+                theme === 'dark' ? 'border-[#e18d58]' : 'border-[#800000]'
+              )}>
                 <CardContent className="pt-6">
                   <div className="flex items-center">
-                    <div className="bg-primary p-2 rounded-full mr-4">
-                      <TrendingUp className="h-5 w-5 text-secondary-dark" />
+                    <div className={cn(
+                      "bg-background border p-2 rounded-full mr-4",
+                      theme === 'dark' ? 'border-[#e18d58]' : 'border-[#800000]'
+                    )}>
+                      <BarChart2 className={cn(
+                        "h-5 w-5",
+                        theme === 'dark' ? 'text-[#e18d58]' : 'text-[#800000]'
+                      )} />
                     </div>
                     <div>
-                      <p className="text-sm text-muted-foreground">Completion Rate</p>
-                      <h3 className="text-2xl font-bold">{completionRate}%</h3>
+                      <p className={cn(
+                        "text-sm",
+                        theme === 'dark' ? 'text-white/70' : 'text-[#800000]/70'
+                      )}>Completion Rate</p>
+                      <h3 className={cn(
+                        "text-2xl font-bold",
+                        theme === 'dark' ? 'text-white' : 'text-[#800000]'
+                      )}>{completionRate}%</h3>
                     </div>
                   </div>
                 </CardContent>
               </Card>
               
-              <Card>
+              <Card className={cn(
+                "bg-nav-bg",
+                theme === 'dark' ? 'border-[#e18d58]' : 'border-[#800000]'
+              )}>
                 <CardContent className="pt-6">
                   <div className="flex items-center">
-                    <div className="bg-primary p-2 rounded-full mr-4">
-                      <Calendar className="h-5 w-5 text-secondary-dark" />
+                    <div className={cn(
+                      "bg-background border p-2 rounded-full mr-4",
+                      theme === 'dark' ? 'border-[#e18d58]' : 'border-[#800000]'
+                    )}>
+                      <TrendingUp className={cn(
+                        "h-5 w-5",
+                        theme === 'dark' ? 'text-[#e18d58]' : 'text-[#800000]'
+                      )} />
                     </div>
                     <div>
-                      <p className="text-sm text-muted-foreground">Active Streak</p>
-                      <h3 className="text-2xl font-bold">7 days</h3>
+                      <p className={cn(
+                        "text-sm",
+                        theme === 'dark' ? 'text-white/70' : 'text-[#800000]/70'
+                      )}>Active Streak</p>
+                      <h3 className={cn(
+                        "text-2xl font-bold",
+                        theme === 'dark' ? 'text-white' : 'text-[#800000]'
+                      )}>7 days</h3>
                     </div>
                   </div>
                 </CardContent>
@@ -224,52 +298,147 @@ export default function GoalsPage() {
             </div>
             
             {/* Goals Tabs */}
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-              <TabsList className="grid grid-cols-4 mb-6">
-                <TabsTrigger value="active">Active</TabsTrigger>
-                <TabsTrigger value="completed">Completed</TabsTrigger>
-                <TabsTrigger value="paused">Paused</TabsTrigger>
-                <TabsTrigger value="all">All Goals</TabsTrigger>
+            <Tabs defaultValue="active" className="mb-6" onValueChange={setActiveTab}>
+              <TabsList className={cn(
+                "bg-nav-bg w-full border rounded-lg p-1",
+                theme === 'dark' ? 'border-[#e18d58]' : 'border-[#800000]'
+              )}>
+                <TabsTrigger 
+                  value="active"
+                  className={cn(
+                    "flex-1 data-[state=active]:bg-[#800000] data-[state=active]:text-white",
+                    theme === 'dark' 
+                      ? 'text-white data-[state=active]:bg-[#e18d58]' 
+                      : 'text-[#800000]'
+                  )}
+                >
+                  Active
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="completed"
+                  className={cn(
+                    "flex-1 data-[state=active]:bg-[#800000] data-[state=active]:text-white",
+                    theme === 'dark' 
+                      ? 'text-white data-[state=active]:bg-[#e18d58]' 
+                      : 'text-[#800000]'
+                  )}
+                >
+                  Completed
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="paused"
+                  className={cn(
+                    "flex-1 data-[state=active]:bg-[#800000] data-[state=active]:text-white",
+                    theme === 'dark' 
+                      ? 'text-white data-[state=active]:bg-[#e18d58]' 
+                      : 'text-[#800000]'
+                  )}
+                >
+                  Paused
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="all"
+                  className={cn(
+                    "flex-1 data-[state=active]:bg-[#800000] data-[state=active]:text-white",
+                    theme === 'dark' 
+                      ? 'text-white data-[state=active]:bg-[#e18d58]' 
+                      : 'text-[#800000]'
+                  )}
+                >
+                  All Goals
+                </TabsTrigger>
               </TabsList>
-              
-              <TabsContent value={activeTab}>
-                {isLoading ? (
-                  <div className="flex justify-center py-12">
-                    <Loader2 className="h-8 w-8 animate-spin text-secondary" />
-                  </div>
-                ) : filteredGoals.length > 0 ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {filteredGoals.map((goal: any) => (
-                      <GoalCard 
-                        key={goal.id} 
-                        goal={goal} 
-                        onUpdateProgress={handleUpdateProgress}
-                      />
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-12 bg-card rounded-xl border border-border">
-                    <div className="flex justify-center mb-4">
-                      <div className="bg-muted h-16 w-16 rounded-full flex items-center justify-center">
-                        <Target className="h-8 w-8 text-muted-foreground" />
-                      </div>
-                    </div>
-                    <h3 className="text-lg font-medium mb-2">No {activeTab} Goals Found</h3>
-                    <p className="text-muted-foreground max-w-md mx-auto mb-6">
-                      {activeTab === "active" && "You don't have any active goals. Set a new fitness goal to start tracking your progress."}
-                      {activeTab === "completed" && "You haven't completed any goals yet. Keep working on your active goals!"}
-                      {activeTab === "paused" && "You don't have any paused goals."}
-                      {activeTab === "all" && "You haven't set any fitness goals yet. Start by setting your first goal."}
-                    </p>
-                    <Button 
-                      className="bg-secondary text-white hover:bg-secondary-dark"
-                      onClick={() => setNewGoalOpen(true)}
+
+              {/* Goals Grid */}
+              {isLoading ? (
+                <div className="flex justify-center py-12">
+                  <Loader2 className={cn(
+                    "h-8 w-8 animate-spin",
+                    theme === 'dark' ? 'text-[#e18d58]' : 'text-[#800000]'
+                  )} />
+                </div>
+              ) : filteredGoals.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {filteredGoals.map((goal: any) => (
+                    <Card 
+                      key={goal.id} 
+                      className={cn(
+                        "bg-nav-bg",
+                        theme === 'dark' ? 'border-[#e18d58]' : 'border-[#800000]'
+                      )}
                     >
-                      Set New Goal
-                    </Button>
+                      <CardHeader>
+                        <div className="flex items-center justify-between">
+                          <Badge variant="outline" className={cn(
+                            "bg-nav-bg",
+                            theme === 'dark' 
+                              ? 'text-white border-[#e18d58]' 
+                              : 'text-[#800000] border-[#800000]'
+                          )}>
+                            {goal.type}
+                          </Badge>
+                          <div className="flex items-center gap-2">
+                            <Calendar className={cn(
+                              "h-4 w-4",
+                              theme === 'dark' ? 'text-[#e18d58]' : 'text-[#800000]'
+                            )} />
+                            <span className={cn(
+                              "text-sm",
+                              theme === 'dark' ? 'text-white' : 'text-[#800000]'
+                            )}>
+                              {goal.daysRemaining} days left
+                            </span>
+                          </div>
+                        </div>
+                        <CardTitle className={cn(
+                          "text-lg font-semibold mt-2",
+                          theme === 'dark' ? 'text-white' : 'text-[#800000]'
+                        )}>
+                          {goal.title}
+                        </CardTitle>
+                      </CardHeader>
+                    </Card>
+                  ))}
+                </div>
+              ) : (
+                <div className={cn(
+                  "text-center py-12 bg-nav-bg rounded-xl border",
+                  theme === 'dark' ? 'border-[#e18d58]' : 'border-[#800000]'
+                )}>
+                  <div className="flex justify-center mb-4">
+                    <div className={cn(
+                      "bg-background h-16 w-16 rounded-full flex items-center justify-center border",
+                      theme === 'dark' ? 'border-[#e18d58]' : 'border-[#800000]'
+                    )}>
+                      <Target className={cn(
+                        "h-8 w-8",
+                        theme === 'dark' ? 'text-[#e18d58]' : 'text-[#800000]'
+                      )} />
+                    </div>
                   </div>
-                )}
-              </TabsContent>
+                  <h3 className={cn(
+                    "text-lg font-bold mb-2",
+                    theme === 'dark' ? 'text-white' : 'text-[#800000]'
+                  )}>No active Goals Found</h3>
+                  <p className={cn(
+                    "max-w-md mx-auto",
+                    theme === 'dark' ? 'text-white/70' : 'text-[#800000]/70'
+                  )}>
+                    You don't have any active goals. Set a new fitness goal to start tracking your progress.
+                  </p>
+                  <Button 
+                    className={cn(
+                      "mt-6 bg-nav-bg border",
+                      theme === 'dark' 
+                        ? 'border-[#e18d58] text-white hover:bg-[#e18d58]/20' 
+                        : 'border-[#800000] text-[#800000] hover:bg-background'
+                    )}
+                    onClick={() => setNewGoalOpen(true)}
+                  >
+                    Set New Goal
+                  </Button>
+                </div>
+              )}
             </Tabs>
           </div>
         </main>
@@ -278,148 +447,164 @@ export default function GoalsPage() {
       
       {/* Create New Goal Dialog */}
       <Dialog open={newGoalOpen} onOpenChange={setNewGoalOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className={cn(
+          "sm:max-w-md bg-nav-bg",
+          theme === 'dark' ? 'border-[#e18d58]' : 'border-[#800000]'
+        )}>
           <DialogHeader>
-            <DialogTitle>Set a New Fitness Goal</DialogTitle>
-            <DialogDescription>
-              Define your fitness goal and track your progress
+            <DialogTitle className={cn(
+              theme === 'dark' ? 'text-white' : 'text-[#800000]'
+            )}>Set a New Goal</DialogTitle>
+            <DialogDescription className={cn(
+              theme === 'dark' ? 'text-white/70' : 'text-[#800000]/70'
+            )}>
+              Create a new fitness goal to track your progress
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="title">Goal Title</Label>
+              <Label htmlFor="title" className={cn(
+                theme === 'dark' ? 'text-white' : 'text-[#800000]'
+              )}>Goal Title</Label>
               <Input
                 id="title"
-                placeholder="E.g., Weekly Running Goal"
+                placeholder="E.g., Run 5K in 30 minutes"
                 value={newGoal.title}
                 onChange={(e) => setNewGoal({...newGoal, title: e.target.value})}
+                className={cn(
+                  "bg-background",
+                  theme === 'dark' 
+                    ? 'text-white border-[#e18d58]' 
+                    : 'text-[#800000] border-[#800000]'
+                )}
               />
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="type">Goal Type</Label>
+              <Label htmlFor="type" className={cn(
+                theme === 'dark' ? 'text-white' : 'text-[#800000]'
+              )}>Goal Type</Label>
               <Select 
                 value={newGoal.type}
                 onValueChange={(value) => {
                   const unitMap: Record<string, string> = {
                     walking: "miles",
                     running: "miles",
-                    workout: "hours",
                     cycling: "miles",
                     swimming: "laps",
-                    sports: "hours"
+                    workout: "minutes"
                   };
                   setNewGoal({
                     ...newGoal, 
                     type: value,
-                    unit: unitMap[value] || "miles"
+                    unit: unitMap[value as keyof typeof unitMap] || "units"
                   });
                 }}
               >
-                <SelectTrigger>
+                <SelectTrigger className={cn(
+                  "bg-background",
+                  theme === 'dark' 
+                    ? 'text-white border-[#e18d58]' 
+                    : 'text-[#800000] border-[#800000]'
+                )}>
                   <SelectValue placeholder="Select goal type" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="walking">Walking</SelectItem>
                   <SelectItem value="running">Running</SelectItem>
-                  <SelectItem value="workout">Workout</SelectItem>
                   <SelectItem value="cycling">Cycling</SelectItem>
                   <SelectItem value="swimming">Swimming</SelectItem>
-                  <SelectItem value="sports">Sports</SelectItem>
+                  <SelectItem value="workout">Workout</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             
-            <div className="space-y-2">
-              <div className="flex justify-between items-center">
-                <Label htmlFor="target">Target Value: {newGoal.targetValue} {newGoal.unit}</Label>
-              </div>
-              <Slider
-                id="target"
-                defaultValue={[5]}
-                min={1}
-                max={newGoal.unit === "hours" ? 20 : 50}
-                step={1}
-                onValueChange={(values) => setNewGoal({...newGoal, targetValue: values[0]})}
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="unit">Unit</Label>
-              <Select 
-                value={newGoal.unit}
-                onValueChange={(value) => setNewGoal({...newGoal, unit: value})}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select unit" />
-                </SelectTrigger>
-                <SelectContent>
-                  {newGoal.type === "walking" || newGoal.type === "running" || newGoal.type === "cycling" ? (
-                    <>
-                      <SelectItem value="miles">Miles</SelectItem>
-                      <SelectItem value="kilometers">Kilometers</SelectItem>
-                      <SelectItem value="steps">Steps</SelectItem>
-                    </>
-                  ) : newGoal.type === "workout" || newGoal.type === "sports" ? (
-                    <>
-                      <SelectItem value="hours">Hours</SelectItem>
-                      <SelectItem value="minutes">Minutes</SelectItem>
-                      <SelectItem value="sessions">Sessions</SelectItem>
-                    </>
-                  ) : newGoal.type === "swimming" ? (
-                    <>
-                      <SelectItem value="laps">Laps</SelectItem>
-                      <SelectItem value="meters">Meters</SelectItem>
-                      <SelectItem value="minutes">Minutes</SelectItem>
-                    </>
-                  ) : (
-                    <SelectItem value="units">Units</SelectItem>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="target" className={cn(
+                  theme === 'dark' ? 'text-white' : 'text-[#800000]'
+                )}>Target Value</Label>
+                <Input
+                  id="target"
+                  type="number"
+                  value={newGoal.targetValue}
+                  onChange={(e) => setNewGoal({
+                    ...newGoal, 
+                    targetValue: parseInt(e.target.value) || 0
+                  })}
+                  className={cn(
+                    "bg-background",
+                    theme === 'dark' 
+                      ? 'text-white border-[#e18d58]' 
+                      : 'text-[#800000] border-[#800000]'
                   )}
-                </SelectContent>
-              </Select>
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="unit" className={cn(
+                  theme === 'dark' ? 'text-white' : 'text-[#800000]'
+                )}>Unit</Label>
+                <Input
+                  id="unit"
+                  value={newGoal.unit}
+                  readOnly
+                  className={cn(
+                    "bg-background",
+                    theme === 'dark' 
+                      ? 'text-white border-[#e18d58]' 
+                      : 'text-[#800000] border-[#800000]'
+                  )}
+                />
+              </div>
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="endDate">Target End Date</Label>
+              <Label htmlFor="endDate" className={cn(
+                theme === 'dark' ? 'text-white' : 'text-[#800000]'
+              )}>Target Date</Label>
               <Input
                 id="endDate"
                 type="date"
                 value={newGoal.endDate}
                 onChange={(e) => setNewGoal({...newGoal, endDate: e.target.value})}
+                className={cn(
+                  "bg-background",
+                  theme === 'dark' 
+                    ? 'text-white border-[#e18d58]' 
+                    : 'text-[#800000] border-[#800000]'
+                )}
               />
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="mentor">Assign a Mentor (Optional)</Label>
-              <Select 
-                value={newGoal.mentorId?.toString() || "none"}
-                onValueChange={(value) => setNewGoal({
-                  ...newGoal, 
-                  mentorId: value !== "none" ? parseInt(value) : undefined
-                })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select a mentor" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">No mentor</SelectItem>
-                  {mentors && mentors.map((mentor: any) => (
-                    <SelectItem key={mentor.id} value={mentor.id.toString()}>
-                      {mentor.name || mentor.username}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setNewGoalOpen(false)}>
+            <Button 
+              variant="outline" 
+              onClick={() => setNewGoalOpen(false)}
+              className={cn(
+                "bg-background",
+                theme === 'dark' 
+                  ? 'text-white border-[#e18d58] hover:bg-[#e18d58]/20' 
+                  : 'text-[#800000] border-[#800000] hover:bg-background'
+              )}
+            >
               Cancel
             </Button>
             <Button 
-              className="bg-secondary text-white hover:bg-secondary-dark"
               onClick={handleCreateGoal}
-              disabled={createGoalMutation.isPending || !newGoal.title || !newGoal.type || !newGoal.unit}
+              disabled={
+                createGoalMutation.isPending || 
+                !newGoal.title || 
+                !newGoal.type || 
+                !newGoal.targetValue ||
+                !newGoal.endDate
+              }
+              className={cn(
+                "bg-nav-bg",
+                theme === 'dark' 
+                  ? 'text-white border-[#e18d58] hover:bg-[#e18d58]/20' 
+                  : 'text-[#800000] border-[#800000] hover:bg-background'
+              )}
             >
               {createGoalMutation.isPending ? (
                 <>
@@ -442,157 +627,125 @@ function GoalCard({
   goal: any;
   onUpdateProgress: (id: number, currentValue: number, newProgress: number) => void;
 }) {
-  const [progressInput, setProgressInput] = useState<string>("");
-  const [progressModalOpen, setProgressModalOpen] = useState(false);
-
+  const [isAddingProgress, setIsAddingProgress] = useState(false);
+  const [progressValue, setProgressValue] = useState(1);
+  
   const handleAddProgress = () => {
-    if (!progressInput || isNaN(parseFloat(progressInput))) return;
-    
-    onUpdateProgress(goal.id, goal.currentValue, parseFloat(progressInput));
-    setProgressInput("");
-    setProgressModalOpen(false);
+    onUpdateProgress(goal.id, goal.currentValue, progressValue);
+    setIsAddingProgress(false);
+    setProgressValue(1);
   };
-
-  const progressPercentage = Math.min(
-    Math.round((goal.currentValue / goal.targetValue) * 100),
-    100
-  );
-
-  // Format date
+  
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString('en-US', { 
-      year: 'numeric', 
       month: 'short', 
-      day: 'numeric'
+      day: 'numeric', 
+      year: 'numeric' 
     });
   };
-
-  // Calculate days remaining
+  
   const getDaysRemaining = () => {
-    if (!goal.endDate) return null;
-    
-    const end = new Date(goal.endDate);
     const today = new Date();
-    const diffTime = end.getTime() - today.getTime();
+    const endDate = new Date(goal.endDate);
+    const diffTime = endDate.getTime() - today.getTime();
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    
-    return diffDays > 0 ? diffDays : 0;
+    return diffDays;
   };
 
-  const daysRemaining = getDaysRemaining();
-
   return (
-    <Card>
-      <CardHeader className="pb-2">
-        <div className="flex justify-between items-start">
+    <Card className="bg-nav-bg border-[#800000]">
+      <CardContent className="p-6">
+        <div className="flex items-start justify-between">
           <div>
-            <CardTitle>{goal.title}</CardTitle>
-            <CardDescription>
-              <div className="flex items-center mt-1">
-                <span className="capitalize">{goal.type}</span>
-                <span className="mx-2">•</span>
-                <Badge variant={goal.status === "completed" ? "default" : "outline"}>
-                  {goal.status}
-                </Badge>
-              </div>
-            </CardDescription>
-          </div>
-          <div className="flex items-center">
-            {goal.mentorId && (
-              <Badge variant="secondary" className="mr-2">
-                Mentor Assigned
+            <div className="flex items-center gap-2 mb-2">
+              <Badge 
+                variant="outline" 
+                className={`
+                  bg-background border-[#800000] text-[#800000] font-bold
+                  ${goal.status === 'completed' ? 'border-[#800000]' : ''}
+                  ${goal.status === 'paused' ? 'border-[#800000]' : ''}
+                `}
+              >
+                {goal.status.charAt(0).toUpperCase() + goal.status.slice(1)}
               </Badge>
-            )}
-            <BarChart2 className="h-5 w-5 text-muted-foreground" />
+              {goal.mentor && (
+                <Badge 
+                  variant="outline" 
+                  className="bg-background border-[#800000] text-[#800000]"
+                >
+                  Mentor: {goal.mentor.name || goal.mentor.username}
+                </Badge>
+              )}
+            </div>
+            
+            <h3 className="text-lg font-bold text-[#800000] mb-1">{goal.title}</h3>
+            <p className="text-[#800000]/70 text-sm mb-4">
+              Target: {goal.targetValue} {goal.unit} by {formatDate(goal.endDate)}
+            </p>
+            
+            <div className="space-y-2">
+              <div className="flex justify-between text-sm text-[#800000]/70">
+                <span>Progress</span>
+                <span>{goal.currentValue} / {goal.targetValue} {goal.unit}</span>
+              </div>
+              <GoalProgress 
+                goal={goal}
+                showTitle={false}
+              />
+              <div className="flex justify-between text-sm">
+                <span className="text-[#800000]/70">
+                  {getDaysRemaining()} days remaining
+                </span>
+                <span className="text-[#800000] font-bold">
+                  {Math.round((goal.currentValue / goal.targetValue) * 100)}%
+                </span>
+              </div>
+            </div>
           </div>
         </div>
-      </CardHeader>
-      <CardContent>
-        <GoalProgress goal={goal} />
         
-        <div className="flex justify-between items-center mt-2 text-sm text-muted-foreground">
-          <div>
-            {daysRemaining !== null && (
-              <span>{daysRemaining} days left</span>
-            )}
-            {goal.endDate && !daysRemaining && (
-              <span>Due {formatDate(goal.endDate)}</span>
-            )}
-          </div>
-          <div>
-            {progressPercentage}% complete
-          </div>
-        </div>
-        
-        {goal.status === "active" && (
-          <div className="mt-4 flex gap-2">
-            <Dialog open={progressModalOpen} onOpenChange={setProgressModalOpen}>
-              <DialogTrigger asChild>
-                <Button className="w-full bg-secondary text-white hover:bg-secondary-dark">
-                  Update Progress
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="sm:max-w-[425px]">
-                <DialogHeader>
-                  <DialogTitle>Update Goal Progress</DialogTitle>
-                  <DialogDescription>
-                    Add your progress towards "{goal.title}"
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="space-y-4 py-4">
-                  <div className="flex items-center justify-center gap-4">
-                    <div className="text-center">
-                      <div className="text-2xl font-bold">{goal.currentValue}</div>
-                      <div className="text-sm text-muted-foreground">Current</div>
-                    </div>
-                    <div className="text-2xl">+</div>
-                    <div className="flex-1">
-                      <Input
-                        type="number"
-                        placeholder={`Add ${goal.unit}`}
-                        value={progressInput}
-                        onChange={(e) => setProgressInput(e.target.value)}
-                      />
-                    </div>
-                    <div className="text-2xl">=</div>
-                    <div className="text-center">
-                      <div className="text-2xl font-bold">
-                        {(parseFloat(progressInput) || 0) + goal.currentValue}
-                      </div>
-                      <div className="text-sm text-muted-foreground">New Total</div>
-                    </div>
-                  </div>
-                  
-                  <div className="bg-muted p-3 rounded-md text-sm">
-                    <div className="font-medium mb-1">Goal Details:</div>
-                    <div className="flex justify-between">
-                      <span>Target:</span>
-                      <span>{goal.targetValue} {goal.unit}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Remaining:</span>
-                      <span>{Math.max(0, goal.targetValue - goal.currentValue)} {goal.unit}</span>
-                    </div>
-                  </div>
+        {goal.status === 'active' && (
+          <div className="mt-4">
+            {isAddingProgress ? (
+              <div className="space-y-2">
+                <div className="flex items-center gap-4">
+                  <Slider
+                    value={[progressValue]}
+                    onValueChange={([value]) => setProgressValue(value)}
+                    min={1}
+                    max={Math.min(10, goal.targetValue - goal.currentValue)}
+                    step={1}
+                    className="flex-1"
+                  />
+                  <span className="text-[#800000] font-bold w-12">+{progressValue}</span>
                 </div>
-                <DialogFooter>
-                  <Button
-                    variant="outline"
-                    onClick={() => setProgressModalOpen(false)}
+                <div className="flex justify-end gap-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    className="border-[#800000] text-[#800000] hover:bg-background"
+                    onClick={() => setIsAddingProgress(false)}
                   >
                     Cancel
                   </Button>
                   <Button 
-                    className="bg-secondary text-white hover:bg-secondary-dark"
+                    size="sm"
+                    className="bg-nav-bg border border-[#800000] text-[#800000] hover:bg-background font-bold"
                     onClick={handleAddProgress}
-                    disabled={!progressInput || isNaN(parseFloat(progressInput))}
                   >
                     Add Progress
                   </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
+                </div>
+              </div>
+            ) : (
+              <Button 
+                className="w-full bg-nav-bg border border-[#800000] text-[#800000] hover:bg-background font-bold"
+                onClick={() => setIsAddingProgress(true)}
+              >
+                Update Progress
+              </Button>
+            )}
           </div>
         )}
       </CardContent>

@@ -87,23 +87,25 @@ export default function ForumPost({ post, onReply, threadId }: ForumPostProps) {
     <div className="mt-3">
       <div className="flex">
         <Link href={`/profile/${post.user?.username}`} className="flex-shrink-0 mr-3">
-          <Avatar className="w-10 h-10">
+          <Avatar className="w-10 h-10 border border-[#800000]">
             <AvatarImage src={post.user?.profileImage} alt={post.user?.username || "User"} />
-            <AvatarFallback>{post.user?.username?.[0]?.toUpperCase() || "U"}</AvatarFallback>
+            <AvatarFallback className="bg-nav-bg text-[#800000]">
+              {post.user?.username ? post.user.username[0].toUpperCase() : "U"}
+            </AvatarFallback>
           </Avatar>
         </Link>
         
         <div className="flex-1">
           <div className="flex items-center">
-            <Link href={`/profile/${post.user?.username}`} className="font-medium text-neutral-800 mr-2">
+            <Link href={`/profile/${post.user?.username}`} className="font-bold text-[#800000] mr-2">
               @{post.user?.username}
             </Link>
-            <span className="text-xs text-neutral-500">{formatDate(post.createdAt)}</span>
+            <span className="text-xs text-[#800000]/70">{formatDate(post.createdAt)}</span>
           </div>
           
-          <div className="mt-1 text-neutral-700">
+          <div className="mt-1 text-[#800000]">
             {post.imageUrl && (
-              <div className="mb-2 rounded-lg overflow-hidden">
+              <div className="mb-2 rounded-lg overflow-hidden border border-[#800000]">
                 <img src={post.imageUrl} alt="Post attachment" className="w-full h-auto" />
               </div>
             )}
@@ -115,7 +117,7 @@ export default function ForumPost({ post, onReply, threadId }: ForumPostProps) {
               <Button 
                 variant="ghost" 
                 size="sm" 
-                className={`flex items-center text-neutral-500 hover:text-secondary-dark p-0 h-auto ${hasVoted ? 'text-secondary-dark' : ''}`}
+                className={`flex items-center hover:text-[#800000] p-0 h-auto ${hasVoted ? 'text-[#800000] font-bold' : 'text-[#800000]/70'}`}
                 onClick={() => voteMutation.mutate()}
               >
                 <ThumbsUp className="h-4 w-4 mr-1" fill={hasVoted ? 'currentColor' : 'none'} />
@@ -125,7 +127,7 @@ export default function ForumPost({ post, onReply, threadId }: ForumPostProps) {
               <Button 
                 variant="ghost" 
                 size="sm"
-                className="flex items-center text-neutral-500 hover:text-secondary-dark p-0 h-auto"
+                className="flex items-center text-[#800000]/70 hover:text-[#800000] p-0 h-auto"
                 onClick={onReply}
               >
                 <MessageSquare className="h-4 w-4 mr-1" />
@@ -135,7 +137,7 @@ export default function ForumPost({ post, onReply, threadId }: ForumPostProps) {
               <Button 
                 variant="ghost" 
                 size="sm"
-                className="flex items-center text-neutral-500 hover:text-secondary-dark p-0 h-auto"
+                className="flex items-center text-[#800000]/70 hover:text-[#800000] p-0 h-auto"
                 onClick={sharePost}
               >
                 <Share className="h-4 w-4 mr-1" />

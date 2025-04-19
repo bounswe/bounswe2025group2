@@ -55,8 +55,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Force a refetch to ensure we have the latest user data
       queryClient.invalidateQueries({queryKey: ["/api/user"]});
       toast({
-        title: "Login successful",
-        description: `Welcome back, ${user.username}!`,
+        title: "Login successful!",
+        description: `Welcome to GenFit, ${user.username}!`,
+        variant: "default",
       });
     },
     onError: (error: Error) => {
@@ -79,7 +80,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       queryClient.invalidateQueries({queryKey: ["/api/user"]});
       toast({
         title: "Registration successful",
-        description: `Welcome to SportsMentor, ${user.username}!`,
+        description: `Welcome to GenFit, ${user.username}!`,
       });
     },
     onError: (error: Error) => {

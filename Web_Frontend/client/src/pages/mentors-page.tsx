@@ -19,8 +19,11 @@ import {
   Star, 
   ChevronRight
 } from "lucide-react";
+import { useTheme } from "@/theme/ThemeContext";
+import { cn } from "@/lib/utils";
 
 export default function MentorsPage() {
+  const { theme } = useTheme();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedSport, setSelectedSport] = useState<string>("all");
 
@@ -80,23 +83,41 @@ export default function MentorsPage() {
             {/* Header */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4">
               <div>
-                <h2 className="text-2xl font-semibold text-secondary-dark">Find Mentors & Coaches</h2>
-                <p className="text-muted-foreground">Connect with experienced mentors and verified coaches</p>
+                <h1 className={cn(
+                  "text-2xl md:text-3xl font-bold",
+                  theme === 'dark' ? 'text-white' : 'text-[#800000]'
+                )}>Find Mentors & Coaches</h1>
+                <p className={cn(
+                  theme === 'dark' ? 'text-white/70' : 'text-[#800000]/70'
+                )}>Connect with experienced mentors and verified coaches</p>
               </div>
               
               <div className="flex items-center space-x-2">
                 <div className="relative">
-                  <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                  <Search className={cn(
+                    "absolute left-3 top-2.5 h-4 w-4",
+                    theme === 'dark' ? 'text-[#e18d58]' : 'text-[#800000]'
+                  )} />
                   <Input
                     type="text"
                     placeholder="Search mentors..."
-                    className="pl-9 pr-4 py-2 rounded-full text-sm border-neutral-300 w-full sm:w-60"
+                    className={cn(
+                      "pl-9 pr-4 py-2 rounded-full text-sm bg-nav-bg w-full sm:w-60",
+                      theme === 'dark' 
+                        ? 'border-[#e18d58] text-white placeholder:text-white/70' 
+                        : 'border-[#800000] text-[#800000] placeholder:text-[#800000]/70'
+                    )}
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                   />
                 </div>
                 
-                <Button className="px-3 py-1.5 rounded-full bg-white border border-neutral-300 text-neutral-700 flex items-center shrink-0">
+                <Button className={cn(
+                  "px-3 py-1.5 rounded-full bg-nav-bg border",
+                  theme === 'dark' 
+                    ? 'border-[#e18d58] text-white hover:bg-[#e18d58]/20' 
+                    : 'border-[#800000] text-[#800000] hover:bg-background'
+                )}>
                   <Filter className="h-4 w-4 mr-1" />
                   <span className="hidden sm:inline">Filters</span>
                 </Button>
@@ -109,11 +130,17 @@ export default function MentorsPage() {
                 <Button
                   key={category.id}
                   variant={selectedSport === category.id ? "default" : "outline"}
-                  className={`px-4 py-1.5 text-sm font-medium rounded-full whitespace-nowrap ${
-                    selectedSport === category.id 
-                      ? "bg-secondary text-white" 
-                      : "bg-white border border-neutral-300 text-neutral-700"
-                  }`}
+                  className={cn(
+                    "px-4 py-1.5 text-sm rounded-full whitespace-nowrap bg-nav-bg border",
+                    theme === 'dark' 
+                      ? 'border-[#e18d58] text-white hover:bg-[#e18d58]/20' 
+                      : 'border-[#800000] text-[#800000] hover:bg-background',
+                    selectedSport === category.id && (
+                      theme === 'dark' 
+                        ? 'font-bold bg-[#e18d58]/20' 
+                        : 'font-bold'
+                    )
+                  )}
                   onClick={() => setSelectedSport(category.id)}
                 >
                   {category.name}
@@ -123,16 +150,42 @@ export default function MentorsPage() {
             
             {/* Tabs for Mentors and Coaches */}
             <Tabs defaultValue="mentors" className="w-full">
-              <TabsList className="grid w-full max-w-md grid-cols-2 mb-6">
-                <TabsTrigger value="mentors">Mentors</TabsTrigger>
-                <TabsTrigger value="coaches">Verified Coaches</TabsTrigger>
+              <TabsList className={cn(
+                "grid w-full max-w-md grid-cols-2 mb-6 bg-nav-bg border rounded-lg",
+                theme === 'dark' ? 'border-[#e18d58]' : 'border-[#800000]'
+              )}>
+                <TabsTrigger 
+                  value="mentors" 
+                  className={cn(
+                    "data-[state=active]:bg-[#800000] data-[state=active]:text-white",
+                    theme === 'dark' 
+                      ? 'text-white data-[state=active]:bg-[#e18d58]' 
+                      : 'text-[#800000]'
+                  )}
+                >
+                  Mentors
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="coaches" 
+                  className={cn(
+                    "data-[state=active]:bg-[#800000] data-[state=active]:text-white",
+                    theme === 'dark' 
+                      ? 'text-white data-[state=active]:bg-[#e18d58]' 
+                      : 'text-[#800000]'
+                  )}
+                >
+                  Verified Coaches
+                </TabsTrigger>
               </TabsList>
               
               {/* Mentors Tab */}
               <TabsContent value="mentors">
                 {isLoading ? (
                   <div className="flex justify-center py-12">
-                    <Loader2 className="h-8 w-8 animate-spin text-secondary" />
+                    <Loader2 className={cn(
+                      "h-8 w-8 animate-spin",
+                      theme === 'dark' ? 'text-[#e18d58]' : 'text-[#800000]'
+                    )} />
                   </div>
                 ) : mentors && mentors.length > 0 ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -141,14 +194,29 @@ export default function MentorsPage() {
                     ))}
                   </div>
                 ) : (
-                  <div className="text-center py-12 bg-card rounded-xl border border-border">
+                  <div className={cn(
+                    "text-center py-12 bg-nav-bg rounded-xl border",
+                    theme === 'dark' ? 'border-[#e18d58]' : 'border-[#800000]'
+                  )}>
                     <div className="flex justify-center mb-4">
-                      <div className="bg-muted h-16 w-16 rounded-full flex items-center justify-center">
-                        <Award className="h-8 w-8 text-muted-foreground" />
+                      <div className={cn(
+                        "bg-background h-16 w-16 rounded-full flex items-center justify-center border",
+                        theme === 'dark' ? 'border-[#e18d58]' : 'border-[#800000]'
+                      )}>
+                        <Award className={cn(
+                          "h-8 w-8",
+                          theme === 'dark' ? 'text-[#e18d58]' : 'text-[#800000]'
+                        )} />
                       </div>
                     </div>
-                    <h3 className="text-lg font-medium mb-2">No Mentors Found</h3>
-                    <p className="text-muted-foreground max-w-md mx-auto">
+                    <h3 className={cn(
+                      "text-lg font-bold mb-2",
+                      theme === 'dark' ? 'text-white' : 'text-[#800000]'
+                    )}>No Mentors Found</h3>
+                    <p className={cn(
+                      "max-w-md mx-auto",
+                      theme === 'dark' ? 'text-white/70' : 'text-[#800000]/70'
+                    )}>
                       {searchQuery || selectedSport !== "all"
                         ? "Try adjusting your search filters to find mentors."
                         : "There are no mentors available at the moment. Check back later!"}
@@ -161,7 +229,10 @@ export default function MentorsPage() {
               <TabsContent value="coaches">
                 {isLoading ? (
                   <div className="flex justify-center py-12">
-                    <Loader2 className="h-8 w-8 animate-spin text-secondary" />
+                    <Loader2 className={cn(
+                      "h-8 w-8 animate-spin",
+                      theme === 'dark' ? 'text-[#e18d58]' : 'text-[#800000]'
+                    )} />
                   </div>
                 ) : coaches && coaches.length > 0 ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -170,14 +241,29 @@ export default function MentorsPage() {
                     ))}
                   </div>
                 ) : (
-                  <div className="text-center py-12 bg-card rounded-xl border border-border">
+                  <div className={cn(
+                    "text-center py-12 bg-nav-bg rounded-xl border",
+                    theme === 'dark' ? 'border-[#e18d58]' : 'border-[#800000]'
+                  )}>
                     <div className="flex justify-center mb-4">
-                      <div className="bg-muted h-16 w-16 rounded-full flex items-center justify-center">
-                        <Award className="h-8 w-8 text-muted-foreground" />
+                      <div className={cn(
+                        "bg-background h-16 w-16 rounded-full flex items-center justify-center border",
+                        theme === 'dark' ? 'border-[#e18d58]' : 'border-[#800000]'
+                      )}>
+                        <Award className={cn(
+                          "h-8 w-8",
+                          theme === 'dark' ? 'text-[#e18d58]' : 'text-[#800000]'
+                        )} />
                       </div>
                     </div>
-                    <h3 className="text-lg font-medium mb-2">No Coaches Found</h3>
-                    <p className="text-muted-foreground max-w-md mx-auto">
+                    <h3 className={cn(
+                      "text-lg font-bold mb-2",
+                      theme === 'dark' ? 'text-white' : 'text-[#800000]'
+                    )}>No Coaches Found</h3>
+                    <p className={cn(
+                      "max-w-md mx-auto",
+                      theme === 'dark' ? 'text-white/70' : 'text-[#800000]/70'
+                    )}>
                       {searchQuery || selectedSport !== "all"
                         ? "Try adjusting your search filters to find coaches."
                         : "There are no verified coaches available at the moment. Check back later!"}
@@ -195,73 +281,111 @@ export default function MentorsPage() {
 }
 
 function MentorCard({ user }: { user: any }) {
+  const { theme } = useTheme();
+  
   return (
-    <Card className="overflow-hidden hover:border-primary transition-colors">
-      <CardContent className="p-0">
-        <div className="bg-primary h-12"></div>
-        <div className="p-4 pt-0 -mt-6">
-          <div className="flex justify-center">
-            <AvatarWithBadge
-              src={user.profileImage}
-              fallback={user.name?.[0]?.toUpperCase() || user.username[0].toUpperCase()}
-              size="md"
-              role={user.role}
-              verified={user.verificationStatus}
-            />
-          </div>
-          
-          <div className="text-center mt-3">
-            <h3 className="font-semibold">{user.name || user.username}</h3>
-            <p className="text-sm text-muted-foreground">@{user.username}</p>
-            
-            <div className="flex justify-center flex-wrap gap-1 mt-2">
-              {user.interests && user.interests.slice(0, 3).map((interest: string, idx: number) => (
-                <Badge key={idx} variant="outline" className="text-xs">
-                  {interest}
-                </Badge>
-              ))}
-              {user.interests && user.interests.length > 3 && (
-                <Badge variant="outline" className="text-xs">
-                  +{user.interests.length - 3}
-                </Badge>
-              )}
+    <Card className={cn(
+      "bg-nav-bg transition-colors",
+      theme === 'dark' ? 'border-[#e18d58]' : 'border-[#800000]'
+    )}>
+      <CardContent className="p-4">
+        <div className="flex items-start gap-4">
+          <AvatarWithBadge 
+            src={user.profileImage}
+            fallback={user.name?.[0]?.toUpperCase() || user.username[0].toUpperCase()}
+            size="md"
+            role={user.role}
+            verified={user.verificationStatus}
+            className={cn(
+              theme === 'dark' ? 'border-[#e18d58]' : 'border-[#800000]'
+            )}
+          />
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center justify-between gap-2">
+              <div>
+                <h3 className={cn(
+                  "font-semibold truncate",
+                  theme === 'dark' ? 'text-white' : 'text-[#800000]'
+                )}>
+                  {user.name || user.username}
+                </h3>
+                <p className={cn(
+                  "text-sm",
+                  theme === 'dark' ? 'text-white/70' : 'text-[#800000]/70'
+                )}>
+                  {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
+                </p>
+              </div>
+              <div className="flex items-center gap-1">
+                <Star className={cn(
+                  "h-4 w-4",
+                  theme === 'dark' ? 'text-[#e18d58]' : 'text-[#800000]'
+                )} />
+                <span className={cn(
+                  "font-medium",
+                  theme === 'dark' ? 'text-white' : 'text-[#800000]'
+                )}>
+                  {user.rating || "4.5"}
+                </span>
+              </div>
             </div>
             
+            {user.interests && user.interests.length > 0 && (
+              <div className="flex flex-wrap gap-1 mt-2">
+                {user.interests.map((interest: string) => (
+                  <Badge 
+                    key={interest}
+                    variant="outline"
+                    className={cn(
+                      "text-xs bg-nav-bg",
+                      theme === 'dark' 
+                        ? 'border-[#e18d58] text-white' 
+                        : 'border-[#800000] text-[#800000]'
+                    )}
+                  >
+                    {interest}
+                  </Badge>
+                ))}
+              </div>
+            )}
+            
             {user.bio && (
-              <p className="mt-3 text-sm text-foreground line-clamp-2">
+              <p className={cn(
+                "text-sm mt-2 line-clamp-2",
+                theme === 'dark' ? 'text-white/70' : 'text-[#800000]/70'
+              )}>
                 {user.bio}
               </p>
             )}
             
-            <div className="flex justify-center gap-4 mt-4 text-sm">
-              <div className="flex flex-col items-center">
-                <div className="flex items-center text-yellow-500">
-                  <Star className="h-4 w-4 fill-current" />
-                  <span className="ml-1 font-medium">4.8</span>
-                </div>
-                <span className="text-xs text-muted-foreground">Rating</span>
+            <div className="flex items-center justify-between mt-4">
+              <div className="flex items-center gap-2">
+                <MessageSquare className={cn(
+                  "h-4 w-4",
+                  theme === 'dark' ? 'text-[#e18d58]' : 'text-[#800000]'
+                )} />
+                <span className={cn(
+                  "text-sm",
+                  theme === 'dark' ? 'text-white/70' : 'text-[#800000]/70'
+                )}>
+                  {user.responseTime || "Usually responds in 24h"}
+                </span>
               </div>
               
-              <div className="flex flex-col items-center">
-                <span className="font-medium">24</span>
-                <span className="text-xs text-muted-foreground">Mentees</span>
-              </div>
-              
-              <div className="flex flex-col items-center">
-                <span className="font-medium">3</span>
-                <span className="text-xs text-muted-foreground">Years</span>
-              </div>
-            </div>
-            
-            <div className="mt-4 grid grid-cols-2 gap-2">
-              <Link href={`/profile/${user.username}`}>
-                <Button variant="outline" size="sm" className="w-full">
-                  Profile
+              <Link href={`/mentors/${user.id}`}>
+                <Button 
+                  size="sm"
+                  className={cn(
+                    "bg-nav-bg border",
+                    theme === 'dark' 
+                      ? 'border-[#e18d58] text-white hover:bg-[#e18d58]/20' 
+                      : 'border-[#800000] text-[#800000] hover:bg-background'
+                  )}
+                >
+                  View Profile
+                  <ChevronRight className="h-4 w-4 ml-1" />
                 </Button>
               </Link>
-              <Button size="sm" className="w-full bg-secondary text-white hover:bg-secondary-dark">
-                Connect
-              </Button>
             </div>
           </div>
         </div>

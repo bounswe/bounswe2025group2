@@ -1,0 +1,62 @@
+:root {
+  /* Light theme variables */
+  --background: #f0f0f0;
+  --text: #000000;
+  --sub-text: #800000;
+  --sub-text-2: #8d0000;
+  --image: #800000;
+  --mention-text: #740000;
+  --nav-bar: #f0f0f0;
+  --border: #800000;
+  --active: #740000;
+  --passive: #9a0000;
+}
+
+/* Dark theme variables */
+:root.dark {
+  --background: #111111;
+  --text: #ffffff;
+  --sub-text: #777777;
+  --sub-text-2: #999999;
+  --image: #777777;
+  --mention-text: #e18d58;
+  --nav-bar: #333333;
+  --border: #f0f0f0;
+  --active: #777777;
+  --passive: #555555;
+}
+
+/* Base styles */
+body {
+  background-color: var(--background);
+  color: var(--text);
+}
+
+/* Utility classes */
+.text-sub {
+  color: var(--sub-text);
+}
+
+.text-sub-2 {
+  color: var(--sub-text-2);
+}
+
+.mention {
+  color: var(--mention-text);
+}
+
+.nav-bg {
+  background-color: var(--nav-bar);
+}
+
+.border-theme {
+  border-color: var(--border);
+}
+
+.active {
+  color: var(--active);
+}
+
+.passive {
+  color: var(--passive);
+} 

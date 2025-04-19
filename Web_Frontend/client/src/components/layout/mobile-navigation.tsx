@@ -4,9 +4,11 @@ import {
   Users,
   MessageSquare,
   User,
-  Plus
+  Plus,
+  Settings
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useTheme } from "@/theme/ThemeContext";
 
 type MobileNavigationProps = {
   activeTab?: string;
@@ -14,6 +16,7 @@ type MobileNavigationProps = {
 
 export default function MobileNavigation({ activeTab = "home" }: MobileNavigationProps) {
   const [location] = useLocation();
+  const { theme } = useTheme();
 
   // Navigation items
   const navItems = [
@@ -32,7 +35,7 @@ export default function MobileNavigation({ activeTab = "home" }: MobileNavigatio
     {
       href: "/create",
       icon: (
-        <div className="w-12 h-12 rounded-full bg-secondary flex items-center justify-center -mt-5 shadow-lg border-4 border-white">
+        <div className="w-12 h-12 rounded-full nav-bg flex items-center justify-center -mt-5 shadow-lg border-4 border-theme">
           <Plus className="h-6 w-6 text-white" />
         </div>
       ),
@@ -46,10 +49,10 @@ export default function MobileNavigation({ activeTab = "home" }: MobileNavigatio
       id: "forum"
     },
     {
-      href: "/mentors",
-      icon: <User className="h-6 w-6" />,
-      label: "Mentors",
-      id: "mentors"
+      href: "/settings",
+      icon: <Settings className="h-6 w-6" />,
+      label: "Settings",
+      id: "settings"
     }
   ];
 
@@ -59,7 +62,10 @@ export default function MobileNavigation({ activeTab = "home" }: MobileNavigatio
   }
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-neutral-200 flex md:hidden z-30">
+    <nav className={cn(
+      "fixed bottom-0 left-0 right-0 nav-bg border-t border-theme flex md:hidden z-30",
+      theme === 'dark' ? 'text-white' : 'text-black'
+    )}>
       {navItems.map((item) => (
         <Link
           key={item.id}
@@ -69,8 +75,8 @@ export default function MobileNavigation({ activeTab = "home" }: MobileNavigatio
             item.id === "create" 
               ? "" 
               : activeTab === item.id 
-                ? "text-secondary-dark" 
-                : "text-neutral-500"
+                ? "active" 
+                : "passive"
           )}
         >
           {item.icon}

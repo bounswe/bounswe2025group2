@@ -27,11 +27,11 @@ export default function GoalProgress({ goal, showTitle = false }: GoalProgressPr
   
   // Determine status color
   const getStatusColor = () => {
-    if (goal.status === "completed") return "bg-green-500";
-    if (progressPercentage >= 75) return "bg-green-400";
-    if (progressPercentage >= 50) return "bg-yellow-400";
-    if (progressPercentage >= 25) return "bg-orange-400";
-    return "bg-secondary-light";
+    if (goal.status === "completed") return "bg-active";
+    if (progressPercentage >= 75) return "bg-active";
+    if (progressPercentage >= 50) return "bg-subText";
+    if (progressPercentage >= 25) return "bg-subText2";
+    return "bg-passive";
   };
 
   return (
