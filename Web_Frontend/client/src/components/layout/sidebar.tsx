@@ -4,6 +4,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useQuery } from "@tanstack/react-query";
 import GoalProgress from "@/components/goals/goal-progress";
 import { cn } from "@/lib/utils";
+import { useTheme } from "@/theme/ThemeContext";
 import {
   Home,
   Users,
@@ -13,7 +14,8 @@ import {
   Award,
   FileText,
   LogOut,
-  Bell
+  Bell,
+  Settings
 } from "lucide-react";
 
 type SidebarProps = {
@@ -23,6 +25,7 @@ type SidebarProps = {
 export default function Sidebar({ activeTab = "home" }: SidebarProps) {
   const [location, setLocation] = useLocation();
   const { user, logoutMutation } = useAuth();
+  const { theme } = useTheme();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   // Get user's goals for the progress section
@@ -36,8 +39,11 @@ export default function Sidebar({ activeTab = "home" }: SidebarProps) {
     enabled: !!user
   });
 
-  const activeClasses = "bg-primary text-secondary-dark font-medium";
-  const inactiveClasses = "text-neutral-700 hover:bg-primary-light hover:text-secondary-dark";
+  const activeClasses = cn(
+    "font-medium",
+    theme === 'dark' ? 'text-white' : 'active'
+  );
+  const inactiveClasses = "passive hover:bg-opacity-10 hover:text-active";
 
   const links = [
     { 
@@ -87,6 +93,12 @@ export default function Sidebar({ activeTab = "home" }: SidebarProps) {
       label: "Programs", 
       icon: <FileText className="h-5 w-5 mr-3" />, 
       id: "programs" 
+    },
+    {
+      href: "/settings",
+      label: "Settings",
+      icon: <Settings className="h-5 w-5 mr-3" />,
+      id: "settings"
     }
   ];
 
@@ -132,8 +144,9 @@ export default function Sidebar({ activeTab = "home" }: SidebarProps) {
       <aside
         id="sidebar"
         className={cn(
-          "fixed left-0 top-14 bottom-0 w-56 bg-white border-r border-neutral-200 overflow-y-auto z-40",
-          isMobileMenuOpen ? "block" : "hidden md:block"
+          "fixed left-0 top-14 bottom-0 w-56 nav-bg border-r border-theme overflow-y-auto z-40",
+          isMobileMenuOpen ? "block" : "hidden md:block",
+          theme === 'dark' ? 'text-white' : 'text-black'
         )}
       >
         <nav className="p-3 space-y-1">
@@ -153,7 +166,7 @@ export default function Sidebar({ activeTab = "home" }: SidebarProps) {
 
           <button
             onClick={handleLogout}
-            className="flex items-center p-2 rounded-md w-full text-left text-neutral-700 hover:bg-primary-light hover:text-secondary-dark"
+            className="flex items-center p-2 rounded-md w-full text-left passive hover:bg-opacity-10 hover:text-active"
           >
             <LogOut className="h-5 w-5 mr-3" />
             <span>Logout</span>
@@ -161,9 +174,12 @@ export default function Sidebar({ activeTab = "home" }: SidebarProps) {
         </nav>
         
         {/* Goals progress section */}
-        <div className="p-3 mt-6 border-t border-neutral-200">
-          <div className="bg-neutral-100 rounded-lg p-3">
-            <h3 className="font-medium text-secondary-dark text-sm">Your Progress</h3>
+        <div className="p-3">
+          <div className={cn(
+            "rounded-lg p-3",
+            theme === 'dark' ? 'bg-background' : 'bg-background'
+          )}>
+            <h3 className="font-medium text-sm active">Your Progress</h3>
             
             {goals && goals.length > 0 ? (
               <div className="mt-2 space-y-3">
@@ -172,10 +188,13 @@ export default function Sidebar({ activeTab = "home" }: SidebarProps) {
                 ))}
               </div>
             ) : (
-              <div className="mt-2 text-sm text-neutral-600">
+              <div className="mt-2 text-sm text-sub">
                 <p>No active goals</p>
                 <Link href="/goals">
-                  <span className="text-secondary hover:underline text-xs mt-1 inline-block">
+                  <span className={cn(
+                    "hover:underline text-xs mt-1 inline-block",
+                    theme === 'dark' ? 'text-[#e18d58]' : 'active'
+                  )}>
                     Set your first goal →
                   </span>
                 </Link>

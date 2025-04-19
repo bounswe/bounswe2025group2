@@ -7,10 +7,22 @@ import {Input} from "@/components/ui/input.tsx";
 import { useQuery } from "@tanstack/react-query";
 import {useState} from "react";
 import {Button} from "@/components/ui/button.tsx";
+import { useTheme } from "@/theme/ThemeContext";
+import { cn } from "@/lib/utils";
+
+interface Notification {
+    id: number;
+    content: string;
+    createdAt: string;
+    read: boolean;
+    type: string;
+    userId: number;
+    relatedId?: number;
+}
 
 export default function NotificationsPage() {
-
-    const { data: notifications, isLoading } = useQuery({
+    const { theme } = useTheme();
+    const { data: notifications, isLoading } = useQuery<Notification[]>({
         queryKey: ["/api/notifications"],
         queryFn: async () => {
             const res = await fetch("/api/notifications");
@@ -18,6 +30,24 @@ export default function NotificationsPage() {
             return res.json();
         },
     });
+
+    const formatDate = (dateString: string) => {
+        const date = new Date(dateString);
+        const now = new Date();
+        const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60));
+        
+        if (diffInHours < 1) {
+            return "Just now";
+        } else if (diffInHours < 24) {
+            return `${diffInHours}h ago`;
+        } else {
+            return date.toLocaleDateString('en-US', { 
+                month: 'short', 
+                day: 'numeric', 
+                year: 'numeric' 
+            });
+        }
+    };
 
     return (
         <div className="min-h-screen bg-background">
@@ -29,42 +59,109 @@ export default function NotificationsPage() {
                         {/* Header */}
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4">
                             <div>
-                                <h2 className="text-2xl font-semibold text-secondary-dark">Notifications</h2>
-                                <p className="text-muted-foreground">your sportsmentor notifications</p>
+                                <h1 className={cn(
+                                    "text-2xl md:text-3xl font-bold",
+                                    theme === 'dark' ? 'text-white' : 'text-[#800000]'
+                                )}>Notifications</h1>
+                                <p className={cn(
+                                    theme === 'dark' ? 'text-white/70' : 'text-[#800000]/70'
+                                )}>your genfit notifications</p>
                             </div>
                         </div>
 
                         {/* Notifications */}
                         {isLoading ? (
                             <div className="flex justify-center py-12">
-                                <Loader2 className="h-8 w-8 animate-spin text-secondary" />
+                                <Loader2 className={cn(
+                                    "h-8 w-8 animate-spin",
+                                    theme === 'dark' ? 'text-[#e18d58]' : 'text-[#800000]'
+                                )} />
                             </div>
-                        ) : (notifications?.length > 0 ? (
-                            <div className="text-center bg-card rounded-xl border border-border">
-                                {notifications.map((n) => {
-                                    return (
-                                        <Card key={n.id}>
-                                            <CardContent>
-                                                <h2 className="text-lg font-semibold">{n.title}</h2>
-                                                <p className="text-sm text-muted-foreground">{n.message}</p>
-                                            </CardContent>
-                                        </Card>
-                                    );
-                                })}
+                        ) : notifications && notifications.length > 0 ? (
+                            <div className="space-y-4">
+                                {notifications.map((notification) => (
+                                    <Card 
+                                        key={notification.id} 
+                                        className={cn(
+                                            "bg-nav-bg transition-colors",
+                                            theme === 'dark' 
+                                                ? 'border-[#e18d58]' 
+                                                : 'border-[#800000]',
+                                            notification.read ? 'opacity-70' : ''
+                                        )}
+                                    >
+                                        <CardContent className="p-4">
+                                            <div className="flex items-start gap-3">
+                                                <div className={cn(
+                                                    "bg-background border p-2 rounded-full",
+                                                    theme === 'dark' 
+                                                        ? 'border-[#e18d58]' 
+                                                        : 'border-[#800000]'
+                                                )}>
+                                                    <Bell className={cn(
+                                                        "h-4 w-4",
+                                                        theme === 'dark' 
+                                                            ? 'text-[#e18d58]' 
+                                                            : 'text-[#800000]'
+                                                    )} />
+                                                </div>
+                                                <div className="flex-1">
+                                                    <p className={cn(
+                                                        "font-medium",
+                                                        theme === 'dark' 
+                                                            ? 'text-white' 
+                                                            : 'text-[#800000]'
+                                                    )}>{notification.content}</p>
+                                                    <p className={cn(
+                                                        "text-xs mt-1",
+                                                        theme === 'dark' 
+                                                            ? 'text-white/70' 
+                                                            : 'text-[#800000]/70'
+                                                    )}>
+                                                        {formatDate(notification.createdAt)}
+                                                    </p>
+                                                </div>
+                                                {!notification.read && (
+                                                    <div className={cn(
+                                                        "h-2 w-2 rounded-full",
+                                                        theme === 'dark' 
+                                                            ? 'bg-[#e18d58]' 
+                                                            : 'bg-[#800000]'
+                                                    )} />
+                                                )}
+                                            </div>
+                                        </CardContent>
+                                    </Card>
+                                ))}
                             </div>
                         ) : (
-                            <div className="text-center py-12 bg-card rounded-xl border border-border">
+                            <div className={cn(
+                                "text-center py-12 bg-nav-bg rounded-xl border",
+                                theme === 'dark' ? 'border-[#e18d58]' : 'border-[#800000]'
+                            )}>
                                 <div className="flex justify-center mb-4">
-                                    <div className="bg-muted h-16 w-16 rounded-full flex items-center justify-center">
-                                        <Bell className="h-8 w-8 text-muted-foreground" />
+                                    <div className={cn(
+                                        "bg-background h-16 w-16 rounded-full flex items-center justify-center border",
+                                        theme === 'dark' ? 'border-[#e18d58]' : 'border-[#800000]'
+                                    )}>
+                                        <Bell className={cn(
+                                            "h-8 w-8",
+                                            theme === 'dark' ? 'text-[#e18d58]' : 'text-[#800000]'
+                                        )} />
                                     </div>
                                 </div>
-                                <h3 className="text-lg font-medium mb-2">No Notifications Yet</h3>
-                                <p className="text-muted-foreground max-w-md mx-auto mb-6">
+                                <h3 className={cn(
+                                    "text-lg font-bold mb-2",
+                                    theme === 'dark' ? 'text-white' : 'text-[#800000]'
+                                )}>No Notifications Yet</h3>
+                                <p className={cn(
+                                    "max-w-md mx-auto",
+                                    theme === 'dark' ? 'text-white/70' : 'text-[#800000]/70'
+                                )}>
                                     there are no notifications yet. check back later!
                                 </p>
                             </div>
-                        ))}
+                        )}
                     </div>
                 </main>
             </div>

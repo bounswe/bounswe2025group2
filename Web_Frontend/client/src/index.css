@@ -4,33 +4,40 @@
 
 @layer base {
   :root {
-    --background: 120 20% 97%;
-    --foreground: 120 20% 8%;
+    --background: 0 0% 94%;
+    --foreground: 0 0% 0%;
+    --text: 0 0% 0%;
+    --sub-text: 0 100% 25%;
+    --sub-text-2: 0 100% 28%;
+    --nav-bg: 0 0% 94%;
+    --border: 0 100% 25%;
+    --active: 0 100% 23%;
+    --passive: 0 100% 30%;
 
-    --card: 120 20% 100%;
-    --card-foreground: 120 20% 8%;
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 0%;
 
-    --popover: 120 20% 100%;
-    --popover-foreground: 120 20% 8%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 0%;
 
-    --primary: 120 24% 74%;
-    --primary-foreground: 120 20% 8%;
+    --primary: 0 100% 25%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 120 20% 32%;
-    --secondary-foreground: 120 20% 97%;
+    --secondary: 0 100% 23%;
+    --secondary-foreground: 0 0% 100%;
 
-    --muted: 120 20% 94%;
-    --muted-foreground: 120 20% 40%;
+    --muted: 0 0% 94%;
+    --muted-foreground: 0 0% 40%;
 
-    --accent: 120 20% 94%;
-    --accent-foreground: 120 20% 32%;
+    --accent: 0 0% 94%;
+    --accent-foreground: 0 100% 25%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 120 20% 86%;
-    --input: 120 20% 86%;
-    --ring: 120 24% 74%;
+    --border: 0 100% 25%;
+    --input: 0 100% 25%;
+    --ring: 0 100% 25%;
 
     --radius: 0.5rem;
 
@@ -41,8 +48,41 @@
     --chart-5: 120 20% 96%;
   }
 
+  .dark {
+    --background: 0 0% 7%;
+    --foreground: 0 0% 100%;
+    --text: 0 0% 100%;
+    --sub-text: 0 0% 47%;
+    --sub-text-2: 0 0% 60%;
+    --nav-bg: 0 0% 20%;
+    --border: 0 0% 47%;
+    --active: 0 0% 47%;
+    --passive: 0 0% 33%;
+
+    --card: 0 0% 17%;
+    --card-foreground: 0 0% 100%;
+
+    --popover: 0 0% 17%;
+    --popover-foreground: 0 0% 100%;
+
+    --primary: 0 0% 47%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 0 0% 47%;
+    --secondary-foreground: 0 0% 100%;
+
+    --muted: 0 0% 20%;
+    --muted-foreground: 0 0% 60%;
+
+    --accent: 0 0% 20%;
+    --accent-foreground: 0 0% 47%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+  }
+
   * {
-    @apply border-border;
+    @apply border-[#800000];
   }
 
   body {

@@ -1,6 +1,7 @@
 import * as React from "react"
 import { Slot } from "@radix-ui/react-slot"
 import { cva, type VariantProps } from "class-variance-authority"
+import { useTheme } from "@/theme/ThemeContext"
 
 import { cn } from "@/lib/utils"
 
@@ -9,15 +10,12 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: "bg-primary text-primary-foreground hover:bg-primary/90",
-        destructive:
-          "bg-destructive text-destructive-foreground hover:bg-destructive/90",
-        outline:
-          "border border-input bg-background hover:bg-accent hover:text-accent-foreground",
-        secondary:
-          "bg-secondary text-secondary-foreground hover:bg-secondary/80",
-        ghost: "hover:bg-accent hover:text-accent-foreground",
-        link: "text-primary underline-offset-4 hover:underline",
+        default: "",
+        destructive: "",
+        outline: "",
+        secondary: "",
+        ghost: "",
+        link: "",
       },
       size: {
         default: "h-10 px-4 py-2",
@@ -40,12 +38,31 @@ export interface ButtonProps
 }
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant, size, asChild = false, ...props }, ref) => {
+  ({ className, variant, size, asChild = false, style, ...props }, ref) => {
     const Comp = asChild ? Slot : "button"
+    const { theme } = useTheme();
+    const colors = theme === 'dark' ? {
+      text: '#FFFFFF',
+      border: '#e18d58',
+      hover: '#e18d58'
+    } : {
+      text: '#800000',
+      border: '#800000',
+      hover: '#740000'
+    };
+
     return (
       <Comp
         className={cn(buttonVariants({ variant, size, className }))}
         ref={ref}
+        style={{
+          ...style,
+          '--button-text-color': colors.text,
+          '--button-border-color': colors.border,
+          '--button-hover-color': colors.hover,
+          color: colors.text,
+          borderColor: colors.border,
+        } as React.CSSProperties}
         {...props}
       />
     )

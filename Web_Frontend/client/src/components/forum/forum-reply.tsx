@@ -61,21 +61,23 @@ export default function ForumReply({ reply }: ForumReplyProps) {
     <div className="mt-3 pl-12">
       <div className="flex">
         <Link href={`/profile/${reply.user?.username}`} className="flex-shrink-0 mr-3">
-          <Avatar className="w-8 h-8">
+          <Avatar className="w-8 h-8 border border-[#800000]">
             <AvatarImage src={reply.user?.profileImage} alt={reply.user?.username || "User"} />
-            <AvatarFallback>{reply.user?.username?.[0]?.toUpperCase() || "U"}</AvatarFallback>
+            <AvatarFallback className="bg-nav-bg text-[#800000]">
+              {reply.user?.username ? reply.user.username[0].toUpperCase() : "U"}
+            </AvatarFallback>
           </Avatar>
         </Link>
         
         <div className="flex-1">
           <div className="flex items-center">
-            <Link href={`/profile/${reply.user?.username}`} className="font-medium text-neutral-800 mr-2">
+            <Link href={`/profile/${reply.user?.username}`} className="font-bold text-[#800000] mr-2">
               @{reply.user?.username}
             </Link>
-            <span className="text-xs text-neutral-500">{formatDate(reply.createdAt)}</span>
+            <span className="text-xs text-[#800000]/70">{formatDate(reply.createdAt)}</span>
           </div>
           
-          <div className="mt-1 text-neutral-700">
+          <div className="mt-1 text-[#800000]">
             {formatContent(reply.content)}
           </div>
           
@@ -84,7 +86,7 @@ export default function ForumReply({ reply }: ForumReplyProps) {
               <Button 
                 variant="ghost" 
                 size="sm" 
-                className={`flex items-center text-neutral-500 hover:text-secondary-dark p-0 h-auto ${hasVoted ? 'text-secondary-dark' : ''}`}
+                className={`flex items-center hover:text-[#800000] p-0 h-auto ${hasVoted ? 'text-[#800000] font-bold' : 'text-[#800000]/70'}`}
                 onClick={() => voteMutation.mutate()}
               >
                 <ThumbsUp className="h-4 w-4 mr-1" fill={hasVoted ? 'currentColor' : 'none'} />
@@ -94,7 +96,7 @@ export default function ForumReply({ reply }: ForumReplyProps) {
               <Button 
                 variant="ghost" 
                 size="sm"
-                className="flex items-center text-neutral-500 hover:text-secondary-dark p-0 h-auto"
+                className="flex items-center text-[#800000]/70 hover:text-[#800000] p-0 h-auto"
               >
                 <MessageSquare className="h-4 w-4 mr-1" />
                 <span className="text-xs">Reply</span>

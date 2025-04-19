@@ -5,11 +5,15 @@ import MobileHeader from "@/components/layout/mobile-header";
 import MobileNavigation from "@/components/layout/mobile-navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Loader2, ArrowRight, Trophy, Users, Calendar, MapPin } from "lucide-react";
-import { Link } from "wouter";
+import { Loader2, ArrowRight, Trophy, Users, Calendar, MapPin, Search, UserCircle } from "lucide-react";
+import { Link, useLocation } from "wouter";
+import { useTheme } from "@/theme/ThemeContext";
+import { cn } from "@/lib/utils";
 
 export default function HomePage() {
   const { user } = useAuth();
+  const { theme } = useTheme();
+  const [, setLocation] = useLocation();
 
   const { data: latestThreads, isLoading: threadsLoading } = useQuery({
     queryKey: ["/api/forum/threads"],
@@ -47,19 +51,59 @@ export default function HomePage() {
           <div className="max-w-6xl mx-auto">
             {/* Welcome Section */}
             <section className="mb-8">
-              <div className="bg-primary rounded-xl p-6 md:p-8">
-                <h1 className="text-2xl md:text-3xl font-bold text-secondary-dark mb-2">
+              <div className={cn(
+                "bg-nav-bg rounded-xl p-6 md:p-8 border",
+                theme === 'dark' ? 'border-[#e18d58]' : 'border-[#800000]'
+              )}>
+                <h1 className={cn(
+                  "text-2xl md:text-3xl font-bold mb-2",
+                  theme === 'dark' ? 'text-white' : 'text-[#800000]'
+                )}>
                   Welcome back, {user?.name || user?.username}!
                 </h1>
-                <p className="text-secondary mb-4 md:text-lg">
+                <p className={cn(
+                  "mb-4 md:text-lg",
+                  theme === 'dark' ? 'text-white/70' : 'text-[#800000]'
+                )}>
                   Ready to continue your fitness journey today?
                 </p>
                 <div className="flex flex-wrap gap-3">
-                  <Button className="bg-secondary text-white hover:bg-secondary-dark">
+                  <Button
+                    variant="default"
+                    className={cn(
+                      "flex items-center gap-2 bg-nav-bg border",
+                      theme === 'dark'
+                        ? 'border-[#e18d58] text-white hover:bg-[#e18d58]/20'
+                        : 'border-[#800000] text-[#800000] hover:bg-active'
+                    )}
+                  >
                     Set New Goal
                   </Button>
-                  <Button variant="outline" className="border-secondary text-secondary-dark">
-                    Explore Programs
+                  <Button
+                    variant="default"
+                    className={cn(
+                      "flex items-center gap-2 bg-nav-bg border",
+                      theme === 'dark'
+                        ? 'border-[#e18d58] text-white hover:bg-[#e18d58]/20'
+                        : 'border-[#800000] text-[#800000] hover:bg-active'
+                    )}
+                    onClick={() => setLocation("/programs")}
+                  >
+                    <Search size={20} />
+                    Browse Programs
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    className={cn(
+                      "flex items-center gap-2 bg-nav-bg border",
+                      theme === 'dark'
+                        ? 'border-[#e18d58] text-white hover:bg-[#e18d58]/20'
+                        : 'border-[#800000] text-[#800000] hover:bg-active'
+                    )}
+                    onClick={() => setLocation("/profile")}
+                  >
+                    <UserCircle size={20} />
+                    View Profile
                   </Button>
                 </div>
               </div>
@@ -68,106 +112,164 @@ export default function HomePage() {
             {/* Dashboard Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
               {/* Quick Stats */}
-              <Card>
+              <Card className={cn(
+                "bg-nav-bg border",
+                theme === 'dark' ? 'border-[#e18d58]' : 'border-[#800000]'
+              )}>
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-lg">Your Activity</CardTitle>
-                  <CardDescription>Stats for this week</CardDescription>
+                  <CardTitle className={cn(
+                    "text-lg",
+                    theme === 'dark' ? 'text-[#e18d58]' : 'text-[#800000]'
+                  )}>Your Activity</CardTitle>
+                  <CardDescription className={cn(
+                    theme === 'dark' ? 'text-white/70' : 'text-[#800000]'
+                  )}>Stats for this week</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-2 gap-4">
-                    <div className="bg-muted p-3 rounded-lg text-center">
-                      <p className="text-2xl font-bold text-secondary">2</p>
-                      <p className="text-sm text-muted-foreground">Active Goals</p>
-                    </div>
-                    <div className="bg-muted p-3 rounded-lg text-center">
-                      <p className="text-2xl font-bold text-secondary">3</p>
-                      <p className="text-sm text-muted-foreground">Forum Posts</p>
-                    </div>
-                    <div className="bg-muted p-3 rounded-lg text-center">
-                      <p className="text-2xl font-bold text-secondary">1</p>
-                      <p className="text-sm text-muted-foreground">Challenges</p>
-                    </div>
-                    <div className="bg-muted p-3 rounded-lg text-center">
-                      <p className="text-2xl font-bold text-secondary">5</p>
-                      <p className="text-sm text-muted-foreground">Days Active</p>
-                    </div>
+                    {[
+                      { value: "2", label: "Active Goals" },
+                      { value: "3", label: "Forum Posts" },
+                      { value: "1", label: "Challenges" },
+                      { value: "5", label: "Days Active" }
+                    ].map((stat, index) => (
+                      <div key={index} className={cn(
+                        "bg-nav-bg p-3 rounded-lg text-center border",
+                        theme === 'dark' ? 'border-[#e18d58]' : 'border-[#800000]'
+                      )}>
+                        <p className={cn(
+                          "text-2xl font-bold",
+                          theme === 'dark' ? 'text-[#e18d58]' : 'text-[#800000]'
+                        )}>{stat.value}</p>
+                        <p className={cn(
+                          "text-sm",
+                          theme === 'dark' ? 'text-white/70' : 'text-[#800000]'
+                        )}>{stat.label}</p>
+                      </div>
+                    ))}
                   </div>
                 </CardContent>
               </Card>
 
               {/* Goal Progress */}
-              <Card>
+              <Card className={cn(
+                "bg-nav-bg border",
+                theme === 'dark' ? 'border-[#e18d58]' : 'border-[#800000]'
+              )}>
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-lg">Current Goal Progress</CardTitle>
+                  <CardTitle className={cn(
+                    "text-lg",
+                    theme === 'dark' ? 'text-[#e18d58]' : 'text-[#800000]'
+                  )}>Current Goal Progress</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    <div>
-                      <div className="flex justify-between text-sm mb-1">
-                        <span className="font-medium">Running Goal</span>
-                        <span>3/5 miles</span>
+                    {[
+                      { label: "Running Goal", progress: "3/5 miles", percent: "60%" },
+                      { label: "Basketball Practice", progress: "2/4 hours", percent: "50%" }
+                    ].map((goal, index) => (
+                      <div key={index}>
+                        <div className="flex justify-between text-sm mb-1">
+                          <span className={cn(
+                            "font-medium",
+                            theme === 'dark' ? 'text-white' : 'text-[#800000]'
+                          )}>{goal.label}</span>
+                          <span className={cn(
+                            theme === 'dark' ? 'text-white/70' : 'text-[#800000]'
+                          )}>{goal.progress}</span>
+                        </div>
+                        <div className="w-full bg-background rounded-full h-2.5">
+                          <div className={cn(
+                            "h-2.5 rounded-full",
+                            theme === 'dark' ? 'bg-[#e18d58]' : 'bg-[#800000]'
+                          )} style={{ width: goal.percent }}></div>
+                        </div>
                       </div>
-                      <div className="w-full bg-muted rounded-full h-2.5">
-                        <div className="bg-secondary h-2.5 rounded-full" style={{ width: "60%" }}></div>
-                      </div>
-                    </div>
-                    <div>
-                      <div className="flex justify-between text-sm mb-1">
-                        <span className="font-medium">Basketball Practice</span>
-                        <span>2/4 hours</span>
-                      </div>
-                      <div className="w-full bg-muted rounded-full h-2.5">
-                        <div className="bg-secondary h-2.5 rounded-full" style={{ width: "50%" }}></div>
-                      </div>
-                    </div>
-                    <Link href="/goals">
-                      <Button variant="link" className="p-0 h-auto">
-                        View all goals <ArrowRight className="h-4 w-4 ml-1" />
-                      </Button>
+                    ))}
+                    <Link href="/goals" className={cn(
+                      "flex items-center text-sm font-medium hover:underline",
+                      theme === 'dark' 
+                        ? 'text-[#e18d58] hover:text-[#e18d58]/80' 
+                        : 'text-[#800000] hover:text-[#800000]/80'
+                    )}>
+                      View all goals <ArrowRight className="h-4 w-4 ml-1" />
                     </Link>
                   </div>
                 </CardContent>
               </Card>
 
               {/* Active Challenges */}
-              <Card>
+              <Card className={cn(
+                "bg-nav-bg border",
+                theme === 'dark' ? 'border-[#e18d58]' : 'border-[#800000]'
+              )}>
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-lg">Active Challenges</CardTitle>
+                  <CardTitle className={cn(
+                    "text-lg",
+                    theme === 'dark' ? 'text-[#e18d58]' : 'text-[#800000]'
+                  )}>Active Challenges</CardTitle>
                 </CardHeader>
                 <CardContent>
                   {challengesLoading ? (
                     <div className="flex justify-center py-4">
-                      <Loader2 className="h-6 w-6 animate-spin text-secondary" />
+                      <Loader2 className={cn(
+                        "h-6 w-6 animate-spin",
+                        theme === 'dark' ? 'text-[#e18d58]' : 'text-[#800000]'
+                      )} />
                     </div>
                   ) : challenges && challenges.length > 0 ? (
                     <div className="space-y-3">
                       {challenges.slice(0, 2).map((challenge: any) => (
-                        <div key={challenge.id} className="flex items-center p-2 rounded-lg border border-border">
-                          <div className="bg-primary w-10 h-10 rounded-full flex items-center justify-center mr-3">
-                            <Trophy className="h-5 w-5 text-secondary" />
+                        <div key={challenge.id} className={cn(
+                          "flex items-center p-2 rounded-lg border bg-nav-bg",
+                          theme === 'dark' ? 'border-[#e18d58]' : 'border-[#800000]'
+                        )}>
+                          <div className={cn(
+                            "w-10 h-10 rounded-full flex items-center justify-center mr-3",
+                            theme === 'dark' ? 'bg-[#e18d58]/10' : 'bg-[#800000]/10'
+                          )}>
+                            <Trophy className={cn(
+                              "h-5 w-5",
+                              theme === 'dark' ? 'text-[#e18d58]' : 'text-[#800000]'
+                            )} />
                           </div>
                           <div className="flex-1">
-                            <h4 className="font-medium text-sm">{challenge.title}</h4>
-                            <p className="text-xs text-muted-foreground">
+                            <h4 className={cn(
+                              "font-medium text-sm",
+                              theme === 'dark' ? 'text-white' : 'text-[#800000]'
+                            )}>{challenge.title}</h4>
+                            <p className={cn(
+                              "text-xs",
+                              theme === 'dark' ? 'text-white/70' : 'text-[#800000]'
+                            )}>
                               {challenge.targetValue} {challenge.unit}
                             </p>
                           </div>
                         </div>
                       ))}
-                      <Link href="/challenges">
-                        <Button variant="link" className="p-0 h-auto">
-                          View all challenges <ArrowRight className="h-4 w-4 ml-1" />
-                        </Button>
+                      <Link href="/challenges" className={cn(
+                        "p-0 h-auto",
+                        theme === 'dark' 
+                          ? 'text-[#e18d58] hover:text-[#e18d58]/80' 
+                          : 'text-[#800000] hover:text-[#800000]/80'
+                      )}>
+                        View all challenges <ArrowRight className="h-4 w-4 ml-1" />
                       </Link>
                     </div>
                   ) : (
                     <div className="text-center py-4">
-                      <p className="text-muted-foreground mb-2">No active challenges</p>
-                      <Link href="/challenges">
-                        <Button size="sm" className="bg-secondary text-white hover:bg-secondary-dark">
-                          Join a challenge
-                        </Button>
-                      </Link>
+                      <p className={cn(
+                        "mb-2",
+                        theme === 'dark' ? 'text-white' : 'text-[#800000]'
+                      )}>No active challenges</p>
+                      <Button className={cn(
+                        "bg-nav-bg border",
+                        theme === 'dark'
+                          ? 'border-[#e18d58] text-white hover:bg-[#e18d58]/20'
+                          : 'border-[#800000] text-[#800000] hover:bg-active'
+                      )}>
+                        Join a challenge
+                      </Button>
                     </div>
                   )}
                 </CardContent>
@@ -177,33 +279,54 @@ export default function HomePage() {
             {/* Recent Forum Posts */}
             <section className="mb-8">
               <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-semibold text-secondary-dark">Recent Community Discussions</h2>
-                <Link href="/forum">
-                  <Button variant="link" className="text-secondary">
-                    View All
-                  </Button>
+                <h2 className={cn(
+                  "text-xl font-semibold",
+                  theme === 'dark' ? 'text-[#e18d58]' : 'text-[#800000]'
+                )}>Recent Community Discussions</h2>
+                <Link href="/forum" className={cn(
+                  "flex items-center text-sm font-medium hover:underline",
+                  theme === 'dark' 
+                    ? 'text-[#e18d58] hover:text-[#e18d58]/80' 
+                    : 'text-[#800000] hover:text-[#800000]/80'
+                )}>
+                  View All <ArrowRight className="h-4 w-4 ml-1" />
                 </Link>
               </div>
               {threadsLoading ? (
                 <div className="flex justify-center py-8">
-                  <Loader2 className="h-8 w-8 animate-spin text-secondary" />
+                  <Loader2 className={cn(
+                    "h-8 w-8 animate-spin",
+                    theme === 'dark' ? 'text-[#e18d58]' : 'text-[#800000]'
+                  )} />
                 </div>
               ) : latestThreads && latestThreads.length > 0 ? (
                 <div className="grid grid-cols-1 gap-4">
                   {latestThreads.map((thread: any) => (
-                    <div key={thread.id} className="bg-card rounded-xl border border-border p-4">
+                    <div key={thread.id} className={cn(
+                      "rounded-xl border p-4 bg-nav-bg",
+                      theme === 'dark' ? 'border-[#e18d58]' : 'border-[#800000]'
+                    )}>
                       <div className="flex items-center mb-2">
                         <Link href={`/forum/${thread.id}`}>
-                          <h3 className="font-medium text-secondary hover:text-secondary-dark">
+                          <h3 className={cn(
+                            "font-medium",
+                            theme === 'dark' ? 'text-[#e18d58] hover:text-[#e18d58]/80' : 'text-[#800000] hover:text-[#800000]/80'
+                          )}>
                             /{thread.category}
                           </h3>
                         </Link>
                       </div>
-                      <p className="text-sm text-foreground mb-3">
+                      <p className={cn(
+                        "text-sm mb-3",
+                        theme === 'dark' ? 'text-white/70' : 'text-[#800000]'
+                      )}>
                         {thread.firstPost?.content?.substring(0, 150)}
                         {thread.firstPost?.content?.length > 150 ? "..." : ""}
                       </p>
-                      <div className="flex items-center text-xs text-muted-foreground">
+                      <div className={cn(
+                        "flex items-center text-xs",
+                        theme === 'dark' ? 'text-white/50' : 'text-[#800000]/70'
+                      )}>
                         <Users className="h-3 w-3 mr-1" />
                         <span className="mr-4">{thread.postCount} posts</span>
                         <Calendar className="h-3 w-3 mr-1" />
@@ -215,10 +338,21 @@ export default function HomePage() {
                   ))}
                 </div>
               ) : (
-                <div className="text-center py-8 bg-card rounded-xl border border-border">
-                  <p className="text-muted-foreground mb-3">No forum threads yet</p>
+                <div className={cn(
+                  "text-center py-8 rounded-xl border bg-nav-bg",
+                  theme === 'dark' ? 'border-[#e18d58]' : 'border-[#800000]'
+                )}>
+                  <p className={cn(
+                    "mb-3",
+                    theme === 'dark' ? 'text-white/70' : 'text-[#800000]'
+                  )}>No forum threads yet</p>
                   <Link href="/forum">
-                    <Button className="bg-secondary text-white hover:bg-secondary-dark">
+                    <Button className={cn(
+                      "bg-nav-bg border",
+                      theme === 'dark'
+                        ? 'border-[#e18d58] text-white hover:bg-[#e18d58]/20'
+                        : 'border-[#800000] text-[#800000] hover:bg-active'
+                    )}>
                       Start a discussion
                     </Button>
                   </Link>
@@ -229,24 +363,36 @@ export default function HomePage() {
             {/* Local Sports Programs */}
             <section>
               <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-semibold text-secondary-dark">
+                <h2 className={cn(
+                  "text-xl font-semibold",
+                  theme === 'dark' ? 'text-[#e18d58]' : 'text-[#800000]'
+                )}>
                   Nearby Sports Programs
                 </h2>
-                <Link href="/programs">
-                  <Button variant="link" className="text-secondary">
-                    View All
-                  </Button>
+                <Link href="/programs" className={cn(
+                  "flex items-center text-sm font-medium hover:underline",
+                  theme === 'dark' 
+                    ? 'text-[#e18d58] hover:text-[#e18d58]/80' 
+                    : 'text-[#800000] hover:text-[#800000]/80'
+                )}>
+                  View All <ArrowRight className="h-4 w-4 ml-1" />
                 </Link>
               </div>
               {programsLoading ? (
                 <div className="flex justify-center py-8">
-                  <Loader2 className="h-8 w-8 animate-spin text-secondary" />
+                  <Loader2 className={cn(
+                    "h-8 w-8 animate-spin",
+                    theme === 'dark' ? 'text-[#e18d58]' : 'text-[#800000]'
+                  )} />
                 </div>
               ) : programs && programs.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {programs.slice(0, 3).map((program: any) => (
-                    <Card key={program.id} className="overflow-hidden">
-                      <div className="bg-primary h-40 flex items-center justify-center">
+                    <Card key={program.id} className={cn(
+                      "overflow-hidden border bg-nav-bg",
+                      theme === 'dark' ? 'border-[#e18d58]' : 'border-[#800000]'
+                    )}>
+                      <div className="bg-nav-bg h-40 flex items-center justify-center">
                         {program.sportType === "Basketball" && (
                           <svg
                             xmlns="http://www.w3.org/2000/svg"
@@ -298,24 +444,43 @@ export default function HomePage() {
                         )}
                       </div>
                       <CardContent className="p-4">
-                        <h3 className="font-semibold mb-1">{program.name}</h3>
-                        <div className="flex items-center text-xs text-muted-foreground mb-2">
+                        <h3 className={cn(
+                          "font-semibold mb-1",
+                          theme === 'dark' ? 'text-white' : 'text-[#800000]'
+                        )}>{program.name}</h3>
+                        <div className={cn(
+                          "flex items-center text-xs mb-2",
+                          theme === 'dark' ? 'text-white/50' : 'text-[#800000]/70'
+                        )}>
                           <MapPin className="h-3 w-3 mr-1" />
                           <span>{program.location}</span>
                         </div>
-                        <p className="text-sm text-muted-foreground line-clamp-2 mb-3">{program.description}</p>
+                        <p className={cn(
+                          "text-sm line-clamp-2 mb-3",
+                          theme === 'dark' ? 'text-white/70' : 'text-[#800000]'
+                        )}>{program.description}</p>
                         <div className="flex flex-wrap gap-1 mb-3">
                           {program.ageGroups.map((age: string, index: number) => (
                             <span
                               key={index}
-                              className="inline-block px-2 py-1 bg-muted text-xs rounded-full"
+                              className={cn(
+                                "inline-block px-2 py-1 text-xs rounded-full border",
+                                theme === 'dark' 
+                                  ? 'border-[#e18d58] text-white bg-[#e18d58]/10' 
+                                  : 'border-[#800000] text-[#800000] bg-background'
+                              )}
                             >
                               {age}
                             </span>
                           ))}
                         </div>
                         <Link href={`/programs/${program.id}`}>
-                          <Button size="sm" variant="outline" className="w-full">
+                          <Button className={cn(
+                            "w-full bg-nav-bg border",
+                            theme === 'dark'
+                              ? 'border-[#e18d58] text-white hover:bg-[#e18d58]/20'
+                              : 'border-[#800000] text-[#800000] hover:bg-active'
+                          )}>
                             View Details
                           </Button>
                         </Link>
@@ -324,11 +489,22 @@ export default function HomePage() {
                   ))}
                 </div>
               ) : (
-                <div className="text-center py-8 bg-card rounded-xl border border-border">
-                  <p className="text-muted-foreground mb-3">No programs found in your area</p>
+                <div className={cn(
+                  "text-center py-8 rounded-xl border bg-nav-bg",
+                  theme === 'dark' ? 'border-[#e18d58]' : 'border-[#800000]'
+                )}>
+                  <p className={cn(
+                    "mb-3",
+                    theme === 'dark' ? 'text-white/70' : 'text-[#800000]'
+                  )}>No programs available in your area</p>
                   <Link href="/programs">
-                    <Button className="bg-secondary text-white hover:bg-secondary-dark">
-                      Explore All Programs
+                    <Button className={cn(
+                      "bg-nav-bg border",
+                      theme === 'dark'
+                        ? 'border-[#e18d58] text-white hover:bg-[#e18d58]/20'
+                        : 'border-[#800000] text-[#800000] hover:bg-active'
+                    )}>
+                      Browse all programs
                     </Button>
                   </Link>
                 </div>

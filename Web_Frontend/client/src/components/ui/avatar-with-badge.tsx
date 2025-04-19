@@ -45,9 +45,9 @@ export default function AvatarWithBadge({
   
   // Determine badge color based on role
   const getBadgeColor = () => {
-    if (role === "mentor") return "bg-primary-light text-secondary-dark";
-    if (role === "coach") return "bg-secondary text-white";
-    return "bg-neutral-200 text-neutral-700";
+    if (role === "mentor") return "bg-active text-text";
+    if (role === "coach") return "bg-subText text-text";
+    return "bg-passive text-text";
   };
   
   return (

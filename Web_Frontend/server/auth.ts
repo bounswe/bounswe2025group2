@@ -30,7 +30,7 @@ async function comparePasswords(supplied: string, stored: string) {
 
 export function setupAuth(app: Express) {
   const sessionSettings: session.SessionOptions = {
-    secret: process.env.SESSION_SECRET || "sportsmentorsecretkey",
+    secret: process.env.SESSION_SECRET || "genfitsecretkey",
     resave: false,
     saveUninitialized: false,
     store: storage.sessionStore,
@@ -110,9 +110,9 @@ export function setupAuth(app: Express) {
   });
 
   app.post("/api/login", (req, res, next) => {
-    passport.authenticate("local", (err, user, info) => {
+    passport.authenticate("local", (err: any, user: SelectUser | false, info: { message: string } | undefined) => {
       if (err) return next(err);
-      if (!user) return res.status(401).json({ message: info?.message || "Invalid login credentials" });
+      if (!user) return res.status(401).json({ message: info && info.message ? info.message : "Invalid login credentials" });
       
       req.login(user, (err) => {
         if (err) return next(err);
