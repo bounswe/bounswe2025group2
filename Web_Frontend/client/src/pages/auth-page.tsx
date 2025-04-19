@@ -25,6 +25,7 @@ import { cn } from "@/lib/utils";
 const loginSchema = z.object({
   username: z.string().min(1, "Username is required"),
   password: z.string().min(1, "Password is required"),
+  rememberMe: z.boolean().optional(),
 });
 
 const registerSchema = z.object({
@@ -62,6 +63,7 @@ export default function AuthPage() {
     defaultValues: {
       username: "",
       password: "",
+      rememberMe : false,
     },
   });
 
@@ -305,6 +307,14 @@ export default function AuthPage() {
                         </p>
                       )}
                     </div>
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        id="rememberMe"
+                        {...loginForm.register("rememberMe")}
+                        className="accent-primary"/>
+                        <Label htmlFor="rememberMe">Remember Me</Label>
+                      </div>
                     <Button
                       type="submit"
                       className={cn(
