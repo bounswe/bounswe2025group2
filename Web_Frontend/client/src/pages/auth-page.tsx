@@ -23,6 +23,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 const loginSchema = z.object({
   username: z.string().min(1, "Username is required"),
   password: z.string().min(1, "Password is required"),
+  rememberMe: z.boolean().optional(),
 });
 
 const registerSchema = z.object({
@@ -42,6 +43,7 @@ const registerSchema = z.object({
   name: z.string().optional(),
 });
 
+
 type LoginFormValues = z.infer<typeof loginSchema>;
 type RegisterFormValues = z.infer<typeof registerSchema>;
 
@@ -59,6 +61,7 @@ export default function AuthPage() {
     defaultValues: {
       username: "",
       password: "",
+      rememberMe : false,
     },
   });
 
@@ -68,7 +71,7 @@ export default function AuthPage() {
       username: "",
       email: "",
       password: "",
-      name: "",
+      name: "",      
     },
   });
 
@@ -105,7 +108,7 @@ export default function AuthPage() {
               SportsMentor
             </h1>
             <p className="text-muted-foreground md:text-lg">
-              Connect with local sports programs, mentors, and coaches to achieve your fitness goals
+              Connect with local sports programs, mentors, and coaches to achieve your fitness goals 
             </p>
           </div>
           <div className="space-y-4 text-muted-foreground">
@@ -239,20 +242,28 @@ export default function AuthPage() {
                         </p>
                       )}
                     </div>
-                    <Button
-                      type="submit"
-                      className="w-full bg-secondary hover:bg-secondary-dark"
-                      disabled={loginMutation.isPending}
-                    >
-                      {loginMutation.isPending ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Logging in...
-                        </>
-                      ) : (
-                        "Login"
-                      )}
-                    </Button>
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        id="rememberMe"
+                        {...loginForm.register("rememberMe")}
+                        className="accent-primary"/>
+                        <Label htmlFor="rememberMe">Remember Me</Label>
+                      </div>
+                      <Button
+  type="submit"
+  className="w-full bg-secondary hover:bg-secondary-dark"
+  disabled={loginMutation.isPending}
+>
+  {loginMutation.isPending ? (
+    <>
+      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+      Logging in...
+    </>
+  ) : (
+    "Login"
+  )}
+</Button>
                   </form>
                 </CardContent>
                 <CardFooter className="flex flex-col">
