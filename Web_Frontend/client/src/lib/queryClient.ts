@@ -1,5 +1,8 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
 
+// Add API base URL configuration
+const API_BASE_URL = "http://localhost:8000"; // Update this to match your backend server URL
+
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
     const text = (await res.text()) || res.statusText;
@@ -12,14 +15,26 @@ export async function apiRequest(
   url: string,
   data?: unknown | undefined,
 ): Promise<Response> {
-  const res = await fetch(url, {
+  const fullUrl = `${API_BASE_URL}${url}`;
+  
+  console.log(`Making ${method} request to:`, fullUrl);
+  if (data) {
+    console.log('Request data:', {
+      ...data,
+      password: data && typeof data === 'object' && 'password' in data ? '[REDACTED]' : undefined
+    });
+  }
+
+  const res = await fetch(fullUrl, {
     method,
-    headers: data ? { "Content-Type": "application/json" } : {},
+    headers: {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+    },
     body: data ? JSON.stringify(data) : undefined,
-    credentials: "include",
   });
 
-  await throwIfResNotOk(res);
+  console.log(`Response status:`, res.status, res.statusText);
   return res;
 }
 
@@ -29,9 +44,8 @@ export const getQueryFn: <T>(options: {
 }) => QueryFunction<T> =
   ({ on401: unauthorizedBehavior }) =>
   async ({ queryKey }) => {
-    const res = await fetch(queryKey[0] as string, {
-      credentials: "include",
-    });
+    const fullUrl = `${API_BASE_URL}${queryKey[0]}`;
+    const res = await fetch(fullUrl);
 
     if (unauthorizedBehavior === "returnNull" && res.status === 401) {
       return null;

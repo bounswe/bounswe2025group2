@@ -8,9 +8,10 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Menu, Search, Bell } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTheme } from "@/theme/ThemeContext";
+import { apiRequest } from "@/lib/queryClient";
 
 export default function MobileHeader() {
-  const { user } = useAuth();
+  const { user, logoutMutation } = useAuth();
   const { theme } = useTheme();
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
@@ -19,7 +20,7 @@ export default function MobileHeader() {
   const { data: notifications } = useQuery({
     queryKey: ["/api/notifications"],
     queryFn: async () => {
-      const res = await fetch("/api/notifications");
+      const res = await apiRequest("GET", "/api/notifications");
       if (!res.ok) throw new Error("Failed to fetch notifications");
       return res.json();
     },
@@ -27,6 +28,10 @@ export default function MobileHeader() {
   });
 
   const unreadCount = notifications?.filter((n: any) => !n.read).length || 0;
+
+  const handleLogout = () => {
+    logoutMutation.mutate();
+  };
 
   const toggleSidebar = () => {
     const sidebar = document.getElementById('sidebar');
@@ -38,10 +43,13 @@ export default function MobileHeader() {
 
   const getUserInitials = () => {
     if (!user) return "U";
-    if (user.name) {
+    if (user.name && typeof user.name === 'string') {
       return user.name.split(' ').map(part => part[0]).join('').toUpperCase();
     }
-    return user.username[0].toUpperCase();
+    if (user.username && typeof user.username === 'string') {
+      return user.username[0].toUpperCase();
+    }
+    return "U";
   };
 
   return (

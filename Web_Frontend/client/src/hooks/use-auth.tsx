@@ -22,14 +22,16 @@ type AuthContextType = {
 type LoginData = {
   username: string;
   password: string;
+  remember_me?: boolean;
 };
 
 type RegisterData = {
   username: string;
   email: string;
   password: string;
-  name?: string;
-  role?: string;
+  user_type: "User" | "Coach";
+  verification_file?: string;
+  remember_me?: boolean;
 };
 
 export const AuthContext = createContext<AuthContextType | null>(null);
@@ -47,17 +49,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const loginMutation = useMutation({
     mutationFn: async (credentials: LoginData) => {
-      const res = await apiRequest("POST", "/api/login", credentials);
-      return await res.json();
+      const res = await apiRequest("POST", "/api/login/", credentials);
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || "Invalid login credentials");
+      }
+      const userData = await res.json();
+      return userData;
     },
-    onSuccess: (user: User) => {
-      queryClient.setQueryData(["/api/user"], user);
-      // Force a refetch to ensure we have the latest user data
+    onSuccess: (userData) => {
+      // Set the user data immediately
+      queryClient.setQueryData(["/api/user"], userData);
+      // Then invalidate to ensure we have the latest data
       queryClient.invalidateQueries({queryKey: ["/api/user"]});
       toast({
         title: "Login successful!",
-        description: `Welcome to GenFit, ${user.username}!`,
-        variant: "default",
+        description: "Welcome back!",
       });
     },
     onError: (error: Error) => {
@@ -71,19 +78,65 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const registerMutation = useMutation({
     mutationFn: async (userData: RegisterData) => {
-      const res = await apiRequest("POST", "/api/register", userData);
-      return await res.json();
+      console.log("Attempting registration with data:", {
+        ...userData,
+        password: '[REDACTED]'
+      });
+      try {
+        // Add trailing slash to the endpoint
+        const res = await apiRequest("POST", "/api/register/", userData);
+        
+        // Try to read the response as text first
+        const textResponse = await res.text();
+        console.log("Raw response:", textResponse);
+        
+        let jsonResponse;
+        try {
+          jsonResponse = JSON.parse(textResponse);
+        } catch (e) {
+          console.error("Failed to parse response as JSON:", e);
+          throw new Error("Server returned invalid response format");
+        }
+
+        if (!res.ok) {
+          console.error("Registration failed with status:", res.status, "Error:", jsonResponse);
+          throw new Error(jsonResponse.message || `Registration failed: ${res.status} ${res.statusText}`);
+        }
+
+        console.log("Registration successful, response:", {
+          ...jsonResponse,
+          password: '[REDACTED]'
+        });
+        return jsonResponse;
+      } catch (error) {
+        console.error("Registration request failed:", error);
+        throw error;
+      }
     },
-    onSuccess: (user: User) => {
-      queryClient.setQueryData(["/api/user"], user);
-      // Force a refetch to ensure we have the latest user data
-      queryClient.invalidateQueries({queryKey: ["/api/user"]});
+    onSuccess: async (data, variables) => {
       toast({
         title: "Registration successful",
-        description: `Welcome to GenFit, ${user.username}!`,
+        description: "Logging you in...",
       });
+      
+      // Attempt to log in with the same credentials
+      try {
+        await loginMutation.mutateAsync({
+          username: variables.username,
+          password: variables.password,
+          remember_me: variables.remember_me
+        });
+      } catch (error) {
+        // If login fails, show a message but don't throw an error since registration was successful
+        toast({
+          title: "Auto-login failed",
+          description: "Please try logging in manually",
+          variant: "destructive",
+        });
+      }
     },
     onError: (error: Error) => {
+      console.error("Registration error:", error);
       toast({
         title: "Registration failed",
         description: error.message,
@@ -94,22 +147,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logoutMutation = useMutation({
     mutationFn: async () => {
-      await apiRequest("POST", "/api/logout");
+      try {
+        const res = await apiRequest("POST", "/api/logout");
+        // Even if the server request fails, we'll clear the local state
+        if (!res.ok) {
+          console.warn("Server logout failed, clearing local state anyway");
+        }
+      } catch (error) {
+        console.warn("Logout request failed, clearing local state anyway:", error);
+      }
+      // Force logout by clearing local state regardless of server response
+      queryClient.clear();
+      queryClient.setQueryData(["/api/user"], null);
     },
     onSuccess: () => {
-      queryClient.setQueryData(["/api/user"], null);
       toast({
         title: "Logged out successfully",
-        description: "Come back soon!",
+        description: "You have been logged out",
       });
       // Redirect to the auth page after logout
       window.location.href = '/auth';
     },
     onError: (error: Error) => {
+      console.error("Logout error:", error);
+      // Even if there's an error, we'll clear the local state and redirect
+      queryClient.clear();
+      queryClient.setQueryData(["/api/user"], null);
+      window.location.href = '/auth';
       toast({
-        title: "Logout failed",
-        description: error.message,
-        variant: "destructive",
+        title: "Logged out",
+        description: "You have been logged out (some server operations may have failed)",
+        variant: "default",
       });
     },
   });
