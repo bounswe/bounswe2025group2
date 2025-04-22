@@ -148,7 +148,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logoutMutation = useMutation({
     mutationFn: async () => {
       try {
-        const res = await apiRequest("POST", "/api/logout");
+        const res = await apiRequest("POST", "/api/logout/");
         // Even if the server request fails, we'll clear the local state
         if (!res.ok) {
           console.warn("Server logout failed, clearing local state anyway");
