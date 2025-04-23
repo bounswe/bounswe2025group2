@@ -10,13 +10,19 @@ async function throwIfResNotOk(res: Response) {
   }
 }
 
+function getCSRFToken() {
+  const match = document.cookie.match(/csrftoken=([^;]+)/);
+  return match ? match[1] : null;
+}
+
 export async function apiRequest(
   method: string,
   url: string,
-  data?: unknown | undefined,
+  data?: unknown
 ): Promise<Response> {
   const fullUrl = `${API_BASE_URL}${url}`;
-  
+  const csrfToken = getCSRFToken();
+
   console.log(`Making ${method} request to:`, fullUrl);
   if (data) {
     console.log('Request data:', {
@@ -25,13 +31,20 @@ export async function apiRequest(
     });
   }
 
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    'Accept': 'application/json',
+  };
+
+  if (csrfToken) {
+    headers['X-CSRFToken'] = csrfToken;
+  }
+
   const res = await fetch(fullUrl, {
     method,
-    headers: {
-      'Content-Type': 'application/json',
-      'Accept': 'application/json',
-    },
+    headers,
     body: data ? JSON.stringify(data) : undefined,
+    credentials: "include",
   });
 
   console.log(`Response status:`, res.status, res.statusText);
@@ -45,7 +58,14 @@ export const getQueryFn: <T>(options: {
   ({ on401: unauthorizedBehavior }) =>
   async ({ queryKey }) => {
     const fullUrl = `${API_BASE_URL}${queryKey[0]}`;
-    const res = await fetch(fullUrl);
+    const res = await fetch(fullUrl, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        "Accept": "application/json",
+      },
+      credentials: "include",
+    });
 
     if (unauthorizedBehavior === "returnNull" && res.status === 401) {
       return null;
