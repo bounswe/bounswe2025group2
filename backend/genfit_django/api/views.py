@@ -9,7 +9,7 @@ from django.contrib.auth.tokens import default_token_generator
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.utils.encoding import force_bytes, force_str
 from django.contrib.sites.shortcuts import get_current_site
-from .serializers import UserRegistrationSerializer, UserLoginSerializer, NotificationSerializer
+from .serializers import UserRegistrationSerializer, UserLoginSerializer, NotificationSerializer, UserSerializer
 from .models import Notification
 
 
@@ -131,3 +131,11 @@ def mark_all_notifications_read(request):
         return Response({'message': 'All notifications marked as read'})
     except Exception as e:
         return Response({'error': f'Error marking notifications as read: {e}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_user(request):
+    user = request.user
+    serializer = UserSerializer(user)
+    return Response(serializer.data)

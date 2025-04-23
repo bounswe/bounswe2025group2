@@ -21,28 +21,32 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useQueryClient } from "@tanstack/react-query";
 
 const loginSchema = z.object({
   username: z.string().min(1, "Username is required"),
   password: z.string().min(1, "Password is required"),
-  rememberMe: z.boolean().optional(),
+  remember_me: z.boolean().optional(),
 });
 
 const registerSchema = z.object({
-  username: z
-    .string()
-    .min(3, "Username must be at least 3 characters")
-    .regex(/^[a-z][a-z0-9]*$/i, {
-      message: "Username must start with a letter and contain only alphanumeric characters",
+  username: z.string()
+    .min(3)
+    .max(20)
+    .regex(/^[a-z][a-z0-9]*$/, {
+      message: "Username must start with a lowercase letter and contain only letters and numbers"
+    })
+    .refine((val) => /[a-z]/.test(val) && /[0-9]/.test(val), {
+      message: "Username must contain at least one letter and one number"
     }),
-  email: z.string().email("Please enter a valid email"),
-  password: z
-    .string()
-    .min(8, "Password must be at least 8 characters")
-    .regex(/^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$/, {
-      message: "Password must contain at least one letter and one number",
+  email: z.string().email(),
+  password: z.string().min(8),
+  user_type: z.enum(["User", "Coach"], {
+    required_error: "Please select a user type.",
     }),
-  name: z.string().optional(),
+  verification_file: z.string().optional(),
+  remember_me: z.boolean().optional(),
 });
 
 type LoginFormValues = z.infer<typeof loginSchema>;
@@ -57,13 +61,14 @@ export default function AuthPage() {
     enabled: loginMutation.isSuccess || registerMutation.isSuccess, 
     queryFn: getQueryFn({ on401: "returnNull" }),
   });
+  const queryClient = useQueryClient();
 
   const loginForm = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
       username: "",
       password: "",
-      rememberMe : false,
+      remember_me: false,
     },
   });
 
@@ -73,24 +78,43 @@ export default function AuthPage() {
       username: "",
       email: "",
       password: "",
-      name: "",
+      user_type: "User",
+      verification_file: undefined,
+      remember_me: false,
     },
   });
 
   const onLoginSubmit = async (data: LoginFormValues) => {
     loginMutation.mutate(data, {
-      onSuccess: () => {
-        // Force a refetch of the user data
-        refetch();
+      onSuccess: async (userData) => {
+        // Set the user data immediately
+        queryClient.setQueryData(["/api/user"], userData);
+        // Then force a refetch to ensure we have the latest data
+        await refetch();
       }
     });
   };
 
   const onRegisterSubmit = async (data: RegisterFormValues) => {
+    console.log("Submitting registration data:", data);
     registerMutation.mutate(data, {
-      onSuccess: () => {
-        // Force a refetch of the user data
-        refetch();
+      onSuccess: async (userData) => {
+        try {
+          const loginResult = await loginMutation.mutateAsync({
+            username: data.username,
+            password: data.password,
+            remember_me: data.remember_me
+          });
+          // Set the user data immediately
+          queryClient.setQueryData(["/api/user"], loginResult);
+          // Then force a refetch to ensure we have the latest data
+          await refetch();
+        } catch (error) {
+          console.error("Auto-login failed:", error);
+        }
+      },
+      onError: (error) => {
+        console.error("Registration submission error:", error);
       }
     });
   };
@@ -265,14 +289,12 @@ export default function AuthPage() {
                 <CardContent className="p-6">
                   <form onSubmit={loginForm.handleSubmit(onLoginSubmit)} className="space-y-4">
                     <div className="space-y-2">
-                      <Label htmlFor="username" className={cn(
-                        theme === 'dark' ? 'text-white/70' : 'text-[#800000]'
-                      )}>Username or Email</Label>
+                      <Label htmlFor="username">Username</Label>
                       <Input
                         id="username"
-                        placeholder="Enter your username or email"
+                        placeholder="Enter your username"
                         className={cn(
-                          "bg-nav-bg border",
+                          "bg-background border",
                           theme === 'dark' 
                             ? 'border-[#e18d58] text-white placeholder:text-white/50' 
                             : 'border-[#800000] text-[#800000] placeholder:text-[#800000]/50'
@@ -280,21 +302,19 @@ export default function AuthPage() {
                         {...loginForm.register("username")}
                       />
                       {loginForm.formState.errors.username && (
-                        <p className="text-sm text-red-500">
+                        <p className="text-sm text-destructive">
                           {loginForm.formState.errors.username.message}
                         </p>
                       )}
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="password" className={cn(
-                        theme === 'dark' ? 'text-white/70' : 'text-[#800000]'
-                      )}>Password</Label>
+                      <Label htmlFor="password">Password</Label>
                       <Input
                         id="password"
                         type="password"
                         placeholder="Enter your password"
                         className={cn(
-                          "bg-nav-bg border",
+                          "bg-background border",
                           theme === 'dark' 
                             ? 'border-[#e18d58] text-white placeholder:text-white/50' 
                             : 'border-[#800000] text-[#800000] placeholder:text-[#800000]/50'
@@ -302,7 +322,7 @@ export default function AuthPage() {
                         {...loginForm.register("password")}
                       />
                       {loginForm.formState.errors.password && (
-                        <p className="text-sm text-red-500">
+                        <p className="text-sm text-destructive">
                           {loginForm.formState.errors.password.message}
                         </p>
                       )}
@@ -310,18 +330,18 @@ export default function AuthPage() {
                     <div className="flex items-center space-x-2">
                       <input
                         type="checkbox"
-                        id="rememberMe"
-                        {...loginForm.register("rememberMe")}
-                        className="accent-primary"/>
-                        <Label htmlFor="rememberMe">Remember Me</Label>
-                      </div>
+                        id="remember_me"
+                        {...loginForm.register("remember_me")}
+                      />
+                      <Label htmlFor="remember_me">Remember me</Label>
+                    </div>
                     <Button
                       type="submit"
                       className={cn(
-                        "w-full bg-nav-bg border",
-                        theme === 'dark'
-                          ? 'border-[#e18d58] text-white hover:bg-[#e18d58]/20'
-                          : 'border-[#800000] text-[#800000] hover:bg-active'
+                        "w-full",
+                        theme === 'dark' 
+                          ? 'bg-[#e18d58] text-white hover:bg-[#e18d58]/90' 
+                          : 'bg-background text-[#800000] border border-[#800000] hover:bg-background/90'
                       )}
                       disabled={loginMutation.isPending}
                     >
@@ -358,30 +378,12 @@ export default function AuthPage() {
                 <CardContent className="p-6">
                   <form onSubmit={registerForm.handleSubmit(onRegisterSubmit)} className="space-y-4">
                     <div className="space-y-2">
-                      <Label htmlFor="name" className={cn(
-                        theme === 'dark' ? 'text-white/70' : 'text-[#800000]'
-                      )}>Full Name (Optional)</Label>
-                      <Input
-                        id="name"
-                        placeholder="Enter your full name"
-                        className={cn(
-                          "bg-nav-bg border",
-                          theme === 'dark' 
-                            ? 'border-[#e18d58] text-white placeholder:text-white/50' 
-                            : 'border-[#800000] text-[#800000] placeholder:text-[#800000]/50'
-                        )}
-                        {...registerForm.register("name")}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="username" className={cn(
-                        theme === 'dark' ? 'text-white/70' : 'text-[#800000]'
-                      )}>Username</Label>
+                      <Label htmlFor="username">Username</Label>
                       <Input
                         id="username"
-                        placeholder="Choose a username"
+                        placeholder="Enter your username"
                         className={cn(
-                          "bg-nav-bg border",
+                          "bg-background border",
                           theme === 'dark' 
                             ? 'border-[#e18d58] text-white placeholder:text-white/50' 
                             : 'border-[#800000] text-[#800000] placeholder:text-[#800000]/50'
@@ -389,21 +391,19 @@ export default function AuthPage() {
                         {...registerForm.register("username")}
                       />
                       {registerForm.formState.errors.username && (
-                        <p className="text-sm text-red-500">
+                        <p className="text-sm text-destructive">
                           {registerForm.formState.errors.username.message}
                         </p>
                       )}
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="email" className={cn(
-                        theme === 'dark' ? 'text-white/70' : 'text-[#800000]'
-                      )}>Email</Label>
+                      <Label htmlFor="email">Email</Label>
                       <Input
                         id="email"
                         type="email"
                         placeholder="Enter your email"
                         className={cn(
-                          "bg-nav-bg border",
+                          "bg-background border",
                           theme === 'dark' 
                             ? 'border-[#e18d58] text-white placeholder:text-white/50' 
                             : 'border-[#800000] text-[#800000] placeholder:text-[#800000]/50'
@@ -411,21 +411,19 @@ export default function AuthPage() {
                         {...registerForm.register("email")}
                       />
                       {registerForm.formState.errors.email && (
-                        <p className="text-sm text-red-500">
+                        <p className="text-sm text-destructive">
                           {registerForm.formState.errors.email.message}
                         </p>
                       )}
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="password" className={cn(
-                        theme === 'dark' ? 'text-white/70' : 'text-[#800000]'
-                      )}>Password</Label>
+                      <Label htmlFor="password">Password</Label>
                       <Input
                         id="password"
                         type="password"
-                        placeholder="Create a password"
+                        placeholder="Enter your password"
                         className={cn(
-                          "bg-nav-bg border",
+                          "bg-background border",
                           theme === 'dark' 
                             ? 'border-[#e18d58] text-white placeholder:text-white/50' 
                             : 'border-[#800000] text-[#800000] placeholder:text-[#800000]/50'
@@ -433,36 +431,90 @@ export default function AuthPage() {
                         {...registerForm.register("password")}
                       />
                       {registerForm.formState.errors.password && (
-                        <p className="text-sm text-red-500">
+                        <p className="text-sm text-destructive">
                           {registerForm.formState.errors.password.message}
                         </p>
                       )}
-                      <p className="text-xs text-sub">
-                        Password must be at least 8 characters with at least one letter and one number
-                      </p>
-                      {registerMutation.isError && (
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="user_type">User Type</Label>
+                      <Select
+                        onValueChange={(value) => registerForm.setValue("user_type", value as "User" | "Coach")}
+                        defaultValue={registerForm.getValues("user_type")}
+                      >
+                        <SelectTrigger
+                          className={cn(
+                            "w-full border-[#800000] text-[#800000] placeholder:text-[#800000]/50 dark:border-[#e18d58] dark:text-white dark:placeholder:text-white/50",
+                            {
+                              "border-red-500": registerForm.formState.errors.user_type,
+                            }
+                          )}
+                        >
+                          <SelectValue placeholder="Select a user type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="User">User</SelectItem>
+                          <SelectItem value="Coach">Coach</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      {registerForm.formState.errors.user_type && (
                         <p className="text-sm text-red-500">
-                          {registerMutation.error?.message || "Registration failed"}
+                          {registerForm.formState.errors.user_type.message}
                         </p>
                       )}
+                    </div>
+                    {registerForm.watch('user_type') === 'Coach' && (
+                      <div className="space-y-2">
+                        <Label htmlFor="verification_file">Verification File</Label>
+                        <Input
+                          id="verification_file"
+                          type="file"
+                          accept=".pdf,.doc,.docx"
+                          className={cn(
+                            "bg-background border",
+                            theme === 'dark' 
+                              ? 'border-[#e18d58] text-white' 
+                              : 'border-[#800000] text-[#800000]'
+                          )}
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              // Convert file to base64
+                              const reader = new FileReader();
+                              reader.onloadend = () => {
+                                registerForm.setValue("verification_file", reader.result as string);
+                              };
+                              reader.readAsDataURL(file);
+                            }
+                          }}
+                        />
+                      </div>
+                    )}
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        id="remember_me"
+                        {...registerForm.register("remember_me")}
+                      />
+                      <Label htmlFor="remember_me">Remember me</Label>
                     </div>
                     <Button
                       type="submit"
                       className={cn(
-                        "w-full bg-nav-bg border",
-                        theme === 'dark'
-                          ? 'border-[#e18d58] text-white hover:bg-[#e18d58]/20'
-                          : 'border-[#800000] text-[#800000] hover:bg-active'
+                        "w-full",
+                        theme === 'dark' 
+                          ? 'bg-[#e18d58] text-white hover:bg-[#e18d58]/90' 
+                          : 'bg-background text-[#800000] border border-[#800000] hover:bg-background/90'
                       )}
                       disabled={registerMutation.isPending}
                     >
                       {registerMutation.isPending ? (
                         <>
                           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Creating account...
+                          Registering...
                         </>
                       ) : (
-                        "Create Account"
+                        "Register"
                       )}
                     </Button>
                   </form>

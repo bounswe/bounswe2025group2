@@ -13,6 +13,9 @@ import {
   insertNotificationSchema
 } from "@shared/schema";
 
+class SelectUser {
+}
+
 export async function registerRoutes(app: Express): Promise<Server> {
   // Set up authentication routes
   setupAuth(app);
@@ -579,6 +582,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       for (const field of allowedFields) {
         if (req.body[field] !== undefined) {
+          // @ts-ignore
           updateData[field as keyof SelectUser] = req.body[field];
         }
       }

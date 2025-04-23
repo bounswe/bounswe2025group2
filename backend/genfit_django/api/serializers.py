@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from django.core.validators import RegexValidator
 from django.contrib.auth import get_user_model
-from .models import Notification
+from .models import Notification, UserWithType
 
 
 User = get_user_model()
@@ -50,6 +50,24 @@ class UserLoginSerializer(serializers.Serializer):
     username = serializers.CharField()
     password = serializers.CharField()
     remember_me = serializers.BooleanField(default=False)
+
+class UserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UserWithType
+        fields = ['id', 'username', 'email', 'user_type', 'is_verified_coach']
+        read_only_fields = ['id', 'is_verified_coach']
+
+    def update(self, instance, validated_data):
+        instance.username = validated_data.get('username', instance.username)
+        instance.email = validated_data.get('email', instance.email)
+        instance.user_type = validated_data.get('user_type', instance.user_type)
+
+        # Normally, we would handle password hashing here, but for now, let's skip it
+        if 'password' in validated_data:
+            instance.set_password(validated_data['password'])
+
+        instance.save()
+        return instance
 
 
 class NotificationSerializer(serializers.ModelSerializer):
