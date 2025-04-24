@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from django.core.validators import RegexValidator
 from django.contrib.auth import get_user_model
-from .models import Notification, UserWithType
+from .models import Notification, UserWithType, FitnessGoal
 
 
 User = get_user_model()
@@ -99,3 +99,28 @@ class NotificationSerializer(serializers.ModelSerializer):
         instance.is_read = validated_data.get('is_read', instance.is_read)
         instance.save()
         return instance
+
+class FitnessGoalSerializer(serializers.ModelSerializer):
+    progress_percentage = serializers.FloatField(read_only=True)
+    mentor = serializers.PrimaryKeyRelatedField(queryset=UserWithType.objects.filter(user_type='Coach'), required=False, allow_null=True)
+
+    class Meta:
+        model = FitnessGoal
+        fields = '__all__'
+        read_only_fields = ('user', 'current_value', 'status', 'last_updated', 'progress_percentage')
+
+    def validate_mentor(self, value):
+        if value:
+            return True
+        return False
+
+class FitnessGoalUpdateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = FitnessGoal
+        fields = ('current_value', 'status')
+
+    def validate_status(self, value):
+        if value not in ['ACTIVE', 'COMPLETED', 'INACTIVE', 'RESTARTED']:
+            raise serializers.ValidationError("Invalid status value.")
+        return value
+        
