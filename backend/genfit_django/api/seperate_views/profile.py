@@ -7,6 +7,7 @@ from rest_framework.response import Response
 from rest_framework import status
 import os
 import mimetypes
+from django.conf import settings  # Add this import at the top
 
 from ..models import Profile, UserWithType
 from ..serializers import ProfileSerializer
@@ -60,21 +61,13 @@ def profile_detail(request):
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
-def get_profile_picture_file(request, username=None):
-    try:
-        if username:
-            user = UserWithType.objects.get(username=username)
-            profile = user.profile
-        else:
-            profile = request.user.profile
-    except (UserWithType.DoesNotExist, Profile.DoesNotExist):
-        raise Http404("Profile not found")
-
+def get_profile_picture_file(request):
+    profile = request.user.profile
     if not profile.profile_picture:
+        # Try to serve default picture
         default_path = os.path.join(settings.MEDIA_ROOT, 'profile_pictures', 'default.png')
         if os.path.exists(default_path):
-            with open(default_path, 'rb') as f:
-                return FileResponse(f, content_type='image/png')
+            return FileResponse(open(default_path, 'rb'), content_type='image/png', as_attachment=False)
         raise Http404("No profile picture and default missing.")
 
     file_path = profile.profile_picture.path
@@ -82,8 +75,11 @@ def get_profile_picture_file(request, username=None):
     try:
         if os.path.exists(file_path):
             content_type, _ = mimetypes.guess_type(file_path)
-            with open(file_path, 'rb') as file:
-                return FileResponse(file, content_type=content_type or 'application/octet-stream')
+            return FileResponse(
+                open(file_path, 'rb'), 
+                content_type=content_type or 'application/octet-stream',
+                as_attachment=False
+            )
         else:
             raise Http404("File not found")
     except Exception as e:

@@ -1,7 +1,7 @@
 from django.urls import path
 from . import views
 from .seperate_views import fitness_goals
-from .separate_views import profile
+from .seperate_views import profile
 
 
 urlpatterns = [
