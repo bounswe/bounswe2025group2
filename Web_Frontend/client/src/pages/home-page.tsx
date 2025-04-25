@@ -100,8 +100,7 @@ export default function HomePage() {
                         ? 'border-[#e18d58] text-white hover:bg-[#e18d58]/20'
                         : 'border-[#800000] text-[#800000] hover:bg-active'
                     )}
-                    onClick={() => setLocation("/profile")}
-                  >
+                    onClick={() => setLocation(`/profile/${user?.username}`)}>                  
                     <UserCircle size={20} />
                     View Profile
                   </Button>
