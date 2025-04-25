@@ -58,20 +58,12 @@ export default function GoalsPage() {
   
   // Fetch user goals
   const { data: goals, isLoading } = useQuery({
-    queryKey: ["/api/goals"],
+    queryKey: ["/api/goals/"],
     queryFn: async () => {
-      const res = await fetch("/api/goals");
+      const res = await fetch("/api/goals/", {
+        credentials: "include",
+      });
       if (!res.ok) throw new Error("Failed to fetch goals");
-      return res.json();
-    },
-  });
-
-  // Fetch available mentors
-  const { data: mentors } = useQuery({
-    queryKey: ["/api/users/mentors"],
-    queryFn: async () => {
-      const res = await fetch("/api/users/mentors");
-      if (!res.ok) throw new Error("Failed to fetch mentors");
       return res.json();
     },
   });
@@ -85,11 +77,13 @@ export default function GoalsPage() {
         endDate: goalData.endDate ? new Date(goalData.endDate) : undefined
       };
       
-      const res = await apiRequest("POST", "/api/goals", formattedData);
+      const res = await apiRequest(
+          "POST", "/api/goals/", formattedData
+      );
       return res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/goals"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/goals/"] });
       setNewGoalOpen(false);
       resetNewGoalForm();
     }

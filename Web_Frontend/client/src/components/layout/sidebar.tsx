@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
 import { useQuery } from "@tanstack/react-query";
-import GoalProgress from "@/components/goals/goal-progress";
 import { cn } from "@/lib/utils";
 import { useTheme } from "@/theme/ThemeContext";
 import {
@@ -27,17 +26,6 @@ export default function Sidebar({ activeTab = "home" }: SidebarProps) {
   const { user, logoutMutation } = useAuth();
   const { theme } = useTheme();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-
-  // Get user's goals for the progress section
-  const { data: goals } = useQuery({
-    queryKey: ["/api/goals"],
-    queryFn: async () => {
-      const res = await fetch("/api/goals");
-      if (!res.ok) throw new Error("Failed to fetch goals");
-      return res.json();
-    },
-    enabled: !!user
-  });
 
   const activeClasses = cn(
     "font-medium",
@@ -173,35 +161,35 @@ export default function Sidebar({ activeTab = "home" }: SidebarProps) {
           </button>
         </nav>
         
-        {/* Goals progress section */}
-        <div className="p-3">
-          <div className={cn(
-            "rounded-lg p-3",
-            theme === 'dark' ? 'bg-background' : 'bg-background'
-          )}>
-            <h3 className="font-medium text-sm active">Your Progress</h3>
-            
-            {goals && goals.length > 0 ? (
-              <div className="mt-2 space-y-3">
-                {goals.slice(0, 2).map((goal: any) => (
-                  <GoalProgress key={goal.id} goal={goal} />
-                ))}
-              </div>
-            ) : (
-              <div className="mt-2 text-sm text-sub">
-                <p>No active goals</p>
-                <Link href="/goals">
-                  <span className={cn(
-                    "hover:underline text-xs mt-1 inline-block",
-                    theme === 'dark' ? 'text-[#e18d58]' : 'active'
-                  )}>
-                    Set your first goal →
-                  </span>
-                </Link>
-              </div>
-            )}
-          </div>
-        </div>
+        {/*/!* Goals progress section *!/*/}
+        {/*<div className="p-3">*/}
+        {/*  <div className={cn(*/}
+        {/*    "rounded-lg p-3",*/}
+        {/*    theme === 'dark' ? 'bg-background' : 'bg-background'*/}
+        {/*  )}>*/}
+        {/*    <h3 className="font-medium text-sm active">Your Progress</h3>*/}
+        {/*    */}
+        {/*    {goals && goals.length > 0 ? (*/}
+        {/*      <div className="mt-2 space-y-3">*/}
+        {/*        {goals.slice(0, 2).map((goal: any) => (*/}
+        {/*          <GoalProgress key={goal.id} goal={goal} />*/}
+        {/*        ))}*/}
+        {/*      </div>*/}
+        {/*    ) : (*/}
+        {/*      <div className="mt-2 text-sm text-sub">*/}
+        {/*        <p>No active goals</p>*/}
+        {/*        <Link href="/goals">*/}
+        {/*          <span className={cn(*/}
+        {/*            "hover:underline text-xs mt-1 inline-block",*/}
+        {/*            theme === 'dark' ? 'text-[#e18d58]' : 'active'*/}
+        {/*          )}>*/}
+        {/*            Set your first goal →*/}
+        {/*          </span>*/}
+        {/*        </Link>*/}
+        {/*      </div>*/}
+        {/*    )}*/}
+        {/*  </div>*/}
+        {/*</div>*/}
       </aside>
     </>
   );

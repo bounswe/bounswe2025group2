@@ -39,14 +39,17 @@ export default function ProfilePage() {
   const { data: profileUser, isLoading } = useQuery({
     queryKey: [`/api/users/${username}`],
     queryFn: async () => {
-      const res = await fetch(`/api/users/${username}`);
-      if (!res.ok) throw new Error("Failed to fetch user profile");
+      console.log(import.meta.env.VITE_API_URL,"213213123214213124");
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/users/${username}`);
+      console.log("Calling:", `${import.meta.env.VITE_API_URL}/api/users/${username}`);
+      console.log(res,"-----------------------------");
+      if (!res.ok) throw new Error("Failed to fetch user profile");      
       return res.json();
     },
   });
 
-  // Fetch user's threads
-  const { data: userThreads, isLoading: threadsLoading } = useQuery({
+   // Fetch user's threads
+   const { data: userThreads, isLoading: threadsLoading } = useQuery({
     queryKey: [`/api/forum/threads`, `user_${profileUser?.id}`],
     queryFn: async () => {
       const res = await fetch(`/api/forum/threads?userId=${profileUser?.id}`);

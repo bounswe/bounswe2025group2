@@ -16,6 +16,9 @@ import { ProtectedRoute } from "./lib/protected-route";
 import { AuthProvider } from "./hooks/use-auth";
 import { ThemeProvider } from "./theme/ThemeContext";
 
+console.log("VITE_API_URL is:", import.meta.env.VITE_API_URL);
+
+
 function Router() {
   return (
     <Switch>
