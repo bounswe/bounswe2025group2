@@ -38,6 +38,9 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
             is_active=True
         )
 
+        # Create profile for the new user
+        Profile.objects.create(user=user)
+
         if user.user_type == 'Coach' and verification_file:
             # Handle verification file for coach
             user.is_verified_coach = True
