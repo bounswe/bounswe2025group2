@@ -15,9 +15,14 @@ interface AppNotification {
     message: string;  // Changed from 'content' to 'message'
     created_at: string;
     is_read: boolean;
-    notification_type: string;  
+    notification_type: string;
     userId: number;
     relatedId?: number;
+}
+
+function getCSRFToken() {
+  const match = document.cookie.match(/csrftoken=([^;]+)/);
+  return match ? match[1] : null;
 }
 
 export default function NotificationsPage() {
@@ -32,27 +37,27 @@ export default function NotificationsPage() {
     // ✅ Then your useQuery here
     const { data: notifications, isLoading } = useQuery<AppNotification[]>({
         queryKey: ["/api/notifications"],
-        queryFn: async () => {            
-            const res = await fetch("/api/notifications");                 
+        queryFn: async () => {
+            const res = await fetch("/api/notifications");
             if (!res.ok) throw new Error("Failed to fetch notifications");
             return res.json();
         },
-    });      
+    });
 
     const formatDate = (dateString: string) => {
         const date = new Date(dateString);
         const now = new Date();
         const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60));
-        
+
         if (diffInHours < 1) {
             return "Just now";
         } else if (diffInHours < 24) {
             return `${diffInHours}h ago`;
         } else {
-            return date.toLocaleDateString('en-US', { 
-                month: 'short', 
-                day: 'numeric', 
-                year: 'numeric' 
+            return date.toLocaleDateString('en-US', {
+                month: 'short',
+                day: 'numeric',
+                year: 'numeric'
             });
         }
     };
@@ -63,27 +68,38 @@ export default function NotificationsPage() {
             setSelectedNotification(null);
             return;
         }
-    
+
         setSelectedNotification(notification);
-    
+
         if (!notification.is_read) {
             setDetailsLoading(true);
             try {
-                await fetch(`/api/notifications/${notification.id}/mark-as-read/`, {
+                const headers: Record<string, string> = {
+                    "Content-Type": "application/json",
+                    "Accept": "application/json",
+                }
+                const csrfToken = getCSRFToken();
+                if (csrfToken) {
+                    headers['X-CSRFToken'] = csrfToken;
+                }
+
+                const res = await fetch(`/api/notifications/${notification.id}/mark-as-read/`, {
                     method: "PATCH",
-                    headers: {
-                        "Content-Type": "application/json"
-                    },
+                    headers,
                     credentials: "include",
                 });
-    
+
+                if (!res.ok) {
+                    throw new Error("Failed to mark notification as read");
+                }
+
                 queryClient.setQueryData<AppNotification[]>(["/api/notifications"], (old) => {
                     if (!old) return [];
                     return old.map((n) =>
                         n.id === notification.id ? { ...n, is_read: true } : n
                     );
                 });
-    
+
             } catch (error) {
                 console.error("Failed to mark notification as read", error);
             } finally {
@@ -91,7 +107,7 @@ export default function NotificationsPage() {
             }
         }
     };
-    
+
 
     return (
         <div className="min-h-screen bg-background">

@@ -58,7 +58,7 @@ export default function AuthPage() {
   const { theme } = useTheme();
   const { refetch } = useQuery({
     queryKey: ['/api/user'],
-    enabled: loginMutation.isSuccess || registerMutation.isSuccess, 
+    enabled: false,
     queryFn: getQueryFn({ on401: "returnNull" }),
   });
   const queryClient = useQueryClient();

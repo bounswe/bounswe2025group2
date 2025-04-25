@@ -15,32 +15,62 @@ export default function HomePage() {
   const { theme } = useTheme();
   const [, setLocation] = useLocation();
 
-  const { data: latestThreads, isLoading: threadsLoading } = useQuery({
-    queryKey: ["/api/forum/threads"],
-    queryFn: async () => {
-      const res = await fetch("/api/forum/threads?limit=3");
-      if (!res.ok) throw new Error("Failed to fetch threads");
-      return res.json();
-    },
-  });
+  // const { data: latestThreads, isLoading: threadsLoading } = useQuery({
+  //   queryKey: ["/api/forum/threads"],
+  //   queryFn: async () => {
+  //     const res = await fetch("/api/forum/threads?limit=3");
+  //     if (!res.ok) throw new Error("Failed to fetch threads");
+  //     return res.json();
+  //   },
+  // });
 
-  const { data: challenges, isLoading: challengesLoading } = useQuery({
-    queryKey: ["/api/challenges"],
-    queryFn: async () => {
-      const res = await fetch("/api/challenges?limit=3");
-      if (!res.ok) throw new Error("Failed to fetch challenges");
-      return res.json();
-    },
-  });
+  // const { data: challenges, isLoading: challengesLoading } = useQuery({
+  //   queryKey: ["/api/challenges"],
+  //   queryFn: async () => {
+  //     const res = await fetch("/api/challenges?limit=3");
+  //     if (!res.ok) throw new Error("Failed to fetch challenges");
+  //     return res.json();
+  //   },
+  // });
 
-  const { data: programs, isLoading: programsLoading } = useQuery({
-    queryKey: ["/api/programs"],
-    queryFn: async () => {
-      const res = await fetch("/api/programs?limit=4");
-      if (!res.ok) throw new Error("Failed to fetch programs");
-      return res.json();
-    },
-  });
+  // const { data: programs, isLoading: programsLoading } = useQuery({
+  //   queryKey: ["/api/programs"],
+  //   queryFn: async () => {
+  //     const res = await fetch("/api/programs?limit=4");
+  //     if (!res.ok) throw new Error("Failed to fetch programs");
+  //     return res.json();
+  //   },
+  // });
+
+  // Mock data for demonstration
+    const latestThreads = [
+        {
+        id: 1,
+        category: "Basketball",
+        firstPost: { content: "How to improve my shooting?" },
+        postCount: 5,
+        createdAt: "2023-10-01T12:00:00Z",
+        },
+        {
+        id: 2,
+        category: "Soccer",
+        firstPost: { content: "Best drills for dribbling?" },
+        postCount: 3,
+        createdAt: "2023-10-02T12:00:00Z",
+        },
+    ];
+    const challenges = [
+        { id: 1, title: "30-Day Running Challenge", targetValue: 100, unit: "km" },
+        { id: 2, title: "Weekly Basketball Practice", targetValue: 5, unit: "hours" },
+    ];
+    const programs = [
+        { id: 1, name: "Local Basketball League", location: "Downtown Gym", description: "Join our local basketball league for all ages.", sportType: "Basketball", ageGroups: ["18-25", "26-35"] },
+        { id: 2, name: "Soccer Training Camp", location: "City Park", description: "Intensive training for aspiring soccer players.", sportType: "Soccer", ageGroups: ["12-18"] },
+    ];
+
+    const challengesLoading = false;
+    const programsLoading = false;
+    const threadsLoading = false;
 
   return (
     <div className="min-h-screen bg-background">

@@ -11,7 +11,6 @@ from django.utils.encoding import force_bytes, force_str
 from django.contrib.sites.shortcuts import get_current_site
 from .serializers import UserRegistrationSerializer, UserLoginSerializer, NotificationSerializer, UserSerializer
 from .models import Notification
-from django.http import JsonResponse
 
 
 User = get_user_model()
@@ -98,7 +97,7 @@ def user_logout(request):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def get_user_notifications(request):      
-    notifications = request.user.notifications.all().order_by('-created_at')    
+    notifications = Notification.objects.filter(recipient=request.user)
     serializer = NotificationSerializer(notifications, many=True)
     return Response(serializer.data)
 
@@ -117,17 +116,14 @@ def get_single_notification(request, notification_id):
 @permission_classes([IsAuthenticated])
 def mark_notification_read(request, notification_id):
     try:
-        notification = request.user.notifications.get(id=notification_id)        
+        notification = Notification.objects.get(id=notification_id)
 
         notification.is_read = True
         notification.save()
 
-        updated = Notification.objects.get(id=notification_id)       
-
         return Response({'message': 'Notification marked as read'})
     except Exception as e:
         return Response({'error': f'Notification not found {e}'}, status=status.HTTP_404_NOT_FOUND)
-
 
 @api_view(['PATCH'])
 @permission_classes([IsAuthenticated])
@@ -145,22 +141,3 @@ def get_user(request):
     user = request.user
     serializer = UserSerializer(user)
     return Response(serializer.data)
-
-
-@api_view(['GET'])
-@permission_classes([AllowAny])
-def mock_page(request, username):
-    data = {
-        "status": "success", 
-        "username" : username,       
-        "message": "Welcome to the mock page!",
-        "user_data": {
-            "name": "John Doe",
-            "email": "john.doe@example.com",
-            "role": "admin",            
-        }
-    }
-    
-    # Return a JSON response
-    return JsonResponse(data)
-
