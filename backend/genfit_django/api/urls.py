@@ -20,7 +20,9 @@ urlpatterns = [
     path('goals/<int:goal_id>/progress/', fitness_goals.update_goal_progress, name='update_goal_progress'),
     path('goals/check-inactive/', fitness_goals.check_inactive_goals, name='check_inactive_goals'),
     path('profile/', profile.profile_detail, name='profile-detail'),
-    path('profile/picture/', profile.get_profile_picture_file, name='get-profile-picture'),  # Current user
-    path('profile/picture/<str:username>/', profile.get_profile_picture_file, name='get-other-profile-picture'),  # Other user
+    path('profile/other/<str:username>/', profile.other_profile_detail, name='other-profile-detail'),
+    path('profile/picture/upload/', profile.upload_profile_picture, name='upload-profile-picture'),
+    path('profile/picture/', profile.get_profile_picture_file, name='get-profile-picture'),
     path('profile/picture/delete/', profile.delete_profile_picture, name='delete-profile-picture'),
+    path('profile/other/picture/<str:username>/', profile.get_other_profile_picture, name='get-other-profile-picture'),
 ]
