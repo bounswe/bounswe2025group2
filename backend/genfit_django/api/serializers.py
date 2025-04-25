@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from django.core.validators import RegexValidator
 from django.contrib.auth import get_user_model
-from .models import Notification, UserWithType, FitnessGoal
+from .models import Notification, UserWithType, FitnessGoal, Profile
 
 
 User = get_user_model()
@@ -123,4 +123,14 @@ class FitnessGoalUpdateSerializer(serializers.ModelSerializer):
         if value not in ['ACTIVE', 'COMPLETED', 'INACTIVE', 'RESTARTED']:
             raise serializers.ValidationError("Invalid status value.")
         return value
+
+
+class ProfileSerializer(serializers.ModelSerializer):
+    age = serializers.IntegerField(read_only=True)
+    username = serializers.CharField(source='user.username', read_only=True)
+
+    class Meta:
+        model = Profile
+        fields = ['username', 'bio', 'location', 'birth_date', 'profile_picture', 'age', 'created_at', 'updated_at']
+        read_only_fields = ['created_at', 'updated_at']
         
