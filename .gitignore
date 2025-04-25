@@ -8,3 +8,7 @@ __pycache__/
 *.sqlite3
 *.idea
 
+# Media files
+/backend/genfit_django/media/profile_pictures/*
+!/backend/genfit_django/media/profile_pictures/default.png
+
