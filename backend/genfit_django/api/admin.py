@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import UserWithType, Notification, FitnessGoal
+from .models import UserWithType, Notification, FitnessGoal, Profile
 
 @admin.register(UserWithType)
 class UserWithTypeAdmin(admin.ModelAdmin):
@@ -30,3 +30,8 @@ class FitnessGoalAdmin(admin.ModelAdmin):
         return f"{obj.progress_percentage:.1f}%"
     progress_percentage.short_description = 'Progress'
 
+@admin.register(Profile)
+class ProfileAdmin(admin.ModelAdmin):
+    list_display   = ("user", "location", "created_at")
+    search_fields  = ("user__username", "location")
+    list_filter    = ("created_at", )
