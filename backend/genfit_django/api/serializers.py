@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from django.core.validators import RegexValidator
 from django.contrib.auth import get_user_model
-from .models import Notification, UserWithType
+from .models import Notification, UserWithType, FitnessGoal, Profile
 
 
 User = get_user_model()
@@ -37,6 +37,9 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
             # Normally, we would set is_active to False here, but for now, let's set it to True
             is_active=True
         )
+
+        # Create profile for the new user
+        Profile.objects.create(user=user)
 
         if user.user_type == 'Coach' and verification_file:
             # Handle verification file for coach
@@ -99,3 +102,38 @@ class NotificationSerializer(serializers.ModelSerializer):
         instance.is_read = validated_data.get('is_read', instance.is_read)
         instance.save()
         return instance
+
+class FitnessGoalSerializer(serializers.ModelSerializer):
+    progress_percentage = serializers.FloatField(read_only=True)
+    mentor = serializers.PrimaryKeyRelatedField(queryset=UserWithType.objects.filter(user_type='Coach'), required=False, allow_null=True)
+
+    class Meta:
+        model = FitnessGoal
+        fields = '__all__'
+        read_only_fields = ('user', 'current_value', 'status', 'last_updated', 'progress_percentage')
+
+    def validate_mentor(self, value):
+        if value:
+            return True
+        return False
+
+class FitnessGoalUpdateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = FitnessGoal
+        fields = ('current_value', 'status')
+
+    def validate_status(self, value):
+        if value not in ['ACTIVE', 'COMPLETED', 'INACTIVE', 'RESTARTED']:
+            raise serializers.ValidationError("Invalid status value.")
+        return value
+
+
+class ProfileSerializer(serializers.ModelSerializer):
+    age = serializers.IntegerField(read_only=True)
+    username = serializers.CharField(source='user.username', read_only=True)
+
+    class Meta:
+        model = Profile
+        fields = ['username', 'bio', 'location', 'birth_date', 'age', 'created_at', 'updated_at']
+        read_only_fields = ['username', 'created_at', 'updated_at']
+        

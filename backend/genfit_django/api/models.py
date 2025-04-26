@@ -10,6 +10,49 @@ class UserWithType(AbstractUser):
     is_verified_coach = models.BooleanField(default=False)
 
 
+class FitnessGoal(models.Model):
+    GOAL_TYPES = [
+        ('WALKING_RUNNING', 'Walking/Running'),
+        ('WORKOUT', 'Workout'),
+        ('CYCLING', 'Cycling'),
+        ('SWIMMING', 'Swimming'),
+        ('SPORTS', 'Sports'),
+    ]
+
+    GOAL_STATUS = [
+        ('ACTIVE', 'Active'),
+        ('COMPLETED', 'Completed'),
+        ('INACTIVE', 'Inactive'),
+        ('RESTARTED', 'Restarted'),
+    ]
+
+    user = models.ForeignKey(UserWithType, on_delete=models.CASCADE, related_name='goals')
+    mentor = models.ForeignKey(UserWithType, on_delete=models.SET_NULL, null=True, blank=True, related_name='assigned_goals')
+    goal_type = models.CharField(max_length=20, choices=GOAL_TYPES)
+    title = models.CharField(max_length=255)
+    description = models.TextField(blank=True)
+    target_value = models.FloatField(help_text='Target value (e.g., distance in km, duration in minutes)')
+    current_value = models.FloatField(default=0.0)
+    unit = models.CharField(max_length=20, help_text='Unit of measurement (e.g., km, minutes)')
+    start_date = models.DateTimeField(auto_now_add=True)
+    target_date = models.DateTimeField()
+    status = models.CharField(max_length=20, choices=GOAL_STATUS, default='ACTIVE')
+    last_updated = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-start_date']
+
+    @property
+    def progress_percentage(self):
+        try:
+            if self.target_value > 0:
+                return min(100, (self.current_value / self.target_value) * 100)
+            else:
+                return 0
+        except:
+            return 0
+
+
 class Notification(models.Model):
     NOTIFICATION_TYPES = [
         ('LIKE', 'Like'),
@@ -24,6 +67,7 @@ class Notification(models.Model):
         ('FEEDBACK', 'Mentor Feedback'),
         ('SYSTEM', 'System Notification'),
         ('NEW_MESSAGE', 'New Message'),
+        ('GOAL_INACTIVE', 'Goal Inactive Warning'),
     ]
 
     recipient = models.ForeignKey(UserWithType, on_delete=models.CASCADE, related_name='notifications')
@@ -39,4 +83,30 @@ class Notification(models.Model):
     
     class Meta:
         ordering = ['-created_at']
+
+
+class Profile(models.Model):
+    user = models.OneToOneField(UserWithType, on_delete=models.CASCADE, related_name='profile')
+    bio = models.TextField(max_length=500, blank=True)
+    location = models.CharField(max_length=50, blank=True)
+    birth_date = models.DateField(null=True, blank=True)
+    profile_picture = models.ImageField(
+        upload_to='profile_pictures/',
+        null=True,
+        blank=True,
+        default='profile_pictures/default.png'
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.user.username}'s profile"
+
+    @property
+    def age(self):
+        if self.birth_date:
+            from datetime import date
+            today = date.today()
+            return today.year - self.birth_date.year - ((today.month, today.day) < (self.birth_date.month, self.birth_date.day))
+        return None
 
