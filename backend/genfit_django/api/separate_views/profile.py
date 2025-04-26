@@ -35,6 +35,9 @@ def profile_detail(request):
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+    else:
+        return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
+
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
