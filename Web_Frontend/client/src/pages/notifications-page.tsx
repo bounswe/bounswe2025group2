@@ -4,25 +4,38 @@ import  MobileNavigation  from "@/components/layout/mobile-navigation";
 import { Card, CardContent } from "@/components/ui/card";
 import {Loader2, Bell, Search, Filter, Users} from "lucide-react";
 import {Input} from "@/components/ui/input.tsx";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {useState} from "react";
 import {Button} from "@/components/ui/button.tsx";
 import { useTheme } from "@/theme/ThemeContext";
 import { cn } from "@/lib/utils";
 
-interface Notification {
+interface AppNotification {
     id: number;
-    content: string;
-    createdAt: string;
-    read: boolean;
-    type: string;
+    message: string;  // Changed from 'content' to 'message'
+    created_at: string;
+    is_read: boolean;
+    notification_type: string;
     userId: number;
     relatedId?: number;
 }
 
+function getCSRFToken() {
+  const match = document.cookie.match(/csrftoken=([^;]+)/);
+  return match ? match[1] : null;
+}
+
 export default function NotificationsPage() {
     const { theme } = useTheme();
-    const { data: notifications, isLoading } = useQuery<Notification[]>({
+    const queryClient = useQueryClient();
+
+
+    // ✅ Place useState HERE
+    const [selectedNotification, setSelectedNotification] = useState<AppNotification | null>(null);
+    const [detailsLoading, setDetailsLoading] = useState(false);
+
+    // ✅ Then your useQuery here
+    const { data: notifications, isLoading } = useQuery<AppNotification[]>({
         queryKey: ["/api/notifications"],
         queryFn: async () => {
             const res = await fetch("/api/notifications");
@@ -35,19 +48,66 @@ export default function NotificationsPage() {
         const date = new Date(dateString);
         const now = new Date();
         const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60));
-        
+
         if (diffInHours < 1) {
             return "Just now";
         } else if (diffInHours < 24) {
             return `${diffInHours}h ago`;
         } else {
-            return date.toLocaleDateString('en-US', { 
-                month: 'short', 
-                day: 'numeric', 
-                year: 'numeric' 
+            return date.toLocaleDateString('en-US', {
+                month: 'short',
+                day: 'numeric',
+                year: 'numeric'
             });
         }
     };
+
+    const handleNotificationClick = async (notification: AppNotification) => {
+        // Toggle selectedNotification
+        if (selectedNotification?.id === notification.id) {
+            setSelectedNotification(null);
+            return;
+        }
+
+        setSelectedNotification(notification);
+
+        if (!notification.is_read) {
+            setDetailsLoading(true);
+            try {
+                const headers: Record<string, string> = {
+                    "Content-Type": "application/json",
+                    "Accept": "application/json",
+                }
+                const csrfToken = getCSRFToken();
+                if (csrfToken) {
+                    headers['X-CSRFToken'] = csrfToken;
+                }
+
+                const res = await fetch(`/api/notifications/${notification.id}/mark-as-read/`, {
+                    method: "PATCH",
+                    headers,
+                    credentials: "include",
+                });
+
+                if (!res.ok) {
+                    throw new Error("Failed to mark notification as read");
+                }
+
+                queryClient.setQueryData<AppNotification[]>(["/api/notifications"], (old) => {
+                    if (!old) return [];
+                    return old.map((n) =>
+                        n.id === notification.id ? { ...n, is_read: true } : n
+                    );
+                });
+
+            } catch (error) {
+                console.error("Failed to mark notification as read", error);
+            } finally {
+                setDetailsLoading(false);
+            }
+        }
+    };
+
 
     return (
         <div className="min-h-screen bg-background">
@@ -81,57 +141,80 @@ export default function NotificationsPage() {
                             <div className="space-y-4">
                                 {notifications.map((notification) => (
                                     <Card 
-                                        key={notification.id} 
-                                        className={cn(
-                                            "bg-nav-bg transition-colors",
-                                            theme === 'dark' 
-                                                ? 'border-[#e18d58]' 
-                                                : 'border-[#800000]',
-                                            notification.read ? 'opacity-70' : ''
-                                        )}
-                                    >
-                                        <CardContent className="p-4">
-                                            <div className="flex items-start gap-3">
-                                                <div className={cn(
-                                                    "bg-background border p-2 rounded-full",
-                                                    theme === 'dark' 
-                                                        ? 'border-[#e18d58]' 
-                                                        : 'border-[#800000]'
-                                                )}>
-                                                    <Bell className={cn(
-                                                        "h-4 w-4",
-                                                        theme === 'dark' 
-                                                            ? 'text-[#e18d58]' 
-                                                            : 'text-[#800000]'
-                                                    )} />
-                                                </div>
-                                                <div className="flex-1">
-                                                    <p className={cn(
-                                                        "font-medium",
-                                                        theme === 'dark' 
-                                                            ? 'text-white' 
-                                                            : 'text-[#800000]'
-                                                    )}>{notification.content}</p>
-                                                    <p className={cn(
-                                                        "text-xs mt-1",
-                                                        theme === 'dark' 
-                                                            ? 'text-white/70' 
-                                                            : 'text-[#800000]/70'
-                                                    )}>
-                                                        {formatDate(notification.createdAt)}
-                                                    </p>
-                                                </div>
-                                                {!notification.read && (
-                                                    <div className={cn(
-                                                        "h-2 w-2 rounded-full",
-                                                        theme === 'dark' 
-                                                            ? 'bg-[#e18d58]' 
-                                                            : 'bg-[#800000]'
-                                                    )} />
-                                                )}
-                                            </div>
-                                        </CardContent>
-                                    </Card>
+    key={notification.id} 
+    onClick={() => handleNotificationClick(notification)}
+    className={cn(
+        "bg-nav-bg transition-colors cursor-pointer w-full relative",
+        theme === 'dark' 
+            ? 'border-[#e18d58]' 
+            : 'border-[#800000]',
+        notification.is_read ? 'opacity-70' : ''
+    )}
+>
+    <CardContent className="p-4">
+        <div className="flex items-start gap-3">
+            <div className={cn(
+                "bg-background border p-2 rounded-full",
+                theme === 'dark' 
+                    ? 'border-[#e18d58]' 
+                    : 'border-[#800000]'
+            )}>
+                <Bell className={cn(
+                    "h-4 w-4",
+                    theme === 'dark' 
+                        ? 'text-[#e18d58]' 
+                        : 'text-[#800000]'
+                )} />
+            </div>
+
+            <div className="flex-1">
+                <p className={cn(
+                    "font-medium",
+                    theme === 'dark' 
+                        ? 'text-white' 
+                        : 'text-[#800000]'
+                )}>{notification.message}</p>
+
+                <p className={cn(
+                    "text-xs mt-1",
+                    theme === 'dark' 
+                        ? 'text-white/70' 
+                        : 'text-[#800000]/70'
+                )}>
+                    {formatDate(notification.created_at)}
+                </p>
+
+                {/* ✅ Inline expansion */}
+                {selectedNotification?.id === notification.id && (
+                    <div className="mt-3 space-y-1 text-sm">
+                        <p className={cn(
+                            theme === 'dark' ? 'text-white' : 'text-[#800000]'
+                        )}>
+                            <strong>Type:</strong> {notification.notification_type}
+                        </p>
+                        <p className={cn(
+                            theme === 'dark' ? 'text-white/70' : 'text-[#800000]/70'
+                        )}>
+                            <strong>Sent at:</strong> {new Date(notification.created_at).toLocaleString()}
+                        </p>
+                        {/* Add more fields here if needed */}
+                    </div>
+                )}
+            </div>
+
+            {/* Dot to indicate read/unread */}
+            {!notification.is_read && (
+                <div className={cn(
+                    "h-2 w-2 rounded-full",
+                    theme === 'dark' 
+                        ? 'bg-[#e18d58]' 
+                        : 'bg-[#800000]'
+                )} />
+            )}
+        </div>
+    </CardContent>
+</Card>
+
                                 ))}
                             </div>
                         ) : (
