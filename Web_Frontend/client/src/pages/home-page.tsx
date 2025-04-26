@@ -72,6 +72,76 @@ export default function HomePage() {
     const programsLoading = false;
     const threadsLoading = false;
 
+  // MOCK DATA START - GOAL PROGRESSES - DESIGN CAN BE CHANGED OR DATA CAN BE REMOVED DURING IMPLEMENTATION
+  const mockGoalProgresses = [
+    {
+      id: 1,
+      title: "Run 5K",
+      progress: 60,
+      type: "running"
+    },
+    {
+      id: 2,
+      title: "Daily Steps",
+      progress: 75,
+      type: "walking"
+    }
+  ];
+  // MOCK DATA END - GOAL PROGRESSES - DESIGN CAN BE CHANGED OR DATA CAN BE REMOVED DURING IMPLEMENTATION
+
+  // MOCK DATA START - CHALLENGES - DESIGN CAN BE CHANGED OR DATA CAN BE REMOVED DURING IMPLEMENTATION
+  const mockChallenges = [
+    {
+      id: 1,
+      title: "10K Steps Challenge",
+      participants: 24,
+      daysLeft: 5
+    },
+    {
+      id: 2,
+      title: "Swimming Marathon",
+      participants: 12,
+      daysLeft: 15
+    }
+  ];
+  // MOCK DATA END - CHALLENGES - DESIGN CAN BE CHANGED OR DATA CAN BE REMOVED DURING IMPLEMENTATION
+
+  // MOCK DATA START - COMMUNITY DISCUSSIONS - DESIGN CAN BE CHANGED OR DATA CAN BE REMOVED DURING IMPLEMENTATION
+  const mockDiscussions = [
+    {
+      id: 1,
+      title: "Best pre-workout routine",
+      author: "John Doe",
+      replies: 12,
+      category: "Training"
+    },
+    {
+      id: 2,
+      title: "Marathon preparation tips",
+      author: "Jane Smith",
+      replies: 8,
+      category: "Running"
+    }
+  ];
+  // MOCK DATA END - COMMUNITY DISCUSSIONS - DESIGN CAN BE CHANGED OR DATA CAN BE REMOVED DURING IMPLEMENTATION
+
+  // MOCK DATA START - SPORTS PROGRAMS - DESIGN CAN BE CHANGED OR DATA CAN BE REMOVED DURING IMPLEMENTATION
+  const mockPrograms = [
+    {
+      id: 1,
+      title: "Basketball Training",
+      location: "Istanbul",
+      price: "500₺/month"
+    },
+    {
+      id: 2,
+      title: "Swimming Classes",
+      location: "Ankara",
+      price: "600₺/month"
+    }
+  ];
+  // MOCK DATA END - SPORTS PROGRAMS - DESIGN CAN BE CHANGED OR DATA CAN BE REMOVED DURING IMPLEMENTATION
+
   return (
     <div className="min-h-screen bg-background">
       <MobileHeader />
@@ -130,7 +200,7 @@ export default function HomePage() {
                         ? 'border-[#e18d58] text-white hover:bg-[#e18d58]/20'
                         : 'border-[#800000] text-[#800000] hover:bg-active'
                     )}
-                    onClick={() => setLocation(`/profile/${user?.username}`)}>                  
+                    onClick={() => setLocation("/")}>                  
                     <UserCircle size={20} />
                     View Profile
                   </Button>
@@ -277,7 +347,7 @@ export default function HomePage() {
                         </div>
                       ))}
                       <Link href="/challenges" className={cn(
-                        "p-0 h-auto",
+                        "font-semibold flex items-center text-sm hover:underline",
                         theme === 'dark' 
                           ? 'text-[#e18d58] hover:text-[#e18d58]/80' 
                           : 'text-[#800000] hover:text-[#800000]/80'
@@ -336,13 +406,13 @@ export default function HomePage() {
                       theme === 'dark' ? 'border-[#e18d58]' : 'border-[#800000]'
                     )}>
                       <div className="flex items-center mb-2">
-                        <Link href={`/forum/${thread.id}`}>
-                          <h3 className={cn(
-                            "font-medium",
+                        <Link href={`/forum?category=${encodeURIComponent(thread.category.toLowerCase())}`}
+                          className={cn(
+                            "font-semibold hover:underline cursor-pointer",
                             theme === 'dark' ? 'text-[#e18d58] hover:text-[#e18d58]/80' : 'text-[#800000] hover:text-[#800000]/80'
-                          )}>
-                            /{thread.category}
-                          </h3>
+                          )}
+                        >
+                          /{thread.category}
                         </Link>
                       </div>
                       <p className={cn(
