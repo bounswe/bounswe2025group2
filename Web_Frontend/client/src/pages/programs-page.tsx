@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
 import Sidebar from "@/components/layout/sidebar";
 import MobileHeader from "@/components/layout/mobile-header";
@@ -9,7 +8,6 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { 
-  Loader2, 
   Search, 
   MapPin, 
   Calendar, 
@@ -29,6 +27,50 @@ import {
 import { useTheme } from "@/theme/ThemeContext";
 import { cn } from "@/lib/utils";
 
+// MOCK DATA START - DESIGN CAN BE CHANGED OR DATA CAN BE REMOVED DURING IMPLEMENTATION
+const mockPrograms = [
+  {
+    id: 1,
+    name: "Basketball Training Program",
+    description: "Comprehensive basketball training for all skill levels",
+    location: "Istanbul",
+    sportType: "Basketball",
+    ageGroups: ["12-15", "16-18"],
+    schedule: "Mon, Wed, Fri 16:00-18:00",
+    price: "500₺/month",
+    contact: "+90 555 123 4567",
+    maxParticipants: 20,
+    currentParticipants: 15,
+  },
+  {
+    id: 2,
+    name: "Swimming Classes",
+    description: "Learn swimming with professional instructors",
+    location: "Ankara",
+    sportType: "Swimming",
+    ageGroups: ["6-11", "12-15"],
+    schedule: "Tue, Thu 15:00-17:00",
+    price: "600₺/month",
+    contact: "+90 555 987 6543",
+    maxParticipants: 15,
+    currentParticipants: 8,
+  },
+  {
+    id: 3,
+    name: "Soccer Academy",
+    description: "Professional soccer training for youth",
+    location: "Izmir",
+    sportType: "Soccer",
+    ageGroups: ["12-15", "16-18"],
+    schedule: "Mon-Fri 17:00-19:00",
+    price: "750₺/month",
+    contact: "+90 555 456 7890",
+    maxParticipants: 25,
+    currentParticipants: 20,
+  }
+];
+// MOCK DATA END - DESIGN CAN BE CHANGED OR DATA CAN BE REMOVED DURING IMPLEMENTATION
+
 export default function ProgramsPage() {
   const { theme } = useTheme();
   const [searchQuery, setSearchQuery] = useState("");
@@ -36,18 +78,8 @@ export default function ProgramsPage() {
   const [ageGroupFilter, setAgeGroupFilter] = useState("");
   const [sportTypeFilter, setSportTypeFilter] = useState("");
 
-  // Fetch all sports programs
-  const { data: programs, isLoading } = useQuery({
-    queryKey: ["/api/programs"],
-    queryFn: async () => {
-      const res = await fetch("/api/programs");
-      if (!res.ok) throw new Error("Failed to fetch programs");
-      return res.json();
-    },
-  });
-
   // Filter programs by search query and filters
-  const filteredPrograms = programs ? programs.filter((program: any) => {
+  const filteredPrograms = mockPrograms.filter((program) => {
     // Search query filter
     const matchesSearch = searchQuery === "" || 
       program.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -68,20 +100,12 @@ export default function ProgramsPage() {
       program.sportType.toLowerCase() === sportTypeFilter.toLowerCase();
     
     return matchesSearch && matchesLocation && matchesAgeGroup && matchesSportType;
-  }) : [];
+  });
 
   // Get unique locations, age groups, and sport types for filter options
-  const locations = programs 
-    ? Array.from(new Set(programs.map((p: any) => p.location)))
-    : [];
-  
-  const sportTypes = programs
-    ? Array.from(new Set(programs.map((p: any) => p.sportType)))
-    : [];
-  
-  const ageGroups = programs
-    ? Array.from(new Set(programs.flatMap((p: any) => p.ageGroups)))
-    : [];
+  const locations = Array.from(new Set(mockPrograms.map(p => p.location)));
+  const sportTypes = Array.from(new Set(mockPrograms.map(p => p.sportType)));
+  const ageGroups = Array.from(new Set(mockPrograms.flatMap(p => p.ageGroups)));
 
   const clearFilters = () => {
     setLocationFilter("all");
@@ -253,16 +277,9 @@ export default function ProgramsPage() {
             </div>
             
             {/* Programs Grid */}
-            {isLoading ? (
-              <div className="flex justify-center py-12">
-                <Loader2 className={cn(
-                  "h-8 w-8 animate-spin",
-                  theme === 'dark' ? 'text-[#e18d58]' : 'text-[#800000]'
-                )} />
-              </div>
-            ) : filteredPrograms.length > 0 ? (
+            {filteredPrograms.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {filteredPrograms.map((program: any) => (
+                {filteredPrograms.map((program) => (
                   <ProgramCard key={program.id} program={program} />
                 ))}
               </div>

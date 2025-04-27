@@ -1,9 +1,9 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { createProxyMiddleware } from "http-proxy-middleware";
-import type { Request, Response } from "express";
+import type { IncomingMessage, ServerResponse } from "http";
 
-const DJANGO_BACKEND_URL = "http://localhost:8000/api/";
+const DJANGO_BACKEND_URL = "http://localhost:8000";
 
 export async function registerRoutes(app: Express): Promise<Server> {
     // Proxy all /api requests to Django backend
@@ -14,11 +14,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
             changeOrigin: true,
             secure: false,
             pathRewrite: {
-            "^/api": ""
+                "^/api": "/api"  // Keep /api prefix when forwarding to Django
             },
-        } as any)
+            onProxyRes: function(proxyRes: IncomingMessage) {
+                // Ensure cookies are properly handled
+                if (proxyRes.headers['set-cookie']) {
+                    const cookies = proxyRes.headers['set-cookie'].map((cookie: string) =>
+                        cookie.replace(/; secure/gi, '')
+                    );
+                    proxyRes.headers['set-cookie'] = cookies;
+                }
+            }
+        } as any)  // Type assertion needed due to http-proxy-middleware types limitation
     );
 
-  const httpServer = createServer(app);
-  return httpServer;
+    const httpServer = createServer(app);
+    return httpServer;
 }

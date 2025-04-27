@@ -1,7 +1,5 @@
 import { useState } from "react";
-import { useQuery, useMutation } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
-import { apiRequest, queryClient } from "@/lib/queryClient";
 import Sidebar from "@/components/layout/sidebar";
 import MobileHeader from "@/components/layout/mobile-header";
 import MobileNavigation from "@/components/layout/mobile-navigation";
@@ -30,7 +28,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { 
-  Loader2, 
   Plus, 
   Target, 
   TrendingUp, 
@@ -41,10 +38,66 @@ import {
 import { useTheme } from "@/theme/ThemeContext";
 import { cn } from "@/lib/utils";
 
+interface Goal {
+  id: number;
+  title: string;
+  type: string;
+  targetValue: number;
+  currentValue: number;
+  unit: string;
+  status: 'active' | 'completed' | 'paused';
+  endDate: string;
+  progress: number;
+  userId: number;
+  daysRemaining?: number;
+}
+
+// MOCK DATA START - DESIGN CAN BE CHANGED OR DATA CAN BE REMOVED DURING IMPLEMENTATION
+const mockGoals: Goal[] = [
+  {
+    id: 1,
+    title: "Run 5K",
+    type: "running",
+    targetValue: 5,
+    currentValue: 3,
+    unit: "kilometers",
+    status: "active" as const,
+    endDate: "2024-04-15",
+    progress: 60,
+    userId: 1
+  },
+  {
+    id: 2,
+    title: "Daily Steps",
+    type: "walking",
+    targetValue: 10000,
+    currentValue: 7500,
+    unit: "steps",
+    status: "active" as const,
+    endDate: "2024-04-30",
+    progress: 75,
+    userId: 1
+  },
+  {
+    id: 3,
+    title: "Swimming Distance",
+    type: "swimming",
+    targetValue: 1000,
+    currentValue: 800,
+    unit: "meters",
+    status: "completed" as const,
+    endDate: "2024-03-30",
+    progress: 100,
+    userId: 1
+  }
+];
+// MOCK DATA END - DESIGN CAN BE CHANGED OR DATA CAN BE REMOVED DURING IMPLEMENTATION
+
 export default function GoalsPage() {
   const { user } = useAuth();
   const [newGoalOpen, setNewGoalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<string>("active");
+  const [goals, setGoals] = useState<Goal[]>(mockGoals);
   const [newGoal, setNewGoal] = useState({
     title: "",
     type: "walking",
@@ -55,56 +108,24 @@ export default function GoalsPage() {
   });
   
   const { theme } = useTheme();
-  
-  // Fetch user goals
-  const { data: goals, isLoading } = useQuery({
-    queryKey: ["/api/goals/"],
-    queryFn: async () => {
-      const res = await fetch("/api/goals/", {
-        credentials: "include",
-      });
-      if (!res.ok) throw new Error("Failed to fetch goals");
-      return res.json();
-    },
-  });
-
-  // Create new goal mutation
-  const createGoalMutation = useMutation({
-    mutationFn: async (goalData: any) => {
-      // Convert string dates to Date objects before sending to server
-      const formattedData = {
-        ...goalData,
-        endDate: goalData.endDate ? new Date(goalData.endDate) : undefined
-      };
-      
-      const res = await apiRequest(
-          "POST", "/api/goals/", formattedData
-      );
-      return res.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/goals/"] });
-      setNewGoalOpen(false);
-      resetNewGoalForm();
-    }
-  });
-
-  // Update goal progress mutation
-  const updateGoalProgressMutation = useMutation({
-    mutationFn: async ({ id, progress }: { id: number, progress: number }) => {
-      const res = await apiRequest("PATCH", `/api/goals/${id}/progress`, { progress });
-      return res.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/goals"] });
-    }
-  });
 
   const handleCreateGoal = () => {
-    createGoalMutation.mutate({
-      ...newGoal,
-      userId: user?.id
-    });
+    const goal: Goal = {
+      id: goals.length + 1,
+      title: newGoal.title,
+      type: newGoal.type,
+      targetValue: newGoal.targetValue,
+      currentValue: 0,
+      unit: newGoal.unit,
+      status: 'active',
+      endDate: newGoal.endDate,
+      progress: 0,
+      userId: user?.id || 1
+    };
+    
+    setGoals([...goals, goal]);
+    setNewGoalOpen(false);
+    resetNewGoalForm();
   };
 
   const resetNewGoalForm = () => {
@@ -119,24 +140,33 @@ export default function GoalsPage() {
   };
 
   const handleUpdateProgress = (id: number, currentValue: number, newProgress: number) => {
-    updateGoalProgressMutation.mutate({
-      id,
-      progress: currentValue + newProgress
-    });
+    setGoals(goals.map(goal => {
+      if (goal.id === id) {
+        const updatedValue = currentValue + newProgress;
+        const progress = Math.min((updatedValue / goal.targetValue) * 100, 100);
+        return {
+          ...goal,
+          currentValue: updatedValue,
+          progress,
+          status: progress >= 100 ? 'completed' : 'active'
+        };
+      }
+      return goal;
+    }));
   };
 
   // Filter goals based on active tab
-  const filteredGoals = goals ? goals.filter((goal: any) => {
+  const filteredGoals = goals.filter((goal) => {
     if (activeTab === "active") return goal.status === "active";
     if (activeTab === "completed") return goal.status === "completed";
     if (activeTab === "paused") return goal.status === "paused";
     return true; // all tab
-  }) : [];
+  });
 
   // Get goal-related stats
-  const activeGoalsCount = goals ? goals.filter((g: any) => g.status === "active").length : 0;
-  const completedGoalsCount = goals ? goals.filter((g: any) => g.status === "completed").length : 0;
-  const totalGoalsCount = goals ? goals.length : 0;
+  const activeGoalsCount = goals.filter(g => g.status === "active").length;
+  const completedGoalsCount = goals.filter(g => g.status === "completed").length;
+  const totalGoalsCount = goals.length;
   const completionRate = totalGoalsCount > 0 ? Math.round((completedGoalsCount / totalGoalsCount) * 100) : 0;
 
   return (
@@ -294,7 +324,7 @@ export default function GoalsPage() {
             {/* Goals Tabs */}
             <Tabs defaultValue="active" className="mb-6" onValueChange={setActiveTab}>
               <TabsList className={cn(
-                "bg-nav-bg w-full border rounded-lg p-1",
+                "bg-nav-bg w-full border rounded-lg p-1 mb-8",
                 theme === 'dark' ? 'border-[#e18d58]' : 'border-[#800000]'
               )}>
                 <TabsTrigger 
@@ -344,16 +374,9 @@ export default function GoalsPage() {
               </TabsList>
 
               {/* Goals Grid */}
-              {isLoading ? (
-                <div className="flex justify-center py-12">
-                  <Loader2 className={cn(
-                    "h-8 w-8 animate-spin",
-                    theme === 'dark' ? 'text-[#e18d58]' : 'text-[#800000]'
-                  )} />
-                </div>
-              ) : filteredGoals.length > 0 ? (
+              {filteredGoals.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {filteredGoals.map((goal: any) => (
+                  {filteredGoals.map((goal) => (
                     <Card 
                       key={goal.id} 
                       className={cn(
@@ -587,7 +610,6 @@ export default function GoalsPage() {
             <Button 
               onClick={handleCreateGoal}
               disabled={
-                createGoalMutation.isPending || 
                 !newGoal.title || 
                 !newGoal.type || 
                 !newGoal.targetValue ||
@@ -600,12 +622,7 @@ export default function GoalsPage() {
                   : 'text-[#800000] border-[#800000] hover:bg-background'
               )}
             >
-              {createGoalMutation.isPending ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Creating...
-                </>
-              ) : "Create Goal"}
+              Create Goal
             </Button>
           </DialogFooter>
         </DialogContent>
