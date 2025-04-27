@@ -113,9 +113,9 @@ class FitnessGoalSerializer(serializers.ModelSerializer):
         read_only_fields = ('user', 'current_value', 'status', 'last_updated', 'progress_percentage')
 
     def validate_mentor(self, value):
-        if value:
-            return True
-        return False
+        if value and value.user_type != 'Coach':
+            raise serializers.ValidationError("Mentor must be a coach.")
+        return value
 
 class FitnessGoalUpdateSerializer(serializers.ModelSerializer):
     class Meta:
@@ -136,4 +136,3 @@ class ProfileSerializer(serializers.ModelSerializer):
         model = Profile
         fields = ['username', 'bio', 'location', 'birth_date', 'age', 'created_at', 'updated_at']
         read_only_fields = ['username', 'created_at', 'updated_at']
-        

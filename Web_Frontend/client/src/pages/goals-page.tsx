@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import Sidebar from "@/components/layout/sidebar";
 import MobileHeader from "@/components/layout/mobile-header";
@@ -33,10 +33,40 @@ import {
   TrendingUp, 
   Medal,
   Calendar,
-  BarChart2
+  BarChart2,
+  Loader2
 } from "lucide-react";
 import { useTheme } from "@/theme/ThemeContext";
 import { cn } from "@/lib/utils";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
+import { motion } from "framer-motion";
+
+interface GoalMentor {
+  id: number;
+  name?: string;
+  username: string;
+}
+
+interface GoalResponse {
+  id: number;
+  title: string;
+  category: string;
+  target_value: number;
+  current_value: number;
+  unit: string;
+  status: 'ACTIVE' | 'COMPLETED' | 'INACTIVE' | 'RESTARTED';
+  target_date: string;
+  start_date: string;
+  last_updated: string;
+  user: number;
+  mentor?: {
+    id: number;
+    name?: string;
+    username: string;
+  };
+  description?: string;
+}
 
 interface Goal {
   id: number;
@@ -49,55 +79,42 @@ interface Goal {
   endDate: string;
   progress: number;
   userId: number;
+  mentor?: GoalMentor;
   daysRemaining?: number;
 }
 
-// MOCK DATA START - DESIGN CAN BE CHANGED OR DATA CAN BE REMOVED DURING IMPLEMENTATION
-const mockGoals: Goal[] = [
-  {
-    id: 1,
-    title: "Run 5K",
-    type: "running",
-    targetValue: 5,
-    currentValue: 3,
-    unit: "kilometers",
-    status: "active" as const,
-    endDate: "2024-04-15",
-    progress: 60,
-    userId: 1
-  },
-  {
-    id: 2,
-    title: "Daily Steps",
-    type: "walking",
-    targetValue: 10000,
-    currentValue: 7500,
-    unit: "steps",
-    status: "active" as const,
-    endDate: "2024-04-30",
-    progress: 75,
-    userId: 1
-  },
-  {
-    id: 3,
-    title: "Swimming Distance",
-    type: "swimming",
-    targetValue: 1000,
-    currentValue: 800,
-    unit: "meters",
-    status: "completed" as const,
-    endDate: "2024-03-30",
-    progress: 100,
-    userId: 1
-  }
-];
-// MOCK DATA END - DESIGN CAN BE CHANGED OR DATA CAN BE REMOVED DURING IMPLEMENTATION
+function formatDate(dateString: string): string {
+  return new Date(dateString).toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric'
+  });
+}
+
+function mapGoalResponseToGoal(g: GoalResponse): Goal {
+  return {
+    id: g.id,
+    title: g.title,
+    type: g.category?.toLowerCase() || '',
+    targetValue: g.target_value,
+    currentValue: g.current_value,
+    unit: g.unit,
+    status: g.status?.toLowerCase() as 'active' | 'completed' | 'paused',
+    endDate: g.target_date?.slice(0, 10) || '',
+    progress: Math.round((g.current_value / g.target_value) * 100),
+    userId: g.user,
+    mentor: g.mentor,
+    daysRemaining: g.target_date ? Math.ceil((new Date(g.target_date).getTime() - Date.now()) / (1000*60*60*24)) : undefined
+  };
+}
 
 export default function GoalsPage() {
   const { user } = useAuth();
+  const { toast } = useToast();
   const [newGoalOpen, setNewGoalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<string>("active");
-  const [goals, setGoals] = useState<Goal[]>(mockGoals);
+  const [goals, setGoals] = useState<Goal[]>([]); // Start with empty, not mock
+  const [loading, setLoading] = useState(false);
   const [newGoal, setNewGoal] = useState({
     title: "",
     type: "walking",
@@ -106,26 +123,164 @@ export default function GoalsPage() {
     endDate: "",
     mentorId: undefined as number | undefined
   });
+  const [error, setError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
   const { theme } = useTheme();
 
-  const handleCreateGoal = () => {
-    const goal: Goal = {
-      id: goals.length + 1,
-      title: newGoal.title,
-      type: newGoal.type,
-      targetValue: newGoal.targetValue,
-      currentValue: 0,
-      unit: newGoal.unit,
-      status: 'active',
-      endDate: newGoal.endDate,
-      progress: 0,
-      userId: user?.id || 1
+  // Fetch goals from backend
+  useEffect(() => {
+    const fetchGoals = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const res = await apiRequest("GET", "/api/goals/");
+        if (res.ok) {
+          const data = (await res.json()) as GoalResponse[];
+          setGoals(data.map(mapGoalResponseToGoal));
+        } else {
+          const errorData = await res.json();
+          setError(errorData.message || 'Failed to fetch goals');
+          toast({
+            title: "Error",
+            description: errorData.message || 'Failed to fetch goals',
+            variant: "destructive",
+          });
+        }
+      } catch (e) {
+        console.error('Error fetching goals:', e);
+        setError('Failed to fetch goals. Please try again.');
+        toast({
+          title: "Error",
+          description: 'Failed to fetch goals. Please try again.',
+          variant: "destructive",
+        });
+      } finally {
+        setLoading(false);
+      }
     };
-    
-    setGoals([...goals, goal]);
-    setNewGoalOpen(false);
-    resetNewGoalForm();
+    fetchGoals();
+  }, [toast]);
+
+  // Create goal
+  const handleCreateGoal = async () => {
+    setIsSubmitting(true);
+    try {
+      const res = await apiRequest("POST", "/api/goals/", {
+        title: newGoal.title,
+        goal_type: newGoal.type.toUpperCase(),
+        target_value: newGoal.targetValue,
+        current_value: 0,
+        unit: newGoal.unit,
+        target_date: new Date(newGoal.endDate).toISOString(),
+        mentor: newGoal.mentorId || null
+      });
+      
+      if (res.ok) {
+        const g = await res.json();
+        setGoals([...goals, {
+          id: g.id,
+          title: g.title,
+          type: g.goal_type?.toLowerCase() || '',
+          targetValue: g.target_value,
+          currentValue: g.current_value,
+          unit: g.unit,
+          status: g.status?.toLowerCase() || 'active',
+          endDate: g.target_date?.slice(0, 10) || '',
+          progress: Math.round((g.current_value / g.target_value) * 100),
+          userId: g.user,
+          daysRemaining: g.target_date ? Math.ceil((new Date(g.target_date).getTime() - Date.now()) / (1000*60*60*24)) : undefined
+        }]);
+        setNewGoalOpen(false);
+        resetNewGoalForm();
+        toast({
+          title: "Success",
+          description: "Goal created successfully!",
+        });
+      } else {
+        const errorData = await res.json();
+        toast({
+          title: "Error", 
+          description: errorData.detail || 'Failed to create goal',
+          variant: "destructive",
+        });
+      }
+    } catch (e) {
+      console.error('Error creating goal:', e);
+      toast({
+        title: "Error",
+        description: 'Failed to create goal. Please try again.',
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Update progress
+  const handleUpdateProgress = async (id: number, currentValue: number, newProgress: number) => {
+    const updatedValue = currentValue + newProgress;
+    try {
+      const res = await apiRequest("PATCH", `/api/goals/${id}/progress/`, {
+        current_value: updatedValue
+      });
+      
+      if (res.ok) {
+        const g = await res.json();
+        setGoals(goals.map(goal => goal.id === id ? {
+          ...goal,
+          currentValue: g.current_value,
+          progress: Math.round((g.current_value / g.target_value) * 100),
+          status: g.status?.toLowerCase() || goal.status
+        } : goal));
+        toast({
+          title: "Success",
+          description: "Progress updated successfully!",
+        });
+      } else {
+        const errorData = await res.json();
+        toast({
+          title: "Error",
+          description: errorData.message || 'Failed to update progress',
+          variant: "destructive",
+        });
+      }
+    } catch (e) {
+      console.error('Error updating goal progress:', e);
+      toast({
+        title: "Error",
+        description: 'Failed to update progress. Please try again.',
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Delete goal
+  const handleDeleteGoal = async (id: number) => {
+    try {
+      const res = await apiRequest("DELETE", `/api/goals/${id}/`);
+      if (res.ok || res.status === 204) {
+        setGoals(goals.filter(goal => goal.id !== id));
+        toast({
+          title: "Success",
+          description: "Goal deleted successfully",
+        });
+      } else {
+        const errorData = await res.json().catch(() => ({ message: 'Failed to delete goal' }));
+        toast({
+          title: "Error",
+          description: errorData.message,
+          variant: "destructive",
+        });
+      }
+    } catch (e) {
+      console.error('Error deleting goal:', e);
+      toast({
+        title: "Error",
+        description: 'Failed to delete goal. Please try again.',
+        variant: "destructive",
+      });
+    }
   };
 
   const resetNewGoalForm = () => {
@@ -137,22 +292,6 @@ export default function GoalsPage() {
       endDate: "",
       mentorId: undefined
     });
-  };
-
-  const handleUpdateProgress = (id: number, currentValue: number, newProgress: number) => {
-    setGoals(goals.map(goal => {
-      if (goal.id === id) {
-        const updatedValue = currentValue + newProgress;
-        const progress = Math.min((updatedValue / goal.targetValue) * 100, 100);
-        return {
-          ...goal,
-          currentValue: updatedValue,
-          progress,
-          status: progress >= 100 ? 'completed' : 'active'
-        };
-      }
-      return goal;
-    }));
   };
 
   // Filter goals based on active tab
@@ -414,6 +553,11 @@ export default function GoalsPage() {
                           {goal.title}
                         </CardTitle>
                       </CardHeader>
+                      <GoalCard 
+                        goal={goal} 
+                        onUpdateProgress={handleUpdateProgress}
+                        onDeleteGoal={handleDeleteGoal}
+                      />
                     </Card>
                   ))}
                 </div>
@@ -604,12 +748,14 @@ export default function GoalsPage() {
                   ? 'text-white border-[#e18d58] hover:bg-[#e18d58]/20' 
                   : 'text-[#800000] border-[#800000] hover:bg-background'
               )}
+              disabled={isSubmitting}
             >
               Cancel
             </Button>
             <Button 
               onClick={handleCreateGoal}
               disabled={
+                isSubmitting ||
                 !newGoal.title || 
                 !newGoal.type || 
                 !newGoal.targetValue ||
@@ -622,7 +768,14 @@ export default function GoalsPage() {
                   : 'text-[#800000] border-[#800000] hover:bg-background'
               )}
             >
-              Create Goal
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Creating...
+                </>
+              ) : (
+                "Create Goal"
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -631,135 +784,231 @@ export default function GoalsPage() {
   );
 }
 
-function GoalCard({ 
-  goal, 
-  onUpdateProgress 
-}: { 
-  goal: any;
+function GoalCard({ goal, onUpdateProgress, onDeleteGoal }: { 
+  goal: Goal;
   onUpdateProgress: (id: number, currentValue: number, newProgress: number) => void;
+  onDeleteGoal: (id: number) => void;
 }) {
   const [isAddingProgress, setIsAddingProgress] = useState(false);
   const [progressValue, setProgressValue] = useState(1);
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const { theme } = useTheme();
   
-  const handleAddProgress = () => {
-    onUpdateProgress(goal.id, goal.currentValue, progressValue);
-    setIsAddingProgress(false);
-    setProgressValue(1);
+  const handleAddProgress = async () => {
+    setIsUpdating(true);
+    try {
+      await onUpdateProgress(goal.id, goal.currentValue, progressValue);
+      setIsAddingProgress(false);
+      setProgressValue(1);
+    } finally {
+      setIsUpdating(false);
+    }
   };
   
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { 
-      month: 'short', 
-      day: 'numeric', 
-      year: 'numeric' 
-    });
+  const handleDelete = async () => {
+    if (window.confirm('Are you sure you want to delete this goal?')) {
+      setIsDeleting(true);
+      try {
+        await onDeleteGoal(goal.id);
+      } finally {
+        setIsDeleting(false);
+      }
+    }
   };
-  
-  const getDaysRemaining = () => {
-    const today = new Date();
-    const endDate = new Date(goal.endDate);
-    const diffTime = endDate.getTime() - today.getTime();
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    return diffDays;
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'completed':
+        return theme === 'dark' ? 'text-green-400 border-green-400' : 'text-green-600 border-green-600';
+      case 'paused':
+        return theme === 'dark' ? 'text-yellow-400 border-yellow-400' : 'text-yellow-600 border-yellow-600';
+      case 'active':
+        return theme === 'dark' ? 'text-[#e18d58] border-[#e18d58]' : 'text-[#800000] border-[#800000]';
+      default:
+        return theme === 'dark' ? 'text-white border-white' : 'text-[#800000] border-[#800000]';
+    }
   };
 
   return (
-    <Card className="bg-nav-bg border-[#800000]">
-      <CardContent className="p-6">
-        <div className="flex items-start justify-between">
-          <div>
-            <div className="flex items-center gap-2 mb-2">
-              <Badge 
-                variant="outline" 
-                className={`
-                  bg-background border-[#800000] text-[#800000] font-bold
-                  ${goal.status === 'completed' ? 'border-[#800000]' : ''}
-                  ${goal.status === 'paused' ? 'border-[#800000]' : ''}
-                `}
-              >
-                {goal.status.charAt(0).toUpperCase() + goal.status.slice(1)}
-              </Badge>
-              {goal.mentor && (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -20 }}
+      transition={{ duration: 0.2 }}
+    >
+      <Card className="bg-nav-bg border-[#800000]">
+        <CardContent className="p-6">
+          <div className="flex items-start justify-between">
+            <div className="flex-1">
+              <div className="flex items-center gap-2 mb-2">
                 <Badge 
                   variant="outline" 
-                  className="bg-background border-[#800000] text-[#800000]"
+                  className={cn(
+                    "bg-background font-bold",
+                    getStatusColor(goal.status)
+                  )}
                 >
-                  Mentor: {goal.mentor.name || goal.mentor.username}
+                  {goal.status.charAt(0).toUpperCase() + goal.status.slice(1)}
                 </Badge>
+                {goal.mentor && (
+                  <Badge 
+                    variant="outline" 
+                    className={cn(
+                      "bg-background",
+                      theme === 'dark' ? 'text-[#e18d58] border-[#e18d58]' : 'text-[#800000] border-[#800000]'
+                    )}
+                  >
+                    Mentor: {goal.mentor.name || goal.mentor.username}
+                  </Badge>
+                )}
+              </div>
+              
+              <h3 className={cn(
+                "text-lg font-bold mb-1",
+                theme === 'dark' ? 'text-white' : 'text-[#800000]'
+              )}>{goal.title}</h3>
+              <p className={cn(
+                "text-sm mb-4",
+                theme === 'dark' ? 'text-white/70' : 'text-[#800000]/70'
+              )}>
+                Target: {goal.targetValue} {goal.unit} by {formatDate(goal.endDate)}
+              </p>
+              
+              <div className="space-y-2">
+                <div className={cn(
+                  "flex justify-between text-sm",
+                  theme === 'dark' ? 'text-white/70' : 'text-[#800000]/70'
+                )}>
+                  <span>Progress</span>
+                  <span>{goal.currentValue} / {goal.targetValue} {goal.unit}</span>
+                </div>
+                <motion.div
+                  initial={{ width: 0 }}
+                  animate={{ width: `${goal.progress}%` }}
+                  transition={{ duration: 0.5, ease: "easeOut" }}
+                >
+                  <div className="w-full h-2 bg-background rounded-full overflow-hidden">
+                    <div 
+                      className={cn(
+                        "h-full rounded-full",
+                        theme === 'dark' ? 'bg-[#e18d58]' : 'bg-[#800000]'
+                      )} 
+                      style={{ width: `${goal.progress}%` }}
+                    />
+                  </div>
+                </motion.div>
+                <div className={cn(
+                  "flex justify-between text-sm",
+                  theme === 'dark' ? 'text-white/70' : 'text-[#800000]/70'
+                )}>
+                  <span>{goal.daysRemaining} days remaining</span>
+                  <span className={cn(
+                    "font-bold",
+                    theme === 'dark' ? 'text-white' : 'text-[#800000]'
+                  )}>{goal.progress}%</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          {goal.status === 'active' && (
+            <div className="mt-4">
+              {isAddingProgress ? (
+                <div className="space-y-2">
+                  <div className="flex items-center gap-4">
+                    <Slider
+                      value={[progressValue]}
+                      onValueChange={([value]) => setProgressValue(value)}
+                      min={1}
+                      max={Math.min(10, goal.targetValue - goal.currentValue)}
+                      step={1}
+                      className={cn(
+                        "flex-1",
+                        theme === 'dark' ? '[&>span]:bg-[#e18d58]' : '[&>span]:bg-[#800000]'
+                      )}
+                    />
+                    <span className={cn(
+                      "font-bold w-12",
+                      theme === 'dark' ? 'text-white' : 'text-[#800000]'
+                    )}>+{progressValue}</span>
+                  </div>
+                  <div className="flex justify-end gap-2">
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      className={cn(
+                        theme === 'dark' 
+                          ? 'border-[#e18d58] text-white hover:bg-[#e18d58]/20' 
+                          : 'border-[#800000] text-[#800000] hover:bg-background'
+                      )}
+                      onClick={() => setIsAddingProgress(false)}
+                      disabled={isUpdating}
+                    >
+                      Cancel
+                    </Button>
+                    <Button 
+                      size="sm"
+                      className={cn(
+                        "bg-nav-bg border font-bold",
+                        theme === 'dark' 
+                          ? 'border-[#e18d58] text-white hover:bg-[#e18d58]/20' 
+                          : 'border-[#800000] text-[#800000] hover:bg-background'
+                      )}
+                      onClick={handleAddProgress}
+                      disabled={isUpdating}
+                    >
+                      {isUpdating ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Updating...
+                        </>
+                      ) : (
+                        "Add Progress"
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <Button 
+                  className={cn(
+                    "w-full bg-nav-bg border font-bold",
+                    theme === 'dark' 
+                      ? 'border-[#e18d58] text-white hover:bg-[#e18d58]/20' 
+                      : 'border-[#800000] text-[#800000] hover:bg-background'
+                  )}
+                  onClick={() => setIsAddingProgress(true)}
+                >
+                  Update Progress
+                </Button>
               )}
             </div>
-            
-            <h3 className="text-lg font-bold text-[#800000] mb-1">{goal.title}</h3>
-            <p className="text-[#800000]/70 text-sm mb-4">
-              Target: {goal.targetValue} {goal.unit} by {formatDate(goal.endDate)}
-            </p>
-            
-            <div className="space-y-2">
-              <div className="flex justify-between text-sm text-[#800000]/70">
-                <span>Progress</span>
-                <span>{goal.currentValue} / {goal.targetValue} {goal.unit}</span>
-              </div>
-              <GoalProgress 
-                goal={goal}
-                showTitle={false}
-              />
-              <div className="flex justify-between text-sm">
-                <span className="text-[#800000]/70">
-                  {getDaysRemaining()} days remaining
-                </span>
-                <span className="text-[#800000] font-bold">
-                  {Math.round((goal.currentValue / goal.targetValue) * 100)}%
-                </span>
-              </div>
-            </div>
+          )}
+          
+          <div className="mt-4 pt-4 border-t border-[#800000]/20">
+            <Button 
+              variant="outline"
+              className={cn(
+                "w-full",
+                isDeleting 
+                  ? "border-red-500/50 text-red-500/50"
+                  : "border-red-500 text-red-500 hover:bg-red-500/10"
+              )}
+              onClick={handleDelete}
+              disabled={isDeleting}
+            >
+              {isDeleting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                "Delete Goal"
+              )}
+            </Button>
           </div>
-        </div>
-        
-        {goal.status === 'active' && (
-          <div className="mt-4">
-            {isAddingProgress ? (
-              <div className="space-y-2">
-                <div className="flex items-center gap-4">
-                  <Slider
-                    value={[progressValue]}
-                    onValueChange={([value]) => setProgressValue(value)}
-                    min={1}
-                    max={Math.min(10, goal.targetValue - goal.currentValue)}
-                    step={1}
-                    className="flex-1"
-                  />
-                  <span className="text-[#800000] font-bold w-12">+{progressValue}</span>
-                </div>
-                <div className="flex justify-end gap-2">
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    className="border-[#800000] text-[#800000] hover:bg-background"
-                    onClick={() => setIsAddingProgress(false)}
-                  >
-                    Cancel
-                  </Button>
-                  <Button 
-                    size="sm"
-                    className="bg-nav-bg border border-[#800000] text-[#800000] hover:bg-background font-bold"
-                    onClick={handleAddProgress}
-                  >
-                    Add Progress
-                  </Button>
-                </div>
-              </div>
-            ) : (
-              <Button 
-                className="w-full bg-nav-bg border border-[#800000] text-[#800000] hover:bg-background font-bold"
-                onClick={() => setIsAddingProgress(true)}
-              >
-                Update Progress
-              </Button>
-            )}
-          </div>
-        )}
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+    </motion.div>
   );
 }
