@@ -170,3 +170,28 @@ class Vote(models.Model):
             
         return vote
 
+    def update_content_like_count(self, increment=True):
+        content_model = {
+            'THREAD': Thread,
+            'COMMENT': Comment,
+            'SUBCOMMENT': Subcomment
+        }.get(self.content_type)
+        
+        if content_model:
+            content = content_model.objects.get(id=self.content_id)
+            if increment:
+                content.like_count += 1
+            else:
+                content.like_count -= 1
+            content.save()
+
+    def save(self, *args, **kwargs):
+        is_new = self._state.adding
+        super().save(*args, **kwargs)
+        if is_new:
+            self.update_content_like_count(increment=True)
+
+    def delete(self, *args, **kwargs):
+        self.update_content_like_count(increment=False)
+        super().delete(*args, **kwargs)
+
