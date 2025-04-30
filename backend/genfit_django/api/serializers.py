@@ -28,7 +28,7 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         verification_file = validated_data.pop('verification_file', None)
         remember_me = validated_data.pop('remember_me', False)
-        
+
         user = User.objects.create_user(
             username=validated_data['username'],
             email=validated_data['email'],
@@ -80,9 +80,9 @@ class NotificationSerializer(serializers.ModelSerializer):
     class Meta:
         model = Notification
         fields = [
-            'id', 
+            'id',
             'sender_username',
-            'recipient_username', 
+            'recipient_username',
             'notification_type',
             'title',
             'message',
@@ -145,18 +145,103 @@ class ForumSerializer(serializers.Serializer):
 class ThreadSerializer(serializers.Serializer):
     pass
 
+class CommentSerializer(serializers.ModelSerializer):
+    author_username = serializers.CharField(source='author.username', read_only=True)
+    thread_id = serializers.IntegerField(source='thread.id', read_only=True)
 
-class CommentSerializer(serializers.Serializer):
-    pass
+    class Meta:
+        model = Comment
+        fields = [
+            'id',
+            'author_username',
+            'thread_id',
+            'content',
+            'like_count',
+            'subcomment_count',
+            'created_at',
+            'updated_at'
+        ]
+        read_only_fields = ['id', 'created_at', 'updated_at', 'subcomment_count']
+
+    def create(self, validated_data):
+        comment = Comment.objects.create(**validated_data)
+        return comment
+
+    def update(self, instance, validated_data):
+        new_content = validated_data.get('content', instance.content)
+        if instance.content != new_content:
+            instance.content = new_content
+            instance.updated_at = timezone.now()
+
+        instance.like_count = validated_data.get('like_count', instance.like_count)
+        instance.save()
+        return instance
+
+    def delete(self, instance):
+        # Decrement parent thread's comment count
+        thread.comment_count = max(0, thread.comment_count - 1)
+        thread.save(update_fields=['comment_count'])
+
+        # Delete all subcomments and their votes
+        for sub in instance.subcomments.all():
+            sub.votes.all().delete()
+            sub.delete()
+
+        # Delete comment's own votes if using GenericRelation
+        instance.votes.all().delete()
+
+        # Finally delete the comment
+        instance.delete()
 
 
-class SubcommentSerializer(serializers.Serializer):
-    pass
 
+class SubCommentSerializer(serializers.ModelSerializer):
+    author_username = serializers.CharField(source='author.username', read_only=True)
+    comment_id = serializers.IntegerField(source='comment.id', read_only=True)
+
+    class Meta:
+        model = SubComment
+        fields = [
+            'id',
+            'author_username',
+            'comment_id',
+            'content',
+            'like_count',
+            'created_at',
+            'updated_at'
+        ]
+        read_only_fields = ['id', 'created_at', 'updated_at']
+
+    def create(self, validated_data):
+        subcomment = SubComment.objects.create(**validated_data)
+        # Increment subcomment count for the parent comment
+        comment = subcomment.comment
+        comment.subcomment_count += 1
+        comment.save(update_fields=['subcomment_count'])
+        return subcomment
+
+    def update(self, instance, validated_data):
+        instance.content = validated_data.get('content', instance.content)
+        instance.like_count = validated_data.get('like_count', instance.like_count)
+
+        # Manually setting updated_at if content changed
+        if instance.content != validated_data.get('content', instance.content):
+            instance.updated_at = timezone.now()
+
+        instance.save()
+        return instance
+
+    def delete(self, instance):
+        comment = instance.comment
+        instance.votes.all().delete()  # Optional: clear votes if using GenericRelation
+        instance.delete()
+
+        # Decrement parent comment's subcomment count
+        comment.subcomment_count = max(0, comment.subcomment_count - 1)
+        comment.save(update_fields=['subcomment_count'])
 
 class VoteSerilizer(serializers.Serializer):
     pass
 
 
 
-        

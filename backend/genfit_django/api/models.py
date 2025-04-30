@@ -122,14 +122,32 @@ class Thread(models.Model):
 
 
 class Comment(models.Model):
-    like_count = models.IntegerField(default=0)
-    pass
+    thread = models.ForeignKey(Thread, on_delete=models.CASCADE, related_name='comments')
+    author = models.ForeignKey(User, on_delete=models.CASCADE)
+    content = models.TextField()
+
+    like_count = models.PositiveIntegerField(default=0)
+    subcomment_count = models.PositiveIntegerField(default=0)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)  # Overridden in save()
+
+    def __str__(self):
+        return f'Comment by {self.author.username} on Thread {self.thread.id}'
 
 
-class Subcomment(models.Model):
-    like_count = models.IntegerField(default=0)
-    pass
+class SubComment(models.Model):
+    comment = models.ForeignKey(Comment, on_delete=models.CASCADE, related_name='subcomments')
+    author = models.ForeignKey(User, on_delete=models.CASCADE)
+    content = models.TextField()
 
+    like_count = models.PositiveIntegerField(default=0)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)  # Overridden in save()
+
+    def __str__(self):
+        return f'SubComment by {self.author.username} on Comment {self.comment.id}'
 
 class Vote(models.Model):
     pass
