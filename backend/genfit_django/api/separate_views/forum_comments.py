@@ -1,7 +1,7 @@
 from rest_framework import status, generics
 from rest_framework.response import Response
-from .models import Comment, Subcomment
-from .serializers import CommentSerializer, SubcommentSerializer
+from ..models import Comment, Subcomment
+from ..serializers import CommentSerializer, SubcommentSerializer
 from rest_framework.decorators import api_view
 from django.shortcuts import get_object_or_404
 
@@ -53,19 +53,19 @@ def get_comment(request, comment_id):
     return Response(CommentSerializer(comment).data, status=status.HTTP_200_OK)
 
 
-# 5. Get all Subcomments for a Thread sorted by created_at
+# 5. Get all comments for a Thread sorted by created_at
 @api_view(['GET'])
-def get_subcomments_for_thread_by_date(request, thread_id):
-    subcomments = Subcomment.objects.filter(comment__thread_id=thread_id).order_by('created_at')
-    serializer = SubcommentSerializer(subcomments, many=True)
+def get_comments_for_thread_by_date(request, thread_id):
+    comments = Comment.objects.filter(thread_id=thread_id).order_by('created_at')
+    serializer = CommentSerializer(comments, many=True)
     return Response(serializer.data, status=status.HTTP_200_OK)
 
 
-# 6. Get all Subcomments for a Thread sorted by like_count
+# 6. Get all Comments for a Thread sorted by like_count
 @api_view(['GET'])
 def get_subcomments_for_thread_by_likes(request, thread_id):
-    subcomments = Subcomment.objects.filter(comment__thread_id=thread_id).order_by('-like_count')
-    serializer = SubcommentSerializer(subcomments, many=True)
+    comments = Comment.objects.filter(thread_id=thread_id).order_by('-like_count')
+    serializer = CommentSerializer(comments, many=True)
     return Response(serializer.data, status=status.HTTP_200_OK)
 
 

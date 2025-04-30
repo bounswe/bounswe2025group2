@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from django.core.validators import RegexValidator
 from django.contrib.auth import get_user_model
-from .models import Notification, UserWithType, FitnessGoal, Profile
+from .models import Notification, UserWithType, FitnessGoal, Profile, Comment, Subcomment
 
 
 User = get_user_model()
