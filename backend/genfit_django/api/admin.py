@@ -71,5 +71,31 @@ class SubcommentAdmin(admin.ModelAdmin):
 
 @admin.register(Vote)
 class VoteAdmin(admin.ModelAdmin):
-    # Optional
-    pass
+    list_display = ('user', 'content_type', 'object_id', 'vote_type', 'created_at', 'updated_at')
+    list_filter = ('vote_type', 'content_type', 'created_at')
+    search_fields = ('user__username', 'object_id')
+    readonly_fields = ('created_at', 'updated_at')
+    date_hierarchy = 'created_at'
+    
+    def get_queryset(self, request):
+        return super().get_queryset(request).select_related('user', 'content_type')
+    
+    def save_model(self, request, obj, form, change):
+        if not change:  # Creating new vote
+            obj.save()
+            obj.update_content_like_count(increment=True)
+        else:  # Modifying existing vote
+            old_vote = Vote.objects.get(pk=obj.pk)
+            old_vote_type = old_vote.vote_type
+            obj.save()
+            if old_vote_type != obj.vote_type:
+                obj.update_content_like_count(increment=True, old_vote_type=old_vote_type)
+    
+    def delete_model(self, request, obj):
+        obj.update_content_like_count(increment=False)
+        obj.delete()
+    
+    def delete_queryset(self, request, queryset):
+        for obj in queryset:
+            obj.update_content_like_count(increment=False)
+        queryset.delete()

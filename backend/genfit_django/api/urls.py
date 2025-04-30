@@ -3,6 +3,7 @@ from . import views
 from .separate_views import fitness_goals
 from .separate_views import profile
 from .separate_views import forum_comments
+from .separate_views import forum_vote
 
 
 urlpatterns = [
@@ -49,4 +50,9 @@ urlpatterns = [
     path('subcomments/<int:subcomment_id>/update/', forum_comments.update_subcomment, name='update_subcomment'),
     path('subcomments/<int:subcomment_id>/delete/', forum_comments.delete_subcomment, name='delete_subcomment'),
     path('subcomments/add/', forum_comments.add_subcomment, name='add_subcomment'),
+    
+    # Vote URLs
+    path('forum/vote/', forum_vote.create_vote, name='create_vote'),
+    path('forum/vote/<str:content_type>/<int:object_id>/', forum_vote.delete_vote, name='delete_vote'),
+    path('forum/vote/<str:content_type>/<int:object_id>/status/', forum_vote.get_user_vote, name='get_user_vote'),
 ]
