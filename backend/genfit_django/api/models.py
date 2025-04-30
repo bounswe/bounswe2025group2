@@ -167,7 +167,16 @@ class Vote(models.Model):
             defaults={'vote_type': new_vote_type}
         )
         
-        if not created and vote.vote_type != new_vote_type:
+        if not created:
+            # If changing from UPVOTE to something else, decrement like count
+            if vote.vote_type == 'UPVOTE' and new_vote_type != 'UPVOTE':
+                content_object.like_count -= 1
+                content_object.save()
+            # If changing to UPVOTE from something else, increment like count
+            elif vote.vote_type != 'UPVOTE' and new_vote_type == 'UPVOTE':
+                content_object.like_count += 1
+                content_object.save()
+
             vote.vote_type = new_vote_type
             vote.save()
             
