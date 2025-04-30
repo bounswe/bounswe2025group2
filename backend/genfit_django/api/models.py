@@ -1,5 +1,7 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
+from django.contrib.contenttypes.fields import GenericForeignKey
+from django.contrib.contenttypes.models import ContentType
 
 class UserWithType(AbstractUser):
     email = models.EmailField(
@@ -132,5 +134,70 @@ class Subcomment(models.Model):
 
 
 class Vote(models.Model):
-    pass
+    VOTE_TYPES = [
+        ('UPVOTE', 'Upvote'),
+        ('DOWNVOTE', 'Downvote')
+    ]
+    
+    user = models.ForeignKey(UserWithType, on_delete=models.CASCADE, related_name='votes')
+    
+    # Generic relation fields
+    content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
+    object_id = models.PositiveIntegerField()
+    content_object = GenericForeignKey('content_type', 'object_id')
+    
+    vote_type = models.CharField(max_length=10, choices=VOTE_TYPES)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ['user', 'content_type', 'object_id']
+        indexes = [
+            models.Index(fields=['content_type', 'object_id']),
+        ]
+
+    @classmethod
+    def create_or_update_vote(cls, user, content_object, new_vote_type):
+        content_type = ContentType.objects.get_for_model(content_object)
+        
+        vote, created = cls.objects.get_or_create(
+            user=user,
+            content_type=content_type,
+            object_id=content_object.id,
+            defaults={'vote_type': new_vote_type}
+        )
+        
+        if not created:
+            # If changing from UPVOTE to something else, decrement like count
+            if vote.vote_type == 'UPVOTE' and new_vote_type != 'UPVOTE':
+                content_object.like_count -= 1
+                content_object.save()
+            # If changing to UPVOTE from something else, increment like count
+            elif vote.vote_type != 'UPVOTE' and new_vote_type == 'UPVOTE':
+                content_object.like_count += 1
+                content_object.save()
+
+            vote.vote_type = new_vote_type
+            vote.save()
+            
+        return vote
+
+    def update_content_like_count(self, increment=True):
+        content_object = self.content_object
+        if hasattr(content_object, 'like_count'):
+            if increment:
+                content_object.like_count += 1
+            else:
+                content_object.like_count -= 1
+            content_object.save()
+
+    def save(self, *args, **kwargs):
+        is_new = self._state.adding
+        super().save(*args, **kwargs)
+        if is_new:
+            self.update_content_like_count(increment=True)
+
+    def delete(self, *args, **kwargs):
+        self.update_content_like_count(increment=False)
+        super().delete(*args, **kwargs)
 

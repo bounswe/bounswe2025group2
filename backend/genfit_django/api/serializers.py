@@ -154,8 +154,31 @@ class SubcommentSerializer(serializers.Serializer):
     pass
 
 
-class VoteSerilizer(serializers.Serializer):
-    pass
+class VoteSerializer(serializers.ModelSerializer):
+    user_username = serializers.CharField(source='user.username', read_only=True)
+
+    class Meta:
+        model = Vote
+        fields = [
+            'id',
+            'user',
+            'user_username',
+            'content_type',
+            'content_id',
+            'vote_type',
+            'created_at',
+            'updated_at'
+        ]
+        read_only_fields = ['id', 'user', 'created_at', 'updated_at']
+
+    def create(self, validated_data):
+        vote = Vote.create_or_update_vote(
+            user=self.context['request'].user,
+            content_type=validated_data['content_type'],
+            content_id=validated_data['content_id'],
+            vote_type=validated_data['vote_type']
+        )
+        return vote
 
 
 
