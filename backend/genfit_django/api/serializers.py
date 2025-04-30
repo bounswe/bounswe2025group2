@@ -136,4 +136,27 @@ class ProfileSerializer(serializers.ModelSerializer):
         model = Profile
         fields = ['username', 'bio', 'location', 'birth_date', 'age', 'created_at', 'updated_at']
         read_only_fields = ['username', 'created_at', 'updated_at']
+
+
+class ForumSerializer(serializers.Serializer):
+    pass
+
+
+class ThreadSerializer(serializers.Serializer):
+    pass
+
+
+class CommentSerializer(serializers.Serializer):
+    pass
+
+
+class SubcommentSerializer(serializers.Serializer):
+    pass
+
+
+class VoteSerilizer(serializers.Serializer):
+    pass
+
+
+
         

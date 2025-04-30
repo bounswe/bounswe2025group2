@@ -110,3 +110,27 @@ class Profile(models.Model):
             return today.year - self.birth_date.year - ((today.month, today.day) < (self.birth_date.month, self.birth_date.day))
         return None
 
+
+
+class Forum(models.Model):
+    pass
+
+
+class Thread(models.Model):
+    like_count = models.IntegerField(default=0)
+    pass
+
+
+class Comment(models.Model):
+    like_count = models.IntegerField(default=0)
+    pass
+
+
+class Subcomment(models.Model):
+    like_count = models.IntegerField(default=0)
+    pass
+
+
+class Vote(models.Model):
+    pass
+

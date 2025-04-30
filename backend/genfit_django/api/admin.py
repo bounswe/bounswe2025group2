@@ -35,3 +35,29 @@ class ProfileAdmin(admin.ModelAdmin):
     list_display   = ("user", "location", "created_at")
     search_fields  = ("user__username", "location")
     list_filter    = ("created_at", )
+
+
+@admin.register(Forum)
+class ForumAdmin(admin.ModelAdmin):
+    pass
+
+
+@admin.register(Thread)
+class ThreadAdmin(admin.ModelAdmin):
+    pass
+
+
+@admin.register(Comment)
+class CommentAdmin(admin.ModelAdmin):
+    pass
+
+
+@admin.register(Subcomment)
+class SubcommentAdmin(admin.ModelAdmin):
+    pass
+
+
+@admin.register(Vote)
+class VoteAdmin(admin.ModelAdmin):
+    # Optional
+    pass
