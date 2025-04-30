@@ -171,37 +171,13 @@ class VoteSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = ['id', 'user', 'created_at', 'updated_at']
 
-    def _handle_vote(self, user, content_type, content_id, vote_type):
-        vote = Vote.toggle_vote(
-            user=user,
-            content_type=content_type,
-            content_id=content_id,
-            new_vote_type=vote_type
-        )
-        return vote
-
     def create(self, validated_data):
-        vote = self._handle_vote(
+        vote = Vote.create_or_update_vote(
             user=self.context['request'].user,
             content_type=validated_data['content_type'],
             content_id=validated_data['content_id'],
             vote_type=validated_data['vote_type']
         )
-        if vote is None:
-            # Return a response indicating vote was removed
-            return {'message': 'Vote removed', 'status': 204}
-        return vote
-
-    def update(self, instance, validated_data):
-        vote = self._handle_vote(
-            user=instance.user,
-            content_type=validated_data.get('content_type', instance.content_type),
-            content_id=validated_data.get('content_id', instance.content_id),
-            vote_type=validated_data.get('vote_type', instance.vote_type)
-        )
-        if vote is None:
-            # Return a response indicating vote was removed
-            return {'message': 'Vote removed', 'status': 204}
         return vote
 
 

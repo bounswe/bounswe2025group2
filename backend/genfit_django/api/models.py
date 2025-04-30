@@ -155,7 +155,7 @@ class Vote(models.Model):
         ]
 
     @classmethod
-    def toggle_vote(cls, user, content_type, content_id, new_vote_type):
+    def create_or_update_vote(cls, user, content_type, content_id, new_vote_type):
         vote, created = cls.objects.get_or_create(
             user=user,
             content_type=content_type,
@@ -163,12 +163,10 @@ class Vote(models.Model):
             defaults={'vote_type': new_vote_type}
         )
         
+        # new vote type
         if not created and vote.vote_type != new_vote_type:
             vote.vote_type = new_vote_type
             vote.save()
-        elif not created and vote.vote_type == new_vote_type:
-            vote.delete()
-            return None
             
         return vote
 
