@@ -132,5 +132,43 @@ class Subcomment(models.Model):
 
 
 class Vote(models.Model):
-    pass
+    VOTE_TYPES = [
+        ('UPVOTE', 'Upvote'),
+        ('DOWNVOTE', 'Downvote')
+    ]
+    
+    user = models.ForeignKey(UserWithType, on_delete=models.CASCADE, related_name='votes')
+    content_type = models.CharField(max_length=20, choices=[
+        ('THREAD', 'Thread'),
+        ('COMMENT', 'Comment'),
+        ('SUBCOMMENT', 'Subcomment')
+    ])
+    content_id = models.PositiveIntegerField()
+    vote_type = models.CharField(max_length=10, choices=VOTE_TYPES)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ['user', 'content_type', 'content_id']
+        indexes = [
+            models.Index(fields=['content_type', 'content_id']),
+        ]
+
+    @classmethod
+    def toggle_vote(cls, user, content_type, content_id, new_vote_type):
+        vote, created = cls.objects.get_or_create(
+            user=user,
+            content_type=content_type,
+            content_id=content_id,
+            defaults={'vote_type': new_vote_type}
+        )
+        
+        if not created and vote.vote_type != new_vote_type:
+            vote.vote_type = new_vote_type
+            vote.save()
+        elif not created and vote.vote_type == new_vote_type:
+            vote.delete()
+            return None
+            
+        return vote
 
