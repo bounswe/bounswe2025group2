@@ -44,6 +44,7 @@ CSRF_TRUSTED_ORIGINS = [
 # Application definition
 
 INSTALLED_APPS = [
+    'daphne',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -53,7 +54,16 @@ INSTALLED_APPS = [
     'rest_framework',
     'corsheaders',
     'api',
+    'channels',
+    'chat',
 ]
+
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels.layers.InMemoryChannelLayer"
+    }
+}
+
 
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
@@ -84,7 +94,9 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'genfit_django.wsgi.application'
+# WSGI_APPLICATION = 'genfit_django.wsgi.application'
+
+ASGI_APPLICATION = 'genfit_django.asgi.application'
 
 
 # Database
