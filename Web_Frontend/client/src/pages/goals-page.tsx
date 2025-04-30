@@ -117,11 +117,15 @@ export default function GoalsPage() {
   const [loading, setLoading] = useState(false);
   const [newGoal, setNewGoal] = useState({
     title: "",
+    description: "",
     type: "walking",
     targetValue: 5,
+    currentValue: 0,
     unit: "miles",
+    startDate: new Date().toISOString(),
     endDate: "",
-    mentorId: undefined as number | undefined
+    mentorId: undefined as number | undefined,
+    status: "ACTIVE"
   });
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -165,32 +169,62 @@ export default function GoalsPage() {
   // Create goal
   const handleCreateGoal = async () => {
     setIsSubmitting(true);
-    try {
-      const res = await apiRequest("POST", "/api/goals/", {
-        title: newGoal.title,
-        goal_type: newGoal.type.toUpperCase(),
-        target_value: newGoal.targetValue,
-        current_value: 0,
-        unit: newGoal.unit,
-        target_date: new Date(newGoal.endDate).toISOString(),
-        mentor: newGoal.mentorId || null
+    // Ensure user ID is available
+    if (!user?.id) {
+      toast({
+        title: "Authentication Error",
+        description: "User not found. Please log in again.",
+        variant: "destructive",
       });
+      setIsSubmitting(false);
+      return;
+    }
+
+    // Ensure target date is valid
+    let formattedTargetDate;
+    try {
+      formattedTargetDate = new Date(newGoal.endDate).toISOString();
+      // Basic check if the date is valid
+      if (isNaN(new Date(formattedTargetDate).getTime())) {
+        throw new Error("Invalid date format");
+      }
+    } catch (error) {
+      toast({
+        title: "Invalid Input",
+        description: "Please provide a valid target date.",
+        variant: "destructive",
+      });
+      setIsSubmitting(false);
+      return;
+    }
+
+    try {
+      const payload = {
+        title: newGoal.title,
+        description: newGoal.description,
+        // category: newGoal.type.toUpperCase(), // Incorrect field name
+        goal_type: newGoal.type.toUpperCase(), // Correct field name based on error
+        target_value: newGoal.targetValue,
+        current_value: newGoal.currentValue,
+        unit: newGoal.unit,
+        start_date: newGoal.startDate, // Already ISOString from state init
+        target_date: formattedTargetDate,
+        status: newGoal.status,
+        mentor: newGoal.mentorId || null,
+        user: user.id // Use checked user.id
+      };
+      
+      console.log("Sending goal creation payload:", payload); // Log payload for debugging
+
+      const res = await apiRequest("POST", "/api/goals/", payload);
       
       if (res.ok) {
-        const g = await res.json();
-        setGoals([...goals, {
-          id: g.id,
-          title: g.title,
-          type: g.goal_type?.toLowerCase() || '',
-          targetValue: g.target_value,
-          currentValue: g.current_value,
-          unit: g.unit,
-          status: g.status?.toLowerCase() || 'active',
-          endDate: g.target_date?.slice(0, 10) || '',
-          progress: Math.round((g.current_value / g.target_value) * 100),
-          userId: g.user,
-          daysRemaining: g.target_date ? Math.ceil((new Date(g.target_date).getTime() - Date.now()) / (1000*60*60*24)) : undefined
-        }]);
+        const g: GoalResponse = await res.json(); // Use GoalResponse type
+        console.log("Received goal creation response:", g); // Log response
+        
+        // Correct mapping using GoalResponse fields
+        setGoals([...goals, mapGoalResponseToGoal(g)]); 
+        
         setNewGoalOpen(false);
         resetNewGoalForm();
         toast({
@@ -198,10 +232,16 @@ export default function GoalsPage() {
           description: "Goal created successfully!",
         });
       } else {
-        const errorData = await res.json();
+        let errorData = { detail: 'Failed to create goal. Unknown error.' };
+        try {
+          errorData = await res.json();
+        } catch (parseError) {
+          console.error("Failed to parse error response:", parseError);
+        }
+        console.error("Goal creation failed:", res.status, errorData); // Log status and error body
         toast({
-          title: "Error", 
-          description: errorData.detail || 'Failed to create goal',
+          title: `Error (${res.status})`, 
+          description: JSON.stringify(errorData.detail || errorData), // Show detailed error
           variant: "destructive",
         });
       }
@@ -209,7 +249,7 @@ export default function GoalsPage() {
       console.error('Error creating goal:', e);
       toast({
         title: "Error",
-        description: 'Failed to create goal. Please try again.',
+        description: 'An unexpected error occurred. Please try again.',
         variant: "destructive",
       });
     } finally {
@@ -286,11 +326,15 @@ export default function GoalsPage() {
   const resetNewGoalForm = () => {
     setNewGoal({
       title: "",
+      description: "", // Reset description
       type: "walking",
       targetValue: 5,
+      currentValue: 0, // Reset current value
       unit: "miles",
+      startDate: new Date().toISOString(), // Reset start date
       endDate: "",
-      mentorId: undefined
+      mentorId: undefined,
+      status: "ACTIVE" // Reset status
     });
   };
 
