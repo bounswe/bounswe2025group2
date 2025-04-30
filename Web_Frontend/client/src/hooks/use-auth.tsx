@@ -1,4 +1,4 @@
-import { createContext, ReactNode, useContext } from "react";
+import { createContext, ReactNode, useContext, useEffect, useState } from "react";
 import {
   useQuery,
   useMutation,
@@ -17,6 +17,9 @@ type AuthContextType = {
   registerMutation: UseMutationResult<User, Error, RegisterData>;
   updateProfileMutation: UseMutationResult<User, Error, Partial<User>>;
   applyForRoleMutation: UseMutationResult<User, Error, {role: string}>;
+  handleLoginSuccess: () => void;
+  handleLogout: () => void;
+  isLoggedIn: boolean;
 };
 
 type LoginData = {
@@ -38,6 +41,11 @@ export const AuthContext = createContext<AuthContextType | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const { toast } = useToast();
+  const [isLoggedIn, setIsLoggedIn] = useState(() => {
+    return localStorage.getItem("isLoggedIn") === "true";
+  });
+
+  // Only fetch user if isLoggedIn is true
   const {
     data: user,
     error,
@@ -45,7 +53,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   } = useQuery<User>({
     queryKey: ["/api/user"],
     queryFn: getQueryFn({ on401: "returnNull" }),
+    enabled: isLoggedIn,
   });
+
+  // On successful login, set isLoggedIn to true
+  const handleLoginSuccess = () => {
+    localStorage.setItem("isLoggedIn", "true");
+    setIsLoggedIn(true);
+  };
+
+  // On logout, set isLoggedIn to false
+  const handleLogout = () => {
+    localStorage.removeItem("isLoggedIn");
+    setIsLoggedIn(false);
+  };
 
   const loginMutation = useMutation({
     mutationFn: async (credentials: LoginData) => {
@@ -58,10 +79,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return userData;
     },
     onSuccess: (userData) => {
-      // Set the user data immediately
       queryClient.setQueryData(["/api/user"], userData);
-      // Then invalidate to ensure we have the latest data
-      queryClient.invalidateQueries({queryKey: ["/api/user"]});
+      queryClient.invalidateQueries({ queryKey: ["/api/user"] });
+      handleLoginSuccess();
       toast({
         title: "Login successful!",
         description: "Welcome back!",
@@ -149,30 +169,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     mutationFn: async () => {
       try {
         const res = await apiRequest("POST", "/api/logout/");
-        // Even if the server request fails, we'll clear the local state
         if (!res.ok) {
           console.warn("Server logout failed, clearing local state anyway");
         }
       } catch (error) {
         console.warn("Logout request failed, clearing local state anyway:", error);
       }
-      // Force logout by clearing local state regardless of server response
       queryClient.clear();
       queryClient.setQueryData(["/api/user"], null);
+      handleLogout();
     },
     onSuccess: () => {
       toast({
         title: "Logged out successfully",
         description: "You have been logged out",
       });
-      // Redirect to the auth page after logout
       window.location.href = '/auth';
     },
     onError: (error: Error) => {
       console.error("Logout error:", error);
-      // Even if there's an error, we'll clear the local state and redirect
       queryClient.clear();
       queryClient.setQueryData(["/api/user"], null);
+      handleLogout();
       window.location.href = '/auth';
       toast({
         title: "Logged out",
@@ -235,6 +253,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         registerMutation,
         updateProfileMutation,
         applyForRoleMutation,
+        handleLoginSuccess,
+        handleLogout,
+        isLoggedIn,
       }}
     >
       {children}

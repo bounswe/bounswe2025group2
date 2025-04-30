@@ -1,7 +1,5 @@
 import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
-import { apiRequest, queryClient } from "@/lib/queryClient";
 import Sidebar from "@/components/layout/sidebar";
 import MobileHeader from "@/components/layout/mobile-header";
 import MobileNavigation from "@/components/layout/mobile-navigation";
@@ -45,6 +43,38 @@ import { useTheme } from "@/theme/ThemeContext";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 
+// Mock data
+const mockChallenges = [
+  {
+    id: "1",
+    title: "10K Steps Challenge",
+    description: "Walk 10,000 steps every day for a month",
+    startDate: "2024-03-01",
+    endDate: "2024-03-31",
+    targetValue: 10000,
+    type: "steps",
+    unit: "steps",
+    participants: [
+      { userId: "1", progress: 8000 },
+      { userId: "2", progress: 5000 }
+    ]
+  },
+  {
+    id: "2",
+    title: "Swimming Marathon",
+    description: "Swim 5km in a month",
+    startDate: "2024-03-15",
+    endDate: "2024-04-15",
+    targetValue: 5000,
+    type: "distance",
+    unit: "meters",
+    participants: [
+      { userId: "1", progress: 2000 },
+      { userId: "3", progress: 3000 }
+    ]
+  }
+];
+
 interface Challenge {
   id: string;
   title: string;
@@ -69,7 +99,6 @@ interface ChallengeCardProps {
 
 const ChallengeCard: React.FC<ChallengeCardProps> = ({ challenge, onJoin, onUpdateProgress, hasJoined }) => {
   const { theme } = useTheme();
-  const queryClient = useQueryClient();
   const [progress, setProgress] = useState(0);
 
   const formatDate = (date: string) => {
@@ -77,38 +106,14 @@ const ChallengeCard: React.FC<ChallengeCardProps> = ({ challenge, onJoin, onUpda
   };
 
   const getUserProgress = (challengeId: string) => {
-    const participant = challenge.participants.find(p => p.userId === "currentUserId"); // Replace with actual user ID
+    const participant = challenge.participants.find(p => p.userId === "1"); // Mock current user ID
     return participant ? (participant.progress / challenge.targetValue) * 100 : 0;
   };
-
-  const updateProgressMutation = useMutation({
-    mutationFn: async (newProgress: number) => {
-      const res = await apiRequest(
-        "POST", 
-        `/api/challenges/${challenge.id}/progress`,
-        { progress: newProgress }
-      );
-      return res.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/challenges"] });
-      setProgress(progress);
-    }
-  });
 
   const handleProgressUpdate = (newProgress: number) => {
     setProgress(newProgress);
     onUpdateProgress(newProgress);
-    updateProgressMutation.mutate(newProgress);
   };
-
-  const joinChallengeMutation = useMutation({
-    mutationFn: async () => {
-      // This should be replaced with actual API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      onJoin();
-    }
-  });
 
   return (
     <Card className={cn(
@@ -217,20 +222,9 @@ const ChallengeCard: React.FC<ChallengeCardProps> = ({ challenge, onJoin, onUpda
                 ? 'border-[#e18d58] text-white hover:bg-[#e18d58]/20' 
                 : 'border-[#800000] text-[#800000] hover:bg-active'
             )}
-            onClick={() => joinChallengeMutation.mutate()}
-            disabled={joinChallengeMutation.isPending}
+            onClick={() => onJoin()}
           >
-            {joinChallengeMutation.isPending ? (
-              <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Joining...
-              </>
-            ) : (
-              <>
-                <UserPlus className="h-4 w-4 mr-2" />
-                Join Challenge
-              </>
-            )}
+            Join Challenge
           </Button>
         )}
       </CardFooter>
@@ -242,14 +236,15 @@ export default function ChallengesPage() {
   const { user } = useAuth();
   const [newChallengeOpen, setNewChallengeOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<string>("active");
-  const [updateProgressOpen, setUpdateProgressOpen] = useState<number | null>(null);
+  const [updateProgressOpen, setUpdateProgressOpen] = useState<string | null>(null);
   const [progressValue, setProgressValue] = useState<string>("");
+  const [challenges, setChallenges] = useState<Challenge[]>(mockChallenges);
   const [newChallenge, setNewChallenge] = useState({
     title: "",
     description: "",
     type: "steps",
-    targetValue: 10000,
-    unit: "steps",
+    targetValue: "",
+    unit: "",
     startDate: "",
     endDate: ""
   });
@@ -274,106 +269,64 @@ export default function ChallengesPage() {
     }));
   });
 
-  // Fetch all challenges
-  const { data: challenges, isLoading } = useQuery({
-    queryKey: ["/api/challenges"],
-    queryFn: async () => {
-      const res = await fetch("/api/challenges");
-      if (!res.ok) throw new Error("Failed to fetch challenges");
-      return res.json();
-    },
-  });
-
-  // Fetch challenge participants for leaderboards
-  const { data: participants, isLoading: participantsLoading } = useQuery({
-    queryKey: ["/api/challenges/participants"],
-    queryFn: async () => {
-      const res = await fetch("/api/challenges/participants");
-      if (!res.ok) throw new Error("Failed to fetch participants");
-      return res.json();
-    },
-  });
-
-  // Create new challenge mutation
-  const createChallengeMutation = useMutation({
-    mutationFn: async (challengeData: any) => {
-      // Convert string dates to Date objects before sending to server
-      const formattedData = {
-        ...challengeData,
-        startDate: challengeData.startDate ? new Date(challengeData.startDate) : new Date(),
-        endDate: challengeData.endDate ? new Date(challengeData.endDate) : new Date()
-      };
-      
-      const res = await apiRequest("POST", "/api/challenges", formattedData);
-      return res.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/challenges"] });
-      setNewChallengeOpen(false);
-      resetNewChallengeForm();
-    }
-  });
-
-  // Update challenge progress mutation
-  const updateProgressMutation = useMutation({
-    mutationFn: async ({ challengeId, progress }: { challengeId: number, progress: number }) => {
-      const res = await apiRequest("PATCH", `/api/challenges/${challengeId}/progress`, { progress });
-      return res.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/challenges"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/challenges/participants"] });
-      setUpdateProgressOpen(null);
-      setProgressValue("");
-    }
-  });
-
-  // Join challenge mutation
-  const joinChallengeMutation = useMutation({
-    mutationFn: async (challengeId: number) => {
-      const res = await apiRequest("POST", `/api/challenges/${challengeId}/join`, {});
-      return res.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/challenges"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/challenges/participants"] });
-    }
-  });
-
   const handleCreateChallenge = () => {
-    createChallengeMutation.mutate({
+    const challenge = {
+      id: String(challenges.length + 1),
       ...newChallenge,
-      creatorId: user?.id
-    });
+      participants: [],
+      targetValue: Number(newChallenge.targetValue)
+    };
+    setChallenges([...challenges, challenge]);
+    setNewChallengeOpen(false);
+    resetNewChallengeForm();
   };
 
   const resetNewChallengeForm = () => {
-    const today = new Date();
-    const nextWeek = new Date();
-    nextWeek.setDate(today.getDate() + 7);
-    
     setNewChallenge({
       title: "",
       description: "",
       type: "steps",
-      targetValue: 10000,
-      unit: "steps",
-      startDate: formatDateForInput(today),
-      endDate: formatDateForInput(nextWeek)
+      targetValue: "",
+      unit: "",
+      startDate: "",
+      endDate: ""
     });
   };
 
-  const handleUpdateProgress = (challengeId: number) => {
-    if (!progressValue || isNaN(parseFloat(progressValue))) return;
-    
-    updateProgressMutation.mutate({
-      challengeId,
-      progress: parseFloat(progressValue)
+  const handleUpdateProgress = (challengeId: string) => {
+    const updatedChallenges = challenges.map(challenge => {
+      if (challenge.id === challengeId) {
+        const updatedParticipants = challenge.participants.map(p => {
+          if (p.userId === "1") { // Mock current user ID
+            return { ...p, progress: Number(progressValue) };
+          }
+          return p;
+        });
+        return { ...challenge, participants: updatedParticipants };
+      }
+      return challenge;
     });
+    setChallenges(updatedChallenges);
+    setUpdateProgressOpen(null);
+    setProgressValue("");
   };
 
-  const handleJoinChallenge = (challengeId: number) => {
-    joinChallengeMutation.mutate(challengeId);
+  const handleJoinChallenge = (challengeId: string) => {
+    const updatedChallenges = challenges.map(challenge => {
+      if (challenge.id === challengeId) {
+        return {
+          ...challenge,
+          participants: [...challenge.participants, { userId: "1", progress: 0 }] // Mock current user ID
+        };
+      }
+      return challenge;
+    });
+    setChallenges(updatedChallenges);
+  };
+
+  const hasJoinedChallenge = (challengeId: string): boolean => {
+    const challenge = challenges.find(c => c.id === challengeId);
+    return challenge?.participants.some(p => p.userId === "1") ?? false; // Mock current user ID
   };
 
   // Filter challenges based on active tab
@@ -386,14 +339,6 @@ export default function ChallengesPage() {
     }
     return true; // all tab
   }) : [];
-
-  // Check if user has joined a challenge
-  const hasJoinedChallenge = (challengeId: number) => {
-    if (!participants) return false;
-    return participants.some((p: any) => 
-      p.challengeId === challengeId && p.userId === user?.id
-    );
-  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -481,14 +426,7 @@ export default function ChallengesPage() {
               </TabsList>
               
               {/* Challenge Grid */}
-              {isLoading ? (
-                <div className="flex justify-center py-12">
-                  <Loader2 className={cn(
-                    "h-8 w-8 animate-spin",
-                    theme === 'dark' ? 'text-[#e18d58]' : 'text-[#800000]'
-                  )} />
-                </div>
-              ) : filteredChallenges.length > 0 ? (
+              {filteredChallenges.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {filteredChallenges.map((challenge: any) => (
                     <ChallengeCard 
@@ -674,7 +612,6 @@ export default function ChallengesPage() {
               className="bg-secondary text-white hover:bg-secondary-dark"
               onClick={handleCreateChallenge}
               disabled={
-                createChallengeMutation.isPending || 
                 !newChallenge.title || 
                 !newChallenge.type || 
                 !newChallenge.targetValue ||
@@ -682,12 +619,7 @@ export default function ChallengesPage() {
                 !newChallenge.endDate
               }
             >
-              {createChallengeMutation.isPending ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Creating...
-                </>
-              ) : "Create Challenge"}
+              Create Challenge
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -739,17 +671,11 @@ export default function ChallengesPage() {
               className="bg-secondary text-white hover:bg-secondary-dark"
               onClick={() => updateProgressOpen && handleUpdateProgress(updateProgressOpen)}
               disabled={
-                updateProgressMutation.isPending || 
                 !progressValue || 
                 isNaN(parseFloat(progressValue))
               }
             >
-              {updateProgressMutation.isPending ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Updating...
-                </>
-              ) : "Update Progress"}
+              Update Progress
             </Button>
           </DialogFooter>
         </DialogContent>

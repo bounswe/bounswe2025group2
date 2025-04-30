@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
 import Sidebar from "@/components/layout/sidebar";
 import MobileHeader from "@/components/layout/mobile-header";
@@ -11,7 +10,6 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { 
-  Loader2, 
   Search, 
   Filter,
   MessageSquare, 
@@ -22,38 +20,80 @@ import {
 import { useTheme } from "@/theme/ThemeContext";
 import { cn } from "@/lib/utils";
 
+interface User {
+  id: number;
+  username: string;
+  name: string;
+  role: 'mentor' | 'coach';
+  bio: string;
+  interests: string[];
+  rating: number;
+  reviewCount: number;
+  verificationStatus: boolean;
+  profileImage?: string;
+}
+
+// MOCK DATA START - DESIGN CAN BE CHANGED OR DATA CAN BE REMOVED DURING IMPLEMENTATION
+const mockUsers: User[] = [
+  {
+    id: 1,
+    username: "johndoe",
+    name: "John Doe",
+    role: "mentor",
+    bio: "Experienced basketball trainer with 5 years of experience",
+    interests: ["basketball", "fitness"],
+    rating: 4.8,
+    reviewCount: 24,
+    verificationStatus: false,
+    profileImage: ""
+  },
+  {
+    id: 2,
+    username: "sarahsmith",
+    name: "Sarah Smith",
+    role: "coach",
+    bio: "Professional swimming coach and former Olympic athlete",
+    interests: ["swimming", "fitness"],
+    rating: 4.9,
+    reviewCount: 56,
+    verificationStatus: true,
+    profileImage: ""
+  },
+  {
+    id: 3,
+    username: "mikebrown",
+    name: "Mike Brown",
+    role: "mentor",
+    bio: "Soccer enthusiast helping others improve their game",
+    interests: ["soccer", "running"],
+    rating: 4.7,
+    reviewCount: 18,
+    verificationStatus: false,
+    profileImage: ""
+  }
+];
+// MOCK DATA END - DESIGN CAN BE CHANGED OR DATA CAN BE REMOVED DURING IMPLEMENTATION
+
 export default function MentorsPage() {
   const { theme } = useTheme();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedSport, setSelectedSport] = useState<string>("all");
 
-  // Fetch mentors and coaches
-  const { data: users, isLoading } = useQuery({
-    queryKey: ["/api/users/mentors"],
-    queryFn: async () => {
-      const res = await fetch("/api/users/mentors");
-      if (!res.ok) throw new Error("Failed to fetch mentors");
-      return res.json();
-    },
-  });
-
   // Filter users by role, sport, and search query
-  const filterUsers = (role: string) => {
-    if (!users) return [];
-    
-    return users
-      .filter((user: any) => user.role === role)
-      .filter((user: any) => {
+  const filterUsers = (role: 'mentor' | 'coach') => {
+    return mockUsers
+      .filter(user => user.role === role)
+      .filter(user => {
         if (searchQuery === "") return true;
         return (
           user.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          (user.name && user.name.toLowerCase().includes(searchQuery.toLowerCase())) ||
-          (user.bio && user.bio.toLowerCase().includes(searchQuery.toLowerCase()))
+          user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          user.bio.toLowerCase().includes(searchQuery.toLowerCase())
         );
       })
-      .filter((user: any) => {
+      .filter(user => {
         if (selectedSport === "all") return true;
-        return user.interests && user.interests.some((interest: string) => 
+        return user.interests.some(interest => 
           interest.toLowerCase() === selectedSport.toLowerCase()
         );
       });
@@ -180,16 +220,9 @@ export default function MentorsPage() {
               
               {/* Mentors Tab */}
               <TabsContent value="mentors">
-                {isLoading ? (
-                  <div className="flex justify-center py-12">
-                    <Loader2 className={cn(
-                      "h-8 w-8 animate-spin",
-                      theme === 'dark' ? 'text-[#e18d58]' : 'text-[#800000]'
-                    )} />
-                  </div>
-                ) : mentors && mentors.length > 0 ? (
+                {mentors.length > 0 ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {mentors.map((mentor: any) => (
+                    {mentors.map((mentor) => (
                       <MentorCard key={mentor.id} user={mentor} />
                     ))}
                   </div>
@@ -227,16 +260,9 @@ export default function MentorsPage() {
               
               {/* Coaches Tab */}
               <TabsContent value="coaches">
-                {isLoading ? (
-                  <div className="flex justify-center py-12">
-                    <Loader2 className={cn(
-                      "h-8 w-8 animate-spin",
-                      theme === 'dark' ? 'text-[#e18d58]' : 'text-[#800000]'
-                    )} />
-                  </div>
-                ) : coaches && coaches.length > 0 ? (
+                {coaches.length > 0 ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {coaches.map((coach: any) => (
+                    {coaches.map((coach) => (
                       <MentorCard key={coach.id} user={coach} />
                     ))}
                   </div>
@@ -280,114 +306,93 @@ export default function MentorsPage() {
   );
 }
 
-function MentorCard({ user }: { user: any }) {
+interface MentorCardProps {
+  user: User;
+}
+
+function MentorCard({ user }: MentorCardProps) {
   const { theme } = useTheme();
   
   return (
     <Card className={cn(
-      "bg-nav-bg transition-colors",
+      "bg-nav-bg border",
       theme === 'dark' ? 'border-[#e18d58]' : 'border-[#800000]'
     )}>
-      <CardContent className="p-4">
+      <CardContent className="p-6">
         <div className="flex items-start gap-4">
-          <AvatarWithBadge 
+          <AvatarWithBadge
             src={user.profileImage}
-            fallback={user.name?.[0]?.toUpperCase() || user.username[0].toUpperCase()}
-            size="md"
+            fallback={user.name[0].toUpperCase()}
+            size="lg"
             role={user.role}
             verified={user.verificationStatus}
-            className={cn(
-              theme === 'dark' ? 'border-[#e18d58]' : 'border-[#800000]'
-            )}
           />
           <div className="flex-1 min-w-0">
             <div className="flex items-center justify-between gap-2">
-              <div>
+              <div className="min-w-0">
                 <h3 className={cn(
                   "font-semibold truncate",
                   theme === 'dark' ? 'text-white' : 'text-[#800000]'
-                )}>
-                  {user.name || user.username}
-                </h3>
+                )}>{user.name}</h3>
                 <p className={cn(
-                  "text-sm",
+                  "text-sm truncate",
                   theme === 'dark' ? 'text-white/70' : 'text-[#800000]/70'
-                )}>
-                  {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
-                </p>
+                )}>@{user.username}</p>
               </div>
               <div className="flex items-center gap-1">
                 <Star className={cn(
-                  "h-4 w-4",
+                  "h-4 w-4 fill-current",
                   theme === 'dark' ? 'text-[#e18d58]' : 'text-[#800000]'
                 )} />
                 <span className={cn(
-                  "font-medium",
+                  "text-sm font-medium",
                   theme === 'dark' ? 'text-white' : 'text-[#800000]'
-                )}>
-                  {user.rating || "4.5"}
-                </span>
+                )}>{user.rating}</span>
               </div>
             </div>
-            
-            {user.interests && user.interests.length > 0 && (
-              <div className="flex flex-wrap gap-1 mt-2">
-                {user.interests.map((interest: string) => (
-                  <Badge 
-                    key={interest}
-                    variant="outline"
-                    className={cn(
-                      "text-xs bg-nav-bg",
-                      theme === 'dark' 
-                        ? 'border-[#e18d58] text-white' 
-                        : 'border-[#800000] text-[#800000]'
-                    )}
-                  >
-                    {interest}
-                  </Badge>
-                ))}
-              </div>
-            )}
-            
-            {user.bio && (
-              <p className={cn(
-                "text-sm mt-2 line-clamp-2",
-                theme === 'dark' ? 'text-white/70' : 'text-[#800000]/70'
-              )}>
-                {user.bio}
-              </p>
-            )}
-            
-            <div className="flex items-center justify-between mt-4">
-              <div className="flex items-center gap-2">
-                <MessageSquare className={cn(
-                  "h-4 w-4",
-                  theme === 'dark' ? 'text-[#e18d58]' : 'text-[#800000]'
-                )} />
-                <span className={cn(
-                  "text-sm",
-                  theme === 'dark' ? 'text-white/70' : 'text-[#800000]/70'
-                )}>
-                  {user.responseTime || "Usually responds in 24h"}
-                </span>
-              </div>
-              
-              <Link href={`/mentors/${user.id}`}>
-                <Button 
-                  size="sm"
+            <p className={cn(
+              "text-sm mt-2 line-clamp-2",
+              theme === 'dark' ? 'text-white/70' : 'text-[#800000]/70'
+            )}>{user.bio}</p>
+            <div className="flex flex-wrap gap-2 mt-3">
+              {user.interests.map((interest, index) => (
+                <Badge
+                  key={index}
+                  variant="outline"
                   className={cn(
-                    "bg-nav-bg border",
-                    theme === 'dark' 
-                      ? 'border-[#e18d58] text-white hover:bg-[#e18d58]/20' 
-                      : 'border-[#800000] text-[#800000] hover:bg-background'
+                    "text-xs py-0 h-5",
+                    theme === 'dark' ? 'border-[#e18d58] text-white' : 'border-[#800000] text-[#800000]'
                   )}
                 >
-                  View Profile
-                  <ChevronRight className="h-4 w-4 ml-1" />
-                </Button>
-              </Link>
+                  {interest}
+                </Badge>
+              ))}
             </div>
           </div>
+        </div>
+        <div className="flex items-center justify-between mt-4 pt-4 border-t border-border">
+          <div className="flex items-center gap-2">
+            <MessageSquare className={cn(
+              "h-4 w-4",
+              theme === 'dark' ? 'text-[#e18d58]' : 'text-[#800000]'
+            )} />
+            <span className={cn(
+              "text-sm",
+              theme === 'dark' ? 'text-white/70' : 'text-[#800000]/70'
+            )}>{user.reviewCount} reviews</span>
+          </div>
+          <Link href={`/mentors`}>
+            <Button
+              variant="ghost"
+              className={cn(
+                "text-sm",
+                theme === 'dark' ? 'text-white hover:text-[#e18d58]' : 'text-[#800000] hover:text-[#800000]/70'
+              )}
+            >
+              View Profile
+              <ChevronRight className="h-4 w-4 ml-1" />
+            </Button>
+          </Link>
         </div>
       </CardContent>
     </Card>
