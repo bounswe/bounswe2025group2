@@ -2,6 +2,7 @@ from django.urls import path
 from . import views
 from .separate_views import fitness_goals
 from .separate_views import profile
+from .separate_views import forum_comments
 
 
 urlpatterns = [
