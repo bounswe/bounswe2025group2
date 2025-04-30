@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import UserWithType, Notification, FitnessGoal, Profile, Forum, Thread, Comment, Subcomment
+from .models import UserWithType, Notification, FitnessGoal, Profile, Forum, Thread, Comment, Subcomment, Vote
 
 @admin.register(UserWithType)
 class UserWithTypeAdmin(admin.ModelAdmin):
