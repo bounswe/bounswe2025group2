@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import UserWithType, Notification, FitnessGoal, Profile
+from .models import UserWithType, Notification, FitnessGoal, Profile, Comment, Subcomment
 
 @admin.register(UserWithType)
 class UserWithTypeAdmin(admin.ModelAdmin):
@@ -49,13 +49,25 @@ class ThreadAdmin(admin.ModelAdmin):
 
 @admin.register(Comment)
 class CommentAdmin(admin.ModelAdmin):
-    pass
+    list_display = ('id', 'author', 'thread', 'short_content', 'like_count', 'subcomment_count', 'created_at')
+    search_fields = ('author__username', 'content')
+    list_filter = ('created_at',)
+    readonly_fields = ('created_at', 'updated_at')
 
+    def short_content(self, obj):
+        return (obj.content[:50] + '...') if len(obj.content) > 50 else obj.content
+    short_content.short_description = 'Content'
 
 @admin.register(Subcomment)
 class SubcommentAdmin(admin.ModelAdmin):
-    pass
+    list_display = ('id', 'author', 'comment', 'short_content', 'like_count', 'created_at')
+    search_fields = ('author__username', 'content')
+    list_filter = ('created_at',)
+    readonly_fields = ('created_at', 'updated_at')
 
+    def short_content(self, obj):
+        return (obj.content[:50] + '...') if len(obj.content) > 50 else obj.content
+    short_content.short_description = 'Content'
 
 @admin.register(Vote)
 class VoteAdmin(admin.ModelAdmin):
