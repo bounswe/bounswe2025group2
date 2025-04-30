@@ -15,6 +15,7 @@ import SettingsPage from "@/pages/settings-page";
 import { ProtectedRoute } from "./lib/protected-route";
 import { AuthProvider } from "./hooks/use-auth";
 import { ThemeProvider } from "./theme/ThemeContext";
+import MessagePage from "@/pages/messaging-page.tsx";
 
 console.log("VITE_API_URL is:", import.meta.env.VITE_API_URL);
 
@@ -35,6 +36,7 @@ function Router() {
       <ProtectedRoute path="/challenges" component={ChallengesPage} />
       <ProtectedRoute path="/settings" component={SettingsPage} />
       <ProtectedRoute path="/create" component={GoalsPage} />
+      <ProtectedRoute path="/messagingScreen" component={MessagePage} />
       <Route component={NotFound} />
     </Switch>
   );

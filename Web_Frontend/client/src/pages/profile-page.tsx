@@ -18,6 +18,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { User, Loader2, Settings, Edit, Camera, Trophy, MessageSquare, Target } from "lucide-react";
+import {useMutation, useQuery} from "@tanstack/react-query";
+import {queryClient} from "@/lib/queryClient.ts";
 
 export default function ProfilePage() {
   const { username } = useParams<{ username: string }>();
@@ -166,7 +168,7 @@ export default function ProfilePage() {
     });
   };
 
-  if (!username) {
+  /*if (!username) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
@@ -175,7 +177,7 @@ export default function ProfilePage() {
         </div>
       </div>
     );
-  }
+  }*/
 
   return (
     <div className="min-h-screen bg-background">
