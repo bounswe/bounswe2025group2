@@ -1,7 +1,7 @@
 from rest_framework import status, generics
 from rest_framework.response import Response
-from .models import Comment, SubComment
-from .serializers import CommentSerializer, SubCommentSerializer
+from .models import Comment, Subcomment
+from .serializers import CommentSerializer, SubcommentSerializer
 from rest_framework.decorators import api_view
 from django.shortcuts import get_object_or_404
 
@@ -53,79 +53,79 @@ def get_comment(request, comment_id):
     return Response(CommentSerializer(comment).data, status=status.HTTP_200_OK)
 
 
-# 5. Get all SubComments for a Thread sorted by created_at
+# 5. Get all Subcomments for a Thread sorted by created_at
 @api_view(['GET'])
 def get_subcomments_for_thread_by_date(request, thread_id):
-    subcomments = SubComment.objects.filter(comment__thread_id=thread_id).order_by('created_at')
-    serializer = SubCommentSerializer(subcomments, many=True)
+    subcomments = Subcomment.objects.filter(comment__thread_id=thread_id).order_by('created_at')
+    serializer = SubcommentSerializer(subcomments, many=True)
     return Response(serializer.data, status=status.HTTP_200_OK)
 
 
-# 6. Get all SubComments for a Thread sorted by like_count
+# 6. Get all Subcomments for a Thread sorted by like_count
 @api_view(['GET'])
 def get_subcomments_for_thread_by_likes(request, thread_id):
-    subcomments = SubComment.objects.filter(comment__thread_id=thread_id).order_by('-like_count')
-    serializer = SubCommentSerializer(subcomments, many=True)
+    subcomments = Subcomment.objects.filter(comment__thread_id=thread_id).order_by('-like_count')
+    serializer = SubcommentSerializer(subcomments, many=True)
     return Response(serializer.data, status=status.HTTP_200_OK)
 
 
-# 7. Add a SubComment
+# 7. Add a Subcomment
 @api_view(['POST'])
 def add_subcomment(request, comment_id):
     data = request.data
     data['comment'] = comment_id  # Attach the comment_id to the subcomment
 
-    serializer = SubCommentSerializer(data=data)
+    serializer = SubcommentSerializer(data=data)
     if serializer.is_valid():
         subcomment = serializer.save()
         # Increment the subcomment count for the parent comment
         comment = subcomment.comment
         comment.subcomment_count += 1
         comment.save(update_fields=['subcomment_count'])
-        return Response(SubCommentSerializer(subcomment).data, status=status.HTTP_201_CREATED)
+        return Response(SubcommentSerializer(subcomment).data, status=status.HTTP_201_CREATED)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-# 8. Delete a SubComment
+# 8. Delete a Subcomment
 @api_view(['DELETE'])
 def delete_subcomment(request, subcomment_id):
-    subcomment = get_object_or_404(SubComment, pk=subcomment_id)
+    subcomment = get_object_or_404(Subcomment, pk=subcomment_id)
 
     # Use serializer's custom delete method
-    serializer = SubCommentSerializer()
+    serializer = SubcommentSerializer()
     serializer.delete(subcomment)
 
-    return Response({'message': 'SubComment deleted successfully'}, status=status.HTTP_204_NO_CONTENT)
+    return Response({'message': 'Subcomment deleted successfully'}, status=status.HTTP_204_NO_CONTENT)
 
-# 9. Update a SubComment
+# 9. Update a Subcomment
 @api_view(['PUT'])
 def update_subcomment(request, subcomment_id):
-    subcomment = get_object_or_404(SubComment, pk=subcomment_id)
-    serializer = SubCommentSerializer(subcomment, data=request.data, partial=False)  # Full update
+    subcomment = get_object_or_404(Subcomment, pk=subcomment_id)
+    serializer = SubcommentSerializer(subcomment, data=request.data, partial=False)  # Full update
     if serializer.is_valid():
         serializer.save()
         return Response(serializer.data, status=status.HTTP_200_OK)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-# 10. Get a SubComment
+# 10. Get a Subcomment
 @api_view(['GET'])
 def get_subcomment(request, subcomment_id):
-    subcomment = get_object_or_404(SubComment, pk=subcomment_id)
-    return Response(SubCommentSerializer(subcomment).data, status=status.HTTP_200_OK)
+    subcomment = get_object_or_404(Subcomment, pk=subcomment_id)
+    return Response(SubcommentSerializer(subcomment).data, status=status.HTTP_200_OK)
 
 
-# 11. Get all SubComments for a Comment sorted by created_at
+# 11. Get all Subcomments for a Comment sorted by created_at
 @api_view(['GET'])
 def get_subcomments_for_comment_by_date(request, comment_id):
-    subcomments = SubComment.objects.filter(comment_id=comment_id).order_by('created_at')
-    serializer = SubCommentSerializer(subcomments, many=True)
+    subcomments = Subcomment.objects.filter(comment_id=comment_id).order_by('created_at')
+    serializer = SubcommentSerializer(subcomments, many=True)
     return Response(serializer.data, status=status.HTTP_200_OK)
 
 
-# 12. Get all SubComments for a Comment sorted by like_count
+# 12. Get all Subcomments for a Comment sorted by like_count
 @api_view(['GET'])
 def get_subcomments_for_comment_by_likes(request, comment_id):
-    subcomments = SubComment.objects.filter(comment_id=comment_id).order_by('-like_count')
-    serializer = SubCommentSerializer(subcomments, many=True)
+    subcomments = Subcomment.objects.filter(comment_id=comment_id).order_by('-like_count')
+    serializer = SubcommentSerializer(subcomments, many=True)
     return Response(serializer.data, status=status.HTTP_200_OK)

@@ -127,6 +127,8 @@ class Comment(models.Model):
     content = models.TextField()
 
     like_count = models.PositiveIntegerField(default=0)
+    votes = GenericRelation('Vote')
+
     subcomment_count = models.PositiveIntegerField(default=0)
 
     created_at = models.DateTimeField(auto_now_add=True)
@@ -136,18 +138,19 @@ class Comment(models.Model):
         return f'Comment by {self.author.username} on Thread {self.thread.id}'
 
 
-class SubComment(models.Model):
+class Subcomment(models.Model):
     comment = models.ForeignKey(Comment, on_delete=models.CASCADE, related_name='subcomments')
     author = models.ForeignKey(User, on_delete=models.CASCADE)
     content = models.TextField()
 
     like_count = models.PositiveIntegerField(default=0)
+    votes = GenericRelation('Vote')
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)  # Overridden in save()
 
     def __str__(self):
-        return f'SubComment by {self.author.username} on Comment {self.comment.id}'
+        return f'Subcomment by {self.author.username} on Comment {self.comment.id}'
 
 class Vote(models.Model):
     pass

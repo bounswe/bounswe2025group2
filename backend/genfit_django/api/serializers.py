@@ -195,12 +195,12 @@ class CommentSerializer(serializers.ModelSerializer):
 
 
 
-class SubCommentSerializer(serializers.ModelSerializer):
+class SubcommentSerializer(serializers.ModelSerializer):
     author_username = serializers.CharField(source='author.username', read_only=True)
     comment_id = serializers.IntegerField(source='comment.id', read_only=True)
 
     class Meta:
-        model = SubComment
+        model = Subcomment
         fields = [
             'id',
             'author_username',
@@ -213,7 +213,7 @@ class SubCommentSerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'created_at', 'updated_at']
 
     def create(self, validated_data):
-        subcomment = SubComment.objects.create(**validated_data)
+        subcomment = Subcomment.objects.create(**validated_data)
         # Increment subcomment count for the parent comment
         comment = subcomment.comment
         comment.subcomment_count += 1
