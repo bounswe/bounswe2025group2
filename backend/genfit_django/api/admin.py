@@ -38,7 +38,7 @@ class ProfileAdmin(admin.ModelAdmin):
 
 @admin.register(Forum)
 class ForumAdmin(admin.ModelAdmin):
-    list_display = ('title', 'parent', 'created_by', 'created_at', 'is_active', 'thread_count')
+    list_display = ('title', 'created_by', 'created_at', 'is_active', 'thread_count')
     list_filter = ('is_active', 'created_at')
     search_fields = ('title', 'description')
     ordering = ('order', 'title')
@@ -51,16 +51,3 @@ class ThreadAdmin(admin.ModelAdmin):
     search_fields = ('title', 'content', 'author__username')
     readonly_fields = ('created_at', 'updated_at', 'view_count', 'like_count')
     raw_id_fields = ('author', 'forum')
-
-@admin.register(Comment)
-class CommentAdmin(admin.ModelAdmin):
-    pass
-
-@admin.register(Subcomment)
-class SubcommentAdmin(admin.ModelAdmin):
-    pass
-
-@admin.register(Vote)
-class VoteAdmin(admin.ModelAdmin):
-    # Optional
-    pass
