@@ -154,8 +154,55 @@ class SubcommentSerializer(serializers.Serializer):
     pass
 
 
-class VoteSerilizer(serializers.Serializer):
-    pass
+class VoteSerializer(serializers.ModelSerializer):
+    user_username = serializers.CharField(source='user.username', read_only=True)
+
+    class Meta:
+        model = Vote
+        fields = [
+            'id',
+            'user',
+            'user_username',
+            'content_type',
+            'content_id',
+            'vote_type',
+            'created_at',
+            'updated_at'
+        ]
+        read_only_fields = ['id', 'user', 'created_at', 'updated_at']
+
+    def _handle_vote(self, user, content_type, content_id, vote_type):
+        vote = Vote.toggle_vote(
+            user=user,
+            content_type=content_type,
+            content_id=content_id,
+            new_vote_type=vote_type
+        )
+        return vote
+
+    def create(self, validated_data):
+        vote = self._handle_vote(
+            user=self.context['request'].user,
+            content_type=validated_data['content_type'],
+            content_id=validated_data['content_id'],
+            vote_type=validated_data['vote_type']
+        )
+        if vote is None:
+            # Return a response indicating vote was removed
+            return {'message': 'Vote removed', 'status': 204}
+        return vote
+
+    def update(self, instance, validated_data):
+        vote = self._handle_vote(
+            user=instance.user,
+            content_type=validated_data.get('content_type', instance.content_type),
+            content_id=validated_data.get('content_id', instance.content_id),
+            vote_type=validated_data.get('vote_type', instance.vote_type)
+        )
+        if vote is None:
+            # Return a response indicating vote was removed
+            return {'message': 'Vote removed', 'status': 204}
+        return vote
 
 
 
