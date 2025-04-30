@@ -49,4 +49,4 @@ class ThreadViewSet(viewsets.ModelViewSet):
         # Implement like functionality here
         thread.like_count += 1
         thread.save()
-        return Response({'status': 'success'})
+        return Response({'status': 'success'}) 

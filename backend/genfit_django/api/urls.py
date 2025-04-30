@@ -3,7 +3,7 @@ from rest_framework.routers import DefaultRouter
 from . import views
 from .separate_views import fitness_goals
 from .separate_views import profile
-from .separate_views.forum import ForumViewSet, ThreadViewSet
+from .separate_views.forum_forumthread import ForumViewSet, ThreadViewSet
 
 
 urlpatterns = [
