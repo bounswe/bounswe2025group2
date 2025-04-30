@@ -1,7 +1,9 @@
-from django.urls import path
+from django.urls import path, include
+from rest_framework.routers import DefaultRouter
 from . import views
 from .separate_views import fitness_goals
 from .separate_views import profile
+from .views import ForumViewSet, ThreadViewSet
 
 
 urlpatterns = [
@@ -26,3 +28,7 @@ urlpatterns = [
     path('profile/picture/delete/', profile.delete_profile_picture, name='delete-profile-picture'),
     path('profile/other/picture/<str:username>/', profile.get_other_profile_picture, name='get-other-profile-picture'),
 ]
+
+router = DefaultRouter()
+router.register(r'forums', ForumViewSet)
+router.register(r'threads', ThreadViewSet)

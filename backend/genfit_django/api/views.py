@@ -1,6 +1,6 @@
 from django.contrib.auth import login, logout, get_user_model
-from rest_framework import status
-from rest_framework.decorators import api_view, permission_classes
+from rest_framework import status, viewsets, permissions
+from rest_framework.decorators import api_view, permission_classes, action
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from django.core.mail import send_mail
@@ -9,8 +9,8 @@ from django.contrib.auth.tokens import default_token_generator
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.utils.encoding import force_bytes, force_str
 from django.contrib.sites.shortcuts import get_current_site
-from .serializers import UserRegistrationSerializer, UserLoginSerializer, NotificationSerializer, UserSerializer
-from .models import Notification
+from .serializers import UserRegistrationSerializer, UserLoginSerializer, NotificationSerializer, UserSerializer, ForumSerializer, ThreadListSerializer, ThreadDetailSerializer
+from .models import Notification, Forum, Thread
 
 
 User = get_user_model()
@@ -141,3 +141,53 @@ def get_user(request):
     user = request.user
     serializer = UserSerializer(user)
     return Response(serializer.data)
+
+class ForumViewSet(viewsets.ModelViewSet):
+    queryset = Forum.objects.all()
+    serializer_class = ForumSerializer
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+
+    def get_permissions(self):
+        """
+        Override get_permissions to ensure only admin users can create/modify forums
+        """
+        if self.action in ['create', 'update', 'partial_update', 'destroy']:
+            return [permissions.IsAdminUser()]
+        return [permissions.IsAuthenticatedOrReadOnly()]
+
+    def perform_create(self, serializer):
+        serializer.save(created_by=self.request.user)
+
+    @action(detail=True, methods=['get'])
+    def threads(self, request, pk=None):
+        forum = self.get_object()
+        threads = Thread.objects.filter(forum=forum)
+        serializer = ThreadListSerializer(threads, many=True)
+        return Response(serializer.data)
+
+class ThreadViewSet(viewsets.ModelViewSet):
+    queryset = Thread.objects.all()
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+
+    def get_serializer_class(self):
+        if self.action == 'list':
+            return ThreadListSerializer
+        return ThreadDetailSerializer
+
+    def perform_create(self, serializer):
+        serializer.save(author=self.request.user)
+
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
+        instance.view_count += 1
+        instance.save()
+        serializer = self.get_serializer(instance)
+        return Response(serializer.data)
+
+    @action(detail=True, methods=['post'])
+    def toggle_like(self, request, pk=None):
+        thread = self.get_object()
+        # Implement like functionality here
+        thread.like_count += 1
+        thread.save()
+        return Response({'status': 'success'})

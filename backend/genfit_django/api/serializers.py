@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from django.core.validators import RegexValidator
 from django.contrib.auth import get_user_model
-from .models import Notification, UserWithType, FitnessGoal, Profile
+from .models import Notification, UserWithType, FitnessGoal, Profile, Forum, Thread
 
 
 User = get_user_model()
@@ -138,12 +138,39 @@ class ProfileSerializer(serializers.ModelSerializer):
         read_only_fields = ['username', 'created_at', 'updated_at']
 
 
-class ForumSerializer(serializers.Serializer):
-    pass
+class ForumSerializer(serializers.ModelSerializer):
+    thread_count = serializers.IntegerField(read_only=True)
+    created_by = serializers.StringRelatedField(read_only=True)
+    
+    class Meta:
+        model = Forum
+        fields = ['id', 'title', 'description', 'created_at', 'updated_at', 
+                 'created_by', 'is_active', 'order', 'thread_count']
+        read_only_fields = ['created_at', 'updated_at']
 
+class ThreadListSerializer(serializers.ModelSerializer):
+    author = serializers.StringRelatedField(read_only=True)
+    forum = serializers.StringRelatedField(read_only=True)
+    comment_count = serializers.IntegerField(read_only=True)
+    
+    class Meta:
+        model = Thread
+        fields = ['id', 'title', 'author', 'forum', 'created_at', 'updated_at',
+                 'is_pinned', 'is_locked', 'view_count', 'like_count', 'last_activity',
+                 'comment_count']
+        read_only_fields = ['created_at', 'updated_at', 'view_count', 'like_count', 'last_activity']
 
-class ThreadSerializer(serializers.Serializer):
-    pass
+class ThreadDetailSerializer(serializers.ModelSerializer):
+    author = serializers.StringRelatedField(read_only=True)
+    forum = ForumSerializer(read_only=True)
+    comment_count = serializers.IntegerField(read_only=True)
+    
+    class Meta:
+        model = Thread
+        fields = ['id', 'title', 'content', 'author', 'forum', 'created_at', 
+                 'updated_at', 'is_pinned', 'is_locked', 'view_count', 
+                 'like_count', 'last_activity', 'comment_count']
+        read_only_fields = ['created_at', 'updated_at', 'view_count', 'like_count', 'last_activity']
 
 
 class CommentSerializer(serializers.Serializer):
