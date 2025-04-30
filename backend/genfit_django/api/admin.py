@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import UserWithType, Notification, FitnessGoal, Profile, Comment, Subcomment
+from .models import UserWithType, Notification, FitnessGoal, Profile, Forum, Thread, Comment, Subcomment
 
 @admin.register(UserWithType)
 class UserWithTypeAdmin(admin.ModelAdmin):
@@ -36,15 +36,21 @@ class ProfileAdmin(admin.ModelAdmin):
     search_fields  = ("user__username", "location")
     list_filter    = ("created_at", )
 
-
 @admin.register(Forum)
 class ForumAdmin(admin.ModelAdmin):
-    pass
-
+    list_display = ('title', 'created_by', 'created_at', 'is_active', 'thread_count')
+    list_filter = ('is_active', 'created_at')
+    search_fields = ('title', 'description')
+    ordering = ('order', 'title')
+    readonly_fields = ('created_at', 'updated_at')
 
 @admin.register(Thread)
 class ThreadAdmin(admin.ModelAdmin):
-    pass
+    list_display = ('title', 'forum', 'author', 'created_at', 'is_pinned', 'is_locked', 'view_count', 'like_count')
+    list_filter = ('is_pinned', 'is_locked', 'created_at', 'forum')
+    search_fields = ('title', 'content', 'author__username')
+    readonly_fields = ('created_at', 'updated_at', 'view_count', 'like_count')
+    raw_id_fields = ('author', 'forum')
 
 
 @admin.register(Comment)

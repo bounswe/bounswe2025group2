@@ -1,7 +1,9 @@
-from django.urls import path
+from django.urls import path, include
+from rest_framework.routers import DefaultRouter
 from . import views
 from .separate_views import fitness_goals
 from .separate_views import profile
+from .separate_views.forum_forumthread import ForumViewSet, ThreadViewSet
 from .separate_views import forum_comments
 from .separate_views import forum_vote
 
@@ -56,3 +58,9 @@ urlpatterns = [
     path('forum/vote/<str:content_type>/<int:object_id>/', forum_vote.delete_vote, name='delete_vote'),
     path('forum/vote/<str:content_type>/<int:object_id>/status/', forum_vote.get_user_vote, name='get_user_vote'),
 ]
+
+router = DefaultRouter()
+router.register(r'forums', ForumViewSet)
+router.register(r'threads', ThreadViewSet)
+
+urlpatterns += router.urls

@@ -113,14 +113,45 @@ class Profile(models.Model):
         return None
 
 
-
 class Forum(models.Model):
-    pass
+    title = models.CharField(max_length=200)
+    description = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    created_by = models.ForeignKey(UserWithType, on_delete=models.SET_NULL, null=True, related_name='created_forums')
+    is_active = models.BooleanField(default=True)
+    order = models.IntegerField(default=0, help_text='Order in which forums should be displayed')
+
+    class Meta:
+        ordering = ['order', 'title']
+
+    def __str__(self):
+        return self.title
+
+    @property
+    def thread_count(self):
+        return self.threads.count()
 
 
 class Thread(models.Model):
-    like_count = models.IntegerField(default=0)
-    pass
+    forum = models.ForeignKey(Forum, on_delete=models.CASCADE, related_name='threads')
+    title = models.CharField(max_length=200)
+    content = models.TextField()
+    author = models.ForeignKey(UserWithType, on_delete=models.CASCADE, related_name='threads')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    is_pinned = models.BooleanField(default=False)
+    is_locked = models.BooleanField(default=False)
+    view_count = models.PositiveIntegerField(default=0)
+    like_count = models.PositiveIntegerField(default=0)
+    comment_count = models.PositiveIntegerField(default=0)
+    last_activity = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-is_pinned', '-last_activity']
+
+    def __str__(self):
+        return self.title
 
 
 class Comment(models.Model):
