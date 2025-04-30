@@ -2,6 +2,7 @@ from django.urls import path
 from . import views
 from .separate_views import fitness_goals
 from .separate_views import profile
+from .separate_views import forum_vote
 
 
 urlpatterns = [
@@ -25,4 +26,9 @@ urlpatterns = [
     path('profile/picture/', profile.get_profile_picture_file, name='get-profile-picture'),
     path('profile/picture/delete/', profile.delete_profile_picture, name='delete-profile-picture'),
     path('profile/other/picture/<str:username>/', profile.get_other_profile_picture, name='get-other-profile-picture'),
+    
+    # Vote URLs
+    path('forum/vote/', forum_vote.create_vote, name='create_vote'),
+    path('forum/vote/<str:content_type>/<int:object_id>/', forum_vote.delete_vote, name='delete_vote'),
+    path('forum/vote/<str:content_type>/<int:object_id>/status/', forum_vote.get_user_vote, name='get_user_vote'),
 ]
