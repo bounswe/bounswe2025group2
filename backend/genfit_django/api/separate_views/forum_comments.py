@@ -13,6 +13,7 @@ from rest_framework.permissions import IsAuthenticated
 def add_comment(request, thread_id):
     data = request.data
     data['thread'] = thread_id  # Attach the thread_id to the comment
+    data['author'] = request.user.id  # Add the authenticated user as author
 
     serializer = CommentSerializer(data=data)
     if serializer.is_valid():
@@ -82,6 +83,7 @@ def get_comments_for_thread_by_likes(request, thread_id):
 def add_subcomment(request, comment_id):
     data = request.data
     data['comment'] = comment_id  # Attach the comment_id to the subcomment
+    data['author'] = request.user.id  # Add the authenticated user as author
 
     serializer = SubcommentSerializer(data=data)
     if serializer.is_valid():

@@ -37,7 +37,7 @@ urlpatterns = [
     path('comments/<int:comment_id>/', forum_comments.get_comment, name='get_comment'),
     path('comments/<int:comment_id>/update/', forum_comments.update_comment, name='update_comment'),
     path('comments/<int:comment_id>/delete/', forum_comments.delete_comment, name='delete_comment'),
-    path('comments/add/<int:thread_id>', forum_comments.add_comment, name='add_comment'),
+    path('comments/add/<int:thread_id>/', forum_comments.add_comment, name='add_comment'),
 
     # Comment endpoints by thread
     path('comments/thread/<int:thread_id>/by-date/', forum_comments.get_comments_for_thread_by_date, name='get_comments_for_thread_date'),

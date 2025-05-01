@@ -173,14 +173,14 @@ class ThreadDetailSerializer(serializers.ModelSerializer):
         read_only_fields = ['created_at', 'updated_at', 'view_count', 'like_count', 'last_activity']
 
 class CommentSerializer(serializers.ModelSerializer):
-    author_username = serializers.CharField(source='author.username', read_only=True)
+    author = serializers.CharField(source='author.username', read_only=True)
     thread_id = serializers.IntegerField(source='thread.id', read_only=True)
 
     class Meta:
         model = Comment
         fields = [
             'id',
-            'author_username',
+            'author',
             'thread_id',
             'content',
             'like_count',
