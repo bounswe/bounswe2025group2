@@ -18,10 +18,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { User, Loader2, Settings, Edit, Camera, Trophy, MessageSquare, Target } from "lucide-react";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { queryClient } from "@/lib/queryClient";
 
 export default function ProfilePage() {
-  const { username } = useParams<{ username: string }>();
-  const { user: currentUser, updateProfileMutation, applyForRoleMutation } = useAuth();
+  var { username } = useParams<{ username?: string }>();
+  var { user: currentUser, updateProfileMutation, applyForRoleMutation } = useAuth();
+  const effectiveUsername = username ?? currentUser?.username;
+  username = effectiveUsername
   const [isEditing, setIsEditing] = useState(false);
   const [editedProfile, setEditedProfile] = useState({
     name: "",
