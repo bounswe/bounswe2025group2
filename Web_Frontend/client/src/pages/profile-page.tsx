@@ -20,6 +20,8 @@ import { Switch } from "@/components/ui/switch";
 import { User, Loader2, Settings, Edit, Camera, Trophy, MessageSquare, Target } from "lucide-react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
+const baseUrl = import.meta.env.VITE_API_BASE_URL;
+
 
 export default function ProfilePage() {
   var { username } = useParams<{ username?: string }>();
@@ -87,7 +89,7 @@ export default function ProfilePage() {
   const { data: profileUser, isLoading } = useQuery({
     queryKey: ['/api/user'],
     queryFn: async () => {
-      const res = await fetch('/api/user');
+      const res = await fetch(`${baseUrl}/api/user`);
       if (!res.ok) throw new Error('Failed to fetch user profile');
       return res.json();
     },
@@ -106,9 +108,9 @@ export default function ProfilePage() {
 
   // Fetch user's goals
   const { data: userGoals, isLoading: goalsLoading } = useQuery({
-    queryKey: [`/api/goals`, `user_${profileUser?.id}`],
+    queryKey: [`/api/goals`],
     queryFn: async () => {
-      const res = await fetch(`/api/goals?userId=${profileUser?.id}`);
+      const res = await fetch(`${baseUrl}/api/goals/`, {credentials : 'include'});
       if (!res.ok) throw new Error("Failed to fetch user goals");
       return res.json();
     },
@@ -180,6 +182,7 @@ export default function ProfilePage() {
       </div>
     );
   }
+  
 
   return (
     <div className="min-h-screen bg-background">
