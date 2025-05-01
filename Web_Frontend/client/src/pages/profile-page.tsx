@@ -195,12 +195,12 @@ export default function ProfilePage() {
                   <AvatarWithBadge
                     src={profilePicture}
                     fallback={profileUser.name?.[0]?.toUpperCase() || profileUser.username[0].toUpperCase()}
-
                     size="lg"
-                    role={username === "johndoe" ? "trainee" : username === "janedoe" ? "coach" : ""}
-                    verified={username === "johndoe" || username === "janedoe"}
+                    role={profileUser.role}
+                    verified={profileUser.verificationStatus}
                   />
-                  {isOwnProfile && (
+
+{isOwnProfile && (
                     <div className="absolute -bottom-2 -left-2 right-0 flex justify-between">
                       {/* Upload Button - Positioned bottom-left */}
                       <Button
@@ -242,30 +242,30 @@ export default function ProfilePage() {
                       />
                     </div>
                   )}
+
                 </div>
                 <div className="flex-1 text-center md:text-left">
                   <h1 className="text-2xl font-bold text-secondary-dark">
-                    {username}
+                    {profileUser.name || profileUser.username}
                   </h1>
                   <div className="flex flex-wrap items-center justify-center md:justify-start gap-2 mt-1">
                     <Badge variant="secondary" className="text-xs py-0 h-5">
-                      @{username}
+                      @{profileUser.username}
                     </Badge>
                     <Badge
                       variant={profileUser.role === "mentor" ? "outline" : "default"}
-
                       className="text-xs py-0 h-5"
                     >
-                      {username === "johndoe" ? "Trainee" : username === "janedoe" ? "Coach" : "Trainee"}
+                      {profileUser.role === "coach" ? "Coach" : profileUser.role === "mentor" ? "Mentor" : "Trainee"}
                     </Badge>
-                    {username === "johndoe" || username === "janedoe" && (
+                    {profileUser.verificationStatus && (
                       <Badge variant="outline" className="text-xs py-0 h-5 border-green-500 text-green-600">
                         Verified
                       </Badge>
                     )}
                   </div>
-                  {!isPrivateProfile && username && (
-                    <p className="text-secondary mt-2">{username}</p>
+                  {!isPrivateProfile && profileUser.bio && (
+                    <p className="text-secondary mt-2">{profileUser.bio}</p>
                   )}
                 </div>
 
@@ -280,8 +280,8 @@ export default function ProfilePage() {
                       <Edit className="h-3 w-3 mr-1" />
                       Edit Profile
                     </Button>
-                    {profileUser.role === "trainee" && (
 
+                    {profileUser.role === "trainee" && (
                       <Dialog>
                         <DialogTrigger asChild>
                           <Button
@@ -425,7 +425,7 @@ export default function ProfilePage() {
                     <div className="bg-primary inline-flex p-2 rounded-full mb-2">
                       <Target className="h-6 w-6 text-secondary-dark" />
                     </div>
-                    <h3 className="text-xl font-bold">0</h3>
+                    <h3 className="text-xl font-bold">{userGoals?.length || 0}</h3>
                     <p className="text-muted-foreground text-sm">Active Goals</p>
                   </CardContent>
                 </Card>
@@ -434,7 +434,7 @@ export default function ProfilePage() {
                     <div className="bg-primary inline-flex p-2 rounded-full mb-2">
                       <MessageSquare className="h-6 w-6 text-secondary-dark" />
                     </div>
-                    <h3 className="text-xl font-bold">0</h3>
+                    <h3 className="text-xl font-bold">{userThreads?.length || 0}</h3>
                     <p className="text-muted-foreground text-sm">Forum Posts</p>
                   </CardContent>
                 </Card>
@@ -443,7 +443,7 @@ export default function ProfilePage() {
                     <div className="bg-primary inline-flex p-2 rounded-full mb-2">
                       <Trophy className="h-6 w-6 text-secondary-dark" />
                     </div>
-                    <h3 className="text-xl font-bold">0</h3>
+                    <h3 className="text-xl font-bold">5</h3>
                     <p className="text-muted-foreground text-sm">Achievements</p>
                   </CardContent>
                 </Card>
@@ -457,7 +457,7 @@ export default function ProfilePage() {
                 </div>
                 <h2 className="text-xl font-semibold mb-2">This Profile is Private</h2>
                 <p className="text-muted-foreground mb-4">
-                  {username} has set their profile to private. Only they can view their detailed information.
+                  {profileUser.username} has set their profile to private. Only they can view their detailed information.
                 </p>
               </div>
             ) : (
@@ -466,25 +466,50 @@ export default function ProfilePage() {
                   <TabsTrigger value="goals">Goals</TabsTrigger>
                   <TabsTrigger value="posts">Forum Posts</TabsTrigger>
                   <TabsTrigger value="achievements">Achievements</TabsTrigger>
-                  {(username === "johndoe" || username === "janedoe") && (
+                  {(profileUser.role === "mentor" || profileUser.role === "coach") && (
                     <TabsTrigger value="mentees">Mentees</TabsTrigger>
                   )}
                 </TabsList>
 
                 <TabsContent value="goals">
-                  {username === "johndoe" && (
+                  {goalsLoading ? (
+                    <div className="flex justify-center py-8">
+                      <Loader2 className="h-8 w-8 animate-spin text-secondary" />
+                    </div>
+                  ) : userGoals && userGoals.length > 0 ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {userGoals.map((goal: any) => (
+                        <Card key={goal.id}>
+                          <CardHeader className="pb-2">
+                            <CardTitle className="text-lg">{goal.title}</CardTitle>
+                          </CardHeader>
+                          <CardContent>
+                            <GoalProgress goal={goal} />
+                            <div className="flex justify-between items-center mt-2 text-sm">
+                              <div className="flex items-center text-muted-foreground">
+                                <span className="capitalize">{goal.type}</span>
+                                <span className="mx-2">•</span>
+                                <span>{goal.unit}</span>
+                              </div>
+                              <Badge variant={goal.status === "completed" ? "default" : "outline"}>
+                                {goal.status}
+                              </Badge>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  ) : (
                     <div className="text-center py-8 bg-card rounded-xl border border-border">
                       <Target className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                       <h3 className="text-lg font-medium mb-2">No Goals Set</h3>
                       <p className="text-muted-foreground mb-4">
-
                         {isOwnProfile
                           ? "You haven't set any fitness goals yet."
                           : `${profileUser.username} hasn't set any fitness goals yet.`
                         }
-
                       </p>
-                      {username === "johndoe" && (
+                      {isOwnProfile && (
                         <Button className="bg-secondary text-white hover:bg-secondary-dark">
                           Set Your First Goal
                         </Button>
@@ -494,19 +519,27 @@ export default function ProfilePage() {
                 </TabsContent>
 
                 <TabsContent value="posts">
-                  {username === "johndoe" && (
+                  {threadsLoading ? (
+                    <div className="flex justify-center py-8">
+                      <Loader2 className="h-8 w-8 animate-spin text-secondary" />
+                    </div>
+                  ) : userThreads && userThreads.length > 0 ? (
+                    <div className="space-y-4">
+                      {userThreads.map((thread: any) => (
+                        <ForumThreadCard key={thread.id} thread={thread} />
+                      ))}
+                    </div>
+                  ) : (
                     <div className="text-center py-8 bg-card rounded-xl border border-border">
                       <MessageSquare className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                       <h3 className="text-lg font-medium mb-2">No Forum Posts</h3>
                       <p className="text-muted-foreground mb-4">
-
                         {isOwnProfile
                           ? "You haven't created any forum posts yet."
                           : `${profileUser.username} hasn't created any forum posts yet.`
                         }
-
                       </p>
-                      {username === "johndoe" && (
+                      {isOwnProfile && (
                         <Button className="bg-secondary text-white hover:bg-secondary-dark">
                           Create Your First Post
                         </Button>
@@ -547,15 +580,16 @@ export default function ProfilePage() {
                   </div>
                 </TabsContent>
 
-
                 {(profileUser.role === "mentor" || profileUser.role === "coach") && (
-
                   <TabsContent value="mentees">
                     <div className="text-center py-8 bg-card rounded-xl border border-border">
                       <User className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                       <h3 className="text-lg font-medium mb-2">No Mentees Yet</h3>
                       <p className="text-muted-foreground mb-4">
-                        {username === "johndoe" ? "You don't have any mentees yet." : "You don't have any mentees yet."}
+                        {isOwnProfile
+                          ? "You don't have any mentees yet."
+                          : `${profileUser.username} doesn't have any mentees yet.`
+                        }
                       </p>
                     </div>
                   </TabsContent>
