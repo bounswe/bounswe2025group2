@@ -42,10 +42,12 @@ urlpatterns = [
     # Comment endpoints by thread
     path('comments/thread/<int:thread_id>/date/', forum_comments.get_comments_for_thread_by_date, name='get_comments_for_thread_date'),
     path('comments/thread/<int:thread_id>/likes/', forum_comments.get_comments_for_thread_by_likes, name='get_comments_for_thread_likes'),
+    path('comments/thread/<int:thread_id>/', forum_comments.get_comments_for_thread_by_date, name='get_comments_for_thread'),
 
     # SubComment endpoints by comment
     path('subcomments/comment/<int:comment_id>/date/', forum_comments.get_subcomments_for_comment_by_date, name='get_subcomments_by_comment_date'),
     path('subcomments/comment/<int:comment_id>/likes/', forum_comments.get_subcomments_for_comment_by_likes, name='get_subcomments_by_comment_likes'),
+    path('subcomments/comment/<int:comment_id>/', forum_comments.get_subcomments_for_comment_by_date, name='get_subcomments_by_comment'),
 
     # SubComment individual endpoints
     path('subcomments/<int:subcomment_id>/', forum_comments.get_subcomment, name='get_subcomment'),

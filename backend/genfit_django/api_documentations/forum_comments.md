@@ -133,6 +133,8 @@ Returns all comments for a given thread, sorted by like count (descending).
 
 - **Success (200 OK)**: Returns a list of comments.
 
+#### Note: `/comments/thread/{thread_id}` defaults to sorting by date
+
 ---
 
 ### Add Subcomment
@@ -243,3 +245,5 @@ Returns all subcomments for a given comment, sorted by like count (descending).
 **Response**:
 
 - **Success (200 OK)**: List of subcomments.
+
+#### Note: `/subcomments/comment/{comment_id}/` defaults to sorting by date
