@@ -141,7 +141,7 @@ class Thread(models.Model):
     content = models.TextField()
     author = models.ForeignKey(UserWithType, on_delete=models.CASCADE, related_name='threads')
     created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
+    updated_at = models.DateTimeField(auto_now_add=True)
     is_pinned = models.BooleanField(default=False)
     is_locked = models.BooleanField(default=False)
     view_count = models.PositiveIntegerField(default=0)
@@ -169,7 +169,7 @@ class Comment(models.Model):
     subcomment_count = models.PositiveIntegerField(default=0)
 
     created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)  # Overridden in save()
+    updated_at = models.DateTimeField(auto_now_add=True)  # Overridden in save()
 
     def __str__(self):
         return f'Comment by {self.author.username} on Thread {self.thread.id}'
@@ -184,7 +184,7 @@ class Subcomment(models.Model):
     votes = GenericRelation('Vote')
 
     created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)  # Overridden in save()
+    updated_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return f'Subcomment by {self.author.username} on Comment {self.comment.id}'

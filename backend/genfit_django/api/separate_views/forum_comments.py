@@ -11,11 +11,10 @@ from rest_framework.permissions import IsAuthenticated
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def add_comment(request, thread_id):
-    data = request.data
-    data['thread'] = thread_id  # Attach the thread_id to the comment
-    data['author'] = request.user.id  # Add the authenticated user as author
-
-    serializer = CommentSerializer(data=data)
+    serializer = CommentSerializer(
+        data=request.data,
+        context={'request': request, 'thread_id': thread_id}  # Add thread_id to context
+    )
     if serializer.is_valid():
         comment = serializer.save()
         # Increment the comment count for the parent thread
@@ -81,11 +80,10 @@ def get_comments_for_thread_by_likes(request, thread_id):
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def add_subcomment(request, comment_id):
-    data = request.data
-    data['comment'] = comment_id  # Attach the comment_id to the subcomment
-    data['author'] = request.user.id  # Add the authenticated user as author
-
-    serializer = SubcommentSerializer(data=data)
+    serializer = SubcommentSerializer(
+        data=request.data,
+        context={'request': request, 'comment_id': comment_id}  # Add comment_id to context
+    )
     if serializer.is_valid():
         subcomment = serializer.save()
         # Increment the subcomment count for the parent comment

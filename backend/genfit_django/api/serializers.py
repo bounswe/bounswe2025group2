@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from django.core.validators import RegexValidator
 from django.contrib.auth import get_user_model
+from django.utils import timezone
 from .models import Notification, UserWithType, FitnessGoal, Profile, Forum, Thread, Comment, Subcomment, Vote
 
 
@@ -172,15 +173,20 @@ class ThreadDetailSerializer(serializers.ModelSerializer):
                  'like_count', 'last_activity', 'comment_count']
         read_only_fields = ['created_at', 'updated_at', 'view_count', 'like_count', 'last_activity']
 
+    def update(self, instance, validated_data):
+        instance.updated_at = timezone.now()
+        instance.save()
+        return instance
+
 class CommentSerializer(serializers.ModelSerializer):
-    author = serializers.CharField(source='author.username', read_only=True)
+    author_id = serializers.IntegerField(source='author.id', read_only=True)
     thread_id = serializers.IntegerField(source='thread.id', read_only=True)
 
     class Meta:
         model = Comment
         fields = [
             'id',
-            'author',
+            'author_id',
             'thread_id',
             'content',
             'like_count',
@@ -188,85 +194,68 @@ class CommentSerializer(serializers.ModelSerializer):
             'created_at',
             'updated_at'
         ]
-        read_only_fields = ['id', 'created_at', 'updated_at', 'subcomment_count']
+        read_only_fields = ['id', 'author_id', 'thread_id', 'created_at', 'updated_at', 'subcomment_count', 'like_count']
 
     def create(self, validated_data):
-        comment = Comment.objects.create(**validated_data)
-        return comment
+        validated_data['author'] = self.context['request'].user
+        validated_data['thread_id'] = self.context.get('thread_id') 
+        return Comment.objects.create(**validated_data)
 
     def update(self, instance, validated_data):
-        new_content = validated_data.get('content', instance.content)
-        if instance.content != new_content:
-            instance.content = new_content
-            instance.updated_at = timezone.now()
-
-        instance.like_count = validated_data.get('like_count', instance.like_count)
+        instance.content = validated_data.get('content', instance.content)
+        instance.updated_at = timezone.now()
         instance.save()
         return instance
 
     def delete(self, instance):
-        # Decrement parent thread's comment count
+        thread = instance.thread
         thread.comment_count = max(0, thread.comment_count - 1)
         thread.save(update_fields=['comment_count'])
 
-        # Delete all subcomments and their votes
         for sub in instance.subcomments.all():
             sub.votes.all().delete()
             sub.delete()
 
-        # Delete comment's own votes if using GenericRelation
         instance.votes.all().delete()
-
-        # Finally delete the comment
         instance.delete()
 
-
-
 class SubcommentSerializer(serializers.ModelSerializer):
-    author_username = serializers.CharField(source='author.username', read_only=True)
+    author_id = serializers.IntegerField(source='author.id', read_only=True)
     comment_id = serializers.IntegerField(source='comment.id', read_only=True)
 
     class Meta:
         model = Subcomment
         fields = [
             'id',
-            'author_username',
+            'author_id',
             'comment_id',
             'content',
             'like_count',
             'created_at',
             'updated_at'
         ]
-        read_only_fields = ['id', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'author_id', 'comment_id', 'created_at', 'updated_at', 'like_count']
 
     def create(self, validated_data):
-        subcomment = Subcomment.objects.create(**validated_data)
-        # Increment subcomment count for the parent comment
-        comment = subcomment.comment
-        comment.subcomment_count += 1
-        comment.save(update_fields=['subcomment_count'])
-        return subcomment
+        validated_data['author'] = self.context['request'].user
+        validated_data['comment_id'] = self.context.get('comment_id') 
+
+        return Subcomment.objects.create(**validated_data)
 
     def update(self, instance, validated_data):
         instance.content = validated_data.get('content', instance.content)
-        instance.like_count = validated_data.get('like_count', instance.like_count)
-
-        # Manually setting updated_at if content changed
-        if instance.content != validated_data.get('content', instance.content):
-            instance.updated_at = timezone.now()
-
+        instance.updated_at = timezone.now()
         instance.save()
         return instance
 
     def delete(self, instance):
         comment = instance.comment
-        instance.votes.all().delete()  # Optional: clear votes if using GenericRelation
+        instance.votes.all().delete()
         instance.delete()
 
-        # Decrement parent comment's subcomment count
         comment.subcomment_count = max(0, comment.subcomment_count - 1)
         comment.save(update_fields=['subcomment_count'])
-
+        
 class VoteSerializer(serializers.ModelSerializer):
     user_username = serializers.CharField(source='user.username', read_only=True)
 

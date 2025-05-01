@@ -51,7 +51,7 @@ urlpatterns = [
     path('subcomments/<int:subcomment_id>/', forum_comments.get_subcomment, name='get_subcomment'),
     path('subcomments/<int:subcomment_id>/update/', forum_comments.update_subcomment, name='update_subcomment'),
     path('subcomments/<int:subcomment_id>/delete/', forum_comments.delete_subcomment, name='delete_subcomment'),
-    path('subcomments/add/', forum_comments.add_subcomment, name='add_subcomment'),
+    path('subcomments/add/<int:comment_id>/', forum_comments.add_subcomment, name='add_subcomment'),
     
     # Vote URLs
     path('forum/vote/', forum_vote.create_vote, name='create_vote'),
