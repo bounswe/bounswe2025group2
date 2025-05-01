@@ -30,20 +30,123 @@ export default function ProfilePage() {
     visibility: "public",
     role: ""
   });
+
+  // Fetch profile picture
   const [newInterest, setNewInterest] = useState("");
 
-  // Determine if this is the current user's profile
-  const isOwnProfile = currentUser && username && currentUser.username === username;
-  const isPrivateProfile = false; // No mock data, so treat all as public for now
+  // Fetch profile picture
+  const { data: profilePicture, isLoading: profilePictureLoading } = useQuery({
+    queryKey: ['profile-picture'],
+    queryFn: async () => {
+      const res = await fetch('/profile/picture/');
+      if (!res.ok) throw new Error('Failed to fetch profile picture');
+      const blob = await res.blob();
+      return URL.createObjectURL(blob); // browser friendly image URL
+    },
+  });
+
+  // Upload profile picture mutation
+  const uploadProfilePictureMutation = useMutation({
+    mutationFn: async (file: File) => {
+      const formData = new FormData();
+      formData.append('picture', file);
+
+      const res = await fetch('/profile/picture/upload/', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!res.ok) throw new Error('Failed to upload profile picture');
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['profile-picture'] });
+    }
+  });
+
+  // Delete profile picture mutation
+  const deleteProfilePictureMutation = useMutation({
+    mutationFn: async () => {
+      const res = await fetch('/profile/picture/delete/', {
+        method: 'DELETE',
+      });
+
+      if (!res.ok) throw new Error('Failed to delete profile picture');
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['profile-picture'] });
+    }
+  });
+
+  // Fetch profile data of the user with the given username
+  const { data: profileUser, isLoading } = useQuery({
+    queryKey: ['/api/user'],
+    queryFn: async () => {
+      const res = await fetch('/api/user');
+      if (!res.ok) throw new Error('Failed to fetch user profile');
+      return res.json();
+    },
+  });
+
+  const { data: userThreads, isLoading: threadsLoading } = useQuery({
+    queryKey: [`/api/forum/threads`, `user_${profileUser?.id}`],
+    queryFn: async () => {
+      const res = await fetch(`/api/forum/threads?userId=${profileUser?.id}`);
+      if (!res.ok) throw new Error("Failed to fetch user threads");
+      return res.json();
+    },
+    enabled: !!profileUser?.id,
+  });
+
+
+  // Fetch user's goals
+  const { data: userGoals, isLoading: goalsLoading } = useQuery({
+    queryKey: [`/api/goals`, `user_${profileUser?.id}`],
+    queryFn: async () => {
+      const res = await fetch(`/api/goals?userId=${profileUser?.id}`);
+      if (!res.ok) throw new Error("Failed to fetch user goals");
+      return res.json();
+    },
+    enabled: !!profileUser?.id && (currentUser?.id === profileUser?.id || profileUser?.visibility === "public"),
+  });
+
+  // Set default values for editing
+  useState(() => {
+    if (profileUser && currentUser?.id === profileUser.id) {
+      setEditedProfile({
+        name: profileUser.name || "",
+        bio: profileUser.bio || "",
+        interests: profileUser.interests || [],
+        visibility: profileUser.visibility || "public",
+        role: profileUser.role || "trainee"
+      });
+    }
+  });
+
+  const isOwnProfile = currentUser?.id === profileUser?.id;
+  const isPrivateProfile = profileUser?.visibility === "private" && !isOwnProfile;
 
   const handleUpdateProfile = async () => {
     if (!isOwnProfile) return;
-    setIsEditing(false);
+
+    updateProfileMutation.mutate({
+      name: editedProfile.name,
+      bio: editedProfile.bio,
+      interests: editedProfile.interests,
+      visibility: editedProfile.visibility
+    }, {
+      onSuccess: () => {
+        setIsEditing(false);
+      }
+    });
+
   };
 
   const handleApplyForRole = (role: string) => {
     if (!isOwnProfile) return;
     // Role application would go here
+
   };
 
   const addInterest = () => {
@@ -86,20 +189,54 @@ export default function ProfilePage() {
               <div className="flex flex-col md:flex-row items-center md:items-start gap-4">
                 <div className="relative">
                   <AvatarWithBadge
-                    src={username === "johndoe" ? "https://example.com/johndoe.jpg" : username === "janedoe" ? "https://example.com/janedoe.jpg" : ""}
-                    fallback={username?.[0]?.toUpperCase() || username[0].toUpperCase()}
+                    src={profilePicture}
+                    fallback={profileUser.name?.[0]?.toUpperCase() || profileUser.username[0].toUpperCase()}
+
                     size="lg"
                     role={username === "johndoe" ? "trainee" : username === "janedoe" ? "coach" : ""}
                     verified={username === "johndoe" || username === "janedoe"}
                   />
                   {isOwnProfile && (
-                    <Button
-                      variant="secondary"
-                      size="icon"
-                      className="absolute bottom-0 right-0 rounded-full w-8 h-8"
-                    >
-                      <Camera className="h-4 w-4" />
-                    </Button>
+                    <div className="absolute -bottom-2 -left-2 right-0 flex justify-between">
+                      {/* Upload Button - Positioned bottom-left */}
+                      <Button
+                        variant="ghost"
+                        className="w-5 h-5 p-0 rounded-full bg-transparent text-foreground/80 bg-accent/20 hover:bg-accent/20 hover:text-foreground"
+                        size="icon"
+                        onClick={() => document.getElementById('upload-photo')?.click()}
+                        aria-label="Upload profile picture"
+                      >
+                        <Camera className="h-3 w-3" />
+                      </Button>
+
+                      {/* Delete Button - Positioned bottom-right */}
+                      <Button
+                        variant="ghost"
+                        className="w-5 h-5 p-0 rounded-full bg-transparent text-foreground/80 bg-accent/20 hover:bg-accent/20 hover:text-foreground"
+                        size="icon"
+                        onClick={() => deleteProfilePictureMutation.mutate()}
+                        aria-label="Delete profile picture"
+                      >
+                        <span className="text-xs">×</span>
+                      </Button>
+
+                      {/* Hidden File Input */}
+                      <input
+                        id="upload-photo"
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          if (file.size > 5 * 1024 * 1024) {
+                            alert("File too large. Maximum 5MB allowed.");
+                            return;
+                          }
+                          uploadProfilePictureMutation.mutate(file);
+                        }}
+                        className="hidden"
+                      />
+                    </div>
                   )}
                 </div>
                 <div className="flex-1 text-center md:text-left">
@@ -110,8 +247,9 @@ export default function ProfilePage() {
                     <Badge variant="secondary" className="text-xs py-0 h-5">
                       @{username}
                     </Badge>
-                    <Badge 
-                      variant={username === "johndoe" ? "outline" : username === "janedoe" ? "outline" : "default"}
+                    <Badge
+                      variant={profileUser.role === "mentor" ? "outline" : "default"}
+
                       className="text-xs py-0 h-5"
                     >
                       {username === "johndoe" ? "Trainee" : username === "janedoe" ? "Coach" : "Trainee"}
@@ -126,7 +264,7 @@ export default function ProfilePage() {
                     <p className="text-secondary mt-2">{username}</p>
                   )}
                 </div>
-                
+
                 {isOwnProfile && (
                   <div className="flex gap-2">
                     <Button
@@ -138,8 +276,8 @@ export default function ProfilePage() {
                       <Edit className="h-3 w-3 mr-1" />
                       Edit Profile
                     </Button>
-                    
-                    {username === "johndoe" && (
+                    {profileUser.role === "trainee" && (
+
                       <Dialog>
                         <DialogTrigger asChild>
                           <Button
@@ -161,16 +299,16 @@ export default function ProfilePage() {
                               Mentors can guide trainees, while coaches require verification of their credentials.
                             </p>
                             <div className="space-y-2">
-                              <Button 
-                                variant="outline" 
+                              <Button
+                                variant="outline"
                                 className="w-full justify-start"
                                 onClick={() => handleApplyForRole("mentor")}
                               >
                                 <User className="h-4 w-4 mr-2" />
                                 Apply as Mentor
                               </Button>
-                              <Button 
-                                variant="outline" 
+                              <Button
+                                variant="outline"
                                 className="w-full justify-start"
                                 onClick={() => handleApplyForRole("coach")}
                               >
@@ -185,7 +323,7 @@ export default function ProfilePage() {
                   </div>
                 )}
               </div>
-              
+
               {isEditing && (
                 <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
                   <Card className="w-full max-w-md">
@@ -198,26 +336,26 @@ export default function ProfilePage() {
                         <Input
                           id="name"
                           value={editedProfile.name}
-                          onChange={(e) => setEditedProfile({...editedProfile, name: e.target.value})}
+                          onChange={(e) => setEditedProfile({ ...editedProfile, name: e.target.value })}
                         />
                       </div>
-                      
+
                       <div className="space-y-2">
                         <Label htmlFor="bio">Bio</Label>
                         <Textarea
                           id="bio"
                           value={editedProfile.bio}
-                          onChange={(e) => setEditedProfile({...editedProfile, bio: e.target.value})}
+                          onChange={(e) => setEditedProfile({ ...editedProfile, bio: e.target.value })}
                         />
                       </div>
-                      
+
                       <div className="space-y-2">
                         <Label>Interests</Label>
                         <div className="flex flex-wrap gap-2 mb-2">
                           {editedProfile.interests.map((interest, index) => (
                             <Badge key={index} variant="secondary" className="px-2 py-1">
                               {interest}
-                              <button 
+                              <button
                                 className="ml-1 text-muted-foreground hover:text-foreground"
                                 onClick={() => removeInterest(interest)}
                               >
@@ -236,12 +374,12 @@ export default function ProfilePage() {
                           <Button type="button" onClick={addInterest}>Add</Button>
                         </div>
                       </div>
-                      
+
                       <div className="space-y-2">
                         <Label htmlFor="visibility">Profile Visibility</Label>
                         <Select
                           value={editedProfile.visibility}
-                          onValueChange={(value) => setEditedProfile({...editedProfile, visibility: value})}
+                          onValueChange={(value) => setEditedProfile({ ...editedProfile, visibility: value })}
                         >
                           <SelectTrigger>
                             <SelectValue placeholder="Select visibility" />
@@ -252,12 +390,12 @@ export default function ProfilePage() {
                           </SelectContent>
                         </Select>
                       </div>
-                      
+
                       <div className="flex justify-end gap-2 pt-4">
                         <Button variant="outline" onClick={() => setIsEditing(false)}>
                           Cancel
                         </Button>
-                        <Button 
+                        <Button
                           onClick={handleUpdateProfile}
                           disabled={updateProfileMutation.isPending}
                         >
@@ -274,7 +412,7 @@ export default function ProfilePage() {
                 </div>
               )}
             </div>
-            
+
             {/* Stats Cards */}
             {!isPrivateProfile && (
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
@@ -307,7 +445,7 @@ export default function ProfilePage() {
                 </Card>
               </div>
             )}
-            
+
             {isPrivateProfile ? (
               <div className="bg-card rounded-xl border border-border p-8 text-center">
                 <div className="flex justify-center mb-4">
@@ -328,14 +466,19 @@ export default function ProfilePage() {
                     <TabsTrigger value="mentees">Mentees</TabsTrigger>
                   )}
                 </TabsList>
-                
+
                 <TabsContent value="goals">
                   {username === "johndoe" && (
                     <div className="text-center py-8 bg-card rounded-xl border border-border">
                       <Target className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                       <h3 className="text-lg font-medium mb-2">No Goals Set</h3>
                       <p className="text-muted-foreground mb-4">
-                        {username === "johndoe" ? "You haven't set any fitness goals yet." : "You haven't set any fitness goals yet."}
+
+                        {isOwnProfile
+                          ? "You haven't set any fitness goals yet."
+                          : `${profileUser.username} hasn't set any fitness goals yet.`
+                        }
+
                       </p>
                       {username === "johndoe" && (
                         <Button className="bg-secondary text-white hover:bg-secondary-dark">
@@ -345,14 +488,19 @@ export default function ProfilePage() {
                     </div>
                   )}
                 </TabsContent>
-                
+
                 <TabsContent value="posts">
                   {username === "johndoe" && (
                     <div className="text-center py-8 bg-card rounded-xl border border-border">
                       <MessageSquare className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                       <h3 className="text-lg font-medium mb-2">No Forum Posts</h3>
                       <p className="text-muted-foreground mb-4">
-                        {username === "johndoe" ? "You haven't created any forum posts yet." : "You haven't created any forum posts yet."}
+
+                        {isOwnProfile
+                          ? "You haven't created any forum posts yet."
+                          : `${profileUser.username} hasn't created any forum posts yet.`
+                        }
+
                       </p>
                       {username === "johndoe" && (
                         <Button className="bg-secondary text-white hover:bg-secondary-dark">
@@ -362,7 +510,7 @@ export default function ProfilePage() {
                     </div>
                   )}
                 </TabsContent>
-                
+
                 <TabsContent value="achievements">
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                     <Card>
@@ -394,8 +542,10 @@ export default function ProfilePage() {
                     </Card>
                   </div>
                 </TabsContent>
-                
-                {(username === "johndoe" || username === "janedoe") && (
+
+
+                {(profileUser.role === "mentor" || profileUser.role === "coach") && (
+
                   <TabsContent value="mentees">
                     <div className="text-center py-8 bg-card rounded-xl border border-border">
                       <User className="h-12 w-12 text-muted-foreground mx-auto mb-4" />

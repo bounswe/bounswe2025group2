@@ -1,5 +1,9 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
+from django.contrib.contenttypes.fields import GenericForeignKey
+from django.contrib.contenttypes.models import ContentType
+from django.contrib.contenttypes.fields import GenericRelation
+
 
 class UserWithType(AbstractUser):
     email = models.EmailField(
@@ -109,4 +113,147 @@ class Profile(models.Model):
             today = date.today()
             return today.year - self.birth_date.year - ((today.month, today.day) < (self.birth_date.month, self.birth_date.day))
         return None
+
+
+class Forum(models.Model):
+    title = models.CharField(max_length=200)
+    description = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    created_by = models.ForeignKey(UserWithType, on_delete=models.SET_NULL, null=True, related_name='created_forums')
+    is_active = models.BooleanField(default=True)
+    order = models.IntegerField(default=0, help_text='Order in which forums should be displayed')
+
+    class Meta:
+        ordering = ['order', 'title']
+
+    def __str__(self):
+        return self.title
+
+    @property
+    def thread_count(self):
+        return self.threads.count()
+
+
+class Thread(models.Model):
+    forum = models.ForeignKey(Forum, on_delete=models.CASCADE, related_name='threads')
+    title = models.CharField(max_length=200)
+    content = models.TextField()
+    author = models.ForeignKey(UserWithType, on_delete=models.CASCADE, related_name='threads')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now_add=True)
+    is_pinned = models.BooleanField(default=False)
+    is_locked = models.BooleanField(default=False)
+    view_count = models.PositiveIntegerField(default=0)
+    like_count = models.PositiveIntegerField(default=0)
+    comment_count = models.PositiveIntegerField(default=0)
+    last_activity = models.DateTimeField(auto_now=True)
+
+    votes = GenericRelation('Vote')
+
+    class Meta:
+        ordering = ['-is_pinned', '-last_activity']
+
+    def __str__(self):
+        return self.title
+
+
+class Comment(models.Model):
+    thread = models.ForeignKey(Thread, on_delete=models.CASCADE, related_name='comments')
+    author = models.ForeignKey(UserWithType, on_delete=models.CASCADE)
+    content = models.TextField()
+
+    like_count = models.PositiveIntegerField(default=0)
+    votes = GenericRelation('Vote')
+
+    subcomment_count = models.PositiveIntegerField(default=0)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now_add=True)  # Overridden in save()
+
+    def __str__(self):
+        return f'Comment by {self.author.username} on Thread {self.thread.id}'
+
+
+class Subcomment(models.Model):
+    comment = models.ForeignKey(Comment, on_delete=models.CASCADE, related_name='subcomments')
+    author = models.ForeignKey(UserWithType, on_delete=models.CASCADE)
+    content = models.TextField()
+
+    like_count = models.PositiveIntegerField(default=0)
+    votes = GenericRelation('Vote')
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f'Subcomment by {self.author.username} on Comment {self.comment.id}'
+
+class Vote(models.Model):
+    VOTE_TYPES = [
+        ('UPVOTE', 'Upvote'),
+        ('DOWNVOTE', 'Downvote')
+    ]
+    
+    user = models.ForeignKey(UserWithType, on_delete=models.CASCADE, related_name='votes')
+    
+    # Generic relation fields
+    content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
+    object_id = models.PositiveIntegerField()
+    content_object = GenericForeignKey('content_type', 'object_id')
+    
+    vote_type = models.CharField(max_length=10, choices=VOTE_TYPES)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ['user', 'content_type', 'object_id']
+        indexes = [
+            models.Index(fields=['content_type', 'object_id']),
+        ]
+
+    @classmethod
+    def create_or_update_vote(cls, user, content_object, new_vote_type):
+        content_type = ContentType.objects.get_for_model(content_object)
+        
+        vote, created = cls.objects.get_or_create(
+            user=user,
+            content_type=content_type,
+            object_id=content_object.id,
+            defaults={'vote_type': new_vote_type}
+        )
+        
+        if not created:
+            # If changing from UPVOTE to something else, decrement like count
+            if vote.vote_type == 'UPVOTE' and new_vote_type != 'UPVOTE':
+                content_object.like_count -= 1
+                content_object.save()
+            # If changing to UPVOTE from something else, increment like count
+            elif vote.vote_type != 'UPVOTE' and new_vote_type == 'UPVOTE':
+                content_object.like_count += 1
+                content_object.save()
+
+            vote.vote_type = new_vote_type
+            vote.save()
+            
+        return vote
+
+    def update_content_like_count(self, increment=True):
+        content_object = self.content_object
+        if hasattr(content_object, 'like_count'):
+            if increment:
+                content_object.like_count += 1
+            else:
+                content_object.like_count -= 1
+            content_object.save()
+
+    def save(self, *args, **kwargs):
+        is_new = self._state.adding
+        super().save(*args, **kwargs)
+        if is_new:
+            self.update_content_like_count(increment=True)
+
+    def delete(self, *args, **kwargs):
+        self.update_content_like_count(increment=False)
+        super().delete(*args, **kwargs)
 
