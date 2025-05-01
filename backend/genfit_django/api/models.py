@@ -2,6 +2,8 @@ from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
+from django.contrib.contenttypes.fields import GenericRelation
+
 
 class UserWithType(AbstractUser):
     email = models.EmailField(
@@ -147,6 +149,8 @@ class Thread(models.Model):
     comment_count = models.PositiveIntegerField(default=0)
     last_activity = models.DateTimeField(auto_now=True)
 
+    votes = GenericRelation('Vote')
+
     class Meta:
         ordering = ['-is_pinned', '-last_activity']
 
@@ -156,7 +160,7 @@ class Thread(models.Model):
 
 class Comment(models.Model):
     thread = models.ForeignKey(Thread, on_delete=models.CASCADE, related_name='comments')
-    author = models.ForeignKey(User, on_delete=models.CASCADE)
+    author = models.ForeignKey(UserWithType, on_delete=models.CASCADE)
     content = models.TextField()
 
     like_count = models.PositiveIntegerField(default=0)
@@ -173,7 +177,7 @@ class Comment(models.Model):
 
 class Subcomment(models.Model):
     comment = models.ForeignKey(Comment, on_delete=models.CASCADE, related_name='subcomments')
-    author = models.ForeignKey(User, on_delete=models.CASCADE)
+    author = models.ForeignKey(UserWithType, on_delete=models.CASCADE)
     content = models.TextField()
 
     like_count = models.PositiveIntegerField(default=0)

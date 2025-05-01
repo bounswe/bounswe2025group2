@@ -162,7 +162,7 @@ class ThreadListSerializer(serializers.ModelSerializer):
 
 class ThreadDetailSerializer(serializers.ModelSerializer):
     author = serializers.StringRelatedField(read_only=True)
-    forum = ForumSerializer(read_only=True)
+    forum = serializers.PrimaryKeyRelatedField(queryset=Forum.objects.all())
     comment_count = serializers.IntegerField(read_only=True)
     
     class Meta:
@@ -274,22 +274,29 @@ class VoteSerializer(serializers.ModelSerializer):
         model = Vote
         fields = [
             'id',
-            'user',
             'user_username',
             'content_type',
-            'content_id',
+            'object_id',
             'vote_type',
             'created_at',
             'updated_at'
         ]
-        read_only_fields = ['id', 'user', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'created_at', 'updated_at']
 
     def create(self, validated_data):
+        # Get the content type and object
+        content_type = validated_data.get('content_type')
+        object_id = validated_data.get('object_id')
+        vote_type = validated_data.get('vote_type')
+        
+        # Get the actual content object
+        content_object = content_type.get_object_for_this_type(id=object_id)
+        
+        # Create or update the vote using the class method
         vote = Vote.create_or_update_vote(
             user=self.context['request'].user,
-            content_type=validated_data['content_type'],
-            content_id=validated_data['content_id'],
-            vote_type=validated_data['vote_type']
+            content_object=content_object,
+            new_vote_type=vote_type
         )
         return vote
 

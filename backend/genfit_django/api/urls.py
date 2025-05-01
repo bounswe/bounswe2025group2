@@ -37,15 +37,15 @@ urlpatterns = [
     path('comments/<int:comment_id>/', forum_comments.get_comment, name='get_comment'),
     path('comments/<int:comment_id>/update/', forum_comments.update_comment, name='update_comment'),
     path('comments/<int:comment_id>/delete/', forum_comments.delete_comment, name='delete_comment'),
-    path('comments/add/', forum_comments.add_comment, name='add_comment'),
+    path('comments/add/<int:thread_id>', forum_comments.add_comment, name='add_comment'),
 
     # Comment endpoints by thread
     path('comments/thread/<int:thread_id>/by-date/', forum_comments.get_comments_for_thread_by_date, name='get_comments_for_thread_date'),
     path('comments/thread/<int:thread_id>/by-likes/', forum_comments.get_comments_for_thread_by_likes, name='get_comments_for_thread_likes'),
 
     # SubComment endpoints by comment
-    path('subcomments/comment/<int:comment_id>/by-date/', forum_comments.get_subcomments_by_comment_sorted_by_date, name='get_subcomments_by_comment_date'),
-    path('subcomments/comment/<int:comment_id>/by-likes/', forum_comments.get_subcomments_by_comment_sorted_by_likes, name='get_subcomments_by_comment_likes'),
+    path('subcomments/comment/<int:comment_id>/by-date/', forum_comments.get_subcomments_for_comment_by_date, name='get_subcomments_by_comment_date'),
+    path('subcomments/comment/<int:comment_id>/by-likes/', forum_comments.get_subcomments_for_comment_by_likes, name='get_subcomments_by_comment_likes'),
 
     # SubComment individual endpoints
     path('subcomments/<int:subcomment_id>/', forum_comments.get_subcomment, name='get_subcomment'),
