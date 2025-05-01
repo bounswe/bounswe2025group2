@@ -35,27 +35,28 @@ urlpatterns = [
 
     # Comment endpoints
     path('comments/<int:comment_id>/', forum_comments.get_comment, name='get_comment'),
-    path('comments/<int:comment_id>/update/', forum_comments.update_comment, name='update_comment'),
-    path('comments/<int:comment_id>/delete/', forum_comments.delete_comment, name='delete_comment'),
+    path('comments/update/<int:comment_id>/', forum_comments.update_comment, name='update_comment'),
+    path('comments/delete/<int:comment_id>/', forum_comments.delete_comment, name='delete_comment'),
     path('comments/add/<int:thread_id>/', forum_comments.add_comment, name='add_comment'),
 
     # Comment endpoints by thread
-    path('comments/thread/<int:thread_id>/by-date/', forum_comments.get_comments_for_thread_by_date, name='get_comments_for_thread_date'),
-    path('comments/thread/<int:thread_id>/by-likes/', forum_comments.get_comments_for_thread_by_likes, name='get_comments_for_thread_likes'),
+    path('comments/thread/<int:thread_id>/date/', forum_comments.get_comments_for_thread_by_date, name='get_comments_for_thread_date'),
+    path('comments/thread/<int:thread_id>/likes/', forum_comments.get_comments_for_thread_by_likes, name='get_comments_for_thread_likes'),
 
     # SubComment endpoints by comment
-    path('subcomments/comment/<int:comment_id>/by-date/', forum_comments.get_subcomments_for_comment_by_date, name='get_subcomments_by_comment_date'),
-    path('subcomments/comment/<int:comment_id>/by-likes/', forum_comments.get_subcomments_for_comment_by_likes, name='get_subcomments_by_comment_likes'),
+    path('subcomments/comment/<int:comment_id>/date/', forum_comments.get_subcomments_for_comment_by_date, name='get_subcomments_by_comment_date'),
+    path('subcomments/comment/<int:comment_id>/likes/', forum_comments.get_subcomments_for_comment_by_likes, name='get_subcomments_by_comment_likes'),
 
     # SubComment individual endpoints
     path('subcomments/<int:subcomment_id>/', forum_comments.get_subcomment, name='get_subcomment'),
-    path('subcomments/<int:subcomment_id>/update/', forum_comments.update_subcomment, name='update_subcomment'),
-    path('subcomments/<int:subcomment_id>/delete/', forum_comments.delete_subcomment, name='delete_subcomment'),
+    path('subcomments/update/<int:subcomment_id>/', forum_comments.update_subcomment, name='update_subcomment'),
+    path('subcomments/delete/<int:subcomment_id>/', forum_comments.delete_subcomment, name='delete_subcomment'),
     path('subcomments/add/<int:comment_id>/', forum_comments.add_subcomment, name='add_subcomment'),
     
     # Vote URLs
     path('forum/vote/', forum_vote.create_vote, name='create_vote'),
     path('forum/vote/<str:content_type>/<int:object_id>/', forum_vote.delete_vote, name='delete_vote'),
+    # get info about whether a user voted on the content
     path('forum/vote/<str:content_type>/<int:object_id>/status/', forum_vote.get_user_vote, name='get_user_vote'),
 ]
 

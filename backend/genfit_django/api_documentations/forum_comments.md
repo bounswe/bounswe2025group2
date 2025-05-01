@@ -222,7 +222,7 @@ Fetches a specific subcomment by ID.
 
 Returns all subcomments for a given comment, sorted by creation time (ascending).
 
-- **URL**: `/subcomments/comment/{comment_id}/by-date/`
+- **URL**: `/subcomments/comment/{comment_id}/date/`
 - **Method**: `GET`
 - **Auth Required**: No
 
@@ -236,7 +236,7 @@ Returns all subcomments for a given comment, sorted by creation time (ascending)
 
 Returns all subcomments for a given comment, sorted by like count (descending).
 
-- **URL**: `/subcomments/comment/{comment_id}/by-likes/`
+- **URL**: `/subcomments/comment/{comment_id}/likes/`
 - **Method**: `GET`
 - **Auth Required**: No
 
