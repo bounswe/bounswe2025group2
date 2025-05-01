@@ -41,12 +41,4 @@ class ThreadViewSet(viewsets.ModelViewSet):
         instance.view_count += 1
         instance.save()
         serializer = self.get_serializer(instance)
-        return Response(serializer.data)
-
-    @action(detail=True, methods=['post'])
-    def toggle_like(self, request, pk=None):
-        thread = self.get_object()
-        # Implement like functionality here
-        thread.like_count += 1
-        thread.save()
-        return Response({'status': 'success'}) 
+        return Response(serializer.data) 

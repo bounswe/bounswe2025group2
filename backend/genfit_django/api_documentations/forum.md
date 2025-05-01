@@ -38,7 +38,6 @@ Authorization: Bearer your_token_here
 | GET | `/api/threads/:id/` | Get thread details | No |
 | PUT | `/api/threads/:id/` | Update thread | Yes (Author only) |
 | DELETE | `/api/threads/:id/` | Delete thread | Yes (Author only) |
-| POST | `/api/threads/:id/toggle_like/` | Toggle like on thread | Yes |
 
 ## Detailed Endpoint Documentation
 
@@ -158,17 +157,6 @@ Creates a new thread in a forum.
 }
 ```
 
-#### `POST /api/threads/:id/toggle_like/`
-
-Toggles a like on a thread.
-
-**Response (200 OK)**
-```json
-{
-  "status": "success"
-}
-```
-
 ## Models and Data Structures
 
 ### Forum Model
@@ -228,7 +216,6 @@ Error responses include a message explaining what went wrong:
 2. Regular users can:
    - View forums and threads
    - Create threads in any active forum
-   - Like threads
    - View thread details
 3. Thread view count is automatically incremented when viewing thread details
 4. The `last_activity` field is updated whenever there's any interaction with the thread
