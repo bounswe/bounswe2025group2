@@ -18,6 +18,7 @@ urlpatterns = [
     path('notifications/<int:notification_id>/read/', views.mark_notification_read, name='mark_notification_read'),
     path('notifications/read-all/', views.mark_all_notifications_read, name='mark_all_notifications_read'),
     path('user/', views.get_user, name='get_user'),
+    path('users/', views.get_users, name='get_users'),
 
     # Fitness Goals URLs
     path('goals/', fitness_goals.fitness_goals, name='fitness_goals'),
@@ -54,7 +55,7 @@ urlpatterns = [
     path('subcomments/update/<int:subcomment_id>/', forum_comments.update_subcomment, name='update_subcomment'),
     path('subcomments/delete/<int:subcomment_id>/', forum_comments.delete_subcomment, name='delete_subcomment'),
     path('subcomments/add/<int:comment_id>/', forum_comments.add_subcomment, name='add_subcomment'),
-    
+
     # Vote URLs
     path('forum/vote/', forum_vote.create_vote, name='create_vote'),
     path('forum/vote/<str:content_type>/<int:object_id>/', forum_vote.delete_vote, name='delete_vote'),

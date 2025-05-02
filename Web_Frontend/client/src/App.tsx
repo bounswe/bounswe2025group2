@@ -12,6 +12,7 @@ import ChallengesPage from "@/pages/challenges-page";
 import NotificationsPage from "@/pages/notifications-page";
 import CommunitiesPage from "@/pages/communities-page";
 import SettingsPage from "@/pages/settings-page";
+import ChatPage from "@/pages/chat-page";
 import { ProtectedRoute } from "./lib/protected-route";
 import { AuthProvider } from "./hooks/use-auth";
 import { ThemeProvider } from "./theme/ThemeContext";
@@ -35,6 +36,7 @@ function Router() {
       <ProtectedRoute path="/challenges" component={ChallengesPage} />
       <ProtectedRoute path="/settings" component={SettingsPage} />
       <ProtectedRoute path="/create" component={GoalsPage} />
+      <ProtectedRoute path="/chat" component={ChatPage} />
       <Route component={NotFound} />
     </Switch>
   );
