@@ -2,9 +2,9 @@ from django.contrib import admin
 
 # Register your models here.
 
-from .models import ChatGroup, GroupMessage
+from .models import DirectMessage, DirectChat
 
-admin.site.register(ChatGroup)
-admin.site.register(GroupMessage)
+admin.site.register(DirectChat)
+admin.site.register(DirectMessage)
 
 
