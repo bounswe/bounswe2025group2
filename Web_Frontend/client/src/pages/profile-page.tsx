@@ -20,7 +20,7 @@ import { Switch } from "@/components/ui/switch";
 import { User, Loader2, Settings, Edit, Camera, Trophy, MessageSquare, Target } from "lucide-react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
-const baseUrl = import.meta.env.VITE_API_BASE_URL;
+const baseUrl = "http://localhost:8000"//import.meta.env.VITE_API_BASE_URL;
 
 
 export default function ProfilePage() {
@@ -29,6 +29,8 @@ export default function ProfilePage() {
   const effectiveUsername = username ?? currentUser?.username;
   username = effectiveUsername
   const [isEditing, setIsEditing] = useState(false);
+  const [selectedGoal, setSelectedGoal] = useState<any | null>(null);
+  const [showGoalDialog, setShowGoalDialog] = useState(false);
   const [editedProfile, setEditedProfile] = useState({
     name: "",
     bio: "",
@@ -110,7 +112,7 @@ export default function ProfilePage() {
   const { data: userGoals, isLoading: goalsLoading } = useQuery({
     queryKey: [`/api/goals`],
     queryFn: async () => {
-      const res = await fetch(`${baseUrl}/api/goals/`, {credentials : 'include'});
+      const res = await fetch(`${baseUrl}/api/goals/`, { credentials: 'include' });
       if (!res.ok) throw new Error("Failed to fetch user goals");
       return res.json();
     },
@@ -182,7 +184,7 @@ export default function ProfilePage() {
       </div>
     );
   }
-  
+
 
   return (
     <div className="min-h-screen bg-background">
@@ -203,7 +205,7 @@ export default function ProfilePage() {
                     verified={profileUser.verificationStatus}
                   />
 
-{isOwnProfile && (
+                  {isOwnProfile && (
                     <div className="absolute -bottom-2 -left-2 right-0 flex justify-between">
                       {/* Upload Button - Positioned bottom-left */}
                       <Button
@@ -482,25 +484,35 @@ export default function ProfilePage() {
                   ) : userGoals && userGoals.length > 0 ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       {userGoals.map((goal: any) => (
-                        <Card key={goal.id}>
-                          <CardHeader className="pb-2">
-                            <CardTitle className="text-lg">{goal.title}</CardTitle>
-                          </CardHeader>
-                          <CardContent>
-                            <GoalProgress goal={goal} />
-                            <div className="flex justify-between items-center mt-2 text-sm">
-                              <div className="flex items-center text-muted-foreground">
-                                <span className="capitalize">{goal.type}</span>
-                                <span className="mx-2">•</span>
-                                <span>{goal.unit}</span>
+                        <div
+                          key={goal.id}
+                          onClick={() => {
+                            setSelectedGoal(goal);
+                            setShowGoalDialog(true);
+                          }}
+                          className="cursor-pointer"
+                        >
+                          <Card className="hover:shadow-md transition-shadow duration-200">
+                            <CardHeader className="pb-2">
+                              <CardTitle className="text-lg">{goal.title}</CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                              <GoalProgress goal={goal} />
+                              <div className="flex justify-between items-center mt-2 text-sm">
+                                <div className="flex items-center text-muted-foreground">
+                                  <span className="capitalize">{goal.type}</span>
+                                  <span className="mx-2">•</span>
+                                  <span>{goal.unit}</span>
+                                </div>
+                                <Badge variant={goal.status === "completed" ? "default" : "outline"}>
+                                  {goal.status}
+                                </Badge>
                               </div>
-                              <Badge variant={goal.status === "completed" ? "default" : "outline"}>
-                                {goal.status}
-                              </Badge>
-                            </div>
-                          </CardContent>
-                        </Card>
+                            </CardContent>
+                          </Card>
+                        </div>
                       ))}
+
                     </div>
                   ) : (
                     <div className="text-center py-8 bg-card rounded-xl border border-border">
@@ -602,6 +614,39 @@ export default function ProfilePage() {
           </div>
         </main>
       </div>
+
+      <Dialog open={showGoalDialog} onOpenChange={setShowGoalDialog}>
+        <DialogContent className="bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 max-w-md rounded-xl shadow-lg">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold">{selectedGoal?.title}</DialogTitle>
+          </DialogHeader>
+
+          {selectedGoal ? (
+            <div className="space-y-4 mt-2">
+              <div className="text-sm">
+                <span className="font-medium">Type:</span>{" "}
+                <span className="capitalize text-muted-foreground">{selectedGoal.goal_type}</span>
+              </div>
+              <div className="text-sm">
+                <span className="font-medium">Progress:</span>{" "}
+                <span className="text-primary">{selectedGoal.progress_percentage}%</span>
+              </div>
+              <div className="text-sm">
+                <span className="font-medium">Mentor ID:</span>{" "}
+                <span className="text-muted-foreground">{selectedGoal.mentor}</span>
+              </div>
+              {selectedGoal.description && (
+                <div className="text-sm">
+                  <span className="font-medium">Description:</span>
+                  <p className="text-muted-foreground mt-1">{selectedGoal.description}</p>
+                </div>
+              )}
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">No goal selected.</p>
+          )}
+        </DialogContent>
+      </Dialog>
       <MobileNavigation activeTab="profile" />
     </div>
   );
