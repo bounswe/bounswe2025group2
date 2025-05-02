@@ -24,7 +24,7 @@ All REST API endpoints require authentication. The application uses token-based 
 
 Retrieves all users except the requesting user.
 
-- **URL**: `/api/users/`
+- **URL**: `chat/get-users/`
 - **Method**: `GET`
 - **Authentication**: Required
 - **Response**:
@@ -48,7 +48,7 @@ Retrieves all users except the requesting user.
 
 Retrieves all direct chats for the requesting user.
 
-- **URL**: `/api/chats/`
+- **URL**: `/chat/get-chats/`
 - **Method**: `GET`
 - **Authentication**: Required
 - **Response**:
@@ -88,7 +88,7 @@ Retrieves all direct chats for the requesting user.
 
 Creates a new direct chat between the requesting user and another user.
 
-- **URL**: `/api/chats/create/`
+- **URL**: `/chat/create-chat/`
 - **Method**: `POST`
 - **Authentication**: Required
 - **Request Body**:
