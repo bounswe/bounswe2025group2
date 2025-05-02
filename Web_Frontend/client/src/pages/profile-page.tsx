@@ -86,8 +86,7 @@ export default function ProfilePage() {
       queryClient.invalidateQueries({ queryKey: ['profile-picture'] });
     }
   });
-
-  // Fetch profile data of the user with the given username
+  
   const { data: profileUser, isLoading } = useQuery({
     queryKey: ['/api/user'],
     queryFn: async () => {
