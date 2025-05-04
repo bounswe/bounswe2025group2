@@ -1,562 +1,940 @@
-import { useState, useEffect } from "react";
-import { useParams } from "wouter";
+import { useEffect, useState, useRef } from "react";
+import { useParams } from "react-router-dom";
+import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
+import { useTheme } from "@/theme/ThemeContext";
 import { useAuth } from "@/hooks/use-auth";
-import Sidebar from "@/components/layout/sidebar";
-import MobileHeader from "@/components/layout/mobile-header";
-import MobileNavigation from "@/components/layout/mobile-navigation";
-import AvatarWithBadge from "@/components/ui/avatar-with-badge";
-import GoalProgress from "@/components/goals/goal-progress";
-import ForumThreadCard from "@/components/forum/forum-thread-card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
-import { Switch } from "@/components/ui/switch";
-import { User, Loader2, Settings, Edit, Camera, Trophy, MessageSquare, Target } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { cn } from "@/lib/utils";
+import {
+  User,
+  Settings,
+  Calendar,
+  Award,
+  Edit2,
+  ChevronRight,
+  Loader2,
+  Camera,
+  MessageSquare,
+  UserPlus,
+  Dumbbell,
+  X,
+  Save,
+  Trash2
+} from "lucide-react";
 
-export default function ProfilePage() {
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Progress } from "@/components/ui/progress";
+import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import  Sidebar  from "@/components/layout/sidebar";
+import  MobileHeader  from "@/components/layout/mobile-header";
+import  MobileNavigation  from "@/components/layout/mobile-navigation";
+
+// Types
+interface ProfileFields {
+  username: string;
+  name: string;
+  bio: string;
+  avatar_url: string;
+  fitness_level: string;
+  joined_date: string;
+  followers_count: number;
+  following_count: number;
+  workouts_completed: number;
+  is_following?: boolean;
+  streak_days: number;
+  profile_picture?: string;
+}
+
+interface ProfileUpdateData {
+  name?: string;
+  bio?: string;
+  fitness_level?: string;
+}
+
+interface Goal {
+  id: string;
+  title: string;
+  description: string;
+  progress: number;
+  target: number;
+  unit: string;
+  category: string;
+  deadline: string;
+}
+
+const ProfilePage = () => {
+  const { theme } = useTheme();
+  const queryClient = useQueryClient();
   const { username } = useParams<{ username: string }>();
-  const { user: currentUser, updateProfileMutation, applyForRoleMutation } = useAuth();
-  const [isEditing, setIsEditing] = useState(false);
-  const [editedProfile, setEditedProfile] = useState({
-    name: "",
-    bio: "",
-    interests: [] as string[],
-    visibility: "public",
-    role: ""
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const [profileUsername, setProfileUsername] = useState<string | undefined>(username);
+  const [isOwnProfile, setIsOwnProfile] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [editFormData, setEditFormData] = useState<ProfileUpdateData>({
+    name: '',
+    bio: '',
+    fitness_level: ''
+  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (user && user.username !== username) {
+      setProfileUsername(username);
+      setIsOwnProfile(false);
+    } else {
+      setProfileUsername(user?.username);
+      setIsOwnProfile(true);
+    }
+  }, [user, username]);
+
+  // use the /api/profile/other/<username> if the username is not the logged in user
+  const profileUrl = profileUsername ? `/api/profile/other/${profileUsername}` : "/api/profile";
+
+  const { data: profileFields, isLoading } = useQuery<ProfileFields>({
+    queryKey: [profileUrl],
   });
 
-  // Fetch profile picture
-  const [newInterest, setNewInterest] = useState("");
+  // get the goals of the user
+  const { data: goals } = useQuery<Goal[]>({
+    queryKey: [`/api/goals`],
+  });
 
-  // Fetch profile picture
-  const { data: profilePicture, isLoading: profilePictureLoading } = useQuery({
-    queryKey: ['profile-picture'],
-    queryFn: async () => {
-      const res = await fetch('/profile/picture/');
-      if (!res.ok) throw new Error('Failed to fetch profile picture');
-      const blob = await res.blob();
-      return URL.createObjectURL(blob); // browser friendly image URL
+  // Setup form data when profile data is loaded
+  useEffect(() => {
+    if (profileFields) {
+      setEditFormData({
+        name: profileFields.name,
+        bio: profileFields.bio,
+        fitness_level: profileFields.fitness_level
+      });
+    }
+  }, [profileFields]);
+
+  // Mutation for updating profile
+  const updateProfileMutation = useMutation({
+    mutationFn: async (data: ProfileUpdateData) => {
+      const response = await fetch('/api/profile', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to update profile');
+      }
+
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/profile'] });
+      setIsEditDialogOpen(false);
+      toast({
+        title: "Profile updated",
+        description: "Your profile has been updated successfully.",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Something went wrong. Please try again.",
+        variant: "destructive",
+      });
     },
   });
 
-  // Upload profile picture mutation
+  // Mutation for uploading profile picture
   const uploadProfilePictureMutation = useMutation({
     mutationFn: async (file: File) => {
       const formData = new FormData();
-      formData.append('picture', file);
+      formData.append('profile_picture', file);
 
-      const res = await fetch('/profile/picture/upload/', {
+      const response = await fetch('/api/profile/picture', {
         method: 'POST',
         body: formData,
       });
 
-      if (!res.ok) throw new Error('Failed to upload profile picture');
-      return res.json();
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to upload profile picture');
+      }
+
+      return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['profile-picture'] });
-    }
+      queryClient.invalidateQueries({ queryKey: ['/api/profile'] });
+      toast({
+        title: "Profile picture updated",
+        description: "Your profile picture has been updated successfully.",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to upload image. Please try again.",
+        variant: "destructive",
+      });
+    },
   });
 
-  // Delete profile picture mutation
+  // Mutation for deleting profile picture
   const deleteProfilePictureMutation = useMutation({
     mutationFn: async () => {
-      const res = await fetch('/profile/picture/delete/', {
+      const response = await fetch('/api/profile/picture', {
         method: 'DELETE',
       });
 
-      if (!res.ok) throw new Error('Failed to delete profile picture');
-      return res.json();
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to delete profile picture');
+      }
+
+      return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['profile-picture'] });
-    }
-  });
-
-  // Fetch profile data of the user with the given username
-  const { data: profileUser, isLoading } = useQuery({
-    queryKey: ['/api/user'],
-    queryFn: async () => {
-      const res = await fetch('/api/user');
-      if (!res.ok) throw new Error('Failed to fetch user profile');
-      return res.json();
-    },
-  });
-
-  const { data: userThreads, isLoading: threadsLoading } = useQuery({
-    queryKey: [`/api/forum/threads`, `user_${profileUser?.id}`],
-    queryFn: async () => {
-      const res = await fetch(`/api/forum/threads?userId=${profileUser?.id}`);
-      if (!res.ok) throw new Error("Failed to fetch user threads");
-      return res.json();
-    },
-    enabled: !!profileUser?.id,
-  });
-
-
-  // Fetch user's goals
-  const { data: userGoals, isLoading: goalsLoading } = useQuery({
-    queryKey: [`/api/goals`, `user_${profileUser?.id}`],
-    queryFn: async () => {
-      const res = await fetch(`/api/goals?userId=${profileUser?.id}`);
-      if (!res.ok) throw new Error("Failed to fetch user goals");
-      return res.json();
-    },
-    enabled: !!profileUser?.id && (currentUser?.id === profileUser?.id || profileUser?.visibility === "public"),
-  });
-
-  // Set default values for editing
-  useState(() => {
-    if (profileUser && currentUser?.id === profileUser.id) {
-      setEditedProfile({
-        name: profileUser.name || "",
-        bio: profileUser.bio || "",
-        interests: profileUser.interests || [],
-        visibility: profileUser.visibility || "public",
-        role: profileUser.role || "trainee"
+      queryClient.invalidateQueries({ queryKey: ['/api/profile'] });
+      toast({
+        title: "Profile picture removed",
+        description: "Your profile picture has been reset to default.",
       });
-    }
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to remove profile picture. Please try again.",
+        variant: "destructive",
+      });
+    },
   });
 
-  const isOwnProfile = currentUser?.id === profileUser?.id;
-  const isPrivateProfile = profileUser?.visibility === "private" && !isOwnProfile;
-
-  const handleUpdateProfile = async () => {
-    if (!isOwnProfile) return;
-
-    updateProfileMutation.mutate({
-      name: editedProfile.name,
-      bio: editedProfile.bio,
-      interests: editedProfile.interests,
-      visibility: editedProfile.visibility
-    }, {
-      onSuccess: () => {
-        setIsEditing(false);
-      }
-    });
-
+  const handleFollowToggle = async () => {
+    // Implementation for follow/unfollow functionality
+    console.log("Toggle follow for", profileFields?.username);
+    // Would need API integration here
   };
 
-  const handleApplyForRole = (role: string) => {
-    if (!isOwnProfile) return;
-    // Role application would go here
-
-  };
-
-  const addInterest = () => {
-    if (newInterest.trim() && !editedProfile.interests.includes(newInterest.trim())) {
-      setEditedProfile({
-        ...editedProfile,
-        interests: [...editedProfile.interests, newInterest.trim()]
-      });
-      setNewInterest("");
+  const handleProfilePictureClick = () => {
+    if (isOwnProfile && fileInputRef.current) {
+      fileInputRef.current.click();
     }
   };
 
-  const removeInterest = (interest: string) => {
-    setEditedProfile({
-      ...editedProfile,
-      interests: editedProfile.interests.filter(i => i !== interest)
+  const handleProfilePictureChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Check file size (5MB limit as per backend)
+    const maxSize = 5 * 1024 * 1024; // 5MB
+    if (file.size > maxSize) {
+      toast({
+        title: "File too large",
+        description: "Profile picture size should not exceed 5MB.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Check file type
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png'];
+    if (!allowedTypes.includes(file.type)) {
+      toast({
+        title: "Invalid file type",
+        description: "Only JPG, JPEG, and PNG files are allowed.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    uploadProfilePictureMutation.mutate(file);
+  };
+
+  const handleDeleteProfilePicture = () => {
+    deleteProfilePictureMutation.mutate();
+  };
+
+  const handleEditProfile = () => {
+    setIsEditDialogOpen(true);
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setEditFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleSubmitProfileUpdate = (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    updateProfileMutation.mutate(editFormData, {
+      onSettled: () => setIsSubmitting(false)
     });
   };
 
-  if (!username) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold text-secondary-dark mb-2">User Not Found</h2>
-          <p className="text-muted-foreground">The user you're looking for doesn't exist.</p>
-        </div>
-      </div>
-    );
-  }
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  };
 
   return (
     <div className="min-h-screen bg-background">
       <MobileHeader />
       <div className="flex mt-14">
-        <Sidebar />
+        <Sidebar activeTab="profile" />
         <main className="flex-1 md:ml-56 p-4 pb-20">
-          <div className="max-w-4xl mx-auto">
-            {/* Profile Header */}
-            <div className="bg-primary rounded-xl p-6 mb-6 relative">
-              <div className="flex flex-col md:flex-row items-center md:items-start gap-4">
-                <div className="relative">
-                  <AvatarWithBadge
-                    src={profilePicture}
-                    fallback={profileUser.name?.[0]?.toUpperCase() || profileUser.username[0].toUpperCase()}
+          {/* Edit Profile Dialog */}
+          <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+            <DialogContent className={cn(
+              "sm:max-w-md",
+              theme === 'dark' ? 'bg-nav-bg border-[#e18d58]' : 'bg-nav-bg border-[#800000]'
+            )}>
+              <DialogHeader>
+                <DialogTitle className={cn(
+                  theme === 'dark' ? 'text-white' : 'text-[#800000]'
+                )}>Edit Profile</DialogTitle>
+                <DialogDescription className={cn(
+                  theme === 'dark' ? 'text-white/70' : 'text-[#800000]/70'
+                )}>
+                  Update your profile information
+                </DialogDescription>
+              </DialogHeader>
+              <form onSubmit={handleSubmitProfileUpdate}>
+                <div className="grid gap-4 py-4">
+                  <div className="grid gap-2">
+                    <Label htmlFor="name" className={cn(
+                      theme === 'dark' ? 'text-white' : 'text-[#800000]'
+                    )}>
+                      Name
+                    </Label>
+                    <Input
+                      id="name"
+                      name="name"
+                      value={editFormData.name || ''}
+                      onChange={handleInputChange}
+                      className={cn(
+                        theme === 'dark'
+                          ? 'bg-background border-[#e18d58] text-white focus-visible:ring-[#e18d58]'
+                          : 'bg-background border-[#800000] text-[#800000] focus-visible:ring-[#800000]'
+                      )}
+                    />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="bio" className={cn(
+                      theme === 'dark' ? 'text-white' : 'text-[#800000]'
+                    )}>
+                      Bio
+                    </Label>
+                    <Textarea
+                      id="bio"
+                      name="bio"
+                      value={editFormData.bio || ''}
+                      onChange={handleInputChange}
+                      className={cn(
+                        theme === 'dark'
+                          ? 'bg-background border-[#e18d58] text-white focus-visible:ring-[#e18d58]'
+                          : 'bg-background border-[#800000] text-[#800000] focus-visible:ring-[#800000]'
+                      )}
+                      rows={3}
+                    />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="fitness_level" className={cn(
+                      theme === 'dark' ? 'text-white' : 'text-[#800000]'
+                    )}>
+                      Fitness Level
+                    </Label>
+                    <Input
+                      id="fitness_level"
+                      name="fitness_level"
+                      value={editFormData.fitness_level || ''}
+                      onChange={handleInputChange}
+                      className={cn(
+                        theme === 'dark'
+                          ? 'bg-background border-[#e18d58] text-white focus-visible:ring-[#e18d58]'
+                          : 'bg-background border-[#800000] text-[#800000] focus-visible:ring-[#800000]'
+                      )}
+                    />
+                  </div>
 
-                    size="lg"
-                    role={username === "johndoe" ? "trainee" : username === "janedoe" ? "coach" : ""}
-                    verified={username === "johndoe" || username === "janedoe"}
-                  />
-                  {isOwnProfile && (
-                    <div className="absolute -bottom-2 -left-2 right-0 flex justify-between">
-                      {/* Upload Button - Positioned bottom-left */}
+                  {/* Profile Picture Management */}
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-center">
+                      <Label className={cn(
+                        theme === 'dark' ? 'text-white' : 'text-[#800000]'
+                      )}>
+                        Profile Picture
+                      </Label>
                       <Button
-                        variant="ghost"
-                        className="w-5 h-5 p-0 rounded-full bg-transparent text-foreground/80 bg-accent/20 hover:bg-accent/20 hover:text-foreground"
-                        size="icon"
-                        onClick={() => document.getElementById('upload-photo')?.click()}
-                        aria-label="Upload profile picture"
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={handleDeleteProfilePicture}
+                        className={cn(
+                          "flex items-center gap-1",
+                          theme === 'dark'
+                            ? 'border-red-500 text-red-500 hover:bg-red-500/10'
+                            : 'border-red-600 text-red-600 hover:bg-red-600/10'
+                        )}
                       >
-                        <Camera className="h-3 w-3" />
+                        <Trash2 className="h-4 w-4" />
+                        <span>Reset</span>
                       </Button>
-
-                      {/* Delete Button - Positioned bottom-right */}
-                      <Button
-                        variant="ghost"
-                        className="w-5 h-5 p-0 rounded-full bg-transparent text-foreground/80 bg-accent/20 hover:bg-accent/20 hover:text-foreground"
-                        size="icon"
-                        onClick={() => deleteProfilePictureMutation.mutate()}
-                        aria-label="Delete profile picture"
-                      >
-                        <span className="text-xs">×</span>
-                      </Button>
-
-                      {/* Hidden File Input */}
-                      <input
-                        id="upload-photo"
-                        type="file"
-                        accept="image/*"
-                        onChange={(e) => {
-                          const file = e.target.files?.[0];
-                          if (!file) return;
-                          if (file.size > 5 * 1024 * 1024) {
-                            alert("File too large. Maximum 5MB allowed.");
-                            return;
-                          }
-                          uploadProfilePictureMutation.mutate(file);
-                        }}
-                        className="hidden"
-                      />
                     </div>
-                  )}
-                </div>
-                <div className="flex-1 text-center md:text-left">
-                  <h1 className="text-2xl font-bold text-secondary-dark">
-                    {username}
-                  </h1>
-                  <div className="flex flex-wrap items-center justify-center md:justify-start gap-2 mt-1">
-                    <Badge variant="secondary" className="text-xs py-0 h-5">
-                      @{username}
-                    </Badge>
-                    <Badge
-                      variant={profileUser.role === "mentor" ? "outline" : "default"}
 
-                      className="text-xs py-0 h-5"
-                    >
-                      {username === "johndoe" ? "Trainee" : username === "janedoe" ? "Coach" : "Trainee"}
-                    </Badge>
-                    {username === "johndoe" || username === "janedoe" && (
-                      <Badge variant="outline" className="text-xs py-0 h-5 border-green-500 text-green-600">
-                        Verified
-                      </Badge>
-                    )}
+                    <div className="flex items-center gap-4">
+                      <Avatar className="h-16 w-16">
+                        <AvatarImage
+                          src={profileFields?.profile_picture || profileFields?.avatar_url}
+                          alt={profileFields?.username}
+                        />
+                        <AvatarFallback className={cn(
+                          theme === 'dark' ? 'bg-[#e18d58]' : 'bg-[#800000]',
+                          "text-white"
+                        )}>
+                          {profileFields?.username.substring(0, 2).toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={handleProfilePictureClick}
+                        className={cn(
+                          theme === 'dark'
+                            ? 'border-[#e18d58] text-[#e18d58] hover:bg-[#e18d58]/10'
+                            : 'border-[#800000] text-[#800000] hover:bg-[#800000]/10'
+                        )}
+                      >
+                        <Camera className="h-4 w-4 mr-2" />
+                        Upload New
+                      </Button>
+                    </div>
                   </div>
-                  {!isPrivateProfile && username && (
-                    <p className="text-secondary mt-2">{username}</p>
-                  )}
                 </div>
-
-                {isOwnProfile && (
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="text-xs"
-                      onClick={() => setIsEditing(true)}
-                    >
-                      <Edit className="h-3 w-3 mr-1" />
-                      Edit Profile
-                    </Button>
-                    {profileUser.role === "trainee" && (
-
-                      <Dialog>
-                        <DialogTrigger asChild>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="text-xs"
-                          >
-                            <User className="h-3 w-3 mr-1" />
-                            Become a Mentor
-                          </Button>
-                        </DialogTrigger>
-                        <DialogContent>
-                          <DialogHeader>
-                            <DialogTitle>Apply to be a Mentor or Coach</DialogTitle>
-                          </DialogHeader>
-                          <div className="space-y-4 py-4">
-                            <p className="text-sm text-muted-foreground">
-                              Share your sports experience with others by becoming a mentor or coach.
-                              Mentors can guide trainees, while coaches require verification of their credentials.
-                            </p>
-                            <div className="space-y-2">
-                              <Button
-                                variant="outline"
-                                className="w-full justify-start"
-                                onClick={() => handleApplyForRole("mentor")}
-                              >
-                                <User className="h-4 w-4 mr-2" />
-                                Apply as Mentor
-                              </Button>
-                              <Button
-                                variant="outline"
-                                className="w-full justify-start"
-                                onClick={() => handleApplyForRole("coach")}
-                              >
-                                <Trophy className="h-4 w-4 mr-2" />
-                                Apply as Coach
-                              </Button>
-                            </div>
-                          </div>
-                        </DialogContent>
-                      </Dialog>
+                <DialogFooter>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={ handleEditProfile }
+                    className={cn(
+                      theme === 'dark'
+                        ? 'border-[#e18d58] text-[#e18d58] hover:bg-[#e18d58]/10'
+                        : 'border-[#800000] text-[#800000] hover:bg-[#800000]/10'
                     )}
-                  </div>
-                )}
+                  >
+                    <X className="h-4 w-4 mr-2" />
+                    Cancel
+                  </Button>
+                  <Button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className={cn(
+                      "flex items-center gap-2",
+                      theme === 'dark' ? 'bg-[#e18d58] hover:bg-[#e18d58]/80' : 'bg-[#800000] hover:bg-[#800000]/80'
+                    )}
+                  >
+                    {isSubmitting ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Save className="h-4 w-4" />
+                    )}
+                    Save Changes
+                  </Button>
+                </DialogFooter>
+              </form>
+            </DialogContent>
+          </Dialog>
+          <div className="max-w-6xl mx-auto">
+            {/* Header */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4">
+              <div>
+                <h1 className={cn(
+                  "text-2xl md:text-3xl font-bold",
+                  theme === 'dark' ? 'text-white' : 'text-[#800000]'
+                )}>Profile</h1>
+                <p className={cn(
+                  theme === 'dark' ? 'text-white/70' : 'text-[#800000]/70'
+                )}>your genfit profile</p>
               </div>
 
-              {isEditing && (
-                <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-                  <Card className="w-full max-w-md">
-                    <CardHeader>
-                      <CardTitle>Edit Profile</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="name">Name</Label>
-                        <Input
-                          id="name"
-                          value={editedProfile.name}
-                          onChange={(e) => setEditedProfile({ ...editedProfile, name: e.target.value })}
-                        />
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label htmlFor="bio">Bio</Label>
-                        <Textarea
-                          id="bio"
-                          value={editedProfile.bio}
-                          onChange={(e) => setEditedProfile({ ...editedProfile, bio: e.target.value })}
-                        />
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label>Interests</Label>
-                        <div className="flex flex-wrap gap-2 mb-2">
-                          {editedProfile.interests.map((interest, index) => (
-                            <Badge key={index} variant="secondary" className="px-2 py-1">
-                              {interest}
-                              <button
-                                className="ml-1 text-muted-foreground hover:text-foreground"
-                                onClick={() => removeInterest(interest)}
-                              >
-                                ×
-                              </button>
-                            </Badge>
-                          ))}
-                        </div>
-                        <div className="flex gap-2">
-                          <Input
-                            placeholder="Add interest..."
-                            value={newInterest}
-                            onChange={(e) => setNewInterest(e.target.value)}
-                            onKeyDown={(e) => e.key === 'Enter' && addInterest()}
-                          />
-                          <Button type="button" onClick={addInterest}>Add</Button>
-                        </div>
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label htmlFor="visibility">Profile Visibility</Label>
-                        <Select
-                          value={editedProfile.visibility}
-                          onValueChange={(value) => setEditedProfile({ ...editedProfile, visibility: value })}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select visibility" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="public">Public</SelectItem>
-                            <SelectItem value="private">Private</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      <div className="flex justify-end gap-2 pt-4">
-                        <Button variant="outline" onClick={() => setIsEditing(false)}>
-                          Cancel
-                        </Button>
-                        <Button
-                          onClick={handleUpdateProfile}
-                          disabled={updateProfileMutation.isPending}
-                        >
-                          {updateProfileMutation.isPending ? (
-                            <>
-                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                              Saving...
-                            </>
-                          ) : "Save Changes"}
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
+              {isOwnProfile && (
+                <Button
+                  className={cn(
+                    "flex items-center gap-2",
+                    theme === 'dark' ? 'bg-[#e18d58] hover:bg-[#e18d58]/80' : 'bg-[#800000] hover:bg-[#800000]/80'
+                  )}
+                  onClick={handleEditProfile}
+                >
+                  <Edit2 className="h-4 w-4" />
+                  <span>Edit Profile</span>
+                </Button>
               )}
             </div>
 
-            {/* Stats Cards */}
-            {!isPrivateProfile && (
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-                <Card>
-                  <CardContent className="pt-6 text-center">
-                    <div className="bg-primary inline-flex p-2 rounded-full mb-2">
-                      <Target className="h-6 w-6 text-secondary-dark" />
-                    </div>
-                    <h3 className="text-xl font-bold">0</h3>
-                    <p className="text-muted-foreground text-sm">Active Goals</p>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardContent className="pt-6 text-center">
-                    <div className="bg-primary inline-flex p-2 rounded-full mb-2">
-                      <MessageSquare className="h-6 w-6 text-secondary-dark" />
-                    </div>
-                    <h3 className="text-xl font-bold">0</h3>
-                    <p className="text-muted-foreground text-sm">Forum Posts</p>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardContent className="pt-6 text-center">
-                    <div className="bg-primary inline-flex p-2 rounded-full mb-2">
-                      <Trophy className="h-6 w-6 text-secondary-dark" />
-                    </div>
-                    <h3 className="text-xl font-bold">0</h3>
-                    <p className="text-muted-foreground text-sm">Achievements</p>
-                  </CardContent>
-                </Card>
+            {isLoading ? (
+              <div className="flex justify-center py-12">
+                <Loader2 className={cn(
+                  "h-8 w-8 animate-spin",
+                  theme === 'dark' ? 'text-[#e18d58]' : 'text-[#800000]'
+                )} />
               </div>
-            )}
+            ) : profileFields ? (
+              <div className="space-y-6">
+                {/* Profile Header Card */}
+                <Card className={cn(
+                  "bg-nav-bg w-full",
+                  theme === 'dark' ? 'border-[#e18d58]' : 'border-[#800000]'
+                )}>
+                  <CardContent className="p-6">
+                    <div className="flex flex-col md:flex-row gap-6 items-center md:items-start">
+                      {/* Avatar */}
+                      <div className="relative">
+                        <Avatar
+                          className="h-24 w-24 border-4 border-background"
+                          onClick={handleProfilePictureClick}
+                        >
+                          <AvatarImage
+                            src={profileFields.profile_picture || profileFields.avatar_url}
+                            alt={profileFields.username}
+                          />
+                          <AvatarFallback className={cn(
+                            theme === 'dark' ? 'bg-[#e18d58]' : 'bg-[#800000]',
+                            "text-white"
+                          )}>
+                            {profileFields.username.substring(0, 2).toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                        {isOwnProfile && (
+                          <>
+                          <input
+                            type="file"
+                            ref={fileInputRef}
+                            className="hidden"
+                            accept="image/jpeg,image/png,image/jpg"
+                            onChange={handleProfilePictureChange}
+                          />
+                          <div className={cn(
+                            "absolute bottom-0 right-0 rounded-full p-1 cursor-pointer",
+                            theme === 'dark' ? 'bg-[#e18d58]' : 'bg-[#800000]'
+                          )}
+                          onClick={handleProfilePictureClick}
+                          >
+                            <Camera className="h-4 w-4 text-white" />
+                          </div>
+                          </>
+                        )}
+                      </div>
 
-            {isPrivateProfile ? (
-              <div className="bg-card rounded-xl border border-border p-8 text-center">
-                <div className="flex justify-center mb-4">
-                  <Settings className="h-12 w-12 text-muted-foreground" />
+                      {/* Profile info */}
+                      <div className="flex-1 text-center md:text-left">
+                        <h2 className={cn(
+                          "text-xl font-bold",
+                          theme === 'dark' ? 'text-white' : 'text-[#800000]'
+                        )}>{profileFields.name}</h2>
+
+                        <div className="flex items-center justify-center md:justify-start gap-2 mt-1">
+                          <p className={cn(
+                            "text-sm",
+                            theme === 'dark' ? 'text-white/70' : 'text-[#800000]/70'
+                          )}>@{profileFields.username}</p>
+
+                          <Badge className={cn(
+                            "text-xs",
+                            theme === 'dark'
+                              ? 'bg-[#e18d58]/20 text-[#e18d58] hover:bg-[#e18d58]/30'
+                              : 'bg-[#800000]/20 text-[#800000] hover:bg-[#800000]/30'
+                          )}>
+                            {profileFields.fitness_level}
+                          </Badge>
+                        </div>
+
+                        <p className={cn(
+                          "mt-2 text-sm max-w-md",
+                          theme === 'dark' ? 'text-white/90' : 'text-[#800000]/90'
+                        )}>
+                          {profileFields.bio || "No bio available."}
+                        </p>
+
+                        <div className="flex flex-wrap items-center justify-center md:justify-start gap-4 mt-4">
+                          <div className="flex items-center gap-1">
+                            <Calendar className={cn(
+                              "h-4 w-4",
+                              theme === 'dark' ? 'text-[#e18d58]' : 'text-[#800000]'
+                            )} />
+                            <span className={cn(
+                              "text-xs",
+                              theme === 'dark' ? 'text-white/70' : 'text-[#800000]/70'
+                            )}>
+                              Joined {formatDate(profileFields.joined_date)}
+                            </span>
+                          </div>
+
+                          <div className="flex items-center gap-1">
+                            <Award className={cn(
+                              "h-4 w-4",
+                              theme === 'dark' ? 'text-[#e18d58]' : 'text-[#800000]'
+                            )} />
+                            <span className={cn(
+                              "text-xs",
+                              theme === 'dark' ? 'text-white/70' : 'text-[#800000]/70'
+                            )}>
+                              {profileFields.streak_days} day streak
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Actions */}
+                      <div className="flex flex-col gap-2 w-full md:w-auto">
+                        <div className="flex justify-center md:justify-end gap-4 mb-2">
+                          <div className="text-center">
+                            <p className={cn(
+                              "font-bold",
+                              theme === 'dark' ? 'text-white' : 'text-[#800000]'
+                            )}>{profileFields.followers_count}</p>
+                            <p className={cn(
+                              "text-xs",
+                              theme === 'dark' ? 'text-white/70' : 'text-[#800000]/70'
+                            )}>Followers</p>
+                          </div>
+
+                          <div className="text-center">
+                            <p className={cn(
+                              "font-bold",
+                              theme === 'dark' ? 'text-white' : 'text-[#800000]'
+                            )}>{profileFields.following_count}</p>
+                            <p className={cn(
+                              "text-xs",
+                              theme === 'dark' ? 'text-white/70' : 'text-[#800000]/70'
+                            )}>Following</p>
+                          </div>
+
+                          <div className="text-center">
+                            <p className={cn(
+                              "font-bold",
+                              theme === 'dark' ? 'text-white' : 'text-[#800000]'
+                            )}>{profileFields.workouts_completed}</p>
+                            <p className={cn(
+                              "text-xs",
+                              theme === 'dark' ? 'text-white/70' : 'text-[#800000]/70'
+                            )}>Workouts</p>
+                          </div>
+                        </div>
+
+                        {!isOwnProfile && (
+                          <div className="flex gap-2">
+                            <Button
+                              onClick={handleFollowToggle}
+                              className={cn(
+                                "flex-1 flex items-center justify-center gap-1",
+                                profileFields.is_following
+                                  ? theme === 'dark'
+                                    ? 'bg-gray-700 hover:bg-gray-600'
+                                    : 'bg-gray-200 hover:bg-gray-300 text-gray-800'
+                                  : theme === 'dark'
+                                    ? 'bg-[#e18d58] hover:bg-[#e18d58]/80'
+                                    : 'bg-[#800000] hover:bg-[#800000]/80'
+                              )}
+                            >
+                              <UserPlus className="h-4 w-4" />
+                              <span>{profileFields.is_following ? 'Following' : 'Follow'}</span>
+                            </Button>
+
+                            <Button
+                              variant="outline"
+                              className={cn(
+                                "flex items-center justify-center",
+                                theme === 'dark'
+                                  ? 'border-[#e18d58] text-[#e18d58] hover:bg-[#e18d58]/10'
+                                  : 'border-[#800000] text-[#800000] hover:bg-[#800000]/10'
+                              )}
+                            >
+                              <MessageSquare className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Fitness Goals Section */}
+                <div>
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className={cn(
+                      "text-xl font-bold",
+                      theme === 'dark' ? 'text-white' : 'text-[#800000]'
+                    )}>
+                      Fitness Goals
+                    </h2>
+
+                    {isOwnProfile && (
+                      <Button
+                        variant="outline"
+                        className={cn(
+                          "flex items-center gap-1",
+                          theme === 'dark'
+                            ? 'border-[#e18d58] text-[#e18d58] hover:bg-[#e18d58]/10'
+                            : 'border-[#800000] text-[#800000] hover:bg-[#800000]/10'
+                        )}
+                      >
+                        <span>View All</span>
+                        <ChevronRight className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
+
+                  {goals && goals.length > 0 ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {goals.slice(0, 4).map((goal) => (
+                        <Card
+                          key={goal.id}
+                          className={cn(
+                            "bg-nav-bg cursor-pointer hover:opacity-90 transition-opacity",
+                            theme === 'dark' ? 'border-[#e18d58]' : 'border-[#800000]'
+                          )}
+                        >
+                          <CardContent className="p-4">
+                            <div className="flex items-start gap-3">
+                              <div className={cn(
+                                "bg-background border p-2 rounded-full",
+                                theme === 'dark'
+                                  ? 'border-[#e18d58]'
+                                  : 'border-[#800000]'
+                              )}>
+                                <Dumbbell className={cn(
+                                  "h-4 w-4",
+                                  theme === 'dark'
+                                    ? 'text-[#e18d58]'
+                                    : 'text-[#800000]'
+                                )} />
+                              </div>
+
+                              <div className="flex-1">
+                                <div className="flex items-center justify-between">
+                                  <h3 className={cn(
+                                    "font-medium",
+                                    theme === 'dark' ? 'text-white' : 'text-[#800000]'
+                                  )}>
+                                    {goal.title}
+                                  </h3>
+
+                                  <Badge className={cn(
+                                    "text-xs",
+                                    theme === 'dark'
+                                      ? 'bg-[#e18d58]/20 text-[#e18d58] hover:bg-[#e18d58]/30'
+                                      : 'bg-[#800000]/20 text-[#800000] hover:bg-[#800000]/30'
+                                  )}>
+                                    {goal.category}
+                                  </Badge>
+                                </div>
+
+                                <p className={cn(
+                                  "text-xs mt-1",
+                                  theme === 'dark' ? 'text-white/70' : 'text-[#800000]/70'
+                                )}>
+                                  {goal.description}
+                                </p>
+
+                                <div className="mt-3">
+                                  <div className="flex justify-between text-xs mb-1">
+                                    <span className={cn(
+                                      theme === 'dark' ? 'text-white/70' : 'text-[#800000]/70'
+                                    )}>
+                                      Progress
+                                    </span>
+                                    <span className={cn(
+                                      "font-medium",
+                                      theme === 'dark' ? 'text-white' : 'text-[#800000]'
+                                    )}>
+                                      {goal.progress}/{goal.target} {goal.unit}
+                                    </span>
+                                  </div>
+
+                                  <Progress
+                                    value={(goal.progress / goal.target) * 100}
+                                    className={cn(
+                                      "h-2",
+                                      theme === 'dark'
+                                        ? 'bg-gray-700'
+                                        : 'bg-gray-200'
+                                    )}
+                                    // indicatorClassName={cn(
+                                    //   theme === 'dark'
+                                    //     ? 'bg-[#e18d58]'
+                                    //     : 'bg-[#800000]'
+                                    // )}
+                                  />
+
+                                  <p className={cn(
+                                    "text-xs mt-2",
+                                    theme === 'dark' ? 'text-white/70' : 'text-[#800000]/70'
+                                  )}>
+                                    Deadline: {formatDate(goal.deadline)}
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  ) : (
+                    <Card className={cn(
+                      "bg-nav-bg text-center py-8",
+                      theme === 'dark' ? 'border-[#e18d58]' : 'border-[#800000]'
+                    )}>
+                      <CardContent>
+                        <div className="flex justify-center mb-4">
+                          <div className={cn(
+                            "bg-background h-16 w-16 rounded-full flex items-center justify-center border",
+                            theme === 'dark' ? 'border-[#e18d58]' : 'border-[#800000]'
+                          )}>
+                            <Dumbbell className={cn(
+                              "h-8 w-8",
+                              theme === 'dark' ? 'text-[#e18d58]' : 'text-[#800000]'
+                            )} />
+                          </div>
+                        </div>
+
+                        <h3 className={cn(
+                          "text-lg font-bold mb-2",
+                          theme === 'dark' ? 'text-white' : 'text-[#800000]'
+                        )}>No Goals Yet</h3>
+
+                        <p className={cn(
+                          "max-w-md mx-auto",
+                          theme === 'dark' ? 'text-white/70' : 'text-[#800000]/70'
+                        )}>
+                          {isOwnProfile
+                            ? "you haven't set any fitness goals yet. set goals to track your progress!"
+                            : "this user hasn't set any fitness goals yet."}
+                        </p>
+
+                        {isOwnProfile && (
+                          <Button
+                            className={cn(
+                              "mt-4",
+                              theme === 'dark' ? 'bg-[#e18d58] hover:bg-[#e18d58]/80' : 'bg-[#800000] hover:bg-[#800000]/80'
+                            )}
+                          >
+                            Create Goal
+                          </Button>
+                        )}
+                      </CardContent>
+                    </Card>
+                  )}
                 </div>
-                <h2 className="text-xl font-semibold mb-2">This Profile is Private</h2>
-                <p className="text-muted-foreground mb-4">
-                  {username} has set their profile to private. Only they can view their detailed information.
-                </p>
+
+                {/* Recent Activity Section */}
+                <div>
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className={cn(
+                      "text-xl font-bold",
+                      theme === 'dark' ? 'text-white' : 'text-[#800000]'
+                    )}>
+                      Recent Activity
+                    </h2>
+
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "flex items-center gap-1",
+                        theme === 'dark'
+                          ? 'border-[#e18d58] text-[#e18d58] hover:bg-[#e18d58]/10'
+                          : 'border-[#800000] text-[#800000] hover:bg-[#800000]/10'
+                      )}
+                    >
+                      <span>View All</span>
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
+                  </div>
+
+                  <Card className={cn(
+                    "bg-nav-bg text-center py-8",
+                    theme === 'dark' ? 'border-[#e18d58]' : 'border-[#800000]'
+                  )}>
+                    <CardContent>
+                      <div className="flex justify-center mb-4">
+                        <div className={cn(
+                          "bg-background h-16 w-16 rounded-full flex items-center justify-center border",
+                          theme === 'dark' ? 'border-[#e18d58]' : 'border-[#800000]'
+                        )}>
+                          <User className={cn(
+                            "h-8 w-8",
+                            theme === 'dark' ? 'text-[#e18d58]' : 'text-[#800000]'
+                          )} />
+                        </div>
+                      </div>
+
+                      <h3 className={cn(
+                        "text-lg font-bold mb-2",
+                        theme === 'dark' ? 'text-white' : 'text-[#800000]'
+                      )}>No Recent Activity</h3>
+
+                      <p className={cn(
+                        "max-w-md mx-auto",
+                        theme === 'dark' ? 'text-white/70' : 'text-[#800000]/70'
+                      )}>
+                        {isOwnProfile
+                          ? "you haven't logged any activity yet. start tracking your workouts!"
+                          : "this user hasn't logged any activity yet."}
+                      </p>
+                    </CardContent>
+                  </Card>
+                </div>
               </div>
             ) : (
-              <Tabs defaultValue="goals" className="w-full">
-                <TabsList className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 mb-6">
-                  <TabsTrigger value="goals">Goals</TabsTrigger>
-                  <TabsTrigger value="posts">Forum Posts</TabsTrigger>
-                  <TabsTrigger value="achievements">Achievements</TabsTrigger>
-                  {(username === "johndoe" || username === "janedoe") && (
-                    <TabsTrigger value="mentees">Mentees</TabsTrigger>
-                  )}
-                </TabsList>
-
-                <TabsContent value="goals">
-                  {username === "johndoe" && (
-                    <div className="text-center py-8 bg-card rounded-xl border border-border">
-                      <Target className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                      <h3 className="text-lg font-medium mb-2">No Goals Set</h3>
-                      <p className="text-muted-foreground mb-4">
-
-                        {isOwnProfile
-                          ? "You haven't set any fitness goals yet."
-                          : `${profileUser.username} hasn't set any fitness goals yet.`
-                        }
-
-                      </p>
-                      {username === "johndoe" && (
-                        <Button className="bg-secondary text-white hover:bg-secondary-dark">
-                          Set Your First Goal
-                        </Button>
-                      )}
-                    </div>
-                  )}
-                </TabsContent>
-
-                <TabsContent value="posts">
-                  {username === "johndoe" && (
-                    <div className="text-center py-8 bg-card rounded-xl border border-border">
-                      <MessageSquare className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                      <h3 className="text-lg font-medium mb-2">No Forum Posts</h3>
-                      <p className="text-muted-foreground mb-4">
-
-                        {isOwnProfile
-                          ? "You haven't created any forum posts yet."
-                          : `${profileUser.username} hasn't created any forum posts yet.`
-                        }
-
-                      </p>
-                      {username === "johndoe" && (
-                        <Button className="bg-secondary text-white hover:bg-secondary-dark">
-                          Create Your First Post
-                        </Button>
-                      )}
-                    </div>
-                  )}
-                </TabsContent>
-
-                <TabsContent value="achievements">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                    <Card>
-                      <CardContent className="pt-6 text-center">
-                        <div className="bg-primary inline-flex p-3 rounded-full mb-3">
-                          <Trophy className="h-8 w-8 text-secondary-dark" />
-                        </div>
-                        <h3 className="font-semibold mb-1">Early Adopter</h3>
-                        <p className="text-muted-foreground text-sm">Joined during the platform's first month</p>
-                      </CardContent>
-                    </Card>
-                    <Card>
-                      <CardContent className="pt-6 text-center">
-                        <div className="bg-primary inline-flex p-3 rounded-full mb-3">
-                          <MessageSquare className="h-8 w-8 text-secondary-dark" />
-                        </div>
-                        <h3 className="font-semibold mb-1">Community Contributor</h3>
-                        <p className="text-muted-foreground text-sm">Created 5+ forum posts</p>
-                      </CardContent>
-                    </Card>
-                    <Card>
-                      <CardContent className="pt-6 text-center">
-                        <div className="bg-muted inline-flex p-3 rounded-full mb-3">
-                          <Target className="h-8 w-8 text-muted-foreground" />
-                        </div>
-                        <h3 className="font-semibold mb-1 text-muted-foreground">Goal Getter</h3>
-                        <p className="text-muted-foreground text-sm">Complete 3 goals (2/3)</p>
-                      </CardContent>
-                    </Card>
+              <div className={cn(
+                "text-center py-12 bg-nav-bg rounded-xl border",
+                theme === 'dark' ? 'border-[#e18d58]' : 'border-[#800000]'
+              )}>
+                <div className="flex justify-center mb-4">
+                  <div className={cn(
+                    "bg-background h-16 w-16 rounded-full flex items-center justify-center border",
+                    theme === 'dark' ? 'border-[#e18d58]' : 'border-[#800000]'
+                  )}>
+                    <User className={cn(
+                      "h-8 w-8",
+                      theme === 'dark' ? 'text-[#e18d58]' : 'text-[#800000]'
+                    )} />
                   </div>
-                </TabsContent>
+                </div>
 
+                <h3 className={cn(
+                  "text-lg font-bold mb-2",
+                  theme === 'dark' ? 'text-white' : 'text-[#800000]'
+                )}>Profile Not Found</h3>
 
-                {(profileUser.role === "mentor" || profileUser.role === "coach") && (
-
-                  <TabsContent value="mentees">
-                    <div className="text-center py-8 bg-card rounded-xl border border-border">
-                      <User className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                      <h3 className="text-lg font-medium mb-2">No Mentees Yet</h3>
-                      <p className="text-muted-foreground mb-4">
-                        {username === "johndoe" ? "You don't have any mentees yet." : "You don't have any mentees yet."}
-                      </p>
-                    </div>
-                  </TabsContent>
-                )}
-              </Tabs>
+                <p className={cn(
+                  "max-w-md mx-auto",
+                  theme === 'dark' ? 'text-white/70' : 'text-[#800000]/70'
+                )}>
+                  we couldn't find the profile you're looking for. please check the username and try again.
+                </p>
+              </div>
             )}
           </div>
         </main>
@@ -564,4 +942,6 @@ export default function ProfilePage() {
       <MobileNavigation activeTab="profile" />
     </div>
   );
-}
+};
+
+export default ProfilePage;

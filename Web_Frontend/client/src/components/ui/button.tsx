@@ -46,7 +46,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       border: '#e18d58',
       hover: '#e18d58'
     } : {
-      text: '#800000',
+      text: '#a44b4b',
       border: '#800000',
       hover: '#740000'
     };
