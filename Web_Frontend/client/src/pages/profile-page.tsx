@@ -503,14 +503,14 @@ export default function ProfilePage() {
                                   <h3 className="text-lg font-semibold mb-1">{goal.title}</h3>
                                   <p className="text-muted-foreground text-sm">{goal.description}</p>
                                 </div>
-                                <Badge 
+                                <Badge
                                   variant={goal.status === 'ACTIVE' ? 'default' : 'secondary'}
                                   className="capitalize"
                                 >
                                   {goal.status.toLowerCase()}
                                 </Badge>
                               </div>
-                              
+
                               <GoalProgress
                                 goal={{
                                   id: goal.id,
@@ -523,7 +523,7 @@ export default function ProfilePage() {
                                 }}
                                 showTitle={false}
                               />
-                              
+
                               <div className="flex items-center justify-between text-sm text-muted-foreground">
                                 <div className="flex gap-4">
                                   <span>Started: {new Date(goal.start_date).toLocaleDateString()}</span>
