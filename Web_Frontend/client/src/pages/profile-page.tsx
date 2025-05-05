@@ -94,11 +94,13 @@ const ProfilePage = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
-    if (user && user.username !== username) {
+    if (username) {
+      // If we're viewing someone else's profile
       setProfileUsername(username);
-      setIsOwnProfile(false);
-    } else {
-      setProfileUsername(user?.username);
+      setIsOwnProfile(true);
+    } else if (user) {
+      // If we're on our own profile (no username in URL)
+      setProfileUsername(user.username);
       setIsOwnProfile(true);
     }
   }, [user, username]);
@@ -129,7 +131,7 @@ const ProfilePage = () => {
   // Mutation for updating profile
   const updateProfileMutation = useMutation({
     mutationFn: async (data: ProfileUpdateData) => {
-      const response = await fetch('/api/profile', {
+      const response = await fetch('http://localhost:8000/api/profile', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -285,9 +287,7 @@ const ProfilePage = () => {
   const handleSubmitProfileUpdate = (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
-    updateProfileMutation.mutate(editFormData, {
-      onSettled: () => setIsSubmitting(false)
-    });
+    updateProfileMutation.mutate(editFormData);
   };
 
   const formatDate = (dateString: string) => {
@@ -434,19 +434,19 @@ const ProfilePage = () => {
                   </div>
                 </div>
                 <DialogFooter>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={ handleEditProfile }
-                    className={cn(
-                      theme === 'dark'
-                        ? 'border-[#e18d58] text-[#e18d58] hover:bg-[#e18d58]/10'
-                        : 'border-[#800000] text-[#800000] hover:bg-[#800000]/10'
-                    )}
-                  >
-                    <X className="h-4 w-4 mr-2" />
-                    Cancel
-                  </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setIsEditDialogOpen(false)}  // Changed from handleEditProfile
+                  className={cn(
+                    theme === 'dark'
+                      ? 'border-[#e18d58] text-[#e18d58] hover:bg-[#e18d58]/10'
+                      : 'border-[#800000] text-[#800000] hover:bg-[#800000]/10'
+                  )}
+                >
+                  <X className="h-4 w-4 mr-2" />
+                  Cancel
+                </Button>
                   <Button
                     type="submit"
                     disabled={isSubmitting}
