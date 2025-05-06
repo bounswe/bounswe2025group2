@@ -10,6 +10,7 @@ import CommunitiesIcon from '../assets/images/communities.svg';
 import NewIcon from '../assets/images/new.svg';
 import MentorsIcon from '../assets/images/mentors.svg';
 import ChatsIcon from '../assets/images/chats.svg';
+import GoalsIcon from '../assets/images/target.svg'; // Dartboard/target icon for Goals tab
 
 const BottomBar = ({ state, navigation }: BottomTabBarProps) => {
   const { colors } = useTheme();
@@ -110,6 +111,24 @@ const BottomBar = ({ state, navigation }: BottomTabBarProps) => {
           ]}
         >
           Chats
+        </CustomText>
+      </Pressable>
+      <Pressable style={styles.tab} onPress={() => navigateToScreen('Goals')}>
+        <GoalsIcon 
+          width={32} 
+          height={32} 
+          fill={isActiveRoute('Goals') ? colors.active : colors.passive} 
+        />
+        <CustomText 
+          style={[
+            styles.label, 
+            { 
+              color: isActiveRoute('Goals') ? colors.active : colors.passive,
+              fontWeight: isActiveRoute('Goals') ? 'bold' : 'normal'
+            }
+          ]}
+        >
+          Goals
         </CustomText>
       </Pressable>
     </View>
