@@ -18,32 +18,68 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { User, Loader2, Settings, Edit, Camera, Trophy, MessageSquare, Target } from "lucide-react";
+import {useMutation, useQuery} from "@tanstack/react-query";
+import {queryClient} from "@/lib/queryClient.ts";
+
+interface UserFields {
+  email: string;
+  id: number;
+  is_verified_coach: boolean;
+  user_type: string;
+  username: string;
+}
+
+interface UserProfileDetails {
+  age: string;
+  bio: string;
+  birth_date: string;
+  location: string;
+  name: string;
+}
+
+interface UserGoal {
+    description: string;
+    goal_type: string;
+    id: number;
+    last_updated: string;
+    setting_mentor_id: number;
+    progress_percentage: number;
+    start_date: string;
+    status: string;
+    target_date: string;
+    current_value: number;
+    target_value: number;
+    title: string;
+    unit: string;
+}
 
 export default function ProfilePage() {
-  const { username } = useParams<{ username: string }>();
   const { user: currentUser, updateProfileMutation, applyForRoleMutation } = useAuth();
+  // @ts-ignore
+  const username = currentUser.username
   const [isEditing, setIsEditing] = useState(false);
   const [editedProfile, setEditedProfile] = useState({
     name: "",
     bio: "",
     interests: [] as string[],
     visibility: "public",
-    role: ""
+    role: "",
+    location: "",
+    age: "",
   });
 
   // Fetch profile picture
   const [newInterest, setNewInterest] = useState("");
 
-  // Fetch profile picture
+  // Fetch profile picture, this is sent to the front end server
   const { data: profilePicture, isLoading: profilePictureLoading } = useQuery({
-    queryKey: ['profile-picture'],
-    queryFn: async () => {
-      const res = await fetch('/profile/picture/');
-      if (!res.ok) throw new Error('Failed to fetch profile picture');
-      const blob = await res.blob();
-      return URL.createObjectURL(blob); // browser friendly image URL
-    },
+    queryKey: ['api/profile/picture'],
   });
+
+  const { data: profileDetails, isLoading: profileDetailsLoading } = useQuery<UserProfileDetails>({
+    queryKey: ['/api/profile/'],
+  });
+
 
   // Upload profile picture mutation
   const uploadProfilePictureMutation = useMutation({
@@ -51,7 +87,7 @@ export default function ProfilePage() {
       const formData = new FormData();
       formData.append('picture', file);
 
-      const res = await fetch('/profile/picture/upload/', {
+      const res = await fetch('/api/profile/picture/upload/', {
         method: 'POST',
         body: formData,
       });
@@ -67,7 +103,7 @@ export default function ProfilePage() {
   // Delete profile picture mutation
   const deleteProfilePictureMutation = useMutation({
     mutationFn: async () => {
-      const res = await fetch('/profile/picture/delete/', {
+      const res = await fetch('api/profile/picture/delete/', {
         method: 'DELETE',
       });
 
@@ -80,52 +116,42 @@ export default function ProfilePage() {
   });
 
   // Fetch profile data of the user with the given username
-  const { data: profileUser, isLoading } = useQuery({
+  const { data: profileUser, isLoading } = useQuery<UserFields>({
     queryKey: ['/api/user'],
-    queryFn: async () => {
-      const res = await fetch('/api/user');
-      if (!res.ok) throw new Error('Failed to fetch user profile');
-      return res.json();
-    },
   });
 
-  const { data: userThreads, isLoading: threadsLoading } = useQuery({
-    queryKey: [`/api/forum/threads`, `user_${profileUser?.id}`],
-    queryFn: async () => {
-      const res = await fetch(`/api/forum/threads?userId=${profileUser?.id}`);
-      if (!res.ok) throw new Error("Failed to fetch user threads");
-      return res.json();
-    },
-    enabled: !!profileUser?.id,
-  });
-
+  // const { data: userThreads, isLoading: threadsLoading } = useQuery({
+  //   queryKey: [`/api/forum/threads`, `user_${profileUser?.id}`],
+  //   queryFn: async () => {
+  //     const res = await fetch(`/api/forum/threads?userId=${profileUser?.id}`);
+  //     if (!res.ok) throw new Error("Failed to fetch user threads");
+  //     return res.json();
+  //   },
+  //   enabled: !!profileUser?.id,
+  // });
 
   // Fetch user's goals
-  const { data: userGoals, isLoading: goalsLoading } = useQuery({
-    queryKey: [`/api/goals`, `user_${profileUser?.id}`],
-    queryFn: async () => {
-      const res = await fetch(`/api/goals?userId=${profileUser?.id}`);
-      if (!res.ok) throw new Error("Failed to fetch user goals");
-      return res.json();
-    },
-    enabled: !!profileUser?.id && (currentUser?.id === profileUser?.id || profileUser?.visibility === "public"),
+  const { data: userGoals, isLoading: goalsLoading } = useQuery<UserGoal[]>({
+    queryKey: ['/api/goals'],
   });
+
+  console.log("User Goals:", userGoals);
 
   // Set default values for editing
   useState(() => {
-    if (profileUser && currentUser?.id === profileUser.id) {
+    if (profileDetails) {
       setEditedProfile({
-        name: profileUser.name || "",
-        bio: profileUser.bio || "",
-        interests: profileUser.interests || [],
-        visibility: profileUser.visibility || "public",
-        role: profileUser.role || "trainee"
+        interests: [], role: "", visibility: "",
+        name: profileDetails.name || "",
+        location: profileDetails.location || "",
+        bio: profileDetails.bio || "",
+        age: profileDetails.age || ""
       });
     }
   });
 
   const isOwnProfile = currentUser?.id === profileUser?.id;
-  const isPrivateProfile = profileUser?.visibility === "private" && !isOwnProfile;
+  const isPrivateProfile = false;
 
   const handleUpdateProfile = async () => {
     if (!isOwnProfile) return;
@@ -188,14 +214,13 @@ export default function ProfilePage() {
             <div className="bg-primary rounded-xl p-6 mb-6 relative">
               <div className="flex flex-col md:flex-row items-center md:items-start gap-4">
                 <div className="relative">
-                  <AvatarWithBadge
-                    src={profilePicture}
-                    fallback={profileUser.name?.[0]?.toUpperCase() || profileUser.username[0].toUpperCase()}
+                  {profileUser && (<AvatarWithBadge
+                    fallback={profileUser.username?.[0] || profileUser.username[0].toUpperCase()}
 
                     size="lg"
                     role={username === "johndoe" ? "trainee" : username === "janedoe" ? "coach" : ""}
                     verified={username === "johndoe" || username === "janedoe"}
-                  />
+                  />)}
                   {isOwnProfile && (
                     <div className="absolute -bottom-2 -left-2 right-0 flex justify-between">
                       {/* Upload Button - Positioned bottom-left */}
@@ -248,8 +273,6 @@ export default function ProfilePage() {
                       @{username}
                     </Badge>
                     <Badge
-                      variant={profileUser.role === "mentor" ? "outline" : "default"}
-
                       className="text-xs py-0 h-5"
                     >
                       {username === "johndoe" ? "Trainee" : username === "janedoe" ? "Coach" : "Trainee"}
@@ -276,7 +299,7 @@ export default function ProfilePage() {
                       <Edit className="h-3 w-3 mr-1" />
                       Edit Profile
                     </Button>
-                    {profileUser.role === "trainee" && (
+                    {profileUser && (
 
                       <Dialog>
                         <DialogTrigger asChild>
@@ -468,19 +491,62 @@ export default function ProfilePage() {
                 </TabsList>
 
                 <TabsContent value="goals">
-                  {username === "johndoe" && (
+                  {userGoals && userGoals.length > 0 ? (
+                    <div className="grid grid-cols-1 gap-4">
+                      {userGoals.map((goal) => (
+                        <Card key={goal.id} className="bg-card border-border hover:bg-accent/5 transition-colors">
+                          <CardContent className="pt-6">
+                            <div className="flex flex-col gap-4">
+                              <div className="flex items-start justify-between">
+                                <div>
+                                  <Badge variant="outline" className="mb-2">{goal.goal_type}</Badge>
+                                  <h3 className="text-lg font-semibold mb-1">{goal.title}</h3>
+                                  <p className="text-muted-foreground text-sm">{goal.description}</p>
+                                </div>
+                                <Badge
+                                  variant={goal.status === 'ACTIVE' ? 'default' : 'secondary'}
+                                  className="capitalize"
+                                >
+                                  {goal.status.toLowerCase()}
+                                </Badge>
+                              </div>
+
+                              <GoalProgress
+                                goal={{
+                                  id: goal.id,
+                                  title: goal.title,
+                                  type: goal.goal_type,
+                                  targetValue: goal.target_value,
+                                  currentValue: goal.current_value,
+                                  unit: goal.unit,
+                                  status: goal.status
+                                }}
+                                showTitle={false}
+                              />
+
+                              <div className="flex items-center justify-between text-sm text-muted-foreground">
+                                <div className="flex gap-4">
+                                  <span>Started: {new Date(goal.start_date).toLocaleDateString()}</span>
+                                  <span>Target: {new Date(goal.target_date).toLocaleDateString()}</span>
+                                </div>
+                                <span>Last updated: {new Date(goal.last_updated).toLocaleDateString()}</span>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  ) : (
                     <div className="text-center py-8 bg-card rounded-xl border border-border">
                       <Target className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                       <h3 className="text-lg font-medium mb-2">No Goals Set</h3>
                       <p className="text-muted-foreground mb-4">
-
                         {isOwnProfile
                           ? "You haven't set any fitness goals yet."
-                          : `${profileUser.username} hasn't set any fitness goals yet.`
+                          : `This person hasn't set any fitness goals yet.`
                         }
-
                       </p>
-                      {username === "johndoe" && (
+                      {isOwnProfile && (
                         <Button className="bg-secondary text-white hover:bg-secondary-dark">
                           Set Your First Goal
                         </Button>
@@ -498,7 +564,7 @@ export default function ProfilePage() {
 
                         {isOwnProfile
                           ? "You haven't created any forum posts yet."
-                          : `${profileUser.username} hasn't created any forum posts yet.`
+                          : `This person hasn't created any forum posts yet.`
                         }
 
                       </p>
@@ -543,19 +609,18 @@ export default function ProfilePage() {
                   </div>
                 </TabsContent>
 
+                {/*{(profileUser.role === "mentor" || profileUser.role === "coach") && (*/}
 
-                {(profileUser.role === "mentor" || profileUser.role === "coach") && (
-
-                  <TabsContent value="mentees">
-                    <div className="text-center py-8 bg-card rounded-xl border border-border">
-                      <User className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                      <h3 className="text-lg font-medium mb-2">No Mentees Yet</h3>
-                      <p className="text-muted-foreground mb-4">
-                        {username === "johndoe" ? "You don't have any mentees yet." : "You don't have any mentees yet."}
-                      </p>
-                    </div>
-                  </TabsContent>
-                )}
+                {/*  <TabsContent value="mentees">*/}
+                {/*    <div className="text-center py-8 bg-card rounded-xl border border-border">*/}
+                {/*      <User className="h-12 w-12 text-muted-foreground mx-auto mb-4" />*/}
+                {/*      <h3 className="text-lg font-medium mb-2">No Mentees Yet</h3>*/}
+                {/*      <p className="text-muted-foreground mb-4">*/}
+                {/*        {username === "johndoe" ? "You don't have any mentees yet." : "You don't have any mentees yet."}*/}
+                {/*      </p>*/}
+                {/*    </div>*/}
+                {/*  </TabsContent>*/}
+                {/*)}*/}
               </Tabs>
             )}
           </div>

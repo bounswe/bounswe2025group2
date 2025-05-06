@@ -46,7 +46,6 @@ export default function GoalProgress({ goal, showTitle = false }: GoalProgressPr
       <Progress 
         value={progressPercentage} 
         className="h-2.5 bg-muted"
-        indicatorClassName={getStatusColor()}
       />
     </div>
   );

@@ -29,12 +29,9 @@ export default function NotificationsPage() {
     const { theme } = useTheme();
     const queryClient = useQueryClient();
 
-
-    // ✅ Place useState HERE
     const [selectedNotification, setSelectedNotification] = useState<AppNotification | null>(null);
     const [detailsLoading, setDetailsLoading] = useState(false);
 
-    // ✅ Then your useQuery here
     const { data: notifications, isLoading } = useQuery<AppNotification[]>({
         queryKey: ["/api/notifications"],
         queryFn: async () => {
