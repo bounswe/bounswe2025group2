@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from django.core.validators import RegexValidator
 from django.contrib.auth import get_user_model
-from .models import Notification, UserWithType, FitnessGoal, Profile
+from .models import Notification, UserWithType, FitnessGoal, Profile, Forum, Thread, Comment, Subcomment, Vote
 
 
 User = get_user_model()
@@ -136,3 +136,160 @@ class ProfileSerializer(serializers.ModelSerializer):
         model = Profile
         fields = ['username', 'bio', 'location', 'birth_date', 'age', 'created_at', 'updated_at']
         read_only_fields = ['username', 'created_at', 'updated_at']
+
+
+class ForumSerializer(serializers.ModelSerializer):
+    thread_count = serializers.IntegerField(read_only=True)
+    created_by = serializers.StringRelatedField(read_only=True)
+
+    class Meta:
+        model = Forum
+        fields = ['id', 'title', 'description', 'created_at', 'updated_at',
+                  'created_by', 'is_active', 'order', 'thread_count']
+        read_only_fields = ['created_at', 'updated_at']
+
+
+class ThreadListSerializer(serializers.ModelSerializer):
+    author = serializers.StringRelatedField(read_only=True)
+    forum = serializers.StringRelatedField(read_only=True)
+    comment_count = serializers.IntegerField(read_only=True)
+
+    class Meta:
+        model = Thread
+        fields = ['id', 'title', 'author', 'forum', 'created_at', 'updated_at',
+                  'is_pinned', 'is_locked', 'view_count', 'like_count', 'last_activity',
+                  'comment_count']
+        read_only_fields = ['created_at', 'updated_at', 'view_count', 'like_count', 'last_activity']
+
+
+class ThreadDetailSerializer(serializers.ModelSerializer):
+    author = serializers.StringRelatedField(read_only=True)
+    forum = serializers.PrimaryKeyRelatedField(queryset=Forum.objects.all())
+    comment_count = serializers.IntegerField(read_only=True)
+
+    class Meta:
+        model = Thread
+        fields = ['id', 'title', 'content', 'author', 'forum', 'created_at',
+                  'updated_at', 'is_pinned', 'is_locked', 'view_count',
+                  'like_count', 'last_activity', 'comment_count']
+        read_only_fields = ['created_at', 'updated_at', 'view_count', 'like_count', 'last_activity']
+
+    def update(self, instance, validated_data):
+        instance.updated_at = timezone.now()
+        instance.save()
+        return instance
+
+
+class CommentSerializer(serializers.ModelSerializer):
+    author_id = serializers.IntegerField(source='author.id', read_only=True)
+    thread_id = serializers.IntegerField(source='thread.id', read_only=True)
+
+    class Meta:
+        model = Comment
+        fields = [
+            'id',
+            'author_id',
+            'thread_id',
+            'content',
+            'like_count',
+            'subcomment_count',
+            'created_at',
+            'updated_at'
+        ]
+        read_only_fields = ['id', 'author_id', 'thread_id', 'created_at', 'updated_at', 'subcomment_count',
+                            'like_count']
+
+    def create(self, validated_data):
+        validated_data['author'] = self.context['request'].user
+        validated_data['thread_id'] = self.context.get('thread_id')
+        return Comment.objects.create(**validated_data)
+
+    def update(self, instance, validated_data):
+        instance.content = validated_data.get('content', instance.content)
+        instance.updated_at = timezone.now()
+        instance.save()
+        return instance
+
+    def delete(self, instance):
+        thread = instance.thread
+        thread.comment_count = max(0, thread.comment_count - 1)
+        thread.save(update_fields=['comment_count'])
+
+        for sub in instance.subcomments.all():
+            sub.votes.all().delete()
+            sub.delete()
+
+        instance.votes.all().delete()
+        instance.delete()
+
+
+class SubcommentSerializer(serializers.ModelSerializer):
+    author_id = serializers.IntegerField(source='author.id', read_only=True)
+    comment_id = serializers.IntegerField(source='comment.id', read_only=True)
+
+    class Meta:
+        model = Subcomment
+        fields = [
+            'id',
+            'author_id',
+            'comment_id',
+            'content',
+            'like_count',
+            'created_at',
+            'updated_at'
+        ]
+        read_only_fields = ['id', 'author_id', 'comment_id', 'created_at', 'updated_at', 'like_count']
+
+    def create(self, validated_data):
+        validated_data['author'] = self.context['request'].user
+        validated_data['comment_id'] = self.context.get('comment_id')
+
+        return Subcomment.objects.create(**validated_data)
+
+    def update(self, instance, validated_data):
+        instance.content = validated_data.get('content', instance.content)
+        instance.updated_at = timezone.now()
+        instance.save()
+        return instance
+
+    def delete(self, instance):
+        comment = instance.comment
+        instance.votes.all().delete()
+        instance.delete()
+
+        comment.subcomment_count = max(0, comment.subcomment_count - 1)
+        comment.save(update_fields=['subcomment_count'])
+
+
+class VoteSerializer(serializers.ModelSerializer):
+    user_username = serializers.CharField(source='user.username', read_only=True)
+
+    class Meta:
+        model = Vote
+        fields = [
+            'id',
+            'user_username',
+            'content_type',
+            'object_id',
+            'vote_type',
+            'created_at',
+            'updated_at'
+        ]
+        read_only_fields = ['id', 'created_at', 'updated_at']
+
+    def create(self, validated_data):
+        # Get the content type and object
+        content_type = validated_data.get('content_type')
+        object_id = validated_data.get('object_id')
+        vote_type = validated_data.get('vote_type')
+
+        # Get the actual content object
+        content_object = content_type.get_object_for_this_type(id=object_id)
+
+        # Create or update the vote using the class method
+        vote = Vote.create_or_update_vote(
+            user=self.context['request'].user,
+            content_object=content_object,
+            new_vote_type=vote_type
+        )
+        return vote

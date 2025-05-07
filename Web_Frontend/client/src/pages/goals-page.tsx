@@ -118,7 +118,7 @@ export default function GoalsPage() {
   const [newGoal, setNewGoal] = useState({
     title: "",
     description: "",
-    type: "walking",
+    type: "walking_running",
     targetValue: 5,
     currentValue: 0,
     unit: "miles",
@@ -327,7 +327,7 @@ export default function GoalsPage() {
     setNewGoal({
       title: "",
       description: "", // Reset description
-      type: "walking",
+      type: "walking_running",
       targetValue: 5,
       currentValue: 0, // Reset current value
       unit: "miles",
@@ -693,8 +693,7 @@ export default function GoalsPage() {
                 value={newGoal.type}
                 onValueChange={(value) => {
                   const unitMap: Record<string, string> = {
-                    walking: "miles",
-                    running: "miles",
+                    walking_running: "miles",
                     cycling: "miles",
                     swimming: "laps",
                     workout: "minutes"
@@ -715,8 +714,7 @@ export default function GoalsPage() {
                   <SelectValue placeholder="Select goal type" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="walking">Walking</SelectItem>
-                  <SelectItem value="running">Running</SelectItem>
+                  <SelectItem value="walking_running">Walking/Running</SelectItem>
                   <SelectItem value="cycling">Cycling</SelectItem>
                   <SelectItem value="swimming">Swimming</SelectItem>
                   <SelectItem value="workout">Workout</SelectItem>
