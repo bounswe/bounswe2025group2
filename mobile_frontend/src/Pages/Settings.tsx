@@ -1,10 +1,20 @@
 import React from 'react';
-import { View, StyleSheet, Switch } from 'react-native';
+import { View, StyleSheet, Switch, TouchableOpacity } from 'react-native';
 import CustomText from '@components/CustomText';
 import { useTheme } from '../context/ThemeContext';
+import { useNavigation } from '@react-navigation/native';
 
 const Settings = () => {
   const { colors, isDark, toggleTheme } = useTheme();
+  const navigation = useNavigation();
+
+  const handleLogout = () => {
+    // Navigate to Login screen
+    navigation.reset({
+      index: 0,
+      routes: [{ name: 'Login' }],
+    });
+  };
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -17,6 +27,12 @@ const Settings = () => {
           onValueChange={toggleTheme}
         />
       </View>
+      <TouchableOpacity 
+        style={[styles.settingItem, { borderBottomColor: colors.border }]}
+        onPress={handleLogout}
+      >
+        <CustomText style={[styles.settingText, { color: '#000000' }]}>Log Out</CustomText>
+      </TouchableOpacity>
     </View>
   );
 };

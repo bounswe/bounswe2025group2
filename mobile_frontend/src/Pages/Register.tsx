@@ -8,15 +8,24 @@ import {
   SafeAreaView,
   Alert,
 } from 'react-native';
+import { Picker } from '@react-native-picker/picker';
 
 const Register = ({ navigation }: any) => {
-  const [name, setName] = useState('');
+  const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [userType, setUserType] = useState('User');
+  const [verificationFile, setVerificationFile] = useState('');
+  const [rememberMe, setRememberMe] = useState(false);
 
-  const handleRegister = () => {
-    if (!name || !email || !password || !confirmPassword) {
+  const handlePickFile = () => {
+    // Just set a dummy string for demonstration
+    setVerificationFile('dummy-file.pdf');
+  };
+
+  const handleRegister = async () => {
+    if (!username || !email || !password || !confirmPassword) {
       Alert.alert('Error', 'Please fill in all fields');
       return;
     }
@@ -26,17 +35,46 @@ const Register = ({ navigation }: any) => {
       return;
     }
 
-    // Show success message and navigate to login screen
-    Alert.alert(
-      'Success',
-      'Registration successful! Please login with your credentials.',
-      [
-        {
-          text: 'OK',
-          onPress: () => navigation.navigate('Login')
-        }
-      ]
-    );
+    if (userType === 'Coach' && !verificationFile) {
+      Alert.alert('Error', 'Please upload a verification file for Coach registration.');
+      return;
+    }
+
+    try {
+      const response = await fetch('http://10.0.2.2:8000/api/register/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          username: username,
+          email: email,
+          password: password,
+          user_type: userType,
+          verification_file: verificationFile,
+          remember_me: rememberMe,
+        }),
+      });
+      const data = await response.json();
+      if (response.ok) {
+        Alert.alert(
+          'Success',
+          data.message || 'Registration successful! Please check your email to verify your account.',
+          [
+            {
+              text: 'OK',
+              onPress: () => navigation.navigate('Login')
+            }
+          ]
+        );
+      } else {
+        // Show first error message from API
+        const errorMsg = data.username?.[0] || data.email?.[0] || data.password?.[0] || data.error || 'Registration failed';
+        Alert.alert('Error', errorMsg);
+      }
+    } catch (error) {
+      Alert.alert('Error', 'Network error. Please try again.');
+    }
   };
 
   return (
@@ -46,10 +84,10 @@ const Register = ({ navigation }: any) => {
         
         <TextInput
           style={styles.input}
-          placeholder="Full Name"
-          value={name}
-          onChangeText={setName}
-          autoCapitalize="words"
+          placeholder="Username"
+          value={username}
+          onChangeText={setUsername}
+          autoCapitalize="none"
         />
         
         <TextInput
@@ -76,6 +114,28 @@ const Register = ({ navigation }: any) => {
           onChangeText={setConfirmPassword}
           secureTextEntry
         />
+        
+        <Picker
+          selectedValue={userType}
+          style={{ height: 50, width: '100%', marginBottom: 15 }}
+          onValueChange={(itemValue: string) => setUserType(itemValue)}
+        >
+          <Picker.Item label="User" value="User" />
+          <Picker.Item label="Coach" value="Coach" />
+        </Picker>
+        
+        {userType === 'Coach' && (
+          <TouchableOpacity style={styles.button} onPress={handlePickFile}>
+            <Text style={styles.buttonText}>{verificationFile ? 'File Selected' : 'Upload Verification File'}</Text>
+          </TouchableOpacity>
+        )}
+        
+        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 15 }}>
+          <TouchableOpacity onPress={() => setRememberMe(!rememberMe)} style={{ marginRight: 8, width: 24, height: 24, borderWidth: 1, borderColor: '#007AFF', alignItems: 'center', justifyContent: 'center', backgroundColor: rememberMe ? '#007AFF' : '#fff' }}>
+            {rememberMe && <Text style={{ color: '#fff', fontWeight: 'bold' }}>✓</Text>}
+          </TouchableOpacity>
+          <Text>Remember Me</Text>
+        </View>
         
         <TouchableOpacity style={styles.button} onPress={handleRegister}>
           <Text style={styles.buttonText}>Register</Text>

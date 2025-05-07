@@ -10,17 +10,37 @@ import {
 } from 'react-native';
 
 const Login = ({ navigation }: any) => {
-  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
 
-  const handleLogin = () => {
-    if (!email || !password) {
+  const handleLogin = async () => {
+    if (!username || !password) {
       Alert.alert('Error', 'Please fill in all fields');
       return;
     }
-    
-    // For now, just navigate to main screen
-    navigation.replace('Main');
+
+    try {
+      const response = await fetch('http://10.0.2.2:8000/api/login/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          username: username,
+          password: password,
+          remember_me: true,
+        }),
+      });
+      const data = await response.json();
+      if (response.ok) {
+        Alert.alert('Success', data.message || 'Login successful');
+        navigation.replace('Main');
+      } else {
+        Alert.alert('Error', data.error || 'Login failed');
+      }
+    } catch (error) {
+      Alert.alert('Error', 'Network error. Please try again.');
+    }
   };
 
   return (
@@ -30,10 +50,9 @@ const Login = ({ navigation }: any) => {
         
         <TextInput
           style={styles.input}
-          placeholder="Email"
-          value={email}
-          onChangeText={setEmail}
-          keyboardType="email-address"
+          placeholder="Username"
+          value={username}
+          onChangeText={setUsername}
           autoCapitalize="none"
         />
         
