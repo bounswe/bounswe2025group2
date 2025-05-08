@@ -62,8 +62,8 @@ class Command(BaseCommand):
                     is_active=True
                 )
                 
-                # Update profile
-                profile = Profile.objects.get(user=user)
+                # Check if profile exists, create if it doesn't
+                profile, created = Profile.objects.get_or_create(user=user)
                 profile.bio = f"Bio for {user.username}"
                 profile.location = random.choice(['New York', 'London', 'Tokyo', 'Paris', 'Berlin'])
                 profile.birth_date = datetime.now().date() - timedelta(days=random.randint(7000, 15000))
@@ -85,8 +85,8 @@ class Command(BaseCommand):
                     is_verified_coach=user_data['is_verified']
                 )
                 
-                # Update profile
-                profile = Profile.objects.get(user=user)
+                # Check if profile exists, create if it doesn't
+                profile, created = Profile.objects.get_or_create(user=user)
                 profile.bio = f"Professional coach specializing in fitness and nutrition. {user.username}"
                 profile.location = random.choice(['Los Angeles', 'Miami', 'Chicago', 'Sydney', 'Toronto'])
                 profile.birth_date = datetime.now().date() - timedelta(days=random.randint(9000, 15000))
