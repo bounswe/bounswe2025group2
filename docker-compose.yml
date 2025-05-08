@@ -29,6 +29,7 @@ services:
       - DATABASE_URL=postgresql://group2:group2@postgres:5432/group2db
     ports:
       - "8000:8000"
+    command: sh -c "python manage.py migrate && python manage.py populate_db && python manage.py runserver 0.0.0.0:8000"
 
   frontend:
     build:
