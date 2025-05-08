@@ -2,6 +2,8 @@ from rest_framework import serializers
 from django.core.validators import RegexValidator
 from django.contrib.auth import get_user_model
 from .models import Notification, UserWithType, FitnessGoal, Profile, Forum, Thread, Comment, Subcomment, Vote
+from django.utils import timezone
+from .models import Notification, UserWithType, FitnessGoal, Profile, Forum, Thread, Comment, Subcomment, Vote
 
 
 User = get_user_model()
@@ -28,7 +30,7 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         verification_file = validated_data.pop('verification_file', None)
         remember_me = validated_data.pop('remember_me', False)
-        
+
         user = User.objects.create_user(
             username=validated_data['username'],
             email=validated_data['email'],

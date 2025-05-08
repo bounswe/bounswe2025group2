@@ -28,7 +28,7 @@ SECRET_KEY = 'django-insecure-p6p*^^1$rp!n(^wo$dqu72al_wq^+5v#kw=8lw#)1i9h5qgq42
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['localhost', '127.0.0.1']
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', '10.0.2.2']
 
 # For now, we are allowing all hosts. In production, we should specify your domain.
 CORS_ALLOW_ALL_ORIGINS = True
@@ -44,6 +44,7 @@ CSRF_TRUSTED_ORIGINS = [
 # Application definition
 
 INSTALLED_APPS = [
+    'daphne',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -53,7 +54,16 @@ INSTALLED_APPS = [
     'rest_framework',
     'corsheaders',
     'api',
+    'channels',
+    'chat',
 ]
+
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels.layers.InMemoryChannelLayer"
+    }
+}
+
 
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
@@ -84,7 +94,9 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'genfit_django.wsgi.application'
+# WSGI_APPLICATION = 'genfit_django.wsgi.application'
+
+ASGI_APPLICATION = 'genfit_django.asgi.application'
 
 
 # Database

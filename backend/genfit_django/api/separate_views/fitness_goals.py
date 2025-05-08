@@ -132,4 +132,3 @@ def check_inactive_goals(request):
         goal.save()
 
     return Response({'message': f'{len(inactive_goals)} goals marked as inactive'})
-

@@ -12,6 +12,7 @@ import ChallengesPage from "@/pages/challenges-page";
 import NotificationsPage from "@/pages/notifications-page";
 import CommunitiesPage from "@/pages/communities-page";
 import SettingsPage from "@/pages/settings-page";
+import ChatPage from "@/pages/chat-page";
 import { ProtectedRoute } from "./lib/protected-route";
 import { AuthProvider } from "./hooks/use-auth";
 import { ThemeProvider } from "./theme/ThemeContext";
@@ -26,7 +27,7 @@ function Router() {
       <ProtectedRoute path="/" component={HomePage} />
       <ProtectedRoute path="/forum" component={ForumPage} />
       <ProtectedRoute path="/communities" component={CommunitiesPage} />
-      <ProtectedRoute path="/profile/:username" component={ProfilePage} />
+      <ProtectedRoute path="/profile" component={ProfilePage} />
       <ProtectedRoute path="/mentors" component={MentorsPage} />
       <ProtectedRoute path="/notifications" component={NotificationsPage} />
       <ProtectedRoute path="/programs" component={ProgramsPage} />
@@ -35,6 +36,7 @@ function Router() {
       <ProtectedRoute path="/challenges" component={ChallengesPage} />
       <ProtectedRoute path="/settings" component={SettingsPage} />
       <ProtectedRoute path="/create" component={GoalsPage} />
+      <ProtectedRoute path="/chat" component={ChatPage} />
       <Route component={NotFound} />
     </Switch>
   );

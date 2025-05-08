@@ -1,5 +1,5 @@
 import React from 'react';
-import { View } from 'react-native';
+import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 
 // Import pages
@@ -9,10 +9,14 @@ import AddNew from '../Pages/Add New';
 import Mentors from '../Pages/Mentors';
 import Chats from '../Pages/Chats';
 import Settings from '../Pages/Settings';
+import Login from '../Pages/Login';
+import Register from '../Pages/Register';
 import Layout from '../components/Layout';
 import BottomBar from '../components/BottomBar';
+import Goals from '../Pages/Goals';
 
 const Tab = createBottomTabNavigator();
+const Stack = createStackNavigator();
 
 const withLayout = (Component: React.ComponentType<any>) => {
   return (props: any) => (
@@ -22,24 +26,38 @@ const withLayout = (Component: React.ComponentType<any>) => {
   );
 };
 
+const MainTabs = () => {
+  return (
+    <Tab.Navigator
+      initialRouteName="Home"
+      tabBar={props => <BottomBar {...props} />}
+      screenOptions={{
+        headerShown: false,
+      }}
+    >
+      <Tab.Screen name="Home" component={withLayout(Home)} />
+      <Tab.Screen name="Communities" component={withLayout(Communities)} />
+      <Tab.Screen name="AddNew" component={withLayout(AddNew)} />
+      <Tab.Screen name="Mentors" component={withLayout(Mentors)} />
+      <Tab.Screen name="Chats" component={withLayout(Chats)} />
+      <Tab.Screen name="Settings" component={withLayout(Settings)} />
+      <Tab.Screen name="Goals" component={Goals} />
+    </Tab.Navigator>
+  );
+};
+
 const AppNavigator = () => {
   return (
-    <View style={{ flex: 1 }}>
-      <Tab.Navigator
-        initialRouteName="Home"
-        tabBar={props => <BottomBar {...props} />}
-        screenOptions={{
-          headerShown: false,
-        }}
-      >
-        <Tab.Screen name="Home" component={withLayout(Home)} />
-        <Tab.Screen name="Communities" component={withLayout(Communities)} />
-        <Tab.Screen name="AddNew" component={withLayout(AddNew)} />
-        <Tab.Screen name="Mentors" component={withLayout(Mentors)} />
-        <Tab.Screen name="Chats" component={withLayout(Chats)} />
-        <Tab.Screen name="Settings" component={withLayout(Settings)} />
-      </Tab.Navigator>
-    </View>
+    <Stack.Navigator
+      initialRouteName="Login"
+      screenOptions={{
+        headerShown: false,
+      }}
+    >
+      <Stack.Screen name="Login" component={Login} />
+      <Stack.Screen name="Register" component={Register} />
+      <Stack.Screen name="Main" component={MainTabs} />
+    </Stack.Navigator>
   );
 };
 
