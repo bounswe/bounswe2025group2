@@ -31,8 +31,7 @@ class FitnessGoal(models.Model):
     ]
 
     user = models.ForeignKey(UserWithType, on_delete=models.CASCADE, related_name='goals')
-    mentor = models.ForeignKey(UserWithType, on_delete=models.SET_NULL, null=True, blank=True,
-                               related_name='assigned_goals')
+    mentor = models.ForeignKey(UserWithType, on_delete=models.SET_NULL, null=True, blank=True, related_name='assigned_goals')
     goal_type = models.CharField(max_length=20, choices=GOAL_TYPES)
     title = models.CharField(max_length=255)
     description = models.TextField(blank=True)
@@ -76,8 +75,7 @@ class Notification(models.Model):
     ]
 
     recipient = models.ForeignKey(UserWithType, on_delete=models.CASCADE, related_name='notifications')
-    sender = models.ForeignKey(UserWithType, on_delete=models.SET_NULL, null=True, blank=True,
-                               related_name='sent_notifications')
+    sender = models.ForeignKey(UserWithType, on_delete=models.SET_NULL, null=True, blank=True, related_name='sent_notifications')
     notification_type = models.CharField(max_length=20, choices=NOTIFICATION_TYPES)
     title = models.CharField(max_length=255)
     message = models.TextField()
@@ -86,7 +84,7 @@ class Notification(models.Model):
     is_read = models.BooleanField(default=False)
     is_email_sent = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
-
+    
     class Meta:
         ordering = ['-created_at']
 
@@ -113,8 +111,7 @@ class Profile(models.Model):
         if self.birth_date:
             from datetime import date
             today = date.today()
-            return today.year - self.birth_date.year - (
-                        (today.month, today.day) < (self.birth_date.month, self.birth_date.day))
+            return today.year - self.birth_date.year - ((today.month, today.day) < (self.birth_date.month, self.birth_date.day))
         return None
 
 
@@ -192,20 +189,19 @@ class Subcomment(models.Model):
     def __str__(self):
         return f'Subcomment by {self.author.username} on Comment {self.comment.id}'
 
-
 class Vote(models.Model):
     VOTE_TYPES = [
         ('UPVOTE', 'Upvote'),
         ('DOWNVOTE', 'Downvote')
     ]
-
+    
     user = models.ForeignKey(UserWithType, on_delete=models.CASCADE, related_name='votes')
-
+    
     # Generic relation fields
     content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
     object_id = models.PositiveIntegerField()
     content_object = GenericForeignKey('content_type', 'object_id')
-
+    
     vote_type = models.CharField(max_length=10, choices=VOTE_TYPES)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -219,14 +215,14 @@ class Vote(models.Model):
     @classmethod
     def create_or_update_vote(cls, user, content_object, new_vote_type):
         content_type = ContentType.objects.get_for_model(content_object)
-
+        
         vote, created = cls.objects.get_or_create(
             user=user,
             content_type=content_type,
             object_id=content_object.id,
             defaults={'vote_type': new_vote_type}
         )
-
+        
         if not created:
             # If changing from UPVOTE to something else, decrement like count
             if vote.vote_type == 'UPVOTE' and new_vote_type != 'UPVOTE':
@@ -239,7 +235,7 @@ class Vote(models.Model):
 
             vote.vote_type = new_vote_type
             vote.save()
-
+            
         return vote
 
     def update_content_like_count(self, increment=True):
@@ -260,3 +256,4 @@ class Vote(models.Model):
     def delete(self, *args, **kwargs):
         self.update_content_like_count(increment=False)
         super().delete(*args, **kwargs)
+
