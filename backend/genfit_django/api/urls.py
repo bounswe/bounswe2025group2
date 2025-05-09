@@ -17,6 +17,7 @@ urlpatterns = [
     path('user/', views.get_user, name='get_user'),
     path('users/', views.get_users, name='get_users'),
     path('change-password/', views.change_password, name='change_password'),
+    path('delete-account/', views.delete_account, name='delete_account'),
 
 
     # Notifications

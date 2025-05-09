@@ -199,7 +199,12 @@ class CommentSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         validated_data['author'] = self.context['request'].user
-        validated_data['thread_id'] = self.context.get('thread_id') 
+        thread_id = self.context.get('thread_id')
+        if not thread_id:
+            raise serializers.ValidationError("Thread ID is required in context.")
+
+        # Get the actual Thread instance
+        validated_data['thread'] = Thread.objects.get(id=thread_id)
         return Comment.objects.create(**validated_data)
 
     def update(self, instance, validated_data):
@@ -239,7 +244,11 @@ class SubcommentSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         validated_data['author'] = self.context['request'].user
-        validated_data['comment_id'] = self.context.get('comment_id') 
+        comment_id = self.context.get('comment_id')
+        if not comment_id:
+            raise serializers.ValidationError("Comment ID is required in context.")
+        # Get the actual Comment instance
+        validated_data['comment'] = Comment.objects.get(id=comment_id)
 
         return Subcomment.objects.create(**validated_data)
 

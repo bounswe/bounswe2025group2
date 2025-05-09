@@ -111,6 +111,16 @@ def change_password(request):
     return Response({"detail": "Password changed successfully."}, status=status.HTTP_200_OK)
 
 
+@api_view(['DELETE'])
+@permission_classes([IsAuthenticated])
+def delete_account(request):
+    user = request.user
+    user.delete()
+    return Response({"detail": "Account deleted successfully."}, status=status.HTTP_204_NO_CONTENT)
+
+
+
+
 # NOTIFICATION VIEWS
 # Get all notifications for a single user
 @api_view(['GET'])
