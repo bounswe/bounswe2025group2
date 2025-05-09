@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from django.contrib.auth import password_validation
 from django.core.validators import RegexValidator
 from django.contrib.auth import get_user_model
 from django.utils import timezone
@@ -288,6 +289,12 @@ class VoteSerializer(serializers.ModelSerializer):
             new_vote_type=vote_type
         )
         return vote
+
+
+class ChangePasswordSerializer(serializers.Serializer):
+    old_password = serializers.CharField(required=True)
+    new_password = serializers.CharField(required=True)
+
 
 
 
