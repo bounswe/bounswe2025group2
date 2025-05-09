@@ -8,17 +8,23 @@ from .separate_views import forum_comments
 from .separate_views import forum_vote
 
 
+
 urlpatterns = [
     path('register/', views.register, name='register'),
     path('verify-email/<str:uidb64>/<str:token>/', views.verify_email, name='verify_email'),
     path('login/', views.user_login, name='login'),
     path('logout/', views.user_logout, name='logout'),
+    path('user/', views.get_user, name='get_user'),
+    path('users/', views.get_users, name='get_users'),
+    path('change-password/', views.change_password, name='change_password'),
+    path('delete-account/', views.delete_account, name='delete_account'),
+
+
+    # Notifications
     path('notifications/', views.get_user_notifications, name='get_notifications'),
     path('notifications/<int:notification_id>/', views.get_single_notification, name='get_single_notification'),
     path('notifications/<int:notification_id>/read/', views.mark_notification_read, name='mark_notification_read'),
     path('notifications/read-all/', views.mark_all_notifications_read, name='mark_all_notifications_read'),
-    path('user/', views.get_user, name='get_user'),
-    path('users/', views.get_users, name='get_users'),
 
     # Fitness Goals URLs
     path('goals/', fitness_goals.fitness_goals, name='fitness_goals'),
