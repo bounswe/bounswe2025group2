@@ -17,7 +17,7 @@ export default function AvatarWithBadge({
   size = "md",
   role,
   verified = false,
-  className,
+  className
 }: AvatarWithBadgeProps) {
   // Define size classes
   const sizeClasses = {
@@ -49,7 +49,7 @@ export default function AvatarWithBadge({
     if (role === "coach") return "bg-subText text-text";
     return "bg-passive text-text";
   };
-  
+
   return (
     <div className={cn("relative inline-block", className)}>
       <Avatar className={sizeClasses[size]}>
@@ -58,8 +58,7 @@ export default function AvatarWithBadge({
           {fallback}
         </AvatarFallback>
       </Avatar>
-      
-      {/* Role badge */}
+
       {role && role !== "trainee" && (
         <div
           className={cn(
@@ -83,8 +82,7 @@ export default function AvatarWithBadge({
           )}
         </div>
       )}
-      
-      {/* Verification badge */}
+
       {verified && (
         <div
           className={cn(

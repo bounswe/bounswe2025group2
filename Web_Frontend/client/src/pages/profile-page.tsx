@@ -53,6 +53,57 @@ interface UserGoal {
     unit: string;
 }
 
+function getCsrfToken() {
+  const name = 'csrftoken';
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; ${name}=`);
+  if (parts.length === 2) {
+    const lastPart = parts.pop();
+    if (lastPart) {
+      const value = lastPart.split(';').shift();
+      return value ?? '';
+    }
+  }
+  return '';
+}
+
+const apiClient = {
+  fetch: (url: string, options: RequestInit = {}) => {
+    const csrfToken = getCsrfToken();
+    const defaultOptions: RequestInit = {
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': csrfToken,
+        ...options.headers
+      }
+    };
+
+    // Merge default options with provided options
+    const mergedOptions = {
+      ...defaultOptions,
+      ...options,
+      headers: {
+        ...defaultOptions.headers,
+        ...(options.headers || {})
+      }
+    };
+
+    return fetch(url, mergedOptions);
+  },
+
+  get: (url: string) => {
+    return apiClient.fetch(url);
+  },
+
+  post: (url: string, data: any, p0: { headers: { 'Content-Type': string; }; }) => {
+    return apiClient.fetch(url, {
+      method: 'POST',
+      body: JSON.stringify(data)
+    });
+  }
+};
+
 export default function ProfilePage() {
   const { user: currentUser, updateProfileMutation, applyForRoleMutation } = useAuth();
   // @ts-ignore
@@ -74,44 +125,122 @@ export default function ProfilePage() {
   // Fetch profile picture, this is sent to the front end server
   const { data: profilePicture, isLoading: profilePictureLoading } = useQuery({
     queryKey: ['api/profile/picture'],
+    queryFn: async () => {
+      try {
+        const res = await apiClient.get('http://localhost:8000/api/profile/picture/');
+
+        // Check if the response is successful
+        if (!res.ok) {
+          if (res.status === 401) {
+            console.error('Authentication required. Please log in.');
+            // Redirect to login if needed
+          }
+          throw new Error(`API error: ${res.status}`);
+        }
+
+        // Check if the response contains an image
+        const contentType = res.headers.get('Content-Type');
+        if (contentType && contentType.startsWith('image/')) {
+          // If it's an image, we handle it as a blob
+          const imageBlob = await res.blob();
+          const imageUrl = URL.createObjectURL(imageBlob);
+          return imageUrl; // Return the image URL
+        }
+
+        // If it's not an image, assume it's a JSON response and parse it
+        return res.json(); // This is where you'd handle other types of responses
+      } catch (err) {
+        console.error(err);
+        throw err; // Propagate error to be handled by useQuery
+      }
+    },
   });
+
 
   const { data: profileDetails, isLoading: profileDetailsLoading } = useQuery<UserProfileDetails>({
     queryKey: ['/api/profile/'],
+    queryFn: async () => {
+      try {
+        const res = await apiClient.get('http://localhost:8000/api/profile/');
+
+        // Check if the response is successful
+        if (!res.ok) {
+          if (res.status === 401) {
+            console.error('Authentication required. Please log in.');
+            // Redirect to login if needed
+          }
+          throw new Error(`API error: ${res.status}`);
+        }
+        const data = await res.json();
+        console.log("Profile Details:", data);
+        // If it's not an image, assume it's a JSON response and parse it
+        return data; // This is where you'd handle other types of responses
+      } catch (err) {
+        console.error(err);
+        throw err; // Propagate error to be handled by useQuery
+      }
+    },
   });
 
 
   // Upload profile picture mutation
   const uploadProfilePictureMutation = useMutation({
     mutationFn: async (file: File) => {
+      const csrfToken = getCsrfToken();
       const formData = new FormData();
-      formData.append('picture', file);
+      formData.append('profile_picture', file);
 
-      const res = await fetch('/api/profile/picture/upload/', {
-        method: 'POST',
+      console.log("File Type:", file.type);
+      console.log("File:", file);
+
+      const response = await fetch('http://localhost:8000/api/profile/picture/upload/', {
+        method: "POST",
         body: formData,
+        credentials: 'include',
+        headers: {
+          'X-CSRFToken': csrfToken
+        }
       });
 
-      if (!res.ok) throw new Error('Failed to upload profile picture');
-      return res.json();
+      if (!response.ok) {
+        throw new Error('Failed to upload profile picture');
+      }
+
+      return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['profile-picture'] });
+      queryClient.invalidateQueries({ queryKey: ['api/profile/picture'] });
+    },
+    onError: (error) => {
+      console.error('Error uploading profile picture:', error);
     }
   });
+
 
   // Delete profile picture mutation
   const deleteProfilePictureMutation = useMutation({
     mutationFn: async () => {
-      const res = await fetch('api/profile/picture/delete/', {
+      const csrfToken = getCsrfToken();
+
+      const response = await fetch('http://localhost:8000/api/profile/picture/delete/', {
         method: 'DELETE',
+        headers: {
+          'X-CSRFToken': csrfToken
+        },
+        credentials: 'include'
       });
 
-      if (!res.ok) throw new Error('Failed to delete profile picture');
-      return res.json();
+      if (!response.ok) {
+        throw new Error('Failed to delete profile picture');
+      }
+
+      return response.json(); // or response.text() if applicable
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['profile-picture'] });
+      queryClient.invalidateQueries({ queryKey: ['api/profile/picture'] });
+    },
+    onError: (error) => {
+      console.error('Error deleting profile picture:', error);
     }
   });
 
@@ -120,22 +249,11 @@ export default function ProfilePage() {
     queryKey: ['/api/user'],
   });
 
-  // const { data: userThreads, isLoading: threadsLoading } = useQuery({
-  //   queryKey: [`/api/forum/threads`, `user_${profileUser?.id}`],
-  //   queryFn: async () => {
-  //     const res = await fetch(`/api/forum/threads?userId=${profileUser?.id}`);
-  //     if (!res.ok) throw new Error("Failed to fetch user threads");
-  //     return res.json();
-  //   },
-  //   enabled: !!profileUser?.id,
-  // });
-
   // Fetch user's goals
   const { data: userGoals, isLoading: goalsLoading } = useQuery<UserGoal[]>({
     queryKey: ['/api/goals'],
   });
 
-  console.log("User Goals:", userGoals);
 
   // Set default values for editing
   useState(() => {
@@ -215,11 +333,12 @@ export default function ProfilePage() {
               <div className="flex flex-col md:flex-row items-center md:items-start gap-4">
                 <div className="relative">
                   {profileUser && (<AvatarWithBadge
-                    fallback={profileUser.username?.[0] || profileUser.username[0].toUpperCase()}
+                    fallback={profileUser.username[0].toUpperCase()}
 
                     size="lg"
                     role={username === "johndoe" ? "trainee" : username === "janedoe" ? "coach" : ""}
                     verified={username === "johndoe" || username === "janedoe"}
+                    src={profilePictureLoading?"":profilePicture}
                   />)}
                   {isOwnProfile && (
                     <div className="absolute -bottom-2 -left-2 right-0 flex justify-between">
@@ -608,19 +727,6 @@ export default function ProfilePage() {
                     </Card>
                   </div>
                 </TabsContent>
-
-                {/*{(profileUser.role === "mentor" || profileUser.role === "coach") && (*/}
-
-                {/*  <TabsContent value="mentees">*/}
-                {/*    <div className="text-center py-8 bg-card rounded-xl border border-border">*/}
-                {/*      <User className="h-12 w-12 text-muted-foreground mx-auto mb-4" />*/}
-                {/*      <h3 className="text-lg font-medium mb-2">No Mentees Yet</h3>*/}
-                {/*      <p className="text-muted-foreground mb-4">*/}
-                {/*        {username === "johndoe" ? "You don't have any mentees yet." : "You don't have any mentees yet."}*/}
-                {/*      </p>*/}
-                {/*    </div>*/}
-                {/*  </TabsContent>*/}
-                {/*)}*/}
               </Tabs>
             )}
           </div>
