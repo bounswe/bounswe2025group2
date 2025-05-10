@@ -1,8 +1,8 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, RefreshControl, ActivityIndicator } from "react-native";
-import { useFocusEffect } from "@react-navigation/native";
+const { useFocusEffect } = require("@react-navigation/native");
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { getToken } from "../utils/auth";
+const { getToken } = require("../utils/auth");
 
 const API_BASE_URL = "https://your-api-url.com"; // TODO: Replace with actual API base URL
 
