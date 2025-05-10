@@ -28,6 +28,8 @@ Fetches the authenticated user's profile information.
   ```json
   {
     "username": "johndoe123",
+    "name": "John",
+    "surname": "Doe",
     "bio": "This is my bio.",
     "location": "New York, USA",
     "birth_date": "1990-01-01",
@@ -39,7 +41,7 @@ Fetches the authenticated user's profile information.
 
 ### Update Profile Details 🔒
 
-Updates the authenticated user's profile information (bio, location, etc.).
+Updates the authenticated user's profile information (bio, location, name, surname, etc.).
 
 - **URL**: `/profile/`
 - **Method**: `PUT`
@@ -52,7 +54,9 @@ Updates the authenticated user's profile information (bio, location, etc.).
 {
   "bio": "Updated bio content",
   "location": "San Francisco, USA",
-  "birth_date": "1990-01-01"
+  "birth_date": "1990-01-01",
+  "name": "Updated Name",
+  "surname": "Updated Surname"
 }
 ```
 
@@ -61,6 +65,8 @@ Updates the authenticated user's profile information (bio, location, etc.).
 | bio         | string  | Yes      | User's biography or personal description         |
 | location    | string  | Yes      | User's location                                  |
 | birth_date  | string  | Yes      | User's birth date in format "YYYY-MM-DD"         |
+| name        | string  | Yes      | User's first name                                |
+| surname     | string  | Yes      | User's surname                                   |
 
 **Response**:
 
@@ -152,6 +158,8 @@ Fetches a specified user's profile by their username.
   ```json
   {
     "username": "janedoe123",
+    "name": "Jane",
+    "surname": "Doe",
     "bio": "Jane's bio",
     "location": "Los Angeles, USA",
     "birth_date": "1992-05-12",
@@ -184,4 +192,3 @@ Fetches a specified user's profile picture by their username.
     "image": "image_data"
   }
   ```
-

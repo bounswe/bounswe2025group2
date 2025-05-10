@@ -39,6 +39,8 @@ def profile_detail(request):
         return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
 
+
+
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 @parser_classes([MultiPartParser, FormParser])

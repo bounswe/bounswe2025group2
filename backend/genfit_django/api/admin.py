@@ -32,9 +32,9 @@ class FitnessGoalAdmin(admin.ModelAdmin):
 
 @admin.register(Profile)
 class ProfileAdmin(admin.ModelAdmin):
-    list_display   = ("user", "location", "created_at")
-    search_fields  = ("user__username", "location")
-    list_filter    = ("created_at", )
+    list_display   = ("user", "name", "surname", "location", "created_at")
+    search_fields  = ("user__username", "name", "surname", "location")
+    list_filter    = ("created_at",)
 
 @admin.register(Forum)
 class ForumAdmin(admin.ModelAdmin):

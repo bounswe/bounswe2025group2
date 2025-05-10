@@ -7,6 +7,8 @@ This document outlines the API endpoints for
 - logout
 - getting a notification and getting all notifications
 - marking a notification as read and marking all notifications as read
+- changing the password for an authenticated user
+- Deleting the account for an authenticated user
 
 
 ## Base URL
@@ -275,6 +277,78 @@ Marks all notifications as read for the currently authenticated user.
   "message": "Notifications marked as read"
 }
 ```
+
+### Change Password
+
+Allows an authenticated user to change their password.
+
+- **URL**: `/change-password/`
+- **Method**: `POST`
+- **Auth Required**: Yes
+- **Permissions**: IsAuthenticated
+
+**Request Body**:
+
+```json
+{
+  "old_password": "currentPassword",
+  "new_password": "newSecurePassword"
+}
+```
+
+| Field         | Type   | Required | Description                                |
+|---------------|--------|----------|--------------------------------------------|
+| old_password  | string | Yes      | The current password of the user           |
+| new_password  | string | Yes      | The new password to be set for the account |
+
+**Response**:
+
+- **Success (200 OK)**
+  ```json
+  {
+    "detail": "Password changed successfully."
+  }
+  ```
+
+- **Error (400 Bad Request)**
+
+  - Missing fields:
+    ```json
+    {
+      "detail": "Both old and new passwords are required."
+    }
+    ```
+
+  - Incorrect old password:
+    ```json
+    {
+      "old_password": "Wrong password."
+    }
+    ```
+    
+
+### Delete Account
+
+Deletes the currently authenticated user's account.
+
+- **URL**: `/delete-account/`
+- **Method**: `DELETE`
+- **Auth Required**: Yes
+- **Permissions**: IsAuthenticated
+
+**Request Body**: _None_
+
+
+**Response**:
+
+- **Success (204 No Content)**
+  ```json
+  {
+    "detail": "Account deleted successfully."
+  }
+  ```
+
+
 
 
 

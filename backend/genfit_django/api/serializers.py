@@ -1,6 +1,8 @@
 from rest_framework import serializers
+from django.contrib.auth import password_validation
 from django.core.validators import RegexValidator
 from django.contrib.auth import get_user_model
+from .models import Notification, UserWithType, FitnessGoal, Profile, Forum, Thread, Comment, Subcomment, Vote
 from django.utils import timezone
 from .models import Notification, UserWithType, FitnessGoal, Profile, Forum, Thread, Comment, Subcomment, Vote
 
@@ -135,7 +137,17 @@ class ProfileSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Profile
-        fields = ['username', 'bio', 'location', 'birth_date', 'age', 'created_at', 'updated_at']
+        fields = [
+            'username',
+            'name',
+            'surname',
+            'bio',
+            'location',
+            'birth_date',
+            'age',
+            'created_at',
+            'updated_at',
+        ]
         read_only_fields = ['username', 'created_at', 'updated_at']
 
 
@@ -198,7 +210,12 @@ class CommentSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         validated_data['author'] = self.context['request'].user
-        validated_data['thread_id'] = self.context.get('thread_id') 
+        thread_id = self.context.get('thread_id')
+        if not thread_id:
+            raise serializers.ValidationError("Thread ID is required in context.")
+
+        # Get the actual Thread instance
+        validated_data['thread'] = Thread.objects.get(id=thread_id)
         return Comment.objects.create(**validated_data)
 
     def update(self, instance, validated_data):
@@ -238,7 +255,11 @@ class SubcommentSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         validated_data['author'] = self.context['request'].user
-        validated_data['comment_id'] = self.context.get('comment_id') 
+        comment_id = self.context.get('comment_id')
+        if not comment_id:
+            raise serializers.ValidationError("Comment ID is required in context.")
+        # Get the actual Comment instance
+        validated_data['comment'] = Comment.objects.get(id=comment_id)
 
         return Subcomment.objects.create(**validated_data)
 
@@ -288,6 +309,12 @@ class VoteSerializer(serializers.ModelSerializer):
             new_vote_type=vote_type
         )
         return vote
+
+
+class ChangePasswordSerializer(serializers.Serializer):
+    old_password = serializers.CharField(required=True)
+    new_password = serializers.CharField(required=True)
+
 
 
 
