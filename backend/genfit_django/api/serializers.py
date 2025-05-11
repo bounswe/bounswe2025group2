@@ -2,11 +2,9 @@ from rest_framework import serializers
 from django.contrib.auth import password_validation
 from django.core.validators import RegexValidator
 from django.contrib.auth import get_user_model
-from .models import Notification, UserWithType, FitnessGoal, Profile, Forum, Thread, Comment, Subcomment, Vote
+from .models import Notification, UserWithType, FitnessGoal, Profile, Forum, Thread, Comment, Subcomment, Vote, Challenge, ChallengeParticipant
 from django.utils import timezone
-from .models import Notification, UserWithType, FitnessGoal, Profile, Forum, Thread, Comment, Subcomment, Vote
-from .models import Challenge
-from .utils.geocode import geocode_location
+from .utils import geocode_location
 
 User = get_user_model()
 
@@ -318,11 +316,15 @@ class ChangePasswordSerializer(serializers.Serializer):
 
 #Challenges
 class ChallengeSerializer(serializers.ModelSerializer):
+    is_active = serializers.SerializerMethodField()
+
     class Meta:
         model = Challenge
         fields = '__all__'
-        read_only_fields = ['coach', 'created_at']
+        read_only_fields = ['coach', 'created_at', 'is_active']
 
+    def get_is_active(self, obj):
+        return obj.is_active()
 
     def create(self, validated_data):
         request = self.context['request']
@@ -360,7 +362,7 @@ class ChallengeParticipantSerializer(serializers.ModelSerializer):
     class Meta:
         model = ChallengeParticipant
         fields = '__all__'
-        read_only_fields = ['user', 'joined_at', 'last_updated', 'finish_date']
+        read_only_fields = ['challenge', 'user', 'joined_at', 'last_updated', 'finish_date']
 
     def update(self, instance, validated_data):
         # First, call the parent update method to update other fields if necessary

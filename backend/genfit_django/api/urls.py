@@ -70,18 +70,18 @@ urlpatterns = [
     path('forum/vote/<str:content_type>/<int:object_id>/status/', forum_vote.get_user_vote, name='get_user_vote'),
 
     # Challenge-related views
-    path('challenges/<int:challenge_id>/', views.get_challenge_detail, name='get_challenge_detail'),
-    path('challenges/create/', views.create_challenge, name='create_challenge'),
-    path('challenges/<int:challenge_id>/update/', views.update_challenge, name='update_challenge'),
-    path('challenges/<int:challenge_id>/delete/', views.delete_challenge, name='delete_challenge'),
+    path('challenges/<int:challenge_id>/', challenges.get_challenge_detail, name='get_challenge_detail'),
+    path('challenges/create/', challenges.create_challenge, name='create_challenge'),
+    path('challenges/<int:challenge_id>/update/', challenges.update_challenge, name='update_challenge'),
+    path('challenges/<int:challenge_id>/delete/', challenges.delete_challenge, name='delete_challenge'),
 
     # Participant-related views
-    path('challenges/<int:challenge_id>/join/', views.join_challenge, name='join_challenge'),
-    path('challenges/<int:challenge_id>/leave/', views.leave_challenge, name='leave_challenge'),
-    path('challenges/<int:challenge_id>/update-progress/', views.update_progress, name='update_progress'),
+    path('challenges/<int:challenge_id>/join/', challenges.join_challenge, name='join_challenge'),
+    path('challenges/<int:challenge_id>/leave/', challenges.leave_challenge, name='leave_challenge'),
+    path('challenges/<int:challenge_id>/update-progress/', challenges.update_progress, name='update_progress'),
 
     # Leaderboard-related view
-    path('challenges/<int:challenge_id>/leaderboard/', views.challenge_leaderboard, name='challenge_leaderboard'),
+    path('challenges/<int:challenge_id>/leaderboard/', challenges.challenge_leaderboard, name='challenge_leaderboard'),
 ]
 
 router = DefaultRouter()

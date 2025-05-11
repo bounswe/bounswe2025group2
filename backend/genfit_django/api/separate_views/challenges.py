@@ -50,7 +50,7 @@ def update_challenge(request, challenge_id):
     if challenge.coach != request.user:
         return Response({"detail": "You do not have permission to update this challenge."}, status=status.HTTP_403_FORBIDDEN)
 
-    serializer = ChallengeSerializer(challenge, data=request.data, context={'request': request})
+    serializer = ChallengeSerializer(challenge, data=request.data, partial=True, context={'request': request})
     if serializer.is_valid():
         updated_challenge = serializer.save()
         return Response(ChallengeSerializer(updated_challenge).data, status=status.HTTP_200_OK)
@@ -72,6 +72,8 @@ def delete_challenge(request, challenge_id):
 @permission_classes([IsAuthenticated])
 def join_challenge(request, challenge_id):
     challenge = get_object_or_404(Challenge, id=challenge_id)
+    if not challenge.is_active():
+        return Response({"detail": "This challenge is not active"}, status=status.HTTP_403_FORBIDDEN)
     if ChallengeParticipant.objects.filter(challenge=challenge, user=request.user).exists():
         return Response({"detail": "You have already joined this challenge."}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -96,14 +98,17 @@ def leave_challenge(request, challenge_id):
 def update_progress(request, challenge_id):
     challenge = get_object_or_404(Challenge, id=challenge_id)
     participant = ChallengeParticipant.objects.filter(challenge=challenge, user=request.user).first()
+
+    if not challenge.is_active():
+        return Response({"detail": "This challenge is not active"}, status=status.HTTP_403_FORBIDDEN)
+
     if not participant:
         return Response({"detail": "You are not a participant of this challenge."}, status=status.HTTP_400_BAD_REQUEST)
 
     added_value = request.data.get('added_value')
-    if added_value is None:
-        return Response({"detail": "added_value is required."}, status=status.HTTP_400_BAD_REQUEST)
+    if added_value is not None:
+        participant.update_progress(added_value)
 
-    participant.update_progress(added_value)
     return Response({"detail": "Progress updated successfully!"}, status=status.HTTP_200_OK)
 
 
@@ -125,13 +130,12 @@ def challenge_leaderboard(request, challenge_id):
     for field in ['finish_date', 'progress', 'joined_at', 'username']:
         user_order = request.GET.get(field)
         if user_order == '-':
-            # Reverse order
-            if field == 'progress':
-                custom_order.append('current_value')  # Ascending progress
+            field_path = order_fields[field]
+            if field_path.startswith('-'):
+                custom_order.append(field_path[1:])  # reverse if already descending
             else:
-                custom_order.append(f'-{field}')
+                custom_order.append(f'-{field_path}')
         else:
-            # Default order
             custom_order.append(order_fields[field])
 
     participants = ChallengeParticipant.objects.filter(challenge=challenge).order_by(*custom_order)

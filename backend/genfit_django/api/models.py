@@ -3,6 +3,7 @@ from django.db import models
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes.fields import GenericRelation
+from django.utils import timezone
 
 
 class UserWithType(AbstractUser):
@@ -70,11 +71,11 @@ class Challenge(models.Model):
     location = models.CharField(max_length=255, blank=True, null=True)
     longitude = models.FloatField(null=True, blank=True)
     latitude = models.FloatField(null=True, blank=True)
-    start_date = models.DateTimeField()
+    start_date = models.DateTimeField(default=timezone.now)
     end_date = models.DateTimeField()
     created_at = models.DateTimeField(auto_now_add=True)
-    min_age = models.IntegerField()
-    max_age = models.IntegerField()
+    min_age = models.IntegerField(null=True, blank=True)
+    max_age = models.IntegerField(null=True, blank=True)
 
     def __str__(self):
         return self.title
