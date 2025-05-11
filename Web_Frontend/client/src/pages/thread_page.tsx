@@ -62,7 +62,7 @@ export default function ThreadPageWrapper() {
         }
     }, [threadsInfo]);
 
-    let {data: commentsInfo, isLoading: commentsInfoLoading} = useQuery({
+    let {data: commentsInfo, isLoading: commentsInfoLoading, refetch: refetchcomm} = useQuery({
         queryKey: ["comments"],
         queryFn: async () => {
             const csrfToken = getCsrfToken();
@@ -79,7 +79,32 @@ export default function ThreadPageWrapper() {
                 throw new Error('Failed to create thread');
             }
 
-            return response.json()
+            let data = await response.json();
+
+            const enrichedData = await Promise.all(
+                data.map(async (item: any) => {
+                    const csrfToken = getCsrfToken();
+                    const response = await fetch('http://localhost:8000/api/forum/vote/comment/' + item.id + "/status/", {
+                        method: "GET",
+                        credentials: 'include',
+                        headers: {
+                            'X-CSRFToken': csrfToken,
+                            'Content-Type': 'application/json'
+                        }
+                    });
+
+                    if (response.status === 200) {
+                        const rdata = await response.json();
+                        item.self_vote = rdata.vote_type === "UPVOTE" ? 1 : -1;
+                    } else {
+                        item.self_vote = 0;
+                    }
+
+                    return item;
+                })
+            );
+
+            return enrichedData;
         }
     })
 
@@ -129,6 +154,48 @@ export default function ThreadPageWrapper() {
         return response
     };
 
+    const handleUpvote = async(replyid:number) =>{
+        let comment_element = commentsInfo.filter((f: any) => f.id === replyid)[0]
+        comment_element.self_vote = 1;
+
+        const csrfToken = getCsrfToken();
+        const response = await fetch('http://localhost:8000/api/forum/vote/', {
+            method: "POST",
+            credentials: 'include',
+            headers: {
+                'X-CSRFToken': csrfToken,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({content_type: "COMMENT", object_id: replyid, vote_type: "UPVOTE"})
+        });
+        if (!response.ok) {
+            throw new Error('Failed to create thread');
+        }
+
+        refetchcomm();
+    }
+
+    const handleDownvote = async(replyid:number) => {
+        let comment_element = commentsInfo.filter((f: any) => f.id === replyid)[0]
+        comment_element.self_vote = -1;
+
+        const csrfToken = getCsrfToken();
+        const response = await fetch('http://localhost:8000/api/forum/vote/', {
+            method: "POST",
+            credentials: 'include',
+            headers: {
+                'X-CSRFToken': csrfToken,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({content_type: "COMMENT", object_id: replyid, vote_type: "DOWNVOTE"})
+        });
+        if (!response.ok) {
+            throw new Error('Failed to create thread');
+        }
+
+        refetchcomm();
+    }
+
 
     const handleReplyChange_subc = (event: React.ChangeEvent<HTMLInputElement>) => {
         setReply2(event.target.value);
@@ -157,6 +224,7 @@ export default function ThreadPageWrapper() {
         }
     };
 
+
     const postReplyToThread_subc = async (replyText: string) => {
         const csrfToken = getCsrfToken();
         const response = await fetch('http://localhost:8000/api/subcomments/add/' + selectedComment.id + "/", {
@@ -176,11 +244,45 @@ export default function ThreadPageWrapper() {
         return response
     };
 
+    const handleupvote_subc = async (subc_id: number) => {
+        let subcomment_element = subcomments.filter((f: any) => f.id === subc_id)[0]
+        subcomment_element.self_vote = 1;
 
+        const csrfToken = getCsrfToken();
+        const response = await fetch('http://localhost:8000/api/forum/vote/', {
+            method: "POST",
+            credentials: 'include',
+            headers: {
+                'X-CSRFToken': csrfToken,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({content_type: "SUBCOMMENT", object_id: subc_id, vote_type: "UPVOTE"})
+        });
+        if (!response.ok) {
+            throw new Error('Failed to create thread');
+        }
+        fetch_subcomments_data(selectedComment.id);
+    }
 
-    const handleUpvote = async(replyid:number) =>{}
+    const handledownvote_subc = async (subc_id: number) => {
+        let subcomment_element = subcomments.filter((f: any) => f.id === subc_id)[0]
+        subcomment_element.self_vote = -1;
 
-    const handleDownvote = async(replyid:number) => {}
+        const csrfToken = getCsrfToken();
+        const response = await fetch('http://localhost:8000/api/forum/vote/', {
+            method: "POST",
+            credentials: 'include',
+            headers: {
+                'X-CSRFToken': csrfToken,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({content_type: "SUBCOMMENT", object_id: subc_id, vote_type: "DOWNVOTE"})
+        });
+        if (!response.ok) {
+            throw new Error('Failed to create thread');
+        }
+        fetch_subcomments_data(selectedComment.id);
+    }
 
 
     const [selectedComment, setSelectedComment] = useState<any>(null);
@@ -200,7 +302,32 @@ export default function ThreadPageWrapper() {
             throw new Error('Failed to create thread');
         }
 
-        const data = await response.json()
+        let data = await response.json();
+
+        data = await Promise.all(
+            data.map(async (item: any) => {
+                const csrfToken = getCsrfToken();
+                const response = await fetch('http://localhost:8000/api/forum/vote/subcomment/' + item.id + "/status/", {
+                    method: "GET",
+                    credentials: 'include',
+                    headers: {
+                        'X-CSRFToken': csrfToken,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (response.status === 200) {
+                    const rdata = await response.json();
+                    item.self_vote = rdata.vote_type === "UPVOTE" ? 1 : -1;
+                } else {
+                    item.self_vote = 0;
+                }
+
+                return item;
+            })
+        );
+
+
         setSubcomments(data)
         setSelectedComment(commentsInfo.filter((f: any) => f.id === replyid)[0])
         console.log("reply id: ", replyid)
@@ -288,11 +415,15 @@ export default function ThreadPageWrapper() {
                                                         {/* Upvote, Downvote, and Subcomment Count */}
                                                         <div className="flex items-center gap-6 text-sm text-gray-500 mb-2">
                                                             <div className="flex items-center gap-4">
-                                                                <button className="flex items-center gap-1" onClick={() => handleUpvote(reply.id)}>
+                                                                <button className={`flex items-center gap-1 ${
+                                                                    reply.self_vote === 1 ? 'text-blue-500' : ''}`}
+                                                                        onClick={() => handleUpvote(reply.id)}>
                                                                     <span>{reply.like_count ?? 0}</span>
                                                                     <ThumbsUp className="w-4 h-4" />
                                                                 </button>
-                                                                <button className="flex items-center gap-1" onClick={() => handleDownvote(reply.id)}>
+                                                                <button className={`flex items-center gap-1 ${
+                                                                    reply.self_vote === -1 ? 'text-blue-500' : ''}`}
+                                                                        onClick={() => handleDownvote(reply.id)}>
                                                                     <ThumbsDown className="w-4 h-4" />
                                                                 </button>
                                                             </div>
@@ -317,7 +448,7 @@ export default function ThreadPageWrapper() {
                                                 placeholder="Write a reply..."
                                                 className="border p-2 rounded"
                                             />
-                                            <button onClick={handlePostReply_subc} className="bg-primary text-white p-2 rounded mt-2">
+                                            <button onClick={handlePostReply} className="bg-primary text-white p-2 rounded mt-2">
                                                 Post Reply
                                             </button>
                                         </div>
@@ -356,16 +487,37 @@ export default function ThreadPageWrapper() {
                                                     </div>
                                                 </div>
 
-                                                <h3 className="text-xl font-semibold mb-4">Subcomments</h3>
+                                                <h3 className="text-xl font-semibold mb-4">Further Discussion</h3>
                                                 {subcomments?.map((subcomment: any, idx: any) => (
-                                                    <div key={idx} className="border rounded-lg p-4 bg-muted mb-4">
-                                                        <div className="text-sm text-gray-600 mb-2 flex justify-between">
-                                                            <span>
-                                                                <strong className="text-primary">{subcomment.author_id}</strong> replied
-                                                            </span>
-                                                            <span>{format(new Date(subcomment.created_at), "MMM d, HH:mm")}</span>
+                                                    <div key={idx}>
+                                                        <div className="border rounded-lg p-4 bg-muted mb-4">
+                                                            <div className="text-sm text-gray-600 mb-2 flex justify-between">
+                                                                <span>
+                                                                    <strong className="text-primary">{subcomment.author_id}</strong> replied
+                                                                </span>
+                                                                <span>{format(new Date(subcomment.created_at), "MMM d, HH:mm")}</span>
+                                                            </div>
+                                                            <p className="text-sm text-gray-800">{subcomment.content}</p>
+
+
+                                                            {/* Upvote, Downvote, and Subcomment Count */}
+                                                            <div className="flex items-center gap-6 text-sm text-gray-500 mb-2">
+                                                                <div className="flex items-center gap-4">
+                                                                    <button className={`flex items-center gap-1 ${
+                                                                        subcomment.self_vote === 1 ? 'text-blue-500' : ''}`}
+                                                                            onClick={() => handleupvote_subc(subcomment.id)}>
+                                                                        <span>{subcomment.like_count ?? 0}</span>
+                                                                        <ThumbsUp className="w-4 h-4" />
+                                                                    </button>
+                                                                    <button className={`flex items-center gap-1 ${
+                                                                            subcomment.self_vote === -1 ? 'text-blue-500' : ''
+                                                                            }`}
+                                                                                onClick={() => handledownvote_subc(subcomment.id)}>
+                                                                        <ThumbsDown className="w-4 h-4" />
+                                                                    </button>
+                                                                </div>
+                                                            </div>
                                                         </div>
-                                                        <p className="text-sm text-gray-800">{subcomment.content}</p>
                                                     </div>
                                                 ))}
 
