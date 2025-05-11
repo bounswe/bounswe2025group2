@@ -95,16 +95,6 @@ class ChallengeParticipant(models.Model):
     class Meta:
         unique_together = ('challenge', 'user')
 
-    @property
-    def progress_percentage(self):
-        try:
-            if self.challenge.target_value > 0:
-                return min(100, (self.current_value / self.challenge.target_value) * 100)
-            else:
-                return 0
-        except:
-            return 0
-
     def update_progress(self, added_value):
         self.current_value += added_value
         if self.current_value >= self.challenge.target_value and self.finish_date is None:
