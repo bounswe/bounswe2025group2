@@ -16,6 +16,7 @@ import ChatPage from "@/pages/chat-page";
 import { ProtectedRoute } from "./lib/protected-route";
 import { AuthProvider } from "./hooks/use-auth";
 import { ThemeProvider } from "./theme/ThemeContext";
+import ThreadPageWrapper from "@/pages/thread_page.tsx";
 
 console.log("VITE_API_URL is:", import.meta.env.VITE_API_URL);
 
@@ -25,6 +26,7 @@ function Router() {
     <Switch>
       <Route path="/auth" component={AuthPage} />
       <ProtectedRoute path="/" component={HomePage} />
+      <ProtectedRoute path="/forum/:id" component={ThreadPageWrapper} />
       <ProtectedRoute path="/forum" component={ForumPage} />
       <ProtectedRoute path="/communities" component={CommunitiesPage} />
       <ProtectedRoute path="/profile" component={ProfilePage} />
