@@ -2,9 +2,8 @@ from rest_framework import serializers
 from django.contrib.auth import password_validation
 from django.core.validators import RegexValidator
 from django.contrib.auth import get_user_model
-from .models import Notification, UserWithType, FitnessGoal, Profile, Forum, Thread, Comment, Subcomment, Vote
+from .models import Notification, UserWithType, FitnessGoal, Profile, Forum, Thread, Comment, Subcomment, Vote, AiTutorChat, AiTutorResponse, UserAiMessage
 from django.utils import timezone
-from .models import Notification, UserWithType, FitnessGoal, Profile, Forum, Thread, Comment, Subcomment, Vote
 
 
 User = get_user_model()
@@ -316,5 +315,21 @@ class ChangePasswordSerializer(serializers.Serializer):
     new_password = serializers.CharField(required=True)
 
 
+class AiTutorChatSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = AiTutorChat
+        fields = ['id', 'chat_id', 'user', 'created_at', 'updated_at']
+        read_only_fields = ['created_at', 'updated_at', 'chat_id', 'user']
 
+class AiTutorResponseSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = AiTutorResponse
+        fields = ['id', 'chat', 'response', 'created_at', 'updated_at']
+        read_only_fields = ['created_at', 'updated_at']
+
+class UserAiMessageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UserAiMessage
+        fields = ['id', 'user', 'chat', 'message', 'created_at', 'updated_at']
+        read_only_fields = ['created_at', 'updated_at']
 
