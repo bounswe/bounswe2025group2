@@ -35,6 +35,25 @@ class Command(BaseCommand):
         self.stdout.write(self.style.SUCCESS('Database population completed successfully!'))
     
     def create_users(self):
+
+        self.stdout.write('Creating superuser...')
+        
+        # Create a superuser
+        try:
+            if not User.objects.filter(username='admin').exists():
+                superuser = User.objects.create_superuser(
+                    username='berkaybgk',
+                    email='berkay@gmail.com',
+                    password='password123',
+                    user_type='User',  
+                )
+                superuser.is_active = True
+                superuser.is_verified_coach = False  
+                superuser.save()
+                self.stdout.write(self.style.SUCCESS("Created superuser: berkaybgk"))
+        except Exception as e:
+            self.stdout.write(self.style.ERROR(f"Error creating superuser: {e}"))
+        
         self.stdout.write('Creating users...')
         
         # Create regular users

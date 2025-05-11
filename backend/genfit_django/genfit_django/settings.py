@@ -112,7 +112,7 @@ DATABASES = {
         'NAME': os.environ.get('POSTGRES_DB', 'group2db'),
         'USER': os.environ.get('POSTGRES_USER', 'group2'),
         'PASSWORD': os.environ.get('POSTGRES_PASSWORD', 'group2'),
-        'HOST': os.environ.get('POSTGRES_HOST', 'localhost'),
+        'HOST': 'localhost',
         'PORT': os.environ.get('POSTGRES_PORT', '5432'),
     }
 }
@@ -174,7 +174,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # Session Settings
 SESSION_ENGINE = 'django.contrib.sessions.backends.db'
 SESSION_COOKIE_AGE = 1209600  # 2 weeks in seconds
-SESSION_COOKIE_SECURE = True  # Only send cookie over HTTPS
+SESSION_COOKIE_SECURE = False  # Only send cookie over HTTPS
 SESSION_COOKIE_HTTPONLY = True  # Prevent JavaScript access to session cookie
 SESSION_COOKIE_SAMESITE = 'Lax'  # CSRF protection
 
