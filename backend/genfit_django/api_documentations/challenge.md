@@ -100,7 +100,7 @@ Note:
 
 ### Update Challenge
 
-- **URL**: `/challenges/update/{challenge_id}/`
+- **URL**: `/challenges/{challenge_id}/update/`
 - **Method**: `PUT`
 - **Auth Required**: Yes (Coach who created the challenge only)
 
@@ -132,7 +132,7 @@ Note:
 
 ### Delete Challenge
 
-- **URL**: `/challenges/delete/{challenge_id}/`
+- **URL**: `/challenges/{challenge_id}/delete/`
 - **Method**: `DELETE`
 - **Auth Required**: Yes (Coach who created the challenge only)
 
@@ -148,7 +148,7 @@ Note:
 
 ### Join Challenge
 
-- **URL**: `/challenges/join/{challenge_id}/`
+- **URL**: `/challenges/{challenge_id}/join/`
 - **Method**: `POST`
 - **Auth Required**: Yes
 
@@ -167,7 +167,7 @@ Note:
 
 ### Leave Challenge
 
-- **URL**: `/challenges/leave/{challenge_id}/`
+- **URL**: `/challenges/{challenge_id}/leave/`
 - **Method**: `POST`
 - **Auth Required**: Yes
 
@@ -185,7 +185,7 @@ Note:
 
 ### Update Progress
 
-- **URL**: `/challenges/progress/{challenge_id}/`
+- **URL**: `/challenges/{challenge_id}/update-progress/`
 - **Method**: `POST`
 - **Auth Required**: Yes
 
@@ -223,7 +223,7 @@ which will equilize current value to 10
 
 ### Challenge Leaderboard
 
-- **URL**: `/challenges/leaderboard/{challenge_id}/`
+- **URL**: `/challenges/{challenge_id}/leaderboard/`
 - **Method**: `GET`
 - **Auth Required**: Yes
 
@@ -236,3 +236,41 @@ which will equilize current value to 10
 
 **Response**:
 - **Success (200 OK)**: List of participants ordered by specified fields
+```json
+[
+  {
+    "id": 1,
+    "challenge": 123,
+    "user": 456,
+    "username": "john_doe",
+    "current_value": 12000,
+    "joined_at": "2025-06-01T00:00:00Z",
+    "last_updated": "2025-06-10T10:30:00Z",
+    "finish_date": "2025-06-09T16:45:00Z"
+  },
+  {
+    "id": 2,
+    "challenge": 123,
+    "user": 789,
+    "username": "jane_smith",
+    "current_value": 11500,
+    "joined_at": "2025-06-02T00:00:00Z",
+    "last_updated": "2025-06-11T12:00:00Z",
+    "finish_date": "2025-06-11T09:00:00Z"
+  },
+  {
+    "id": 3,
+    "challenge": 123,
+    "user": 1011,
+    "username": "alice_jones",
+    "current_value": 11000,
+    "joined_at": "2025-06-03T00:00:00Z",
+    "last_updated": "2025-06-12T14:15:00Z",
+    "finish_date": "2025-06-12T12:00:00Z"
+  }
+]
+```
+
+**Note:** The url will return leaderboard based on descending progress and ascending for other fields. 
+To reverse this an URL similar to the `/api/challenges/leaderboard/5/?progress=-&joined_at=-` can be used. 
+Any fields with - will be reversed in the response 
