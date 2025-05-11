@@ -1,7 +1,8 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
 
 // Add API base URL configuration
-const API_BASE_URL = "http://localhost:8000"; // Update this to match your backend server URL
+export const API_BASE_URL = "http://localhost:8000"; // Update this to match your backend server URL
+export const WEB_SOCKET_URL = "ws://localhost:8000"; // Update this to match your backend server URL
 
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {

@@ -262,3 +262,31 @@ class Vote(models.Model):
     def delete(self, *args, **kwargs):
         self.update_content_like_count(increment=False)
         super().delete(*args, **kwargs)
+
+class AiTutorChat(models.Model):
+    user = models.ForeignKey(UserWithType, on_delete=models.CASCADE, related_name='ai_chats')
+    chat_id = models.CharField(max_length=255, unique=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"Chat {self.chat_id} for {self.user.username}"
+
+class AiTutorResponse(models.Model):
+    chat = models.ForeignKey(AiTutorChat, on_delete=models.CASCADE, related_name='responses')
+    response = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"Response for Chat {self.chat.chat_id}"
+
+class UserAiMessage(models.Model):
+    user = models.ForeignKey(UserWithType, on_delete=models.CASCADE, related_name='ai_messages')
+    chat = models.ForeignKey(AiTutorChat, on_delete=models.CASCADE, related_name='user_messages')
+    message = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"Message from {self.user.username} in Chat {self.chat.chat_id}"
