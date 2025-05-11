@@ -3,6 +3,8 @@ from django.db import models
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes.fields import GenericRelation
+from django.db.models.signals import post_save
+from django.dispatch import receiver
 
 
 class UserWithType(AbstractUser):
@@ -118,6 +120,17 @@ class Profile(models.Model):
             return today.year - self.birth_date.year - (
                         (today.month, today.day) < (self.birth_date.month, self.birth_date.day))
         return None
+
+
+# Signal to create profile when a new user is created
+@receiver(post_save, sender=UserWithType)
+def create_user_profile(sender, instance, created, **kwargs):
+    if created:
+        Profile.objects.create(user=instance)
+
+@receiver(post_save, sender=UserWithType)
+def save_user_profile(sender, instance, **kwargs):
+    instance.profile.save()
 
 
 class Forum(models.Model):
@@ -290,3 +303,4 @@ class UserAiMessage(models.Model):
 
     def __str__(self):
         return f"Message from {self.user.username} in Chat {self.chat.chat_id}"
+
