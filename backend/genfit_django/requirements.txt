@@ -9,6 +9,5 @@ sqlparse==0.5.3
 tzdata==2025.2
 daphne==4.1.2
 channels==4.2.2
-requests==2.28.1
 groq==0.24.0
 requests==2.31.0
