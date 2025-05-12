@@ -14,6 +14,7 @@ import Register from '../Pages/Register';
 import Layout from '../components/Layout';
 import BottomBar from '../components/BottomBar';
 import Goals from '../Pages/Goals';
+import Notifications from '../Pages/Notifications';
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -42,6 +43,7 @@ const MainTabs = () => {
       <Tab.Screen name="Chats" component={withLayout(Chats)} />
       <Tab.Screen name="Settings" component={withLayout(Settings)} />
       <Tab.Screen name="Goals" component={Goals} />
+      <Tab.Screen name="Notifications" component={withLayout(Notifications)} />
     </Tab.Navigator>
   );
 };
@@ -61,4 +63,4 @@ const AppNavigator = () => {
   );
 };
 
-export default AppNavigator; 
+export default AppNavigator;

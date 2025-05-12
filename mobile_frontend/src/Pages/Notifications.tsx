@@ -1,34 +1,68 @@
 import React, { useEffect, useState, useCallback } from "react";
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, RefreshControl, ActivityIndicator } from "react-native";
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, RefreshControl, ActivityIndicator, Alert } from "react-native";
 const { useFocusEffect } = require("@react-navigation/native");
-import AsyncStorage from "@react-native-async-storage/async-storage";
-const { getToken } = require("../utils/auth");
+const AsyncStorage = require("@react-native-async-storage/async-storage").default;
 
-const API_BASE_URL = "https://your-api-url.com"; // TODO: Replace with actual API base URL
 
-const fetchNotifications = async (token) => {
+// Define types for better type safety
+interface Notification {
+  id: number;
+  message: string;
+  created_at: string;
+  is_read: boolean;
+}
+
+const API_BASE_URL = "http://10.0.2.2:8000/api"; // Using Android emulator localhost
+
+const fetchNotifications = async () => {
   const res = await fetch(`${API_BASE_URL}/notifications/`, {
-    headers: { Authorization: `Bearer ${token}` },
+    headers: { 
+      'Content-Type': 'application/json'
+    },
+    credentials: 'include'
   });
-  if (!res.ok) throw new Error("Failed to fetch notifications");
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error.error || "Failed to fetch notifications");
+  }
   return res.json();
 };
 
-const markAsRead = async (id, token) => {
-  await fetch(`${API_BASE_URL}/notifications/${id}/mark-as-read/`, {
+const markAsRead = async (id: number) => {
+  const csrfToken = await AsyncStorage.getItem('@csrf_token');
+  const res = await fetch(`${API_BASE_URL}/notifications/${id}/mark-as-read/`, {
     method: "PATCH",
-    headers: { Authorization: `Bearer ${token}` },
+    headers: { 
+      'Content-Type': 'application/json',
+      'X-CSRFToken': csrfToken || ''
+    },
+    credentials: 'include'
   });
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error.error || "Failed to mark notification as read");
+  }
+  return res.json();
 };
 
-const markAllAsRead = async (token) => {
-  await fetch(`${API_BASE_URL}/notifications/mark-all-as-read/`, {
+const markAllAsRead = async () => {
+  const csrfToken = await AsyncStorage.getItem('@csrf_token');
+  const res = await fetch(`${API_BASE_URL}/notifications/mark-all-as-read/`, {
     method: "PATCH",
-    headers: { Authorization: `Bearer ${token}` },
+    headers: { 
+      'Content-Type': 'application/json',
+      'X-CSRFToken': csrfToken || ''
+    },
+    credentials: 'include'
   });
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error.error || "Failed to mark all notifications as read");
+  }
+  return res.json();
 };
 
-const NotificationItem = ({ item, onPress }) => (
+const NotificationItem = ({ item, onPress }: { item: Notification; onPress: () => void }) => (
   <TouchableOpacity
     style={[styles.notification, item.is_read ? styles.read : styles.unread]}
     onPress={onPress}
@@ -39,29 +73,21 @@ const NotificationItem = ({ item, onPress }) => (
 );
 
 const Notifications = () => {
-  const [notifications, setNotifications] = useState([]);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [token, setToken] = useState("");
-
-  const loadToken = async () => {
-    const t = await getToken();
-    setToken(t);
-    return t;
-  };
-
   const loadNotifications = useCallback(async () => {
     setLoading(true);
     try {
-      const t = token || (await loadToken());
-      const data = await fetchNotifications(t);
+      const data = await fetchNotifications();
       setNotifications(data);
     } catch (e) {
-      // handle error
+      console.error('Failed to load notifications:', e);
+      Alert.alert('Error', e instanceof Error ? e.message : 'Failed to load notifications');
     } finally {
       setLoading(false);
     }
-  }, [token]);
+  }, []);
 
   useFocusEffect(
     useCallback(() => {
@@ -75,18 +101,24 @@ const Notifications = () => {
     setRefreshing(false);
   };
 
-  const handleMarkAsRead = async (id) => {
+  const handleMarkAsRead = async (id: number) => {
     try {
-      await markAsRead(id, token);
+      await markAsRead(id);
       await loadNotifications();
-    } catch (e) {}
+    } catch (e) {
+      console.error('Failed to mark notification as read:', e);
+      Alert.alert('Error', e instanceof Error ? e.message : 'Failed to mark notification as read');
+    }
   };
 
   const handleMarkAllAsRead = async () => {
     try {
-      await markAllAsRead(token);
+      await markAllAsRead();
       await loadNotifications();
-    } catch (e) {}
+    } catch (e) {
+      console.error('Failed to mark all notifications as read:', e);
+      Alert.alert('Error', e instanceof Error ? e.message : 'Failed to mark all notifications as read');
+    }
   };
 
   if (loading) {
@@ -103,10 +135,10 @@ const Notifications = () => {
           <Text style={styles.markAll}>Mark all as read</Text>
         </TouchableOpacity>
       </View>
-      <FlatList
+      <FlatList<Notification>
         data={notifications}
-        keyExtractor={(item) => item.id.toString()}
-        renderItem={({ item }) => (
+        keyExtractor={(item: Notification) => item.id.toString()}
+        renderItem={({ item }: { item: Notification }) => (
           <NotificationItem item={item} onPress={() => handleMarkAsRead(item.id)} />
         )}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
