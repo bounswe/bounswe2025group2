@@ -18,8 +18,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { User, Loader2, Settings, Edit, Camera, Trophy, MessageSquare, Target } from "lucide-react";
-import {useMutation, useQuery} from "@tanstack/react-query";
-import {queryClient} from "@/lib/queryClient.ts";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { queryClient } from "@/lib/queryClient.ts";
 
 interface UserFields {
   email: string;
@@ -38,19 +38,19 @@ interface UserProfileDetails {
 }
 
 interface UserGoal {
-    description: string;
-    goal_type: string;
-    id: number;
-    last_updated: string;
-    setting_mentor_id: number;
-    progress_percentage: number;
-    start_date: string;
-    status: string;
-    target_date: string;
-    current_value: number;
-    target_value: number;
-    title: string;
-    unit: string;
+  description: string;
+  goal_type: string;
+  id: number;
+  last_updated: string;
+  setting_mentor_id: number;
+  progress_percentage: number;
+  start_date: string;
+  status: string;
+  target_date: string;
+  current_value: number;
+  target_value: number;
+  title: string;
+  unit: string;
 }
 
 function getCsrfToken() {
@@ -338,7 +338,7 @@ export default function ProfilePage() {
                     size="lg"
                     role={username === "johndoe" ? "trainee" : username === "janedoe" ? "coach" : ""}
                     verified={username === "johndoe" || username === "janedoe"}
-                    src={profilePictureLoading?"":profilePicture}
+                    src={profilePictureLoading ? "" : profilePicture}
                   />)}
                   {isOwnProfile && (
                     <div className="absolute -bottom-2 -left-2 right-0 flex justify-between">
@@ -563,7 +563,10 @@ export default function ProfilePage() {
                     <div className="bg-primary inline-flex p-2 rounded-full mb-2">
                       <Target className="h-6 w-6 text-secondary-dark" />
                     </div>
-                    <h3 className="text-xl font-bold">0</h3>
+                    <h3 className="text-xl font-bold">
+                      {userGoals?.filter(goal => goal.status === 'ACTIVE').length ?? 0}
+                    </h3>
+
                     <p className="text-muted-foreground text-sm">Active Goals</p>
                   </CardContent>
                 </Card>
