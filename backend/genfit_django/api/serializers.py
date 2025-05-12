@@ -2,9 +2,11 @@ from rest_framework import serializers
 from django.contrib.auth import password_validation
 from django.core.validators import RegexValidator
 from django.contrib.auth import get_user_model
-from .models import Notification, UserWithType, FitnessGoal, Profile, Forum, Thread, Comment, Subcomment, Vote, Challenge, ChallengeParticipant
 from django.utils import timezone
 from .utils import geocode_location
+from .models import Notification, UserWithType, FitnessGoal, Profile, Forum, Thread, Comment, Subcomment, Vote, Challenge, ChallengeParticipant, AiTutorChat, AiTutorResponse, UserAiMessage
+from django.utils import timezone
+
 
 User = get_user_model()
 
@@ -41,7 +43,7 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         )
 
         # Create profile for the new user
-        Profile.objects.create(user=user)
+        #Profile.objects.create(user=user)
 
         if user.user_type == 'Coach' and verification_file:
             # Handle verification file for coach
@@ -378,5 +380,21 @@ class ChallengeParticipantSerializer(serializers.ModelSerializer):
     def get_username(self, obj):
         return obj.user.username
 
+class AiTutorChatSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = AiTutorChat
+        fields = ['id', 'chat_id', 'user', 'created_at', 'updated_at']
+        read_only_fields = ['created_at', 'updated_at', 'chat_id', 'user']
 
+class AiTutorResponseSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = AiTutorResponse
+        fields = ['id', 'chat', 'response', 'created_at', 'updated_at']
+        read_only_fields = ['created_at', 'updated_at']
+
+class UserAiMessageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UserAiMessage
+        fields = ['id', 'user', 'chat', 'message', 'created_at', 'updated_at']
+        read_only_fields = ['created_at', 'updated_at']
 

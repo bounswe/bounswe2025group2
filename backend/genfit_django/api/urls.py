@@ -7,6 +7,7 @@ from .separate_views.forum_forumthread import ForumViewSet, ThreadViewSet
 from .separate_views import forum_comments
 from .separate_views import forum_vote
 from .separate_views import challenges
+from .separate_views.ai_tutor_views import AiTutorViewSet
 
 
 
@@ -87,5 +88,6 @@ urlpatterns = [
 router = DefaultRouter()
 router.register(r'forums', ForumViewSet)
 router.register(r'threads', ThreadViewSet)
+router.register(r'ai-tutor', AiTutorViewSet, basename='ai-tutor')
 
 urlpatterns += router.urls

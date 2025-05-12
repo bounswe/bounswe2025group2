@@ -1,5 +1,7 @@
 from django.contrib import admin
 from .models import UserWithType, Notification, FitnessGoal, Profile, Forum, Thread, Comment, Subcomment, Vote, Challenge, ChallengeParticipant
+from .models import UserWithType, Notification, FitnessGoal, Profile, Forum, Thread, Comment, Subcomment, Vote, AiTutorChat, AiTutorResponse, UserAiMessage
+
 
 @admin.register(UserWithType)
 class UserWithTypeAdmin(admin.ModelAdmin):
@@ -106,6 +108,7 @@ class VoteAdmin(admin.ModelAdmin):
             obj.update_content_like_count(increment=False)
         queryset.delete()
 
+
 # Admin for Challenge model
 @admin.register(Challenge)
 class ChallengeAdmin(admin.ModelAdmin):
@@ -129,3 +132,22 @@ class ChallengeParticipantAdmin(admin.ModelAdmin):
     search_fields = ('user__username', 'challenge__title')
     ordering = ('-joined_at',)
     readonly_fields = ('joined_at', 'last_updated', 'finish_date')
+
+@admin.register(AiTutorChat)
+class AiTutorChatAdmin(admin.ModelAdmin):
+    list_display = ('user', 'created_at', 'updated_at')
+    search_fields = ('user__username',)
+    readonly_fields = ('created_at', 'updated_at')
+
+@admin.register(AiTutorResponse)
+class AiTutorResponseAdmin(admin.ModelAdmin):
+    list_display = ('chat', 'response', 'created_at')
+    search_fields = ('chat__user__username', 'response')
+    readonly_fields = ('created_at',)
+
+@admin.register(UserAiMessage)
+class UserAiMessageAdmin(admin.ModelAdmin):
+    list_display = ('chat', 'message', 'created_at')
+    search_fields = ('chat__user__username', 'message')
+    readonly_fields = ('created_at',)
+
