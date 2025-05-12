@@ -5,6 +5,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes.fields import GenericRelation
 from django.db.models.signals import post_save
 from django.dispatch import receiver
+from django.utils import timezone
 
 
 class UserWithType(AbstractUser):
@@ -304,3 +305,14 @@ class UserAiMessage(models.Model):
     def __str__(self):
         return f"Message from {self.user.username} in Chat {self.chat.chat_id}"
 
+
+class Quote(models.Model):
+    text = models.TextField()
+    author = models.CharField(max_length=100)
+    fetched_at = models.DateTimeField(default=timezone.now)
+    
+    class Meta:
+        ordering = ['-fetched_at']
+    
+    def __str__(self):
+        return f'"{self.text}" - {self.author}'
