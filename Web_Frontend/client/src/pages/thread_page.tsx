@@ -381,10 +381,6 @@ export default function ThreadPageWrapper() {
                                                 );
                                             })()}
                                             <div className="flex items-center gap-2">
-                                                <ThumbsUp className="w-4 h-4" />
-                                                <span>{threadInfo.like_count}</span>
-                                            </div>
-                                            <div className="flex items-center gap-2">
                                                 <MessageCircle className="w-4 h-4" />
                                                 <span>{threadInfo.comment_count}</span>
                                             </div>
@@ -399,7 +395,7 @@ export default function ThreadPageWrapper() {
                                                     <div key={idx} className="border rounded-lg p-4 bg-muted">
                                                         <div className="text-sm text-gray-600 mb-2 flex justify-between">
                                                             <span>
-                                                                <strong className="text-primary">{reply.author_id}</strong> replied
+                                                                <strong className="text-primary">{reply.author_username}</strong> replied
                                                             </span>
                                                             {(() => {
                                                                 const date = new Date(reply.created_at);
@@ -467,7 +463,7 @@ export default function ThreadPageWrapper() {
                                                 {/* Metadata */}
                                                 <div className="flex items-center text-sm text-gray-500 mb-6 gap-4 flex-wrap">
                                                     <span>
-                                                        By <strong className="text-primary">{selectedComment.author_id}</strong>
+                                                        By <strong className="text-primary">{selectedComment.author_username}</strong>
                                                     </span>
                                                     {(() => {
                                                         const date = new Date(selectedComment.created_at);
@@ -477,10 +473,6 @@ export default function ThreadPageWrapper() {
                                                             <span>Invalid date</span>
                                                         );
                                                     })()}
-                                                    <div className="flex items-center gap-2">
-                                                        <ThumbsUp className="w-4 h-4" />
-                                                        <span>{selectedComment.like_count}</span>
-                                                    </div>
                                                     <div className="flex items-center gap-2">
                                                         <MessageCircle className="w-4 h-4" />
                                                         <span>{selectedComment.subcomment_count}</span>
@@ -493,7 +485,7 @@ export default function ThreadPageWrapper() {
                                                         <div className="border rounded-lg p-4 bg-muted mb-4">
                                                             <div className="text-sm text-gray-600 mb-2 flex justify-between">
                                                                 <span>
-                                                                    <strong className="text-primary">{subcomment.author_id}</strong> replied
+                                                                    <strong className="text-primary">{subcomment.author_username}</strong> replied
                                                                 </span>
                                                                 <span>{format(new Date(subcomment.created_at), "MMM d, HH:mm")}</span>
                                                             </div>

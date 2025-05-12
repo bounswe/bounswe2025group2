@@ -353,10 +353,6 @@ export default function ForumPage() {
                               {thread.author}
                             </span>
                             <div className="flex items-center gap-2">
-                              <ThumbsUp className="h-4 w-4" />
-                              <span>{thread.like_count}</span>
-                            </div>
-                            <div className="flex items-center gap-2">
                               <MessageCircle className="h-4 w-4" />
                               <span>{thread.comment_count}</span>
                             </div>
@@ -364,7 +360,7 @@ export default function ForumPage() {
                               <span>Last activity:</span>
                               <span>
                                 {thread.updated_at
-                                    ? `${formatDistanceToNow(new Date(thread.updated_at), { addSuffix: true })}`
+                                    ? `${formatDistanceToNow(new Date(thread.last_activity), { addSuffix: true })}`
                                   : "Unknown"}
                               </span>
                             </div>

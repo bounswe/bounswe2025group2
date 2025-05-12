@@ -72,7 +72,6 @@ def upload_profile_picture(request):
 
     profile.profile_picture = file
     profile.save()
-
     return Response({'message': 'Profile picture uploaded successfully'}, status=status.HTTP_200_OK)
 
 

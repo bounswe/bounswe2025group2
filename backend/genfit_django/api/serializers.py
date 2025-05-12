@@ -192,12 +192,14 @@ class ThreadDetailSerializer(serializers.ModelSerializer):
 class CommentSerializer(serializers.ModelSerializer):
     author_id = serializers.IntegerField(source='author.id', read_only=True)
     thread_id = serializers.IntegerField(source='thread.id', read_only=True)
+    author_username = serializers.CharField(source='author.username', read_only=True)
 
     class Meta:
         model = Comment
         fields = [
             'id',
             'author_id',
+            'author_username',
             'thread_id',
             'content',
             'like_count',
@@ -238,12 +240,14 @@ class CommentSerializer(serializers.ModelSerializer):
 class SubcommentSerializer(serializers.ModelSerializer):
     author_id = serializers.IntegerField(source='author.id', read_only=True)
     comment_id = serializers.IntegerField(source='comment.id', read_only=True)
+    author_username = serializers.CharField(source='author.username', read_only=True)
 
     class Meta:
         model = Subcomment
         fields = [
             'id',
             'author_id',
+            'author_username',
             'comment_id',
             'content',
             'like_count',
