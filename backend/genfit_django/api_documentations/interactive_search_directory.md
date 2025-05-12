@@ -18,8 +18,8 @@ Query your challenge catalogue with flexible filters for activity status, user p
 | -------------------- | ------- | ------- | ----------------------------------------------------------------------------------------------------------------------------- |
 | `is_active`          | boolean | —       | `true` → only challenges currently in progress (`start_date ≤ now ≤ end_date`).`false` → upcoming or past challenges.         |
 | `user_participating` | boolean | —       | `true` → challenges that **include** the authenticated user in `participants`.`false` → challenges that **exclude** the user. |
-| `min_age`            | integer | —       | Lower age bound; returns challenges whose `min_age ≥` this value.                                                             |
-| `max_age`            | integer | —       | Upper age bound; returns challenges whose `max_age ≤` this value.                                                             |
+| `min_age`            | integer | —       | Lower age bound; returns challenges whose `min_age ≤` this value.                                                             |
+| `max_age`            | integer | —       | Upper age bound; returns challenges whose `max_age ≥` this value.                                                             |
 | `location`           | string  | —       | Free‑form place or address; server geocodes to lat/lon, then applies radius filter.                                           |
 | `radius_km`          | number  | `10`    | Search radius *in kilometres* around `location`. Ignored if `location` is not supplied.                                       |
 
@@ -86,6 +86,12 @@ curl -G https://api.example.com/api/challenges/search/ \
   --data-urlencode "max_age=30" \
   --data-urlencode "location=Kadıköy, Istanbul" \
   --data-urlencode "radius_km=5"
+```
+
+### Find challenges suitable for a 20-year-old participant
+
+```bash
+http://localhost:8000/api/challenges/search/?min_age=20&max_age=20
 ```
 
 ### Django URLConf snippet

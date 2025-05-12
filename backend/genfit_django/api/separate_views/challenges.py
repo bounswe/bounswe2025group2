@@ -185,9 +185,9 @@ def search_challenges(request):
 
     # Filter by age range
     if min_age is not None:
-        challenges = challenges.filter(Q(min_age__gte=min_age) | Q(min_age__isnull=True))
+        challenges = challenges.filter(Q(min_age__lte=min_age) | Q(min_age__isnull=True))
     if max_age is not None:
-        challenges = challenges.filter(Q(max_age__lte=max_age) | Q(max_age__isnull=True))
+        challenges = challenges.filter(Q(max_age__gte=max_age) | Q(max_age__isnull=True))
 
     # Filter by location proximity
     if location:
