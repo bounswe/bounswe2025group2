@@ -69,6 +69,12 @@ Query your challenge catalogue with flexible filters for activity status, user p
 
 ## Examples
 
+### Local Development Example
+
+```bash
+http://localhost:8000/api/challenges/search/?min_age=18&max_age=30&location=Kad%C4%B1k%C3%B6y,+Istanbul&radius_km=5
+```
+
 ### Fetch active challenges within 5 km of Kadıköy that the user is already joining (ages 18‑30)
 
 ```bash
