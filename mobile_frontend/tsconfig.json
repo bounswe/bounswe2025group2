@@ -9,11 +9,13 @@
       "@constants/*": ["src/constants/*"],
       "@assets/*": ["src/assets/*"]
     },
-    "moduleResolution": "node16",
-    "module": "Node16",
+    "moduleResolution": "node",
+    "module": "commonjs",
     "resolveJsonModule": true,
     "allowJs": true,
-    "jsx": "react-native"
+    "jsx": "react-native",
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true
   },
   "include": [
     "src/**/*",
