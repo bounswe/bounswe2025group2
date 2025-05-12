@@ -18,8 +18,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { User, Loader2, Settings, Edit, Camera, Trophy, MessageSquare, Target } from "lucide-react";
-import {useMutation, useQuery} from "@tanstack/react-query";
-import {queryClient} from "@/lib/queryClient.ts";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { queryClient } from "@/lib/queryClient.ts";
 
 interface UserFields {
   email: string;
@@ -30,6 +30,7 @@ interface UserFields {
 }
 
 interface UserProfileDetails {
+  surname: string;
   age: string;
   bio: string;
   birth_date: string;
@@ -38,19 +39,19 @@ interface UserProfileDetails {
 }
 
 interface UserGoal {
-    description: string;
-    goal_type: string;
-    id: number;
-    last_updated: string;
-    setting_mentor_id: number;
-    progress_percentage: number;
-    start_date: string;
-    status: string;
-    target_date: string;
-    current_value: number;
-    target_value: number;
-    title: string;
-    unit: string;
+  description: string;
+  goal_type: string;
+  id: number;
+  last_updated: string;
+  setting_mentor_id: number;
+  progress_percentage: number;
+  start_date: string;
+  status: string;
+  target_date: string;
+  current_value: number;
+  target_value: number;
+  title: string;
+  unit: string;
 }
 
 function getCsrfToken() {
@@ -105,17 +106,56 @@ const apiClient = {
 };
 
 export default function ProfilePage() {
-  const { user: currentUser, updateProfileMutation, applyForRoleMutation } = useAuth();
+
+  const { user: currentUser, applyForRoleMutation } = useAuth();
+
+  const updateProfileMutation = useMutation({
+    mutationFn: async (data: {
+      name: string;
+      surname: string;
+      bio: string;
+      location: string;
+      birth_date: string;
+    }) => {
+      const csrfToken = getCsrfToken();
+
+      const res = await fetch('http://localhost:8000/api/profile/', {
+        method: 'PUT',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': csrfToken
+        },
+        body: JSON.stringify(data)
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || 'Failed to update profile');
+      }
+
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/profile/'] });
+    },
+    onError: (error) => {
+      console.error("Update failed:", error);
+    }
+  });
+
   // @ts-ignore
   const username = currentUser.username
   const [isEditing, setIsEditing] = useState(false);
   const [editedProfile, setEditedProfile] = useState({
     name: "",
+    surname: "",
     bio: "",
+    location: "",
+    birth_date: "",
     interests: [] as string[],
     visibility: "public",
     role: "",
-    location: "",
     age: "",
   });
 
@@ -256,17 +296,20 @@ export default function ProfilePage() {
 
 
   // Set default values for editing
-  useState(() => {
+  useEffect(() => {
     if (profileDetails) {
-      setEditedProfile({
-        interests: [], role: "", visibility: "",
+      setEditedProfile(prev => ({
+        ...prev,
         name: profileDetails.name || "",
-        location: profileDetails.location || "",
         bio: profileDetails.bio || "",
-        age: profileDetails.age || ""
-      });
+        location: profileDetails.location || "",
+        age: profileDetails.age || "",
+        birth_date: profileDetails.birth_date || "",
+        surname: profileDetails.surname || ""
+      }));
     }
-  });
+  }, [profileDetails]);
+
 
   const isOwnProfile = currentUser?.id === profileUser?.id;
   const isPrivateProfile = false;
@@ -276,16 +319,13 @@ export default function ProfilePage() {
 
     updateProfileMutation.mutate({
       name: editedProfile.name,
+      surname: editedProfile.surname,
       bio: editedProfile.bio,
-      interests: editedProfile.interests,
-      visibility: editedProfile.visibility
-    }, {
-      onSuccess: () => {
-        setIsEditing(false);
-      }
+      location: editedProfile.location,
+      birth_date: editedProfile.birth_date
     });
-
   };
+
 
   const handleApplyForRole = (role: string) => {
     if (!isOwnProfile) return;
@@ -338,7 +378,7 @@ export default function ProfilePage() {
                     size="lg"
                     role={username === "johndoe" ? "trainee" : username === "janedoe" ? "coach" : ""}
                     verified={username === "johndoe" || username === "janedoe"}
-                    src={profilePictureLoading?"":profilePicture}
+                    src={profilePictureLoading ? "" : profilePicture}
                   />)}
                   {isOwnProfile && (
                     <div className="absolute -bottom-2 -left-2 right-0 flex justify-between">
@@ -492,6 +532,27 @@ export default function ProfilePage() {
                       </div>
 
                       <div className="space-y-2">
+                        <Label htmlFor="surname">Surname</Label>
+                        <Input
+                          id="surname"
+                          value={editedProfile.surname}
+                          onChange={(e) => setEditedProfile({ ...editedProfile, surname: e.target.value })}
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="birth_date">Birth Date</Label>
+                        <Input
+                          id="birth_date"
+                          type="date"
+                          value={editedProfile.birth_date}
+                          onChange={(e) => setEditedProfile({ ...editedProfile, birth_date: e.target.value })}
+                        />
+                      </div>
+
+
+
+                      <div className="space-y-2">
                         <Label>Interests</Label>
                         <div className="flex flex-wrap gap-2 mb-2">
                           {editedProfile.interests.map((interest, index) => (
@@ -563,7 +624,10 @@ export default function ProfilePage() {
                     <div className="bg-primary inline-flex p-2 rounded-full mb-2">
                       <Target className="h-6 w-6 text-secondary-dark" />
                     </div>
-                    <h3 className="text-xl font-bold">0</h3>
+                    <h3 className="text-xl font-bold">
+                      {userGoals?.filter(goal => goal.status === 'ACTIVE').length ?? 0}
+                    </h3>
+
                     <p className="text-muted-foreground text-sm">Active Goals</p>
                   </CardContent>
                 </Card>
@@ -736,3 +800,4 @@ export default function ProfilePage() {
     </div>
   );
 }
+
