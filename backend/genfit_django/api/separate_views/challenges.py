@@ -195,8 +195,14 @@ def search_challenges(request):
         lat, lon = geocode_location(location)
         if lat is not None and lon is not None:
             # Convert radius from km to degrees (approximate)
-            radius_deg = float(radius_km) / 111.32
-
+            if radius_km:
+                try:
+                    radius_deg = float(radius_km) / 111.32
+                except ValueError:
+                    return Response(
+                        {"error": "Invalid radius value. Must be a valid number."},
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
             # Filter challenges within the radius
             challenges = challenges.filter(
                 latitude__isnull=False,

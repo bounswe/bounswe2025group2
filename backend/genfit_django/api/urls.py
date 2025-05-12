@@ -89,7 +89,7 @@ urlpatterns = [
     path('challenges/<int:challenge_id>/leaderboard/', challenges.challenge_leaderboard, name='challenge_leaderboard'),
 
     # Interactive search directory for challenges
-    path('challenges/search/', challenges.search_challenges, name='search_challenges'),
+    path('challenges/search/', challenges.search_challenges, name='search-challenges'),
 ]
 
 router = DefaultRouter()
