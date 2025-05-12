@@ -7,7 +7,7 @@ from .separate_views.forum_forumthread import ForumViewSet, ThreadViewSet
 from .separate_views import forum_comments
 from .separate_views import forum_vote
 from .separate_views.ai_tutor_views import AiTutorViewSet
-
+from .separate_views import quote_views
 
 
 urlpatterns = [
@@ -26,6 +26,10 @@ urlpatterns = [
     path('notifications/<int:notification_id>/', views.get_single_notification, name='get_single_notification'),
     path('notifications/<int:notification_id>/read/', views.mark_notification_read, name='mark_notification_read'),
     path('notifications/read-all/', views.mark_all_notifications_read, name='mark_all_notifications_read'),
+
+    # Quote endpoints
+    path('quotes/random/', quote_views.get_random_quote, name='get_random_quote'),
+    path('quotes/daily/', quote_views.get_daily_quote, name='get_daily_quote'),
 
     # Fitness Goals URLs
     path('goals/', fitness_goals.fitness_goals, name='fitness_goals'),
