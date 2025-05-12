@@ -39,6 +39,8 @@ def profile_detail(request):
         return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
 
+
+
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 @parser_classes([MultiPartParser, FormParser])
@@ -70,7 +72,6 @@ def upload_profile_picture(request):
 
     profile.profile_picture = file
     profile.save()
-
     return Response({'message': 'Profile picture uploaded successfully'}, status=status.HTTP_200_OK)
 
 

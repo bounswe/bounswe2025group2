@@ -1,8 +1,11 @@
 from rest_framework import serializers
+from django.contrib.auth import password_validation
 from django.core.validators import RegexValidator
 from django.contrib.auth import get_user_model
 from django.utils import timezone
-from .models import Notification, UserWithType, FitnessGoal, Profile, Forum, Thread, Comment, Subcomment, Vote
+from .utils import geocode_location
+from .models import Notification, UserWithType, FitnessGoal, Profile, Forum, Thread, Comment, Subcomment, Vote, Challenge, ChallengeParticipant, AiTutorChat, AiTutorResponse, UserAiMessage
+from django.utils import timezone
 
 
 User = get_user_model()
@@ -40,7 +43,7 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         )
 
         # Create profile for the new user
-        Profile.objects.create(user=user)
+        #Profile.objects.create(user=user)
 
         if user.user_type == 'Coach' and verification_file:
             # Handle verification file for coach
@@ -135,7 +138,17 @@ class ProfileSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Profile
-        fields = ['username', 'bio', 'location', 'birth_date', 'age', 'created_at', 'updated_at']
+        fields = [
+            'username',
+            'name',
+            'surname',
+            'bio',
+            'location',
+            'birth_date',
+            'age',
+            'created_at',
+            'updated_at',
+        ]
         read_only_fields = ['username', 'created_at', 'updated_at']
 
 
@@ -181,12 +194,14 @@ class ThreadDetailSerializer(serializers.ModelSerializer):
 class CommentSerializer(serializers.ModelSerializer):
     author_id = serializers.IntegerField(source='author.id', read_only=True)
     thread_id = serializers.IntegerField(source='thread.id', read_only=True)
+    author_username = serializers.CharField(source='author.username', read_only=True)
 
     class Meta:
         model = Comment
         fields = [
             'id',
             'author_id',
+            'author_username',
             'thread_id',
             'content',
             'like_count',
@@ -198,7 +213,12 @@ class CommentSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         validated_data['author'] = self.context['request'].user
-        validated_data['thread_id'] = self.context.get('thread_id') 
+        thread_id = self.context.get('thread_id')
+        if not thread_id:
+            raise serializers.ValidationError("Thread ID is required in context.")
+
+        # Get the actual Thread instance
+        validated_data['thread'] = Thread.objects.get(id=thread_id)
         return Comment.objects.create(**validated_data)
 
     def update(self, instance, validated_data):
@@ -222,12 +242,14 @@ class CommentSerializer(serializers.ModelSerializer):
 class SubcommentSerializer(serializers.ModelSerializer):
     author_id = serializers.IntegerField(source='author.id', read_only=True)
     comment_id = serializers.IntegerField(source='comment.id', read_only=True)
+    author_username = serializers.CharField(source='author.username', read_only=True)
 
     class Meta:
         model = Subcomment
         fields = [
             'id',
             'author_id',
+            'author_username',
             'comment_id',
             'content',
             'like_count',
@@ -238,7 +260,11 @@ class SubcommentSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         validated_data['author'] = self.context['request'].user
-        validated_data['comment_id'] = self.context.get('comment_id') 
+        comment_id = self.context.get('comment_id')
+        if not comment_id:
+            raise serializers.ValidationError("Comment ID is required in context.")
+        # Get the actual Comment instance
+        validated_data['comment'] = Comment.objects.get(id=comment_id)
 
         return Subcomment.objects.create(**validated_data)
 
@@ -290,4 +316,89 @@ class VoteSerializer(serializers.ModelSerializer):
         return vote
 
 
+class ChangePasswordSerializer(serializers.Serializer):
+    old_password = serializers.CharField(required=True)
+    new_password = serializers.CharField(required=True)
+
+#Challenges
+class ChallengeSerializer(serializers.ModelSerializer):
+    is_active = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Challenge
+        fields = '__all__'
+        read_only_fields = ['coach', 'created_at', 'is_active']
+
+    def get_is_active(self, obj):
+        return obj.is_active()
+
+    def create(self, validated_data):
+        request = self.context['request']
+        user = request.user
+
+        validated_data['coach'] = user
+
+        # Auto-geocode if location is provided but lat/lon are missing
+        location = validated_data.get('location')
+        if (not validated_data.get('latitude') or not validated_data.get('longitude')) and location:
+            lat, lon = geocode_location(location)
+            validated_data['latitude'] = lat
+            validated_data['longitude'] = lon
+
+        return super().create(validated_data)
+
+    def update(self, instance, validated_data):
+        # Auto-geocode if location is updated but lat/lon are missing
+        location = validated_data.get('location', instance.location)
+        lat = validated_data.get('latitude', instance.latitude)
+        lon = validated_data.get('longitude', instance.longitude)
+
+        if (lat is None or lon is None) and location:
+            lat, lon = geocode_location(location)
+            validated_data['latitude'] = lat
+            validated_data['longitude'] = lon
+
+        return super().update(instance, validated_data)
+
+
+
+class ChallengeParticipantSerializer(serializers.ModelSerializer):
+    username = serializers.SerializerMethodField()
+
+    class Meta:
+        model = ChallengeParticipant
+        fields = '__all__'
+        read_only_fields = ['challenge', 'user', 'joined_at', 'last_updated', 'finish_date']
+
+    def update(self, instance, validated_data):
+        # First, call the parent update method to update other fields if necessary
+        instance = super().update(instance, validated_data)
+
+        # Now, update the progress (if `added_value` is provided)
+        added_value = validated_data.get('current_value', None)
+        if added_value is not None:
+            instance.update_progress(added_value)
+
+        return instance
+
+    def get_username(self, obj):
+        return obj.user.username
+
+class AiTutorChatSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = AiTutorChat
+        fields = ['id', 'chat_id', 'user', 'created_at', 'updated_at']
+        read_only_fields = ['created_at', 'updated_at', 'chat_id', 'user']
+
+class AiTutorResponseSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = AiTutorResponse
+        fields = ['id', 'chat', 'response', 'created_at', 'updated_at']
+        read_only_fields = ['created_at', 'updated_at']
+
+class UserAiMessageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UserAiMessage
+        fields = ['id', 'user', 'chat', 'message', 'created_at', 'updated_at']
+        read_only_fields = ['created_at', 'updated_at']
 

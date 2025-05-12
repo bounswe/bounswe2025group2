@@ -1,5 +1,7 @@
 from django.contrib import admin
-from .models import UserWithType, Notification, FitnessGoal, Profile, Forum, Thread, Comment, Subcomment, Vote
+from .models import UserWithType, Notification, FitnessGoal, Profile, Forum, Thread, Comment, Subcomment, Vote, Challenge, ChallengeParticipant
+from .models import UserWithType, Notification, FitnessGoal, Profile, Forum, Thread, Comment, Subcomment, Vote, AiTutorChat, AiTutorResponse, UserAiMessage
+
 
 @admin.register(UserWithType)
 class UserWithTypeAdmin(admin.ModelAdmin):
@@ -32,9 +34,9 @@ class FitnessGoalAdmin(admin.ModelAdmin):
 
 @admin.register(Profile)
 class ProfileAdmin(admin.ModelAdmin):
-    list_display   = ("user", "location", "created_at")
-    search_fields  = ("user__username", "location")
-    list_filter    = ("created_at", )
+    list_display   = ("user", "name", "surname", "location", "created_at")
+    search_fields  = ("user__username", "name", "surname", "location")
+    list_filter    = ("created_at",)
 
 @admin.register(Forum)
 class ForumAdmin(admin.ModelAdmin):
@@ -105,3 +107,47 @@ class VoteAdmin(admin.ModelAdmin):
         for obj in queryset:
             obj.update_content_like_count(increment=False)
         queryset.delete()
+
+
+# Admin for Challenge model
+@admin.register(Challenge)
+class ChallengeAdmin(admin.ModelAdmin):
+    list_display = ('title', 'coach', 'start_date', 'end_date', 'target_value', 'unit', 'is_active')
+    list_filter = ('challenge_type', 'coach', 'start_date', 'end_date', 'created_at')
+    search_fields = ('title', 'description', 'coach__username')
+    ordering = ('-start_date',)
+    readonly_fields = ('created_at',)
+
+    def is_active(self, obj):
+        return obj.is_active()
+    is_active.boolean = True
+    is_active.short_description = 'Active'
+
+
+# Admin for ChallengeParticipant model
+@admin.register(ChallengeParticipant)
+class ChallengeParticipantAdmin(admin.ModelAdmin):
+    list_display = ('user', 'challenge', 'current_value', 'joined_at', 'finish_date')
+    list_filter = ('challenge', 'user', 'joined_at', 'finish_date')
+    search_fields = ('user__username', 'challenge__title')
+    ordering = ('-joined_at',)
+    readonly_fields = ('joined_at', 'last_updated', 'finish_date')
+
+@admin.register(AiTutorChat)
+class AiTutorChatAdmin(admin.ModelAdmin):
+    list_display = ('user', 'created_at', 'updated_at')
+    search_fields = ('user__username',)
+    readonly_fields = ('created_at', 'updated_at')
+
+@admin.register(AiTutorResponse)
+class AiTutorResponseAdmin(admin.ModelAdmin):
+    list_display = ('chat', 'response', 'created_at')
+    search_fields = ('chat__user__username', 'response')
+    readonly_fields = ('created_at',)
+
+@admin.register(UserAiMessage)
+class UserAiMessageAdmin(admin.ModelAdmin):
+    list_display = ('chat', 'message', 'created_at')
+    search_fields = ('chat__user__username', 'message')
+    readonly_fields = ('created_at',)
+

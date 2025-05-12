@@ -3,7 +3,7 @@ version: '3.8'
 services:
   postgres:
     image: postgres:15
-    container_name: group2
+    container_name: group2_standalone
     environment:
       POSTGRES_DB: group2db
       POSTGRES_USER: group2

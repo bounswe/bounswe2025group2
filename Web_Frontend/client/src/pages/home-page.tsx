@@ -6,6 +6,7 @@ import MobileNavigation from "@/components/layout/mobile-navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Loader2, ArrowRight, Trophy, Users, Calendar, MapPin, Search, UserCircle } from "lucide-react";
+import { QuoteDailyCard } from "@/components/ui/quote-daily-card";
 import { Link, useLocation } from "wouter";
 import { useTheme } from "@/theme/ThemeContext";
 import { cn } from "@/lib/utils";
@@ -71,6 +72,13 @@ export default function HomePage() {
     const challengesLoading = false;
     const programsLoading = false;
     const threadsLoading = false;
+
+  // Display daily motivational quote
+  const quotedailySection = (
+    <div className="mb-6">
+      <QuoteDailyCard />
+    </div>
+  );
 
   // MOCK DATA START - GOAL PROGRESSES - DESIGN CAN BE CHANGED OR DATA CAN BE REMOVED DURING IMPLEMENTATION
   const mockGoalProgresses = [
@@ -208,6 +216,9 @@ export default function HomePage() {
                 </div>
               </div>
             </section>
+
+            {/* Daily Quote Section */}
+            {quotedailySection}
 
             {/* Dashboard Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">

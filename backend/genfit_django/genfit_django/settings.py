@@ -28,7 +28,11 @@ SECRET_KEY = 'django-insecure-p6p*^^1$rp!n(^wo$dqu72al_wq^+5v#kw=8lw#)1i9h5qgq42
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['localhost', '127.0.0.1', '10.0.2.2']
+ALLOWED_HOSTS = ['localhost',
+                 '127.0.0.1',
+                 '10.0.2.2',
+                 '165.232.79.200',
+                ]
 
 # For now, we are allowing all hosts. In production, we should specify your domain.
 CORS_ALLOW_ALL_ORIGINS = True
@@ -37,7 +41,8 @@ CORS_ALLOW_CREDENTIALS = True
 
 CSRF_TRUSTED_ORIGINS = [
     'http://localhost:3000',
-    'http://localhost:5000'
+    'http://localhost:5000',
+    'http://10.0.2.2:8000'
 ]
 
 
@@ -108,7 +113,7 @@ DATABASES = {
         'NAME': os.environ.get('POSTGRES_DB', 'group2db'),
         'USER': os.environ.get('POSTGRES_USER', 'group2'),
         'PASSWORD': os.environ.get('POSTGRES_PASSWORD', 'group2'),
-        'HOST': os.environ.get('POSTGRES_HOST', 'localhost'),
+        'HOST': 'localhost',
         'PORT': os.environ.get('POSTGRES_PORT', '5432'),
     }
 }
@@ -116,7 +121,8 @@ DATABASES = {
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5000", 
-    "http://localhost:8000" 
+    "http://localhost:8000",
+    "http://10.0.2.2:8000"
 ]
 
 
@@ -170,7 +176,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # Session Settings
 SESSION_ENGINE = 'django.contrib.sessions.backends.db'
 SESSION_COOKIE_AGE = 1209600  # 2 weeks in seconds
-SESSION_COOKIE_SECURE = True  # Only send cookie over HTTPS
+SESSION_COOKIE_SECURE = False  # Only send cookie over HTTPS
 SESSION_COOKIE_HTTPONLY = True  # Prevent JavaScript access to session cookie
 SESSION_COOKIE_SAMESITE = 'Lax'  # CSRF protection
 

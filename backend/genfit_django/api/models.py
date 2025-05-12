@@ -3,6 +3,11 @@ from django.db import models
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes.fields import GenericRelation
+from django.utils import timezone
+from django.db.models.signals import post_save
+from django.dispatch import receiver
+from django.utils import timezone
+
 
 
 class UserWithType(AbstractUser):
@@ -31,7 +36,8 @@ class FitnessGoal(models.Model):
     ]
 
     user = models.ForeignKey(UserWithType, on_delete=models.CASCADE, related_name='goals')
-    mentor = models.ForeignKey(UserWithType, on_delete=models.SET_NULL, null=True, blank=True, related_name='assigned_goals')
+    mentor = models.ForeignKey(UserWithType, on_delete=models.SET_NULL, null=True, blank=True,
+                               related_name='assigned_goals')
     goal_type = models.CharField(max_length=20, choices=GOAL_TYPES)
     title = models.CharField(max_length=255)
     description = models.TextField(blank=True)
@@ -57,6 +63,53 @@ class FitnessGoal(models.Model):
             return 0
 
 
+
+
+class Challenge(models.Model):
+    coach = models.ForeignKey(UserWithType, on_delete=models.CASCADE, related_name='created_challenges')
+    title = models.CharField(max_length=255)
+    description = models.TextField(blank=True)
+    challenge_type = models.CharField(max_length=50)
+    target_value = models.FloatField()
+    unit = models.CharField(max_length=20)
+    location = models.CharField(max_length=255, blank=True, null=True)
+    longitude = models.FloatField(null=True, blank=True)
+    latitude = models.FloatField(null=True, blank=True)
+    start_date = models.DateTimeField(default=timezone.now)
+    end_date = models.DateTimeField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    min_age = models.IntegerField(null=True, blank=True)
+    max_age = models.IntegerField(null=True, blank=True)
+
+    def __str__(self):
+        return self.title
+
+    def is_active(self):
+        now = timezone.now()
+        return self.start_date <= now <= self.end_date
+
+
+class ChallengeParticipant(models.Model):
+    challenge = models.ForeignKey(Challenge, on_delete=models.CASCADE, related_name='participants')
+    user = models.ForeignKey(UserWithType, on_delete=models.CASCADE, related_name='joined_challenges')
+    current_value = models.FloatField(default=0.0)
+    joined_at = models.DateTimeField(auto_now_add=True)
+    last_updated = models.DateTimeField(auto_now=True)
+    finish_date = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        unique_together = ('challenge', 'user')
+
+    def update_progress(self, added_value):
+        self.current_value += added_value
+        if self.current_value >= self.challenge.target_value and self.finish_date is None:
+            self.finish_date = timezone.now()
+        self.save()
+
+
+
+
+
 class Notification(models.Model):
     NOTIFICATION_TYPES = [
         ('LIKE', 'Like'),
@@ -75,7 +128,8 @@ class Notification(models.Model):
     ]
 
     recipient = models.ForeignKey(UserWithType, on_delete=models.CASCADE, related_name='notifications')
-    sender = models.ForeignKey(UserWithType, on_delete=models.SET_NULL, null=True, blank=True, related_name='sent_notifications')
+    sender = models.ForeignKey(UserWithType, on_delete=models.SET_NULL, null=True, blank=True,
+                               related_name='sent_notifications')
     notification_type = models.CharField(max_length=20, choices=NOTIFICATION_TYPES)
     title = models.CharField(max_length=255)
     message = models.TextField()
@@ -84,13 +138,15 @@ class Notification(models.Model):
     is_read = models.BooleanField(default=False)
     is_email_sent = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
-    
+
     class Meta:
         ordering = ['-created_at']
 
 
 class Profile(models.Model):
     user = models.OneToOneField(UserWithType, on_delete=models.CASCADE, related_name='profile')
+    name = models.CharField(max_length=50, blank=True)
+    surname = models.CharField(max_length=50, blank=True)
     bio = models.TextField(max_length=500, blank=True)
     location = models.CharField(max_length=50, blank=True)
     birth_date = models.DateField(null=True, blank=True)
@@ -111,8 +167,20 @@ class Profile(models.Model):
         if self.birth_date:
             from datetime import date
             today = date.today()
-            return today.year - self.birth_date.year - ((today.month, today.day) < (self.birth_date.month, self.birth_date.day))
+            return today.year - self.birth_date.year - (
+                        (today.month, today.day) < (self.birth_date.month, self.birth_date.day))
         return None
+
+
+# Signal to create profile when a new user is created
+@receiver(post_save, sender=UserWithType)
+def create_user_profile(sender, instance, created, **kwargs):
+    if created:
+        Profile.objects.create(user=instance)
+
+@receiver(post_save, sender=UserWithType)
+def save_user_profile(sender, instance, **kwargs):
+    instance.profile.save()
 
 
 class Forum(models.Model):
@@ -189,19 +257,20 @@ class Subcomment(models.Model):
     def __str__(self):
         return f'Subcomment by {self.author.username} on Comment {self.comment.id}'
 
+
 class Vote(models.Model):
     VOTE_TYPES = [
         ('UPVOTE', 'Upvote'),
         ('DOWNVOTE', 'Downvote')
     ]
-    
+
     user = models.ForeignKey(UserWithType, on_delete=models.CASCADE, related_name='votes')
-    
+
     # Generic relation fields
     content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
     object_id = models.PositiveIntegerField()
     content_object = GenericForeignKey('content_type', 'object_id')
-    
+
     vote_type = models.CharField(max_length=10, choices=VOTE_TYPES)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -215,14 +284,14 @@ class Vote(models.Model):
     @classmethod
     def create_or_update_vote(cls, user, content_object, new_vote_type):
         content_type = ContentType.objects.get_for_model(content_object)
-        
+
         vote, created = cls.objects.get_or_create(
             user=user,
             content_type=content_type,
             object_id=content_object.id,
             defaults={'vote_type': new_vote_type}
         )
-        
+
         if not created:
             # If changing from UPVOTE to something else, decrement like count
             if vote.vote_type == 'UPVOTE' and new_vote_type != 'UPVOTE':
@@ -235,7 +304,7 @@ class Vote(models.Model):
 
             vote.vote_type = new_vote_type
             vote.save()
-            
+
         return vote
 
     def update_content_like_count(self, increment=True):
@@ -257,3 +326,42 @@ class Vote(models.Model):
         self.update_content_like_count(increment=False)
         super().delete(*args, **kwargs)
 
+class AiTutorChat(models.Model):
+    user = models.ForeignKey(UserWithType, on_delete=models.CASCADE, related_name='ai_chats')
+    chat_id = models.CharField(max_length=255, unique=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"Chat {self.chat_id} for {self.user.username}"
+
+class AiTutorResponse(models.Model):
+    chat = models.ForeignKey(AiTutorChat, on_delete=models.CASCADE, related_name='responses')
+    response = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"Response for Chat {self.chat.chat_id}"
+
+class UserAiMessage(models.Model):
+    user = models.ForeignKey(UserWithType, on_delete=models.CASCADE, related_name='ai_messages')
+    chat = models.ForeignKey(AiTutorChat, on_delete=models.CASCADE, related_name='user_messages')
+    message = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"Message from {self.user.username} in Chat {self.chat.chat_id}"
+
+
+class Quote(models.Model):
+    text = models.TextField()
+    author = models.CharField(max_length=100)
+    fetched_at = models.DateTimeField(default=timezone.now)
+    
+    class Meta:
+        ordering = ['-fetched_at']
+    
+    def __str__(self):
+        return f'"{self.text}" - {self.author}'

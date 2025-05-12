@@ -1,0 +1,46 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15
+    container_name: group2
+    environment:
+      POSTGRES_DB: group2db
+      POSTGRES_USER: group2
+      POSTGRES_PASSWORD: group2
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U group2 -d group2db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend/genfit_django
+      dockerfile: Dockerfile
+    depends_on:
+      postgres:
+        condition: service_healthy
+    env_file:
+      - .env
+    environment:
+      - DATABASE_URL=postgresql://group2:group2@postgres:5432/group2db
+    ports:
+      - "8000:8000"
+    command: sh -c "python manage.py migrate && python manage.py populate_db && python manage.py runserver 0.0.0.0:8000"
+
+  frontend:
+    build:
+      context: ./Web_Frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:5000"
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:
