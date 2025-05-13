@@ -18,9 +18,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { User, Loader2, Settings, Edit, Camera, Trophy, MessageSquare, Target } from "lucide-react";
-import { useMutation, useQuery } from "@tanstack/react-query";
-import { queryClient } from "@/lib/queryClient.ts";
-import { API_BASE_URL} from "@/lib/queryClient.ts";
+import {useMutation, useQuery} from "@tanstack/react-query";
+import {API_BASE_URL, queryClient} from "@/lib/queryClient.ts";
+
 
 interface UserFields {
   email: string;

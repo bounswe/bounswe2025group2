@@ -2,8 +2,9 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { createProxyMiddleware } from "http-proxy-middleware";
 import type { IncomingMessage, ServerResponse } from "http";
+import {API_BASE_URL} from "@/lib/queryClient.ts";
 
-const DJANGO_BACKEND_URL = "http://localhost:8000";
+const DJANGO_BACKEND_URL = API_BASE_URL;
 
 export async function registerRoutes(app: Express): Promise<Server> {
     // Proxy all /api requests to Django backend

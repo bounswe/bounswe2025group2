@@ -8,6 +8,7 @@ from .separate_views import forum_comments
 from .separate_views import forum_vote
 from .separate_views import challenges
 from .separate_views.ai_tutor_views import AiTutorViewSet
+from .separate_views import local_hour
 from .separate_views import quote_views
 from .separate_views import parse_food
 
@@ -78,6 +79,8 @@ urlpatterns = [
     # get info about whether a user voted on the content
     path('forum/vote/<str:content_type>/<int:object_id>/status/', forum_vote.get_user_vote, name='get_user_vote'),
 
+    path('localtime/<str:lat>/<str:lon>', local_hour.get_local_hour, name='get_local_hour'),
+  
     # Challenge-related views
     path('challenges/<int:challenge_id>/', challenges.get_challenge_detail, name='get_challenge_detail'),
     path('challenges/create/', challenges.create_challenge, name='create_challenge'),
