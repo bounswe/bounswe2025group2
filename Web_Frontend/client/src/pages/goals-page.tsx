@@ -3,6 +3,7 @@ import { useAuth } from "@/hooks/use-auth";
 import Sidebar from "@/components/layout/sidebar";
 import MobileHeader from "@/components/layout/mobile-header";
 import MobileNavigation from "@/components/layout/mobile-navigation";
+import { useLocation } from "wouter";
 import GoalProgress from "@/components/goals/goal-progress";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,6 +21,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Badge } from "@/components/ui/badge";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   Select,
   SelectContent,
@@ -34,7 +36,10 @@ import {
   Medal,
   Calendar,
   BarChart2,
-  Loader2
+  Loader2,
+  Cloud,
+  Thermometer,
+  Wind
 } from "lucide-react";
 import { useTheme } from "@/theme/ThemeContext";
 import { cn } from "@/lib/utils";
@@ -51,7 +56,7 @@ interface GoalMentor {
 interface GoalResponse {
   id: number;
   title: string;
-  category: string;
+  goal_type: string;  // Changed to goal_type to match API
   target_value: number;
   current_value: number;
   unit: string;
@@ -64,7 +69,7 @@ interface GoalResponse {
     id: number;
     name?: string;
     username: string;
-  };
+  } | null;  // Explicitly mark as nullable
   description?: string;
 }
 
@@ -95,7 +100,7 @@ function mapGoalResponseToGoal(g: GoalResponse): Goal {
   return {
     id: g.id,
     title: g.title,
-    type: g.category?.toLowerCase() || '',
+    type: g.goal_type?.toLowerCase() || '',
     targetValue: g.target_value,
     currentValue: g.current_value,
     unit: g.unit,
@@ -103,17 +108,29 @@ function mapGoalResponseToGoal(g: GoalResponse): Goal {
     endDate: g.target_date?.slice(0, 10) || '',
     progress: Math.round((g.current_value / g.target_value) * 100),
     userId: g.user,
-    mentor: g.mentor,
+    mentor: g.mentor || undefined,
     daysRemaining: g.target_date ? Math.ceil((new Date(g.target_date).getTime() - Date.now()) / (1000*60*60*24)) : undefined
   };
 }
 
-export default function GoalsPage() {
-  const { user } = useAuth();
+// Weather interface
+interface WeatherData {
+  temp: number;
+  description: string;
+  icon: string;
+  city: string;
+  humidity: number;
+  windSpeed: number;
+  loading: boolean;
+  error: string | null;
+}
+
+export default function GoalsPage() {  const { user } = useAuth();
   const { toast } = useToast();
-  const [newGoalOpen, setNewGoalOpen] = useState(false);
+  const [location] = useLocation();
+  const [newGoalOpen, setNewGoalOpen] = useState(location.includes('?new=true'));
   const [activeTab, setActiveTab] = useState<string>("active");
-  const [goals, setGoals] = useState<Goal[]>([]); // Start with empty, not mock
+  const [goals, setGoals] = useState<Goal[]>([]);// Start with empty, not mock
   const [loading, setLoading] = useState(false);
   const [newGoal, setNewGoal] = useState({
     title: "",
@@ -129,9 +146,41 @@ export default function GoalsPage() {
   });
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [weatherData, setWeatherData] = useState<WeatherData>({
+    temp: 0,
+    description: "",
+    icon: "",
+    city: "",
+    humidity: 0,
+    windSpeed: 0,
+    loading: true,
+    error: null
+  });
+    const { theme } = useTheme();  // Check URL params on mount for "new=true" to open the dialog
+  useEffect(() => {
+    if (location.includes('?new=true')) {
+      setNewGoalOpen(true);
+    }
+  }, [location]);
   
-  const { theme } = useTheme();
-
+  // Set fixed weather data for Istanbul
+  useEffect(() => {
+    // Instead of fetching from API, we'll use fixed data for Istanbul
+    setTimeout(() => {
+      // Mock data for Istanbul's weather
+      setWeatherData({
+        temp: 22,
+        description: "Clear sky",
+        icon: "01d", // Clear sky icon
+        city: "Istanbul",
+        humidity: 65,
+        windSpeed: 3.5,
+        loading: false,
+        error: null
+      });
+    }, 500); // Add a small delay to simulate an API call
+  }, []);
+  
   // Fetch goals from backend
   useEffect(() => {
     const fetchGoals = async () => {
@@ -143,20 +192,24 @@ export default function GoalsPage() {
           const data = (await res.json()) as GoalResponse[];
           setGoals(data.map(mapGoalResponseToGoal));
         } else {
-          const errorData = await res.json();
-          setError(errorData.message || 'Failed to fetch goals');
+          // Enhanced error handling with status code
+          const errorData = await res.json().catch(() => ({}));
+          const errorMsg = errorData.detail || errorData.message || `Error ${res.status}: Failed to fetch goals`;
+          console.error('Error fetching goals:', errorMsg);
+          setError(errorMsg);
           toast({
-            title: "Error",
-            description: errorData.message || 'Failed to fetch goals',
+            title: `Error (${res.status})`,
+            description: errorMsg,
             variant: "destructive",
           });
         }
-      } catch (e) {
+      } catch (e: any) {
         console.error('Error fetching goals:', e);
-        setError('Failed to fetch goals. Please try again.');
+        const errorMsg = e.message || 'Network or server error. Please try again.';
+        setError(errorMsg);
         toast({
           title: "Error",
-          description: 'Failed to fetch goals. Please try again.',
+          description: errorMsg,
           variant: "destructive",
         });
       } finally {
@@ -165,7 +218,6 @@ export default function GoalsPage() {
     };
     fetchGoals();
   }, [toast]);
-
   // Create goal
   const handleCreateGoal = async () => {
     setIsSubmitting(true);
@@ -196,35 +248,23 @@ export default function GoalsPage() {
       });
       setIsSubmitting(false);
       return;
-    }
-
-    try {
+    }    try {
       const payload = {
         title: newGoal.title,
         description: newGoal.description,
-        // category: newGoal.type.toUpperCase(), // Incorrect field name
-        goal_type: newGoal.type.toUpperCase(), // Correct field name based on error
+        goal_type: newGoal.type.toUpperCase(), // Using goal_type as per the backend API
         target_value: newGoal.targetValue,
-        current_value: newGoal.currentValue,
         unit: newGoal.unit,
-        start_date: newGoal.startDate, // Already ISOString from state init
+        start_date: newGoal.startDate,
         target_date: formattedTargetDate,
-        status: newGoal.status,
-        mentor: newGoal.mentorId || null,
-        user: user.id // Use checked user.id
+        // Completely omit the mentor field if no mentor is selected
+        ...(newGoal.mentorId ? { mentor: newGoal.mentorId } : {})
       };
       
-      console.log("Sending goal creation payload:", payload); // Log payload for debugging
-
       const res = await apiRequest("POST", "/api/goals/", payload);
-      
       if (res.ok) {
-        const g: GoalResponse = await res.json(); // Use GoalResponse type
-        console.log("Received goal creation response:", g); // Log response
-        
-        // Correct mapping using GoalResponse fields
-        setGoals([...goals, mapGoalResponseToGoal(g)]); 
-        
+        const g: GoalResponse = await res.json();
+        setGoals((prev) => [...prev, mapGoalResponseToGoal(g)]);
         setNewGoalOpen(false);
         resetNewGoalForm();
         toast({
@@ -232,24 +272,29 @@ export default function GoalsPage() {
           description: "Goal created successfully!",
         });
       } else {
-        let errorData = { detail: 'Failed to create goal. Unknown error.' };
-        try {
-          errorData = await res.json();
-        } catch (parseError) {
-          console.error("Failed to parse error response:", parseError);
+        const errBody = await res.json().catch(() => ({}));
+        
+        // Check if error is related to the mentor field
+        const errorMsg = errBody.detail || '';
+        if (errorMsg.includes("FitnessGoal.mentor")) {
+          toast({
+            title: `Error with mentor assignment`,
+            description: 'Unable to assign the selected mentor. Please try again with a valid mentor or no mentor.',
+            variant: 'destructive',
+          });
+        } else {
+          toast({
+            title: `Error (${res.status})`, 
+            description: errBody.detail || 'Failed to create goal',
+            variant: 'destructive',
+          });
         }
-        console.error("Goal creation failed:", res.status, errorData); // Log status and error body
-        toast({
-          title: `Error (${res.status})`, 
-          description: JSON.stringify(errorData.detail || errorData), // Show detailed error
-          variant: "destructive",
-        });
       }
-    } catch (e) {
+    } catch (e: any) {
       console.error('Error creating goal:', e);
       toast({
         title: "Error",
-        description: 'An unexpected error occurred. Please try again.',
+        description: e.message || 'An unexpected error occurred',
         variant: "destructive",
       });
     } finally {
@@ -358,17 +403,90 @@ export default function GoalsPage() {
       <div className="flex mt-14">
         <Sidebar activeTab="goals" />
         <main className="flex-1 md:ml-56 p-4 pb-20">
-          <div className="max-w-5xl mx-auto">
-            {/* Header */}
+          <div className="max-w-5xl mx-auto">            {/* Header */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4">
-              <div>
-                <h1 className={cn(
-                  "text-2xl md:text-3xl font-bold",
-                  theme === 'dark' ? 'text-white' : 'text-[#800000]'
-                )}>My Fitness Goals</h1>
-                <p className={cn(
-                  theme === 'dark' ? 'text-white/70' : 'text-[#800000]/70'
-                )}>Track and manage your personal fitness journey</p>
+              <div className="flex items-center gap-4">
+                <div>
+                  <h1 className={cn(
+                    "text-2xl md:text-3xl font-bold",
+                    theme === 'dark' ? 'text-white' : 'text-[#800000]'
+                  )}>My Fitness Goals</h1>
+                  <p className={cn(
+                    theme === 'dark' ? 'text-white/70' : 'text-[#800000]/70'
+                  )}>Track and manage your personal fitness journey</p>
+                </div>
+
+                {/* Weather widget */}
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div className={cn(
+                        "hidden md:flex items-center gap-2 p-2 px-3 rounded-lg cursor-pointer",
+                        "bg-nav-bg border",
+                        theme === 'dark' ? 'border-[#e18d58]' : 'border-[#800000]'
+                      )}>
+                        {weatherData.loading ? (
+                          <div className="flex items-center">
+                            <Loader2 className={cn("h-4 w-4 mr-2 animate-spin", 
+                              theme === 'dark' ? 'text-[#e18d58]' : 'text-[#800000]'
+                            )} />
+                            <span className={theme === 'dark' ? 'text-white' : 'text-[#800000]'}>
+                              Loading weather...
+                            </span>
+                          </div>
+                        ) : weatherData.error ? (
+                          <div className="flex items-center">
+                            <Cloud className={cn("h-4 w-4 mr-2", 
+                              theme === 'dark' ? 'text-[#e18d58]' : 'text-[#800000]'
+                            )} />
+                            <span className={theme === 'dark' ? 'text-white' : 'text-[#800000]'}>
+                              Weather unavailable
+                            </span>
+                          </div>
+                        ) : (
+                          <>
+                            <img 
+                              src={`http://openweathermap.org/img/wn/${weatherData.icon}.png`} 
+                              alt="Weather icon"
+                              className="h-8 w-8"
+                            />
+                            <div>
+                              <div className={cn(
+                                "text-sm font-medium",
+                                theme === 'dark' ? 'text-white' : 'text-[#800000]'
+                              )}>
+                                {weatherData.temp}°C
+                              </div>
+                              <div className={cn(
+                                "text-xs",
+                                theme === 'dark' ? 'text-white/70' : 'text-[#800000]/70'
+                              )}>
+                                {weatherData.city}
+                              </div>
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <div className="space-y-1 p-1">
+                        <p className="font-medium">{weatherData.description}</p>
+                        <div className="flex items-center gap-2">
+                          <Thermometer className="h-3 w-3" />
+                          <span className="text-xs">Temperature: {weatherData.temp}°C</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Wind className="h-3 w-3" />
+                          <span className="text-xs">Wind: {weatherData.windSpeed} m/s</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Cloud className="h-3 w-3" />
+                          <span className="text-xs">Humidity: {weatherData.humidity}%</span>
+                        </div>
+                      </div>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
               </div>
               
               <Button 
