@@ -10,6 +10,8 @@ import { QuoteDailyCard } from "@/components/ui/quote-daily-card";
 import { Link, useLocation } from "wouter";
 import { useTheme } from "@/theme/ThemeContext";
 import { cn } from "@/lib/utils";
+import { useState } from 'react';
+import { FoodLogger } from "@/components/ui/food_logger";
 
 export default function HomePage() {
   const { user } = useAuth();
@@ -44,34 +46,34 @@ export default function HomePage() {
   // });
 
   // Mock data for demonstration
-    const latestThreads = [
-        {
-        id: 1,
-        category: "Basketball",
-        firstPost: { content: "How to improve my shooting?" },
-        postCount: 5,
-        createdAt: "2023-10-01T12:00:00Z",
-        },
-        {
-        id: 2,
-        category: "Soccer",
-        firstPost: { content: "Best drills for dribbling?" },
-        postCount: 3,
-        createdAt: "2023-10-02T12:00:00Z",
-        },
-    ];
-    const challenges = [
-        { id: 1, title: "30-Day Running Challenge", targetValue: 100, unit: "km" },
-        { id: 2, title: "Weekly Basketball Practice", targetValue: 5, unit: "hours" },
-    ];
-    const programs = [
-        { id: 1, name: "Local Basketball League", location: "Downtown Gym", description: "Join our local basketball league for all ages.", sportType: "Basketball", ageGroups: ["18-25", "26-35"] },
-        { id: 2, name: "Soccer Training Camp", location: "City Park", description: "Intensive training for aspiring soccer players.", sportType: "Soccer", ageGroups: ["12-18"] },
-    ];
+  const latestThreads = [
+    {
+      id: 1,
+      category: "Basketball",
+      firstPost: { content: "How to improve my shooting?" },
+      postCount: 5,
+      createdAt: "2023-10-01T12:00:00Z",
+    },
+    {
+      id: 2,
+      category: "Soccer",
+      firstPost: { content: "Best drills for dribbling?" },
+      postCount: 3,
+      createdAt: "2023-10-02T12:00:00Z",
+    },
+  ];
+  const challenges = [
+    { id: 1, title: "30-Day Running Challenge", targetValue: 100, unit: "km" },
+    { id: 2, title: "Weekly Basketball Practice", targetValue: 5, unit: "hours" },
+  ];
+  const programs = [
+    { id: 1, name: "Local Basketball League", location: "Downtown Gym", description: "Join our local basketball league for all ages.", sportType: "Basketball", ageGroups: ["18-25", "26-35"] },
+    { id: 2, name: "Soccer Training Camp", location: "City Park", description: "Intensive training for aspiring soccer players.", sportType: "Soccer", ageGroups: ["12-18"] },
+  ];
 
-    const challengesLoading = false;
-    const programsLoading = false;
-    const threadsLoading = false;
+  const challengesLoading = false;
+  const programsLoading = false;
+  const threadsLoading = false;
 
   // Display daily motivational quote
   const quotedailySection = (
@@ -208,7 +210,7 @@ export default function HomePage() {
                         ? 'border-[#e18d58] text-white hover:bg-[#e18d58]/20'
                         : 'border-[#800000] text-[#800000] hover:bg-active'
                     )}
-                    onClick={() => setLocation(`/profile`)}>                  
+                    onClick={() => setLocation(`/profile`)}>
 
                     <UserCircle size={20} />
                     View Profile
@@ -299,8 +301,8 @@ export default function HomePage() {
                     ))}
                     <Link href="/goals" className={cn(
                       "flex items-center text-sm font-medium hover:underline",
-                      theme === 'dark' 
-                        ? 'text-[#e18d58] hover:text-[#e18d58]/80' 
+                      theme === 'dark'
+                        ? 'text-[#e18d58] hover:text-[#e18d58]/80'
                         : 'text-[#800000] hover:text-[#800000]/80'
                     )}>
                       View all goals <ArrowRight className="h-4 w-4 ml-1" />
@@ -360,8 +362,8 @@ export default function HomePage() {
                       ))}
                       <Link href="/challenges" className={cn(
                         "font-semibold flex items-center text-sm hover:underline",
-                        theme === 'dark' 
-                          ? 'text-[#e18d58] hover:text-[#e18d58]/80' 
+                        theme === 'dark'
+                          ? 'text-[#e18d58] hover:text-[#e18d58]/80'
                           : 'text-[#800000] hover:text-[#800000]/80'
                       )}>
                         View all challenges <ArrowRight className="h-4 w-4 ml-1" />
@@ -396,8 +398,8 @@ export default function HomePage() {
                 )}>Recent Community Discussions</h2>
                 <Link href="/forum" className={cn(
                   "flex items-center text-sm font-medium hover:underline",
-                  theme === 'dark' 
-                    ? 'text-[#e18d58] hover:text-[#e18d58]/80' 
+                  theme === 'dark'
+                    ? 'text-[#e18d58] hover:text-[#e18d58]/80'
                     : 'text-[#800000] hover:text-[#800000]/80'
                 )}>
                   View All <ArrowRight className="h-4 w-4 ml-1" />
@@ -482,8 +484,8 @@ export default function HomePage() {
                 </h2>
                 <Link href="/programs" className={cn(
                   "flex items-center text-sm font-medium hover:underline",
-                  theme === 'dark' 
-                    ? 'text-[#e18d58] hover:text-[#e18d58]/80' 
+                  theme === 'dark'
+                    ? 'text-[#e18d58] hover:text-[#e18d58]/80'
                     : 'text-[#800000] hover:text-[#800000]/80'
                 )}>
                   View All <ArrowRight className="h-4 w-4 ml-1" />
@@ -576,8 +578,8 @@ export default function HomePage() {
                               key={index}
                               className={cn(
                                 "inline-block px-2 py-1 text-xs rounded-full border",
-                                theme === 'dark' 
-                                  ? 'border-[#e18d58] text-white bg-[#e18d58]/10' 
+                                theme === 'dark'
+                                  ? 'border-[#e18d58] text-white bg-[#e18d58]/10'
                                   : 'border-[#800000] text-[#800000] bg-background'
                               )}
                             >
@@ -622,6 +624,8 @@ export default function HomePage() {
               )}
             </section>
           </div>
+          <FoodLogger />
+
         </main>
       </div>
       <MobileNavigation activeTab="home" />

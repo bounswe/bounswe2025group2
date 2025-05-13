@@ -9,6 +9,7 @@ from .separate_views import forum_vote
 from .separate_views import challenges
 from .separate_views.ai_tutor_views import AiTutorViewSet
 from .separate_views import quote_views
+from .separate_views import parse_food
 
 
 urlpatterns = [
@@ -31,6 +32,9 @@ urlpatterns = [
     # Quote endpoints
     path('quotes/random/', quote_views.get_random_quote, name='get_random_quote'),
     path('quotes/daily/', quote_views.get_daily_quote, name='get_daily_quote'),
+
+    #nutrition endpoints
+    path('parse_food/', parse_food.parse_food, name='parse_food'),
 
     # Fitness Goals URLs
     path('goals/', fitness_goals.fitness_goals, name='fitness_goals'),
