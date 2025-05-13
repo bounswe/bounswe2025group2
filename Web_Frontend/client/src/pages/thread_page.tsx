@@ -10,7 +10,6 @@ import MobileNavigation from "@/components/layout/mobile-navigation.tsx";
 import { API_BASE_URL, WEB_SOCKET_URL } from "@/lib/queryClient.ts";
 
 
-import {API_BASE_URL} from "@/lib/queryClient.ts";
 
 function getCsrfToken() {
     const name = 'csrftoken';
