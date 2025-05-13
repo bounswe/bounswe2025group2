@@ -63,11 +63,18 @@ INSTALLED_APPS = [
     'chat',
 ]
 
+ASGI_APPLICATION = "genfit_django.asgi.application"
+
+
 CHANNEL_LAYERS = {
     "default": {
-        "BACKEND": "channels.layers.InMemoryChannelLayer"
-    }
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [("127.0.0.1", 6379)],
+        },
+    },
 }
+
 
 
 MIDDLEWARE = [
@@ -99,7 +106,7 @@ TEMPLATES = [
     },
 ]
 
-# WSGI_APPLICATION = 'genfit_django.wsgi.application'
+WSGI_APPLICATION = 'genfit_django.wsgi.application'
 
 ASGI_APPLICATION = 'genfit_django.asgi.application'
 
@@ -114,7 +121,7 @@ DATABASES = {
         'USER': os.environ.get('POSTGRES_USER', 'group2'),
         'PASSWORD': os.environ.get('POSTGRES_PASSWORD', 'group2'),
         'HOST': 'localhost',
-        'PORT': os.environ.get('POSTGRES_PORT', '5432'),
+        'PORT': "5432"
     }
 }
 
@@ -145,6 +152,17 @@ AUTH_PASSWORD_VALIDATORS = [
         'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
     },
 ]
+
+ASGI_APPLICATION = 'genfit_django.asgi.application'
+
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels_redis.core.RedisChannelLayer',
+        'CONFIG': {
+            'hosts': [('127.0.0.1', 6379)],
+        },
+    },
+}
 
 
 # Internationalization
