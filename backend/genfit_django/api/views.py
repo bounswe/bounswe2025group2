@@ -11,6 +11,8 @@ from django.utils.encoding import force_bytes, force_str
 from django.contrib.sites.shortcuts import get_current_site
 from .serializers import UserRegistrationSerializer, UserLoginSerializer, NotificationSerializer, UserSerializer
 from .models import Notification
+import requests
+from django.http import JsonResponse
 
 
 User = get_user_model()
@@ -179,4 +181,12 @@ def get_users(request):
     return Response(serializer.data)
 
 
-
+def get_quote(request):
+    try:
+        response = requests.get('https://zenquotes.io/api/random')
+        data = response.json()[0]
+        quote_text = data.get('q', '')
+        author = data.get('a', '')
+        return JsonResponse({'text': quote_text, 'author': author})
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)

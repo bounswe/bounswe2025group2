@@ -6,10 +6,17 @@ import MobileNavigation from "@/components/layout/mobile-navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Loader2, ArrowRight, Trophy, Users, Calendar, MapPin, Search, UserCircle } from "lucide-react";
-import { QuoteDailyCard } from "@/components/ui/quote-daily-card";
 import { Link, useLocation } from "wouter";
 import { useTheme } from "@/theme/ThemeContext";
 import { cn } from "@/lib/utils";
+import { useEffect, useState } from "react";
+import { QuoteDailyCard } from "@/components/ui/quote-daily-card";
+
+
+type Quote = {
+  text: string;
+  author: string;
+};
 
 export default function HomePage() {
   const { user } = useAuth();

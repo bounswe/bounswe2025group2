@@ -9,6 +9,7 @@ from .separate_views import forum_vote
 from .separate_views import challenges
 from .separate_views.ai_tutor_views import AiTutorViewSet
 from .separate_views import quote_views
+from .views import get_quote
 
 
 urlpatterns = [
@@ -90,6 +91,8 @@ urlpatterns = [
 
     # Interactive search directory for challenges
     path('challenges/search/', challenges.search_challenges, name='search-challenges'),
+
+    path('quote/', get_quote, name='get_quote'),
 ]
 
 router = DefaultRouter()
