@@ -53,3 +53,54 @@ def create_vote_notification(sender, instance, created, **kwargs):
         related_object_id=content_object.id,
         related_object_type=related_object_type
     )
+
+
+@receiver(post_save, sender=Comment)
+def notify_thread_author_on_new_comment(sender, instance, created, **kwargs):
+    if not created:
+        return
+
+    thread = instance.thread
+    commenter = instance.author
+    thread_author = thread.author
+
+    # Don't notify if user commented on their own thread
+    if commenter == thread_author:
+        return
+
+    Notification.objects.create(
+        recipient=thread_author,
+        sender=commenter,
+        notification_type='COMMENT',
+        title="New comment on your thread",
+        message=f"{commenter.username} commented on your thread: {thread.title}",
+        related_object_id=thread.id,
+        related_object_type='Thread'
+    )
+
+
+
+
+
+@receiver(post_save, sender=Subcomment)
+def notify_comment_author_on_new_subcomment(sender, instance, created, **kwargs):
+    if not created:
+        return
+
+    comment = instance.comment
+    subcommenter = instance.author
+    comment_author = comment.author
+
+    # Don't notify if user replied to their own comment
+    if subcommenter == comment_author:
+        return
+
+    Notification.objects.create(
+        recipient=comment_author,
+        sender=subcommenter,
+        notification_type='REPLY',
+        title="New reply to your comment",
+        message=f"{subcommenter.username} replied to your comment on thread: {comment.thread.title}",
+        related_object_id=comment.id,
+        related_object_type='Comment'
+    )
