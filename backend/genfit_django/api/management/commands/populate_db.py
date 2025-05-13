@@ -22,9 +22,7 @@ class Command(BaseCommand):
         
         # Create fitness goals for users
         self.create_fitness_goals()
-        
-        # Create notifications
-        self.create_notifications()
+    
         
         # Create forums and threads
         self.create_forums_and_threads()
@@ -186,54 +184,6 @@ class Command(BaseCommand):
                 except Exception as e:
                     self.stdout.write(self.style.ERROR(f"Error creating goal for {user.username}: {e}"))
     
-    def create_notifications(self):
-        self.stdout.write('Creating notifications...')
-        
-        users = User.objects.all()
-        notification_types = [
-            'LIKE', 'COMMENT', 'TAG', 'REPLY', 'CHALLENGE', 'PROGRESS', 
-            'ACHIEVEMENT', 'BADGE', 'GOAL', 'FEEDBACK', 'SYSTEM', 'NEW_MESSAGE', 'GOAL_INACTIVE'
-        ]
-        
-        notification_titles = [
-            'New like on your post', 'Someone commented on your thread', 
-            'You were tagged in a post', 'New reply to your comment',
-            'Challenge invitation', 'Goal progress update',
-            'Achievement unlocked!', 'New badge earned',
-            'New goal from your mentor', 'Feedback on your progress',
-            'System maintenance notification', 'New message received',
-            'Goal inactive warning'
-        ]
-        
-        # Create 3-5 notifications for each user
-        for recipient in users:
-            num_notifications = random.randint(3, 5)
-            for _ in range(num_notifications):
-                try:
-                    # 70% chance of having a sender
-                    sender = random.choice([u for u in users if u != recipient]) if random.random() > 0.3 else None
-                    
-                    notification_type = random.choice(notification_types)
-                    title_index = min(notification_types.index(notification_type), len(notification_titles) - 1)
-                    title = notification_titles[title_index]
-                    
-                    message = f"This is a sample notification message for {notification_type.lower()}"
-                    is_read = random.choice([True, False])
-                    
-                    # Create notification
-                    notification = Notification.objects.create(
-                        recipient=recipient,
-                        sender=sender,
-                        notification_type=notification_type,
-                        title=title,
-                        message=message,
-                        is_read=is_read,
-                        is_email_sent=is_read  # If read, email was sent
-                    )
-                    
-                    self.stdout.write(f"Created notification '{title}' for {recipient.username}")
-                except Exception as e:
-                    self.stdout.write(self.style.ERROR(f"Error creating notification for {recipient.username}: {e}"))
     
     def create_forums_and_threads(self):
         self.stdout.write('Creating forums and threads...')
