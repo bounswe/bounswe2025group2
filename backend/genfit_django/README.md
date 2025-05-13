@@ -349,6 +349,28 @@ Deletes the currently authenticated user's account.
   ```
 
 
+### Get Local Time
+
+Returns the info related to local time of caller
+
+- **URL**: `/localtime/`
+- **Method**: `GET`
+- **Auth Required**: No
+
+**Request Body & Parameters**: _None_
+
+**Response**:
+
+- **Success (200)**
+```json
+{
+    "ip": "8.8.8.8",//detected ip of your (blank if you're on same machine')
+    "latitude": 41.0267, //your latitude according to ip address
+    "longitude": 29.0125, //your longitude according to ip address
+    "timezone": "Europe/Istanbul", //your timezone
+    "local_time": "2025-05-13T12:23:50.4535226" // local time of yours
+}
+```
 
 
 
