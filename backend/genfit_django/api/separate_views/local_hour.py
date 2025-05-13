@@ -44,7 +44,7 @@ def get_local_hour(request, lat, lon):
             }
             
             # Cache the result for 1 hour
-            cache.set(cache_key, result, timeout=3600)  # 3600 seconds = 1 hour
+            cache.set(cache_key, result, timeout=300)  # 300 seconds = 5 minute
             
             return Response(result, status=status.HTTP_200_OK)
             
