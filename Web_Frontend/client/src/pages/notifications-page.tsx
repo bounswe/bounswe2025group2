@@ -8,6 +8,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {useState} from "react";
 import {Button} from "@/components/ui/button.tsx";
 import { useTheme } from "@/theme/ThemeContext";
+import { API_BASE_URL} from "@/lib/queryClient.ts";
 import { cn } from "@/lib/utils";
 
 interface AppNotification {
@@ -20,10 +21,65 @@ interface AppNotification {
     relatedId?: number;
 }
 
-function getCSRFToken() {
-  const match = document.cookie.match(/csrftoken=([^;]+)/);
-  return match ? match[1] : null;
+function getCsrfToken() {
+  const name = 'csrftoken';
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; ${name}=`);
+  if (parts.length === 2) {
+    const lastPart = parts.pop();
+    if (lastPart) {
+      const value = lastPart.split(';').shift();
+      return value ?? '';
+    }
+  }
+  return '';
 }
+
+// Create an API client with consistent headers
+const apiClient = {
+  fetch: (url: string, options: RequestInit = {}) => {
+    const csrfToken = getCsrfToken();
+    const defaultOptions: RequestInit = {
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': csrfToken,
+        ...options.headers
+      }
+    };
+
+    // Merge default options with provided options
+    const mergedOptions = {
+      ...defaultOptions,
+      ...options,
+      headers: {
+        ...defaultOptions.headers,
+        ...(options.headers || {})
+      }
+    };
+
+    return fetch(url, mergedOptions);
+  },
+
+  get: (url: string) => {
+    return apiClient.fetch(url);
+  },
+
+  post: (url: string, data: any) => {
+    return apiClient.fetch(url, {
+      method: 'POST',
+      body: JSON.stringify(data)
+    });
+  },
+
+  patch: (url: string, data: any) => {
+    return apiClient.fetch(url, {
+      method: 'PATCH',
+      body: JSON.stringify(data)
+    });
+  },
+
+};
 
 export default function NotificationsPage() {
     const { theme } = useTheme();
@@ -35,7 +91,7 @@ export default function NotificationsPage() {
     const { data: notifications, isLoading } = useQuery<AppNotification[]>({
         queryKey: ["/api/notifications"],
         queryFn: async () => {
-            const res = await fetch("/api/notifications");
+            const res = await apiClient.get(`${API_BASE_URL}/api/notifications`);
             if (!res.ok) throw new Error("Failed to fetch notifications");
             return res.json();
         },
@@ -71,32 +127,8 @@ export default function NotificationsPage() {
         if (!notification.is_read) {
             setDetailsLoading(true);
             try {
-                const headers: Record<string, string> = {
-                    "Content-Type": "application/json",
-                    "Accept": "application/json",
-                }
-                const csrfToken = getCSRFToken();
-                if (csrfToken) {
-                    headers['X-CSRFToken'] = csrfToken;
-                }
-
-                const res = await fetch(`/api/notifications/${notification.id}/mark-as-read/`, {
-                    method: "PATCH",
-                    headers,
-                    credentials: "include",
-                });
-
-                if (!res.ok) {
-                    throw new Error("Failed to mark notification as read");
-                }
-
-                queryClient.setQueryData<AppNotification[]>(["/api/notifications"], (old) => {
-                    if (!old) return [];
-                    return old.map((n) =>
-                        n.id === notification.id ? { ...n, is_read: true } : n
-                    );
-                });
-
+                await apiClient.patch(`${API_BASE_URL}/api/notifications/${notification.id}/read/`, { is_read: true });
+                queryClient.invalidateQueries({ queryKey: ["/api/notifications"] });
             } catch (error) {
                 console.error("Failed to mark notification as read", error);
             } finally {

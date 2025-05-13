@@ -17,6 +17,7 @@ def fitness_goals(request):
         return Response(serializer.data)
 
     elif request.method == 'POST':
+
         data = request.data.copy()
         data['status'] = 'ACTIVE'
 
@@ -39,6 +40,7 @@ def fitness_goals(request):
             data['user'] = request.user.id
 
         serializer = FitnessGoalSerializer(data=data)
+
         if serializer.is_valid():
             fitness_goal = serializer.save()  # Save first
 
