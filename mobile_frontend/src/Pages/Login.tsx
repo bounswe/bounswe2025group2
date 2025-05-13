@@ -21,6 +21,7 @@ const Login = ({ navigation }: any) => {
     }
 
     try {
+      // 1. Login (POST)
       const response = await fetch('http://10.0.2.2:8000/api/login/', {
         method: 'POST',
         headers: {
@@ -31,15 +32,16 @@ const Login = ({ navigation }: any) => {
           password: password,
           remember_me: true,
         }),
-        // credentials: 'include', // Not supported in React Native fetch
       });
       const data = await response.json();
       console.log('Login response:', data);
-      
+
       if (response.ok) {
-        // Debug: log cookies after login
+        // 2. After login, fetch CSRF token as authenticated user
+        await fetch('http://10.0.2.2:8000/api/goals/', { method: 'GET' });
         const cookies = await Cookies.get('http://10.0.2.2:8000');
-        console.log('Cookies after login:', cookies);
+        console.log('Cookies after login and GET:', cookies);
+
         Alert.alert('Success', data.message || 'Login successful');
         navigation.replace('Main');
       } else {
