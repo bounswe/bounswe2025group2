@@ -28,7 +28,7 @@ def get_local_hour(request, lat, lon):
         try:
             time_res = requests.get(
                 f"https://timeapi.io/api/time/current/coordinate?latitude={lat}&longitude={lon}",
-                timeout=5  # 5 seconds timeout
+                timeout=60  # 60 seconds timeout
             )
             time_data = time_res.json()
             logger.debug(f"time res: {time_res.status_code} time data: {time_data}")
