@@ -10,6 +10,8 @@ import {useTheme} from "@/theme/ThemeContext";
 import {cn} from "@/lib/utils";
 import {useMutation, useQuery} from "@tanstack/react-query";
 import { formatDistanceToNow } from "date-fns";
+import { API_BASE_URL, WEB_SOCKET_URL } from "@/lib/queryClient.ts";
+
 
 interface ForumThread {
   id: string;
@@ -48,7 +50,7 @@ export default function ForumPage() {
   const {data: forums, isLoading: forumsLoading} = useQuery({
     queryKey: ["forums"],
     queryFn: async () => {
-      const response = await fetch("http://localhost:8000/api/forums");
+      const response = await fetch(`${API_BASE_URL}/api/forums`);
 
       if (!response.ok) {
         throw new Error("Network response was not ok");
@@ -70,7 +72,7 @@ export default function ForumPage() {
   const { data: threads, isLoading: threadsLoading } = useQuery({
     queryKey: ["threads"],
     queryFn: async () => {
-      const response = await fetch("http://localhost:8000/api/threads/");
+      const response = await fetch(`${API_BASE_URL}/api/threads/`);
       if (!response.ok) {
         throw new Error("Network response was not ok");
       }
@@ -93,7 +95,7 @@ export default function ForumPage() {
             filtered.map(async (thread: any) => {
               const csrfToken = getCsrfToken();
               const response = await fetch(
-                  `http://localhost:8000/api/threads/${thread.id}`,
+                  `${API_BASE_URL}/api/threads/${thread.id}`,
                   {
                     method: "GET",
                     credentials: "include",
@@ -137,7 +139,7 @@ export default function ForumPage() {
     try {
       const csrfToken = getCsrfToken();
 
-      const response = await fetch('http://localhost:8000/api/threads/', {
+      const response = await fetch(`${API_BASE_URL}/api/threads/`, {
         method: "POST",
         body: JSON.stringify(body),
         credentials: 'include',
