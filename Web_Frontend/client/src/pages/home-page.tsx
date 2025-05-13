@@ -175,8 +175,7 @@ export default function HomePage() {
                 )}>
                   Ready to continue your fitness journey today?
                 </p>
-                <div className="flex flex-wrap gap-3">
-                  <Button
+                <div className="flex flex-wrap gap-3">                  <Button
                     variant="default"
                     className={cn(
                       "flex items-center gap-2 bg-nav-bg border",
@@ -184,6 +183,7 @@ export default function HomePage() {
                         ? 'border-[#e18d58] text-white hover:bg-[#e18d58]/20'
                         : 'border-[#800000] text-[#800000] hover:bg-active'
                     )}
+                    onClick={() => setLocation("/goals?new=true")}
                   >
                     Set New Goal
                   </Button>

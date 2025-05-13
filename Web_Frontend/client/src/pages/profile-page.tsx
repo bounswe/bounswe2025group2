@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useParams } from "wouter";
+import { useParams, useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
 import Sidebar from "@/components/layout/sidebar";
 import MobileHeader from "@/components/layout/mobile-header";
@@ -637,9 +637,11 @@ export default function ProfilePage() {
                           ? "You haven't set any fitness goals yet."
                           : `This person hasn't set any fitness goals yet.`
                         }
-                      </p>
-                      {isOwnProfile && (
-                        <Button className="bg-secondary text-white hover:bg-secondary-dark">
+                      </p>                      {isOwnProfile && (
+                        <Button 
+                          className="bg-secondary text-white hover:bg-secondary-dark"
+                          onClick={() => window.location.href = "/goals?new=true"}
+                        >
                           Set Your First Goal
                         </Button>
                       )}
