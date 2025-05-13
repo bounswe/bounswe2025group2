@@ -58,16 +58,16 @@ class Command(BaseCommand):
         
         # Create regular users
         regular_users = [
-            {'username': 'user1', 'email': 'user1@example.com', 'password': 'password123', 'user_type': 'User'},
-            {'username': 'user2', 'email': 'user2@example.com', 'password': 'password123', 'user_type': 'User'},
-            {'username': 'user3', 'email': 'user3@example.com', 'password': 'password123', 'user_type': 'User'},
-            {'username': 'user4', 'email': 'user4@example.com', 'password': 'password123', 'user_type': 'User'},
+            {'username': 'erenkarayilan', 'email': 'eren.karayilan@example.com', 'password': 'erenkarayilan123', 'user_type': 'User'},
+            {'username': 'rambookan', 'email': 'rambo.okan@example.com', 'password': 'rambookan123', 'user_type': 'User'},
+            {'username': 'konsoloyun', 'email': 'konsol.oyun@example.com', 'password': 'konsoloyun123', 'user_type': 'User'},
+            {'username': 'mertcanbahar', 'email': 'mertcan.bahar@example.com', 'password': 'mertcanbahar123', 'user_type': 'User'},
         ]
         
         # Create coach users
         coach_users = [
-            {'username': 'coach1', 'email': 'coach1@example.com', 'password': 'password123', 'user_type': 'Coach', 'is_verified': True},
-            {'username': 'coach2', 'email': 'coach2@example.com', 'password': 'password123', 'user_type': 'Coach', 'is_verified': True},
+            {'username': 'testotaylan', 'email': 'testo.taylan@example.com', 'password': 'testotaylan123', 'user_type': 'Coach', 'is_verified': True},
+            {'username': 'harun1453', 'email': 'harun.1453@example.com', 'password': 'harun1453123', 'user_type': 'Coach', 'is_verified': True},
         ]
         
         # Create regular users
