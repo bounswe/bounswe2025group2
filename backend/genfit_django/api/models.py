@@ -292,9 +292,13 @@ class Vote(models.Model):
             defaults={'vote_type': new_vote_type}
         )
 
+        print("Creating or updating vote...")
+
         if not created:
+            print("Vote exists, updating...")
             # If changing from UPVOTE to something else, decrement like count
             if vote.vote_type == 'UPVOTE' and new_vote_type != 'UPVOTE':
+                print("Decrementing like count...")
                 content_object.like_count -= 1
                 content_object.save()
             # If changing to UPVOTE from something else, increment like count
@@ -320,7 +324,9 @@ class Vote(models.Model):
         is_new = self._state.adding
         super().save(*args, **kwargs)
         if is_new:
-            self.update_content_like_count(increment=True)
+            # Only increment like count if it's an upvote
+            if self.vote_type == 'UPVOTE':
+                self.update_content_like_count(increment=True)
 
     def delete(self, *args, **kwargs):
         self.update_content_like_count(increment=False)
