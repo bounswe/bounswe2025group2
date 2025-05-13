@@ -19,6 +19,10 @@ def fitness_goals(request):
         return Response(serializer.data)
 
     elif request.method == 'POST':
+        # Check if status is set to 'ACTIVE', if not, set it to 'ACTIVE'
+        if 'status' not in request.data or request.data['status'] != 'ACTIVE':
+            request.data['status'] = 'ACTIVE'
+
         serializer = FitnessGoalSerializer(data=request.data)
         if serializer.is_valid():
             # Set the user who created the goal
