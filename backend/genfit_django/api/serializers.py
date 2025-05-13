@@ -4,7 +4,7 @@ from django.core.validators import RegexValidator
 from django.contrib.auth import get_user_model
 from django.utils import timezone
 from .utils import geocode_location
-from .models import Notification, UserWithType, FitnessGoal, Profile, Forum, Thread, Comment, Subcomment, Vote, Challenge, ChallengeParticipant, AiTutorChat, AiTutorResponse, UserAiMessage
+from .models import Notification, UserWithType, FitnessGoal, Profile, Forum, Thread, Comment, Subcomment, Vote, Challenge, ChallengeParticipant, AiTutorChat, AiTutorResponse, UserAiMessage, MentorMenteeRequest
 from django.utils import timezone
 
 
@@ -109,17 +109,14 @@ class NotificationSerializer(serializers.ModelSerializer):
 
 class FitnessGoalSerializer(serializers.ModelSerializer):
     progress_percentage = serializers.FloatField(read_only=True)
-    mentor = serializers.PrimaryKeyRelatedField(queryset=UserWithType.objects.filter(user_type='Coach'), required=False, allow_null=True)
+    mentor = serializers.PrimaryKeyRelatedField(queryset=User.objects.all(), required=False, allow_null=True)
+    user = serializers.PrimaryKeyRelatedField(queryset=User.objects.all(), required=False)
 
     class Meta:
         model = FitnessGoal
         fields = '__all__'
-        read_only_fields = ('user', 'current_value', 'status', 'last_updated', 'progress_percentage')
+        read_only_fields = ('current_value', 'status', 'last_updated', 'progress_percentage')
 
-    def validate_mentor(self, value):
-        if value:
-            return True
-        return False
 
 class FitnessGoalUpdateSerializer(serializers.ModelSerializer):
     class Meta:
@@ -402,3 +399,49 @@ class UserAiMessageSerializer(serializers.ModelSerializer):
         fields = ['id', 'user', 'chat', 'message', 'created_at', 'updated_at']
         read_only_fields = ['created_at', 'updated_at']
 
+class MentorMenteeRequestCreateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = MentorMenteeRequest
+        fields = ['mentor', 'mentee', 'sender', 'recipient']
+
+    def validate(self, data):
+        mentor = data.get('mentor')
+        mentee = data.get('mentee')
+        sender = data.get('sender')
+        recipient = data.get('recipient')
+
+        if mentor == mentee:
+            raise serializers.ValidationError("Mentor and mentee cannot be the same user.")
+
+        if sender not in [mentor, mentee]:
+            raise serializers.ValidationError("Sender must be either the mentor or mentee.")
+
+        if recipient not in [mentor, mentee]:
+            raise serializers.ValidationError("Recipient must be either the mentor or mentee.")
+
+        if sender == recipient:
+            raise serializers.ValidationError("Sender and recipient cannot be the same user.")
+
+        return data
+
+class MentorMenteeRequestSerializer(serializers.ModelSerializer):
+    mentor_username = serializers.CharField(source='mentor.username', read_only=True)
+    mentee_username = serializers.CharField(source='mentee.username', read_only=True)
+    sender_username = serializers.CharField(source='sender.username', read_only=True)
+    recipient_username = serializers.CharField(source='recipient.username', read_only=True)
+
+    class Meta:
+        model = MentorMenteeRequest
+        fields = [
+            'id',
+            'mentor',
+            'mentor_username',
+            'mentee',
+            'mentee_username',
+            'sender',
+            'sender_username',
+            'recipient',
+            'recipient_username',
+            'status',
+            'created_at',
+        ]

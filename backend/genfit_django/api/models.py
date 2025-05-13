@@ -18,6 +18,12 @@ class UserWithType(AbstractUser):
     user_type = models.CharField(choices=[('Coach', 'Coach'), ('User', 'User')], max_length=10)
     is_verified_coach = models.BooleanField(default=False)
 
+    mentors = models.ManyToManyField(
+        'self',
+        symmetrical=False,
+        related_name='mentees',
+        blank=True
+    )
 
 class FitnessGoal(models.Model):
     GOAL_TYPES = [
@@ -125,6 +131,9 @@ class Notification(models.Model):
         ('SYSTEM', 'System Notification'),
         ('NEW_MESSAGE', 'New Message'),
         ('GOAL_INACTIVE', 'Goal Inactive Warning'),
+        ('MENTOR_REQUEST', 'Mentor Request'),
+        ('MENTEE_REQUEST', 'Mentee Request'),
+        ('REQUEST_RESPONSE', 'Request Response'),
     ]
 
     recipient = models.ForeignKey(UserWithType, on_delete=models.CASCADE, related_name='notifications')
@@ -354,7 +363,6 @@ class UserAiMessage(models.Model):
     def __str__(self):
         return f"Message from {self.user.username} in Chat {self.chat.chat_id}"
 
-
 class Quote(models.Model):
     text = models.TextField()
     author = models.CharField(max_length=100)
@@ -365,3 +373,25 @@ class Quote(models.Model):
     
     def __str__(self):
         return f'"{self.text}" - {self.author}'
+
+class MentorMenteeRequest(models.Model):
+    REQUEST_STATUS = [
+        ('PENDING', 'Pending'),
+        ('ACCEPTED', 'Accepted'),
+        ('REJECTED', 'Rejected'),
+    ]
+
+    mentor = models.ForeignKey(UserWithType, on_delete=models.CASCADE, related_name='mentor_requests')
+    mentee = models.ForeignKey(UserWithType, on_delete=models.CASCADE, related_name='mentee_requests')
+    sender = models.ForeignKey(UserWithType, on_delete=models.CASCADE, related_name='sent_requests')
+    recipient = models.ForeignKey(UserWithType, on_delete=models.CASCADE, related_name='received_requests')
+    status = models.CharField(max_length=10, choices=REQUEST_STATUS, default='PENDING')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('mentor', 'mentee')
+
+    def __str__(self):
+        return f'{self.mentor} -> {self.mentee} ({self.status})'
+
+

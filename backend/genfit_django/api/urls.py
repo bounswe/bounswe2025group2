@@ -9,6 +9,7 @@ from .separate_views import forum_vote
 from .separate_views import challenges
 from .separate_views.ai_tutor_views import AiTutorViewSet
 from .separate_views import quote_views
+from .separate_views import mentor
 
 
 urlpatterns = [
@@ -34,6 +35,7 @@ urlpatterns = [
 
     # Fitness Goals URLs
     path('goals/', fitness_goals.fitness_goals, name='fitness_goals'),
+    path('goals/user/<int:user_id>/', fitness_goals.goals_of_user, name='goals_of_user'),
     path('goals/<int:goal_id>/', fitness_goals.fitness_goal_detail, name='fitness_goal_detail'),
     path('goals/<int:goal_id>/progress/', fitness_goals.update_goal_progress, name='update_goal_progress'),
     path('goals/check-inactive/', fitness_goals.check_inactive_goals, name='check_inactive_goals'),
@@ -90,6 +92,14 @@ urlpatterns = [
 
     # Interactive search directory for challenges
     path('challenges/search/', challenges.search_challenges, name='search-challenges'),
+
+    # Rename for consistency (optional)
+    path('requests/send/by-mentor/<int:mentee_id>/', mentor.send_mentor_request, name='send_by_mentor'),
+    path('requests/send/by-mentee/<int:mentor_id>/', mentor.send_mentee_request, name='send_by_mentee'),
+    path('requests/', mentor.get_mentor_mentee_requests, name='list_requests'),
+    path('requests/respond/<int:request_id>/', mentor.respond_to_mentor_mentee_request, name='respond_request'),
+    path('my-mentors/', mentor.view_mentors, name='my_mentors'),
+    path('my-mentees/', mentor.view_mentees, name='my_mentees'),
 ]
 
 router = DefaultRouter()

@@ -5,44 +5,65 @@ from rest_framework.response import Response
 from django.utils import timezone
 from django.db.models import Q
 
-from ..models import FitnessGoal, Notification
+from ..models import FitnessGoal, Notification, UserWithType
 from ..serializers import FitnessGoalSerializer, FitnessGoalUpdateSerializer
 
 @api_view(['GET', 'POST'])
 @permission_classes([IsAuthenticated])
 def fitness_goals(request):
     if request.method == 'GET':
-        goals = FitnessGoal.objects.filter(
-            Q(user=request.user) | Q(mentor=request.user)
-        )
+        goals = FitnessGoal.objects.filter(Q(user=request.user))
         serializer = FitnessGoalSerializer(goals, many=True)
         return Response(serializer.data)
 
     elif request.method == 'POST':
-        serializer = FitnessGoalSerializer(data=request.data)
-        if serializer.is_valid():
-            # Set the user who created the goal
-            serializer.save(user=request.user)
+        data = request.data.copy()
+        data['status'] = 'ACTIVE'
 
-            # If a mentor is setting the goal for a mentee
-            if request.user.user_type == 'Coach' and 'user' in request.data:
-                mentee = request.data['user']
-                # Create a notification for the mentee
+        target_user_id = data.get('user')
+
+        if target_user_id:
+            try:
+                target_user = UserWithType.objects.get(id=target_user_id)
+            except UserWithType.DoesNotExist:
+                return Response({'error': 'Target user not found.'}, status=status.HTTP_400_BAD_REQUEST)
+
+            if request.user.id != target_user.id:
+                # Check if current user is mentor of target user
+                if not request.user.mentees.filter(id=target_user.id).exists():
+                    return Response({'error': 'You are not authorized to set goals for this user.'}, status=status.HTTP_403_FORBIDDEN)
+                # Set mentor and assign goal to target user
+                data['mentor'] = request.user.id
+        else:
+            # No user specified, assign to self
+            data['user'] = request.user.id
+
+        serializer = FitnessGoalSerializer(data=data)
+        if serializer.is_valid():
+            fitness_goal = serializer.save()  # Save first
+
+            # Send notification if mentor created it
+            if 'mentor' in data:
                 Notification.objects.create(
-                    recipient_id=mentee,
+                    recipient=fitness_goal.user,
                     sender=request.user,
                     notification_type='GOAL',
                     title='New Fitness Goal Assigned',
-                    message=f'Your mentor has set a new fitness goal: {serializer.data["title"]}',
-                    related_object_id=serializer.data['id'],
+                    message=f'Your mentor has set a new fitness goal: {fitness_goal.title}',
+                    related_object_id=fitness_goal.id,
                     related_object_type='FitnessGoal'
                 )
 
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
+            return Response(FitnessGoalSerializer(fitness_goal).data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    else:
-        return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
+    return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
+
+
+
+
+
+
 
 @api_view(['GET', 'PUT', 'DELETE'])
 @permission_classes([IsAuthenticated])
@@ -132,3 +153,20 @@ def check_inactive_goals(request):
         goal.save()
 
     return Response({'message': f'{len(inactive_goals)} goals marked as inactive'})
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def goals_of_user(request, user_id):
+    try:
+        target_user = UserWithType.objects.get(id=user_id)
+    except UserWithType.DoesNotExist:
+        return Response({'error': 'User not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+    # Check if requester is a mentor of the target user
+    if not request.user.mentees.filter(id=target_user.id).exists():
+        return Response({'error': 'You are not authorized to view this user\'s goals.'}, status=status.HTTP_403_FORBIDDEN)
+
+    goals = FitnessGoal.objects.filter(user=target_user)
+    serializer = FitnessGoalSerializer(goals, many=True)
+    return Response(serializer.data)

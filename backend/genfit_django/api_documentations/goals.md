@@ -72,8 +72,7 @@ Creates a new fitness goal. The authenticated user will automatically be set as 
 {
   "title": "Bench Press Goal",
   "description": "Increase bench press weight to 100kg",
-  "mentor": 7,          // Optional - mentor's user ID
-  "user": 5,            // Required only if coach is creating a goal for mentee
+  "user": 5,            // Required only if mentor is creating a goal for mentee
   "category": "STRENGTH",
   "target_value": 100.0,
   "current_value": 80.0,
@@ -90,7 +89,7 @@ Creates a new fitness goal. The authenticated user will automatically be set as 
   "title": "Bench Press Goal",
   "description": "Increase bench press weight to 100kg",
   "user": 5,
-  "mentor": 7,
+  "mentor": 7,   // The authenticated user will be mentor
   "category": "STRENGTH",
   "target_value": 100.0,
   "current_value": 80.0,
@@ -228,6 +227,47 @@ Checks for and marks goals that have been inactive for more than 7 days. A goal 
 }
 ```
 
+
+### View a Mentee's Goals (Mentor-Only Access)
+
+**Endpoint:** `GET /api/goals/user/<user_id>/`
+
+**Description:**
+Allows a mentor to view the fitness goals of a specific user (mentee) by their user ID.
+
+**Permissions:**
+- Only mentors can access this endpoint.
+- The requested user must be a mentee of the authenticated mentor (i.e., `user.mentor == request.user`).
+
+**Response:**
+Returns a list of goals for the specified mentee if the mentor-mentee relationship is valid.
+
+
+**Example Response:**
+```json
+[
+    {
+        "id": 1,
+        "user": 5,
+        "goal_type": "Lose Weight",
+        "description": "Lose 5 kg in 2 months",
+        "target_value": 5.0,
+        "progress_value": 2.0,
+        "progress_percentage": 40.0,
+        "is_completed": false,
+        "start_date": "2025-05-01",
+        "end_date": "2025-07-01",
+        "created_at": "2025-05-01T10:00:00Z",
+        "updated_at": "2025-05-10T14:22:31Z"
+    }
+]
+```
+
+**Errors:**
+- `403 Forbidden`: If the requester is not a mentor or the target user is not their mentee.
+- `404 Not Found`: If the specified user does not exist.
+
+
 **Notes:**
 - For each inactive goal, the status will be changed to "INACTIVE".
 - A notification will be created for each inactive goal to remind the user.
@@ -237,21 +277,21 @@ Checks for and marks goals that have been inactive for more than 7 days. A goal 
 
 ### Fitness Goal Model
 
-| Field | Type | Description                                                                      |
-|-------|------|----------------------------------------------------------------------------------|
-| id | Integer | Unique identifier for the goal                                                   |
-| title | String | The title of the fitness goal                                                    |
-| description | String | Detailed description of the goal                                                 |
-| user | Integer | User ID of the goal owner                                                        |
-| mentor | Integer (Optional) | User ID of the mentor/coach assigned to the goal                                 |
+| Field | Type | Description                                                                     |
+|-------|------|---------------------------------------------------------------------------------|
+| id | Integer | Unique identifier for the goal                                                  |
+| title | String | The title of the fitness goal                                                   |
+| description | String | Detailed description of the goal                                                |
+| user | Integer | User ID of the goal owner                                                       |
+| mentor | Integer (Optional) | User ID of the mentor assigned to the goal                                 |
 | category | String | Category of the goal (e.g., WALKING_RUNNING, WORKOUT, CYCLING, SPORTS, SWIMMING) |
-| target_value | Float | Target numerical value to achieve                                                |
-| current_value | Float | Current progress value                                                           |
-| unit | String | Unit of measurement (e.g., kg, km, reps)                                         |
-| start_date | DateTime | When the goal was started                                                        |
-| target_date | DateTime | Deadline for completing the goal                                                 |
-| status | String | Current status (ACTIVE, COMPLETED, INACTIVE, RESTARTED)                          |
-| last_updated | DateTime | When the goal was last updated                                                   |
+| target_value | Float | Target numerical value to achieve                                               |
+| current_value | Float | Current progress value                                                          |
+| unit | String | Unit of measurement (e.g., kg, km, reps)                                        |
+| start_date | DateTime | When the goal was started                                                       |
+| target_date | DateTime | Deadline for completing the goal                                                |
+| status | String | Current status (ACTIVE, COMPLETED, INACTIVE, RESTARTED)                         |
+| last_updated | DateTime | When the goal was last updated                                                  |
 
 ### Notification Types
 
