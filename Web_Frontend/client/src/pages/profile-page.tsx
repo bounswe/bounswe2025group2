@@ -20,6 +20,7 @@ import { Switch } from "@/components/ui/switch";
 import { User, Loader2, Settings, Edit, Camera, Trophy, MessageSquare, Target } from "lucide-react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient.ts";
+import { API_BASE_URL} from "@/lib/queryClient.ts";
 
 interface UserFields {
   email: string;
@@ -30,12 +31,12 @@ interface UserFields {
 }
 
 interface UserProfileDetails {
-  surname: string;
   age: string;
   bio: string;
   birth_date: string;
   location: string;
   name: string;
+  surname: string; // Added surname
 }
 
 interface UserGoal {
@@ -106,56 +107,16 @@ const apiClient = {
 };
 
 export default function ProfilePage() {
-
-  const { user: currentUser, applyForRoleMutation } = useAuth();
-
-  const updateProfileMutation = useMutation({
-    mutationFn: async (data: {
-      name: string;
-      surname: string;
-      bio: string;
-      location: string;
-      birth_date: string;
-    }) => {
-      const csrfToken = getCsrfToken();
-
-      const res = await fetch('http://localhost:8000/api/profile/', {
-        method: 'PUT',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-CSRFToken': csrfToken
-        },
-        body: JSON.stringify(data)
-      });
-
-      if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.message || 'Failed to update profile');
-      }
-
-      return res.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/profile/'] });
-    },
-    onError: (error) => {
-      console.error("Update failed:", error);
-    }
-  });
-
+  const { user: currentUser, updateProfileMutation, applyForRoleMutation } = useAuth();
   // @ts-ignore
   const username = currentUser.username
   const [isEditing, setIsEditing] = useState(false);
   const [editedProfile, setEditedProfile] = useState({
     name: "",
-    surname: "",
+    surname: "", // Added surname
     bio: "",
     location: "",
-    birth_date: "",
-    interests: [] as string[],
-    visibility: "public",
-    role: "",
+    birth_date: "", // Added birth_date
     age: "",
   });
 
@@ -167,7 +128,7 @@ export default function ProfilePage() {
     queryKey: ['api/profile/picture'],
     queryFn: async () => {
       try {
-        const res = await apiClient.get('http://localhost:8000/api/profile/picture/');
+        const res = await apiClient.get(`${API_BASE_URL}/api/profile/picture/`);
 
         // Check if the response is successful
         if (!res.ok) {
@@ -201,7 +162,7 @@ export default function ProfilePage() {
     queryKey: ['/api/profile/'],
     queryFn: async () => {
       try {
-        const res = await apiClient.get('http://localhost:8000/api/profile/');
+        const res = await apiClient.get(`${API_BASE_URL}/api/profile/`);
 
         // Check if the response is successful
         if (!res.ok) {
@@ -233,7 +194,7 @@ export default function ProfilePage() {
       console.log("File Type:", file.type);
       console.log("File:", file);
 
-      const response = await fetch('http://localhost:8000/api/profile/picture/upload/', {
+      const response = await fetch(`${API_BASE_URL}/api/profile/picture/upload/`, {
         method: "POST",
         body: formData,
         credentials: 'include',
@@ -262,7 +223,7 @@ export default function ProfilePage() {
     mutationFn: async () => {
       const csrfToken = getCsrfToken();
 
-      const response = await fetch('http://localhost:8000/api/profile/picture/delete/', {
+      const response = await fetch(`${API_BASE_URL}/api/profile/picture/delete/`, {
         method: 'DELETE',
         headers: {
           'X-CSRFToken': csrfToken
@@ -298,18 +259,16 @@ export default function ProfilePage() {
   // Set default values for editing
   useEffect(() => {
     if (profileDetails) {
-      setEditedProfile(prev => ({
-        ...prev,
+      setEditedProfile({
         name: profileDetails.name || "",
-        bio: profileDetails.bio || "",
+        surname: profileDetails.surname || "", // Added surname
         location: profileDetails.location || "",
-        age: profileDetails.age || "",
-        birth_date: profileDetails.birth_date || "",
-        surname: profileDetails.surname || ""
-      }));
+        bio: profileDetails.bio || "",
+        birth_date: profileDetails.birth_date || "", // Added birth_date
+        age: profileDetails.age || ""
+      });
     }
   }, [profileDetails]);
-
 
   const isOwnProfile = currentUser?.id === profileUser?.id;
   const isPrivateProfile = false;
@@ -319,13 +278,17 @@ export default function ProfilePage() {
 
     updateProfileMutation.mutate({
       name: editedProfile.name,
-      surname: editedProfile.surname,
+      surname: editedProfile.surname, // Added surname
       bio: editedProfile.bio,
-      location: editedProfile.location,
-      birth_date: editedProfile.birth_date
+      location: editedProfile.location, // Added location
+      birth_date: editedProfile.birth_date // Added birth_date
+    }, {
+      onSuccess: () => {
+        setIsEditing(false);
+      }
     });
-  };
 
+  };
 
   const handleApplyForRole = (role: string) => {
     if (!isOwnProfile) return;
@@ -333,22 +296,6 @@ export default function ProfilePage() {
 
   };
 
-  const addInterest = () => {
-    if (newInterest.trim() && !editedProfile.interests.includes(newInterest.trim())) {
-      setEditedProfile({
-        ...editedProfile,
-        interests: [...editedProfile.interests, newInterest.trim()]
-      });
-      setNewInterest("");
-    }
-  };
-
-  const removeInterest = (interest: string) => {
-    setEditedProfile({
-      ...editedProfile,
-      interests: editedProfile.interests.filter(i => i !== interest)
-    });
-  };
 
   if (!username) {
     return (
@@ -521,16 +468,6 @@ export default function ProfilePage() {
                           onChange={(e) => setEditedProfile({ ...editedProfile, name: e.target.value })}
                         />
                       </div>
-
-                      <div className="space-y-2">
-                        <Label htmlFor="bio">Bio</Label>
-                        <Textarea
-                          id="bio"
-                          value={editedProfile.bio}
-                          onChange={(e) => setEditedProfile({ ...editedProfile, bio: e.target.value })}
-                        />
-                      </div>
-
                       <div className="space-y-2">
                         <Label htmlFor="surname">Surname</Label>
                         <Input
@@ -539,7 +476,22 @@ export default function ProfilePage() {
                           onChange={(e) => setEditedProfile({ ...editedProfile, surname: e.target.value })}
                         />
                       </div>
-
+                      <div className="space-y-2">
+                          <Label htmlFor="location">Location</Label>
+                          <Input
+                          id="location"
+                          value={editedProfile.location}
+                          onChange={(e) => setEditedProfile({ ...editedProfile, location: e.target.value })}
+                          />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="bio">Bio</Label>
+                        <Textarea
+                          id="bio"
+                          value={editedProfile.bio}
+                          onChange={(e) => setEditedProfile({ ...editedProfile, bio: e.target.value })}
+                        />
+                      </div>
                       <div className="space-y-2">
                         <Label htmlFor="birth_date">Birth Date</Label>
                         <Input
@@ -550,49 +502,6 @@ export default function ProfilePage() {
                         />
                       </div>
 
-
-
-                      <div className="space-y-2">
-                        <Label>Interests</Label>
-                        <div className="flex flex-wrap gap-2 mb-2">
-                          {editedProfile.interests.map((interest, index) => (
-                            <Badge key={index} variant="secondary" className="px-2 py-1">
-                              {interest}
-                              <button
-                                className="ml-1 text-muted-foreground hover:text-foreground"
-                                onClick={() => removeInterest(interest)}
-                              >
-                                ×
-                              </button>
-                            </Badge>
-                          ))}
-                        </div>
-                        <div className="flex gap-2">
-                          <Input
-                            placeholder="Add interest..."
-                            value={newInterest}
-                            onChange={(e) => setNewInterest(e.target.value)}
-                            onKeyDown={(e) => e.key === 'Enter' && addInterest()}
-                          />
-                          <Button type="button" onClick={addInterest}>Add</Button>
-                        </div>
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label htmlFor="visibility">Profile Visibility</Label>
-                        <Select
-                          value={editedProfile.visibility}
-                          onValueChange={(value) => setEditedProfile({ ...editedProfile, visibility: value })}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select visibility" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="public">Public</SelectItem>
-                            <SelectItem value="private">Private</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
 
                       <div className="flex justify-end gap-2 pt-4">
                         <Button variant="outline" onClick={() => setIsEditing(false)}>
@@ -800,4 +709,3 @@ export default function ProfilePage() {
     </div>
   );
 }
-
