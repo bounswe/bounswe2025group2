@@ -8,6 +8,8 @@ import MobileHeader from "@/components/layout/mobile-header.tsx";
 import Sidebar from "@/components/layout/sidebar.tsx";
 import MobileNavigation from "@/components/layout/mobile-navigation.tsx";
 
+import {API_BASE_URL} from "@/lib/queryClient.ts";
+
 function getCsrfToken() {
     const name = 'csrftoken';
     const value = `; ${document.cookie}`;
@@ -34,7 +36,7 @@ export default function ThreadPageWrapper() {
         queryKey: ["threads"],
         queryFn: async () => {
             const csrfToken = getCsrfToken();
-            const response = await fetch('http://localhost:8000/api/threads/' + id, {
+            const response = await fetch(`${API_BASE_URL}/api/threads/` + id, {
                 method: "GET",
                 credentials: 'include',
                 headers: {
@@ -66,7 +68,7 @@ export default function ThreadPageWrapper() {
         queryKey: ["comments"],
         queryFn: async () => {
             const csrfToken = getCsrfToken();
-            const response = await fetch('http://localhost:8000/api/comments/thread/' + id + "/", {
+            const response = await fetch(`${API_BASE_URL}/api/comments/thread/` + id + "/", {
                 method: "GET",
                 credentials: 'include',
                 headers: {
@@ -84,7 +86,7 @@ export default function ThreadPageWrapper() {
             const enrichedData = await Promise.all(
                 data.map(async (item: any) => {
                     const csrfToken = getCsrfToken();
-                    const response = await fetch('http://localhost:8000/api/forum/vote/comment/' + item.id + "/status/", {
+                    const response = await fetch(`${API_BASE_URL}/api/forum/vote/comment/` + item.id + "/status/", {
                         method: "GET",
                         credentials: 'include',
                         headers: {
@@ -137,7 +139,7 @@ export default function ThreadPageWrapper() {
 
     const postReplyToThread = async (replyText: string) => {
         const csrfToken = getCsrfToken();
-        const response = await fetch('http://localhost:8000/api/comments/add/' + id + "/", {
+        const response = await fetch(`${API_BASE_URL}/api/comments/add/` + id + "/", {
             method: "POST",
             credentials: 'include',
             headers: {
@@ -159,7 +161,7 @@ export default function ThreadPageWrapper() {
         comment_element.self_vote = 1;
 
         const csrfToken = getCsrfToken();
-        const response = await fetch('http://localhost:8000/api/forum/vote/', {
+        const response = await fetch(`${API_BASE_URL}/api/forum/vote/`, {
             method: "POST",
             credentials: 'include',
             headers: {
@@ -180,7 +182,7 @@ export default function ThreadPageWrapper() {
         comment_element.self_vote = -1;
 
         const csrfToken = getCsrfToken();
-        const response = await fetch('http://localhost:8000/api/forum/vote/', {
+        const response = await fetch(`${API_BASE_URL}/api/forum/vote/`, {
             method: "POST",
             credentials: 'include',
             headers: {
@@ -227,7 +229,7 @@ export default function ThreadPageWrapper() {
 
     const postReplyToThread_subc = async (replyText: string) => {
         const csrfToken = getCsrfToken();
-        const response = await fetch('http://localhost:8000/api/subcomments/add/' + selectedComment.id + "/", {
+        const response = await fetch(`${API_BASE_URL}/api/subcomments/add/` + selectedComment.id + "/", {
             method: "POST",
             credentials: 'include',
             headers: {
@@ -249,7 +251,7 @@ export default function ThreadPageWrapper() {
         subcomment_element.self_vote = 1;
 
         const csrfToken = getCsrfToken();
-        const response = await fetch('http://localhost:8000/api/forum/vote/', {
+        const response = await fetch(`${API_BASE_URL}/api/forum/vote/`, {
             method: "POST",
             credentials: 'include',
             headers: {
@@ -269,7 +271,7 @@ export default function ThreadPageWrapper() {
         subcomment_element.self_vote = -1;
 
         const csrfToken = getCsrfToken();
-        const response = await fetch('http://localhost:8000/api/forum/vote/', {
+        const response = await fetch(`${API_BASE_URL}/api/forum/vote/`, {
             method: "POST",
             credentials: 'include',
             headers: {
@@ -289,7 +291,7 @@ export default function ThreadPageWrapper() {
     const [subcomments, setSubcomments] = useState<any[]>([]);
     const fetch_subcomments_data = async (replyid:number) => {
         const csrfToken = getCsrfToken();
-        const response = await fetch('http://localhost:8000/api/subcomments/comment/' + replyid + "/", {
+        const response = await fetch(`${API_BASE_URL}/api/subcomments/comment/` + replyid + "/", {
             method: "GET",
             credentials: 'include',
             headers: {
@@ -307,7 +309,7 @@ export default function ThreadPageWrapper() {
         data = await Promise.all(
             data.map(async (item: any) => {
                 const csrfToken = getCsrfToken();
-                const response = await fetch('http://localhost:8000/api/forum/vote/subcomment/' + item.id + "/status/", {
+                const response = await fetch(`${API_BASE_URL}/api/forum/vote/subcomment/` + item.id + "/status/", {
                     method: "GET",
                     credentials: 'include',
                     headers: {

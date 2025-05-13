@@ -19,7 +19,7 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { User, Loader2, Settings, Edit, Camera, Trophy, MessageSquare, Target } from "lucide-react";
 import {useMutation, useQuery} from "@tanstack/react-query";
-import {queryClient} from "@/lib/queryClient.ts";
+import {API_BASE_URL, queryClient} from "@/lib/queryClient.ts";
 
 interface UserFields {
   email: string;
@@ -127,7 +127,7 @@ export default function ProfilePage() {
     queryKey: ['api/profile/picture'],
     queryFn: async () => {
       try {
-        const res = await apiClient.get('http://localhost:8000/api/profile/picture/');
+        const res = await apiClient.get(`${API_BASE_URL}/api/profile/picture/`);
 
         // Check if the response is successful
         if (!res.ok) {
@@ -161,7 +161,7 @@ export default function ProfilePage() {
     queryKey: ['/api/profile/'],
     queryFn: async () => {
       try {
-        const res = await apiClient.get('http://localhost:8000/api/profile/');
+        const res = await apiClient.get(`${API_BASE_URL}/api/profile/`);
 
         // Check if the response is successful
         if (!res.ok) {
@@ -193,7 +193,7 @@ export default function ProfilePage() {
       console.log("File Type:", file.type);
       console.log("File:", file);
 
-      const response = await fetch('http://localhost:8000/api/profile/picture/upload/', {
+      const response = await fetch(`${API_BASE_URL}/api/profile/picture/upload/`, {
         method: "POST",
         body: formData,
         credentials: 'include',
@@ -222,7 +222,7 @@ export default function ProfilePage() {
     mutationFn: async () => {
       const csrfToken = getCsrfToken();
 
-      const response = await fetch('http://localhost:8000/api/profile/picture/delete/', {
+      const response = await fetch(`${API_BASE_URL}/api/profile/picture/delete/`, {
         method: 'DELETE',
         headers: {
           'X-CSRFToken': csrfToken

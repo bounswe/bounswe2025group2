@@ -7,7 +7,7 @@ from .separate_views.forum_forumthread import ForumViewSet, ThreadViewSet
 from .separate_views import forum_comments
 from .separate_views import forum_vote
 from .separate_views.ai_tutor_views import AiTutorViewSet
-
+from .separate_views import local_hour
 
 
 urlpatterns = [
@@ -68,6 +68,8 @@ urlpatterns = [
     path('forum/vote/<str:content_type>/<int:object_id>/', forum_vote.delete_vote, name='delete_vote'),
     # get info about whether a user voted on the content
     path('forum/vote/<str:content_type>/<int:object_id>/status/', forum_vote.get_user_vote, name='get_user_vote'),
+
+    path('localtime/', local_hour.get_local_hour, name='get_local_hour'),
 ]
 
 router = DefaultRouter()
