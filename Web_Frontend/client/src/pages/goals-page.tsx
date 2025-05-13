@@ -786,7 +786,7 @@ export default function GoalsPage() {
                 )}>End Date</Label>
                 <Input 
                   type="date"
-                  name="end_date"
+                  name="target_date"
                   value={formData.target_date}
                   onChange={handleInputChange}
                   className={cn(
@@ -828,7 +828,7 @@ export default function GoalsPage() {
         </DialogContent>
       </Dialog>
 
-      Update Goal Dialog
+      {/* Update Goal Dialog */}
       <Dialog open={isUpdateDialogOpen} onOpenChange={setIsUpdateDialogOpen}>
         <DialogContent className={cn(
           "bg-nav-bg sm:max-w-[425px]",
@@ -933,16 +933,6 @@ export default function GoalsPage() {
                 <Label className={cn(
                   theme === 'dark' ? 'text-white' : 'text-[#800000]'
                 )}>End Date</Label>
-                <Input
-                  type="date"
-                  name="end_date"
-                  value={formData.target_date}
-                  onChange={handleInputChange}
-                  className={cn(
-                    "bg-background",
-                    theme === 'dark' ? 'text-white border-[#e18d58]' : 'text-[#800000] border-[#800000]'
-                  )}
-                />
               </div>
             </div>
           </div>

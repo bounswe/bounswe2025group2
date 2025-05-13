@@ -13,7 +13,7 @@ from ..serializers import FitnessGoalSerializer, FitnessGoalUpdateSerializer
 def fitness_goals(request):
     if request.method == 'GET':
         goals = FitnessGoal.objects.filter(
-            Q(user=request.user) | Q(mentor=request.user)
+            Q(user=request.user)
         )
         serializer = FitnessGoalSerializer(goals, many=True)
         return Response(serializer.data)
