@@ -13,8 +13,8 @@ logger = logging.getLogger(__name__)
 @permission_classes([AllowAny])
 def get_local_hour(request, lat, lon):
     try:
-        lat = float(lat)
-        lon = float(lon)
+        lat = (float(lat) + 90)%180 - 90
+        lon = (float(lon)+180)%360 - 180
         
         # Create a cache key based on coordinates (rounded to 2 decimal places for better cache hits)
         cache_key = f"local_time_{round(lat, 2)}_{round(lon, 2)}"
@@ -30,6 +30,9 @@ def get_local_hour(request, lat, lon):
                 f"https://timeapi.io/api/time/current/coordinate?latitude={lat}&longitude={lon}",
                 timeout=60  # 60 seconds timeout
             )
+
+            if time_res.status_code != 200:
+                return Response({"error": "bad request parameters"}, status=status.HTTP_400_BAD_REQUEST)
             time_data = time_res.json()
             logger.debug(f"time res: {time_res.status_code} time data: {time_data}")
             
@@ -61,6 +64,8 @@ def get_local_hour(request, lat, lon):
             {'error': 'Error connecting to time service.'}, 
             status=status.HTTP_503_SERVICE_UNAVAILABLE
         )
+    except ValueError as e:
+        return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
     except Exception as e:
         logger.error(f"Unexpected error in get_local_hour: {str(e)}")
         return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
