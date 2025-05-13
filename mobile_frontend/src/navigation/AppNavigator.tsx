@@ -14,6 +14,7 @@ import Register from '../Pages/Register';
 import Layout from '../components/Layout';
 import BottomBar from '../components/BottomBar';
 import Goals from '../Pages/Goals';
+import { useAuth } from '../context/AuthContext';
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -47,9 +48,11 @@ const MainTabs = () => {
 };
 
 const AppNavigator = () => {
+  const { isAuthenticated } = useAuth();
+
   return (
     <Stack.Navigator
-      initialRouteName="Login"
+      initialRouteName={isAuthenticated ? 'Main' : 'Login'}
       screenOptions={{
         headerShown: false,
       }}

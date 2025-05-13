@@ -21,6 +21,7 @@ import { User, Loader2, Settings, Edit, Camera, Trophy, MessageSquare, Target } 
 import {useMutation, useQuery} from "@tanstack/react-query";
 import {API_BASE_URL, queryClient} from "@/lib/queryClient.ts";
 
+
 interface UserFields {
   email: string;
   id: number;
@@ -35,22 +36,23 @@ interface UserProfileDetails {
   birth_date: string;
   location: string;
   name: string;
+  surname: string; // Added surname
 }
 
 interface UserGoal {
-    description: string;
-    goal_type: string;
-    id: number;
-    last_updated: string;
-    setting_mentor_id: number;
-    progress_percentage: number;
-    start_date: string;
-    status: string;
-    target_date: string;
-    current_value: number;
-    target_value: number;
-    title: string;
-    unit: string;
+  description: string;
+  goal_type: string;
+  id: number;
+  last_updated: string;
+  setting_mentor_id: number;
+  progress_percentage: number;
+  start_date: string;
+  status: string;
+  target_date: string;
+  current_value: number;
+  target_value: number;
+  title: string;
+  unit: string;
 }
 
 function getCsrfToken() {
@@ -111,11 +113,10 @@ export default function ProfilePage() {
   const [isEditing, setIsEditing] = useState(false);
   const [editedProfile, setEditedProfile] = useState({
     name: "",
+    surname: "", // Added surname
     bio: "",
-    interests: [] as string[],
-    visibility: "public",
-    role: "",
     location: "",
+    birth_date: "", // Added birth_date
     age: "",
   });
 
@@ -256,17 +257,18 @@ export default function ProfilePage() {
 
 
   // Set default values for editing
-  useState(() => {
+  useEffect(() => {
     if (profileDetails) {
       setEditedProfile({
-        interests: [], role: "", visibility: "",
         name: profileDetails.name || "",
+        surname: profileDetails.surname || "", // Added surname
         location: profileDetails.location || "",
         bio: profileDetails.bio || "",
+        birth_date: profileDetails.birth_date || "", // Added birth_date
         age: profileDetails.age || ""
       });
     }
-  });
+  }, [profileDetails]);
 
   const isOwnProfile = currentUser?.id === profileUser?.id;
   const isPrivateProfile = false;
@@ -276,9 +278,10 @@ export default function ProfilePage() {
 
     updateProfileMutation.mutate({
       name: editedProfile.name,
+      surname: editedProfile.surname, // Added surname
       bio: editedProfile.bio,
-      interests: editedProfile.interests,
-      visibility: editedProfile.visibility
+      location: editedProfile.location, // Added location
+      birth_date: editedProfile.birth_date // Added birth_date
     }, {
       onSuccess: () => {
         setIsEditing(false);
@@ -293,22 +296,6 @@ export default function ProfilePage() {
 
   };
 
-  const addInterest = () => {
-    if (newInterest.trim() && !editedProfile.interests.includes(newInterest.trim())) {
-      setEditedProfile({
-        ...editedProfile,
-        interests: [...editedProfile.interests, newInterest.trim()]
-      });
-      setNewInterest("");
-    }
-  };
-
-  const removeInterest = (interest: string) => {
-    setEditedProfile({
-      ...editedProfile,
-      interests: editedProfile.interests.filter(i => i !== interest)
-    });
-  };
 
   if (!username) {
     return (
@@ -338,7 +325,7 @@ export default function ProfilePage() {
                     size="lg"
                     role={username === "johndoe" ? "trainee" : username === "janedoe" ? "coach" : ""}
                     verified={username === "johndoe" || username === "janedoe"}
-                    src={profilePictureLoading?"":profilePicture}
+                    src={profilePictureLoading ? "" : profilePicture}
                   />)}
                   {isOwnProfile && (
                     <div className="absolute -bottom-2 -left-2 right-0 flex justify-between">
@@ -481,7 +468,22 @@ export default function ProfilePage() {
                           onChange={(e) => setEditedProfile({ ...editedProfile, name: e.target.value })}
                         />
                       </div>
-
+                      <div className="space-y-2">
+                        <Label htmlFor="surname">Surname</Label>
+                        <Input
+                          id="surname"
+                          value={editedProfile.surname}
+                          onChange={(e) => setEditedProfile({ ...editedProfile, surname: e.target.value })}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                          <Label htmlFor="location">Location</Label>
+                          <Input
+                          id="location"
+                          value={editedProfile.location}
+                          onChange={(e) => setEditedProfile({ ...editedProfile, location: e.target.value })}
+                          />
+                      </div>
                       <div className="space-y-2">
                         <Label htmlFor="bio">Bio</Label>
                         <Textarea
@@ -490,48 +492,16 @@ export default function ProfilePage() {
                           onChange={(e) => setEditedProfile({ ...editedProfile, bio: e.target.value })}
                         />
                       </div>
-
                       <div className="space-y-2">
-                        <Label>Interests</Label>
-                        <div className="flex flex-wrap gap-2 mb-2">
-                          {editedProfile.interests.map((interest, index) => (
-                            <Badge key={index} variant="secondary" className="px-2 py-1">
-                              {interest}
-                              <button
-                                className="ml-1 text-muted-foreground hover:text-foreground"
-                                onClick={() => removeInterest(interest)}
-                              >
-                                ×
-                              </button>
-                            </Badge>
-                          ))}
-                        </div>
-                        <div className="flex gap-2">
-                          <Input
-                            placeholder="Add interest..."
-                            value={newInterest}
-                            onChange={(e) => setNewInterest(e.target.value)}
-                            onKeyDown={(e) => e.key === 'Enter' && addInterest()}
-                          />
-                          <Button type="button" onClick={addInterest}>Add</Button>
-                        </div>
+                        <Label htmlFor="birth_date">Birth Date</Label>
+                        <Input
+                          id="birth_date"
+                          type="date"
+                          value={editedProfile.birth_date}
+                          onChange={(e) => setEditedProfile({ ...editedProfile, birth_date: e.target.value })}
+                        />
                       </div>
 
-                      <div className="space-y-2">
-                        <Label htmlFor="visibility">Profile Visibility</Label>
-                        <Select
-                          value={editedProfile.visibility}
-                          onValueChange={(value) => setEditedProfile({ ...editedProfile, visibility: value })}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select visibility" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="public">Public</SelectItem>
-                            <SelectItem value="private">Private</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
 
                       <div className="flex justify-end gap-2 pt-4">
                         <Button variant="outline" onClick={() => setIsEditing(false)}>
@@ -563,7 +533,10 @@ export default function ProfilePage() {
                     <div className="bg-primary inline-flex p-2 rounded-full mb-2">
                       <Target className="h-6 w-6 text-secondary-dark" />
                     </div>
-                    <h3 className="text-xl font-bold">0</h3>
+                    <h3 className="text-xl font-bold">
+                      {userGoals?.filter(goal => goal.status === 'ACTIVE').length ?? 0}
+                    </h3>
+
                     <p className="text-muted-foreground text-sm">Active Goals</p>
                   </CardContent>
                 </Card>

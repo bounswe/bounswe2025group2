@@ -6,8 +6,10 @@ from .separate_views import profile
 from .separate_views.forum_forumthread import ForumViewSet, ThreadViewSet
 from .separate_views import forum_comments
 from .separate_views import forum_vote
+from .separate_views import challenges
 from .separate_views.ai_tutor_views import AiTutorViewSet
 from .separate_views import local_hour
+from .separate_views import quote_views
 
 
 urlpatterns = [
@@ -26,6 +28,10 @@ urlpatterns = [
     path('notifications/<int:notification_id>/', views.get_single_notification, name='get_single_notification'),
     path('notifications/<int:notification_id>/read/', views.mark_notification_read, name='mark_notification_read'),
     path('notifications/read-all/', views.mark_all_notifications_read, name='mark_all_notifications_read'),
+
+    # Quote endpoints
+    path('quotes/random/', quote_views.get_random_quote, name='get_random_quote'),
+    path('quotes/daily/', quote_views.get_daily_quote, name='get_daily_quote'),
 
     # Fitness Goals URLs
     path('goals/', fitness_goals.fitness_goals, name='fitness_goals'),
@@ -70,6 +76,23 @@ urlpatterns = [
     path('forum/vote/<str:content_type>/<int:object_id>/status/', forum_vote.get_user_vote, name='get_user_vote'),
 
     path('localtime/', local_hour.get_local_hour, name='get_local_hour'),
+  
+    # Challenge-related views
+    path('challenges/<int:challenge_id>/', challenges.get_challenge_detail, name='get_challenge_detail'),
+    path('challenges/create/', challenges.create_challenge, name='create_challenge'),
+    path('challenges/<int:challenge_id>/update/', challenges.update_challenge, name='update_challenge'),
+    path('challenges/<int:challenge_id>/delete/', challenges.delete_challenge, name='delete_challenge'),
+
+    # Participant-related views
+    path('challenges/<int:challenge_id>/join/', challenges.join_challenge, name='join_challenge'),
+    path('challenges/<int:challenge_id>/leave/', challenges.leave_challenge, name='leave_challenge'),
+    path('challenges/<int:challenge_id>/update-progress/', challenges.update_progress, name='update_progress'),
+
+    # Leaderboard-related view
+    path('challenges/<int:challenge_id>/leaderboard/', challenges.challenge_leaderboard, name='challenge_leaderboard'),
+
+    # Interactive search directory for challenges
+    path('challenges/search/', challenges.search_challenges, name='search-challenges'),
 ]
 
 router = DefaultRouter()

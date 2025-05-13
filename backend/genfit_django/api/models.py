@@ -3,8 +3,11 @@ from django.db import models
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes.fields import GenericRelation
+from django.utils import timezone
 from django.db.models.signals import post_save
 from django.dispatch import receiver
+from django.utils import timezone
+
 
 
 class UserWithType(AbstractUser):
@@ -58,6 +61,53 @@ class FitnessGoal(models.Model):
                 return 0
         except:
             return 0
+
+
+
+
+class Challenge(models.Model):
+    coach = models.ForeignKey(UserWithType, on_delete=models.CASCADE, related_name='created_challenges')
+    title = models.CharField(max_length=255)
+    description = models.TextField(blank=True)
+    challenge_type = models.CharField(max_length=50)
+    target_value = models.FloatField()
+    unit = models.CharField(max_length=20)
+    location = models.CharField(max_length=255, blank=True, null=True)
+    longitude = models.FloatField(null=True, blank=True)
+    latitude = models.FloatField(null=True, blank=True)
+    start_date = models.DateTimeField(default=timezone.now)
+    end_date = models.DateTimeField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    min_age = models.IntegerField(null=True, blank=True)
+    max_age = models.IntegerField(null=True, blank=True)
+
+    def __str__(self):
+        return self.title
+
+    def is_active(self):
+        now = timezone.now()
+        return self.start_date <= now <= self.end_date
+
+
+class ChallengeParticipant(models.Model):
+    challenge = models.ForeignKey(Challenge, on_delete=models.CASCADE, related_name='participants')
+    user = models.ForeignKey(UserWithType, on_delete=models.CASCADE, related_name='joined_challenges')
+    current_value = models.FloatField(default=0.0)
+    joined_at = models.DateTimeField(auto_now_add=True)
+    last_updated = models.DateTimeField(auto_now=True)
+    finish_date = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        unique_together = ('challenge', 'user')
+
+    def update_progress(self, added_value):
+        self.current_value += added_value
+        if self.current_value >= self.challenge.target_value and self.finish_date is None:
+            self.finish_date = timezone.now()
+        self.save()
+
+
+
 
 
 class Notification(models.Model):
@@ -304,3 +354,14 @@ class UserAiMessage(models.Model):
     def __str__(self):
         return f"Message from {self.user.username} in Chat {self.chat.chat_id}"
 
+
+class Quote(models.Model):
+    text = models.TextField()
+    author = models.CharField(max_length=100)
+    fetched_at = models.DateTimeField(default=timezone.now)
+    
+    class Meta:
+        ordering = ['-fetched_at']
+    
+    def __str__(self):
+        return f'"{self.text}" - {self.author}'

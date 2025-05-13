@@ -7,6 +7,8 @@ import {useQuery} from "@tanstack/react-query";
 import MobileHeader from "@/components/layout/mobile-header.tsx";
 import Sidebar from "@/components/layout/sidebar.tsx";
 import MobileNavigation from "@/components/layout/mobile-navigation.tsx";
+import { API_BASE_URL, WEB_SOCKET_URL } from "@/lib/queryClient.ts";
+
 
 import {API_BASE_URL} from "@/lib/queryClient.ts";
 

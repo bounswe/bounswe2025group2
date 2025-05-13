@@ -2,7 +2,9 @@ from rest_framework import serializers
 from django.contrib.auth import password_validation
 from django.core.validators import RegexValidator
 from django.contrib.auth import get_user_model
-from .models import Notification, UserWithType, FitnessGoal, Profile, Forum, Thread, Comment, Subcomment, Vote, AiTutorChat, AiTutorResponse, UserAiMessage
+from django.utils import timezone
+from .utils import geocode_location
+from .models import Notification, UserWithType, FitnessGoal, Profile, Forum, Thread, Comment, Subcomment, Vote, Challenge, ChallengeParticipant, AiTutorChat, AiTutorResponse, UserAiMessage
 from django.utils import timezone
 
 
@@ -318,6 +320,69 @@ class ChangePasswordSerializer(serializers.Serializer):
     old_password = serializers.CharField(required=True)
     new_password = serializers.CharField(required=True)
 
+#Challenges
+class ChallengeSerializer(serializers.ModelSerializer):
+    is_active = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Challenge
+        fields = '__all__'
+        read_only_fields = ['coach', 'created_at', 'is_active']
+
+    def get_is_active(self, obj):
+        return obj.is_active()
+
+    def create(self, validated_data):
+        request = self.context['request']
+        user = request.user
+
+        validated_data['coach'] = user
+
+        # Auto-geocode if location is provided but lat/lon are missing
+        location = validated_data.get('location')
+        if (not validated_data.get('latitude') or not validated_data.get('longitude')) and location:
+            lat, lon = geocode_location(location)
+            validated_data['latitude'] = lat
+            validated_data['longitude'] = lon
+
+        return super().create(validated_data)
+
+    def update(self, instance, validated_data):
+        # Auto-geocode if location is updated but lat/lon are missing
+        location = validated_data.get('location', instance.location)
+        lat = validated_data.get('latitude', instance.latitude)
+        lon = validated_data.get('longitude', instance.longitude)
+
+        if (lat is None or lon is None) and location:
+            lat, lon = geocode_location(location)
+            validated_data['latitude'] = lat
+            validated_data['longitude'] = lon
+
+        return super().update(instance, validated_data)
+
+
+
+class ChallengeParticipantSerializer(serializers.ModelSerializer):
+    username = serializers.SerializerMethodField()
+
+    class Meta:
+        model = ChallengeParticipant
+        fields = '__all__'
+        read_only_fields = ['challenge', 'user', 'joined_at', 'last_updated', 'finish_date']
+
+    def update(self, instance, validated_data):
+        # First, call the parent update method to update other fields if necessary
+        instance = super().update(instance, validated_data)
+
+        # Now, update the progress (if `added_value` is provided)
+        added_value = validated_data.get('current_value', None)
+        if added_value is not None:
+            instance.update_progress(added_value)
+
+        return instance
+
+    def get_username(self, obj):
+        return obj.user.username
 
 class AiTutorChatSerializer(serializers.ModelSerializer):
     class Meta:

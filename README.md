@@ -36,4 +36,70 @@ Our brief project description is:
   - [Volkan Bora Seki](https://github.com/bounswe/bounswe2025group2/wiki/Volkan-Bora-Seki)
   - [Yusuf Akdoğan](https://github.com/bounswe/bounswe2025group2/wiki/Yusuf-Akdo%C4%9Fan-Self-Introduction)
 
+## Docker Compose Setup and Usage
 
+### Prerequisites
+1. Make sure you have Docker and Docker Compose installed on your system
+2. Ensure you have Python virtual environment set up and activated:
+```bash
+python -m venv venv
+source venv/Scripts/activate  # On Windows
+source venv/bin/activate     # On Unix/macOS
+```
+
+### Database Configuration
+
+Make sure your settings.py has the following database configuration:
+
+```python
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': os.environ.get('POSTGRES_DB', 'group2db'),
+        'USER': os.environ.get('POSTGRES_USER', 'group2'),
+        'PASSWORD': os.environ.get('POSTGRES_PASSWORD', 'group2'),
+        'HOST': 'postgres', # This should match the service name in docker-compose.yml
+        'PORT': os.environ.get('POSTGRES_PORT', '5432'),
+    }
+}
+```
+
+### Running with Docker Compose
+
+1. Start all services (database, backend, and frontend):
+
+```bash
+docker-compose up
+```
+
+2. Start services in detached mode (background):
+```bash
+docker-compose up -d
+```
+
+3. Start all services with build:
+```bash
+docker-compose up --build
+```
+
+4. View logs of running containers:
+```bash
+docker-compose logs
+```
+
+5. Stop all services:
+```bash
+docker-compose down
+```
+
+6. Stop all services and remove volumes (this will delete all data):
+```bash
+docker-compose down -v
+```
+
+### Important Notes
+- The database service (PostgreSQL) runs on port 5432
+- The backend service runs on port 8000
+- The frontend service runs on port 3000
+- Database data is persisted in a Docker volume named postgres_data
+- The backend service will automatically run migrations and populate initial data

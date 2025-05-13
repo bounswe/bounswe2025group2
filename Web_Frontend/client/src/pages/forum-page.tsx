@@ -10,7 +10,9 @@ import {useTheme} from "@/theme/ThemeContext";
 import {cn} from "@/lib/utils";
 import {useMutation, useQuery} from "@tanstack/react-query";
 import { formatDistanceToNow } from "date-fns";
+
 import {API_BASE_URL} from "@/lib/queryClient.ts";
+
 
 interface ForumThread {
   id: string;
@@ -72,9 +74,7 @@ export default function ForumPage() {
   const { data: threads, isLoading: threadsLoading } = useQuery({
     queryKey: ["threads"],
     queryFn: async () => {
-      console.log("making get request...")
       const response = await fetch(`${API_BASE_URL}/api/threads/`);
-      console.log("threads resp: ", response);
       if (!response.ok) {
         throw new Error("Network response was not ok");
       }
