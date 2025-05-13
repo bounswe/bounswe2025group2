@@ -9,7 +9,10 @@ export const users = pgTable("users", {
   email: text("email").notNull().unique(),
   password: text("password").notNull(),
   name: text("name"),
+  surname: text("surname"), // Added surname
   bio: text("bio"),
+  location: text("location"), // Added location
+  birth_date: text("birth_date"), // Added birth_date
   profileImage: text("profile_image"),
   role: text("role").notNull().default("trainee"),
   verificationStatus: boolean("verification_status").default(false),
@@ -144,7 +147,10 @@ export const insertUserSchema = createInsertSchema(users).pick({
   email: true,
   password: true,
   name: true,
+  surname: true, // Added surname
   bio: true,
+  location: true, // Added location
+  birth_date: true, // Added birth_date
   profileImage: true,
   role: true,
   interests: true,
@@ -219,8 +225,8 @@ export const insertNotificationSchema = createInsertSchema(notifications).pick({
 });
 
 // Type exports
-export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
+export type InsertUser = typeof users.$inferInsert;
 
 export type InsertForumThread = z.infer<typeof insertThreadSchema>;
 export type ForumThread = typeof forumThreads.$inferSelect;

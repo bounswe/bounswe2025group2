@@ -70,7 +70,10 @@
     "wouter": "^3.3.5",
     "ws": "^8.18.0",
     "zod": "^3.23.8",
-    "zod-validation-error": "^3.4.0"
+    "zod-validation-error": "^3.4.0",
+    "antd": "^5.x.x",
+    "@ant-design/icons": "^5.x.x",
+    "dayjs": "^1.x.x"
   },
   "devDependencies": {
     "@replit/vite-plugin-cartographer": "^0.0.11",

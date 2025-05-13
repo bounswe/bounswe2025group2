@@ -96,7 +96,7 @@ class SearchChallengesAPITest(APITestCase):
         self.assertNotIn(self.active_challenge.id, ids)
 
     def test_age_range_filter(self):
-        # create age‑restricted challenge that should survive the filter
+        # Create challenges with different age restrictions
         age_ok = Challenge.objects.create(
             coach=self.coach,
             title="Age OK",
@@ -106,15 +106,53 @@ class SearchChallengesAPITest(APITestCase):
             unit="km",
             start_date=self.now - datetime.timedelta(days=1),
             end_date=self.now + datetime.timedelta(days=1),
-            min_age=20,
+            min_age=15,  # Changed from 20 to test lower bound
             max_age=25,
             latitude=41.0,
             longitude=29.0,
         )
-        response = self._get(min_age=20, max_age=25)
+
+        age_too_high = Challenge.objects.create(
+            coach=self.coach,
+            title="Age Too High",
+            description="",
+            challenge_type="distance",
+            target_value=1,
+            unit="km",
+            start_date=self.now - datetime.timedelta(days=1),
+            end_date=self.now + datetime.timedelta(days=1),
+            min_age=21,  # This should be filtered out for a 20-year-old
+            max_age=30,
+            latitude=41.0,
+            longitude=29.0,
+        )
+
+        age_too_low = Challenge.objects.create(
+            coach=self.coach,
+            title="Age Too Low",
+            description="",
+            challenge_type="distance",
+            target_value=1,
+            unit="km",
+            start_date=self.now - datetime.timedelta(days=1),
+            end_date=self.now + datetime.timedelta(days=1),
+            min_age=10,
+            max_age=19,  # This should be filtered out for a 20-year-old
+            latitude=41.0,
+            longitude=29.0,
+        )
+
+        # Test for a 20-year-old user
+        response = self._get(min_age=20, max_age=20)
         ids = {c["id"] for c in response.data}
-        self.assertIn(age_ok.id, ids)
-        self.assertNotIn(self.active_challenge.id, ids)
+
+        # Should include challenges where:
+        # - min_age <= 20 (or null)
+        # - max_age >= 20 (or null)
+        self.assertIn(age_ok.id, ids)  # 15-25 range includes 20
+        self.assertNotIn(age_too_high.id, ids)  # 21-30 excludes 20
+        self.assertNotIn(age_too_low.id, ids)  # 10-19 excludes 20
+        self.assertIn(self.active_challenge.id, ids)  # 18-60 includes 20
 
     @patch("api.utils.geocode_location", return_value=(41.0, 29.0))
     def test_location_radius_filter(self, mocked_geo):
