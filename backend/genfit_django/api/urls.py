@@ -75,7 +75,7 @@ urlpatterns = [
     # get info about whether a user voted on the content
     path('forum/vote/<str:content_type>/<int:object_id>/status/', forum_vote.get_user_vote, name='get_user_vote'),
 
-    path('localtime/', local_hour.get_local_hour, name='get_local_hour'),
+    path('localtime/<str:lat>/<str:lon>', local_hour.get_local_hour, name='get_local_hour'),
   
     # Challenge-related views
     path('challenges/<int:challenge_id>/', challenges.get_challenge_detail, name='get_challenge_detail'),

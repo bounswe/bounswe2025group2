@@ -30,11 +30,20 @@ export default function MobileHeader() {
   const { data: localtimeInfo, isLoading: localtimeInfoLoading } = useQuery({
     queryKey: ["localtime"],
     queryFn: async () => {
-      const response = await fetch(`${API_BASE_URL}/api/localtime/`);
+      const location_resp = await fetch(`http://ip-api.com/json/`);
+      const data_ll = await location_resp.json();
+
+      const latitude = data_ll.lat;
+      const longitude = data_ll.lon;
+
+      const response = await fetch(`${API_BASE_URL}/api/localtime/${latitude}/${longitude}`);
       if (!response.ok) {
         throw new Error("Network response was not ok");
       }
-      return response.json();
+      console.log(response);
+      const data = await response.json();
+      console.log(data)
+      return data;
     }
   });
 
