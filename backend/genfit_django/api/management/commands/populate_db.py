@@ -302,12 +302,13 @@ class Command(BaseCommand):
                 except Exception as e:
                     self.stdout.write(self.style.ERROR(f"Error creating thread in {forum.title}: {e}"))
     
+    
     def create_comments_and_votes(self):
-        self.stdout.write('Creating comments, subcomments, and votes...')
+        self.stdout.write('Creating comments, subcomments and votes...')
         
         users = list(User.objects.all())
         threads = list(Thread.objects.all())
-        
+
         # Sample comment content
         comment_contents = [
             "Great post! Thanks for sharing.",
@@ -322,145 +323,81 @@ class Command(BaseCommand):
             "This is exactly what I needed to know."
         ]
         
-        # Create comments for each thread
+        # Create comments for threads
         for thread in threads:
-            # Create 2-5 comments per thread
-            num_comments = random.randint(2, 5)
-            comments = []
-            
+            num_comments = random.randint(1, 5)
             for _ in range(num_comments):
                 try:
                     author = random.choice(users)
                     content = random.choice(comment_contents)
-                    
                     comment = Comment.objects.create(
                         thread=thread,
                         author=author,
                         content=content
                     )
-                    comments.append(comment)
-                    
+
                     # Update thread comment count
                     thread.comment_count += 1
                     thread.save(update_fields=['comment_count'])
                     
-                    self.stdout.write(f"Created comment in thread: {thread.title}")
-                except Exception as e:
-                    self.stdout.write(self.style.ERROR(f"Error creating comment in thread {thread.title}: {e}"))
-            
-            # Create subcomments for some comments
-            for comment in comments:
-                # 50% chance of having subcomments
-                if random.random() > 0.5:
-                    # Create 1-3 subcomments
-                    num_subcomments = random.randint(1, 3)
+                    # Create votes for comment (ensure unique combinations)
+                    voters = random.sample(users, min(3, len(users)))  # Get unique random users
+                    for voter in voters:
+                        try:
+                            Vote.objects.create(
+                                user=voter,
+                                content_type=ContentType.objects.get_for_model(Comment),
+                                object_id=comment.id,
+                                vote_type=random.choice(['UPVOTE', 'DOWNVOTE'])
+                            )
+                        except Exception as e:
+                            self.stdout.write(self.style.ERROR(f"Error creating vote: {e}"))
                     
+                    # Create subcomments
+                    num_subcomments = random.randint(0, 3)
                     for _ in range(num_subcomments):
                         try:
-                            author = random.choice(users)
-                            content = f"Reply to comment: {random.choice(comment_contents)}"
-                            
+                            subcomment_author = random.choice(users)
+                            subcomment_content = random.choice(comment_contents)
                             subcomment = Subcomment.objects.create(
                                 comment=comment,
-                                author=author,
-                                content=content
+                                author=subcomment_author,
+                                content=subcomment_content
                             )
-                            
+
                             # Update comment subcomment count
                             comment.subcomment_count += 1
                             comment.save(update_fields=['subcomment_count'])
                             
-                            self.stdout.write(f"Created subcomment for comment in thread: {thread.title}")
+                            # Create votes for subcomment (ensure unique combinations)
+                            subcomment_voters = random.sample(users, min(2, len(users)))  # Get unique random users
+                            for voter in subcomment_voters:
+                                try:
+                                    Vote.objects.create(
+                                        user=voter,
+                                        content_type=ContentType.objects.get_for_model(Subcomment),
+                                        object_id=subcomment.id,
+                                        vote_type=random.choice(['UPVOTE', 'DOWNVOTE'])
+                                    )
+                                except Exception as e:
+                                    self.stdout.write(self.style.ERROR(f"Error creating vote: {e}"))
+                                    
                         except Exception as e:
                             self.stdout.write(self.style.ERROR(f"Error creating subcomment: {e}"))
-            
-            # Create votes for thread, comments, and subcomments
-            self.create_votes(thread, comments)
-    
-    def create_votes(self, thread, comments):
-        users = list(User.objects.all())
-        vote_types = ['UPVOTE', 'DOWNVOTE']
+                            
+                except Exception as e:
+                    self.stdout.write(self.style.ERROR(f"Error creating comment: {e}"))
         
-        # Create votes for thread
-        for _ in range(random.randint(3, 8)):
-            try:
-                user = random.choice(users)
-                vote_type = random.choice(vote_types)
-                
-                # Get content type for thread
-                content_type = ContentType.objects.get_for_model(Thread)
-                
-                # Create vote
-                vote = Vote.objects.create(
-                    user=user,
-                    content_type=content_type,
-                    object_id=thread.id,
-                    vote_type=vote_type
-                )
-                
-                # Update thread like count if upvote
-                if vote_type == 'UPVOTE':
-                    thread.like_count += 1
-                    thread.save(update_fields=['like_count'])
-                
-                self.stdout.write(f"Created {vote_type} for thread: {thread.title}")
-            except Exception as e:
-                self.stdout.write(self.style.ERROR(f"Error creating vote for thread: {e}"))
-        
-        # Create votes for comments
-        for comment in comments:
-            # 70% chance of having votes
-            if random.random() > 0.3:
-                for _ in range(random.randint(1, 5)):
-                    try:
-                        user = random.choice(users)
-                        vote_type = random.choice(vote_types)
-                        
-                        # Get content type for comment
-                        content_type = ContentType.objects.get_for_model(Comment)
-                        
-                        # Create vote
-                        vote = Vote.objects.create(
-                            user=user,
-                            content_type=content_type,
-                            object_id=comment.id,
-                            vote_type=vote_type
-                        )
-                        
-                        # Update comment like count if upvote
-                        if vote_type == 'UPVOTE':
-                            comment.like_count += 1
-                            comment.save(update_fields=['like_count'])
-                        
-                        self.stdout.write(f"Created {vote_type} for comment in thread: {thread.title}")
-                    except Exception as e:
-                        self.stdout.write(self.style.ERROR(f"Error creating vote for comment: {e}"))
-                
-                # Create votes for subcomments
-                for subcomment in comment.subcomments.all():
-                    # 50% chance of having votes
-                    if random.random() > 0.5:
-                        for _ in range(random.randint(1, 3)):
-                            try:
-                                user = random.choice(users)
-                                vote_type = random.choice(vote_types)
-                                
-                                # Get content type for subcomment
-                                content_type = ContentType.objects.get_for_model(Subcomment)
-                                
-                                # Create vote
-                                vote = Vote.objects.create(
-                                    user=user,
-                                    content_type=content_type,
-                                    object_id=subcomment.id,
-                                    vote_type=vote_type
-                                )
-                                
-                                # Update subcomment like count if upvote
-                                if vote_type == 'UPVOTE':
-                                    subcomment.like_count += 1
-                                    subcomment.save(update_fields=['like_count'])
-                                
-                                self.stdout.write(f"Created {vote_type} for subcomment")
-                            except Exception as e:
-                                self.stdout.write(self.style.ERROR(f"Error creating vote for subcomment: {e}"))
+        # Create votes for threads (ensure unique combinations)
+        for thread in threads:
+            voters = random.sample(users, min(4, len(users)))  # Get unique random users
+            for voter in voters:
+                try:
+                    Vote.objects.create(
+                        user=voter,
+                        content_type=ContentType.objects.get_for_model(Thread),
+                        object_id=thread.id,
+                        vote_type=random.choice(['UPVOTE', 'DOWNVOTE'])
+                    )
+                except Exception as e:
+                    self.stdout.write(self.style.ERROR(f"Error creating vote: {e}"))
