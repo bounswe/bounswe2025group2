@@ -928,13 +928,6 @@ export default function GoalsPage() {
                 />
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="grid gap-2">
-                <Label className={cn(
-                  theme === 'dark' ? 'text-white' : 'text-[#800000]'
-                )}>End Date</Label>
-              </div>
-            </div>
           </div>
           <DialogFooter>
             <Button 
