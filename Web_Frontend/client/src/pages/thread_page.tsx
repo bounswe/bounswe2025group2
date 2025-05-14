@@ -7,9 +7,7 @@ import {useQuery} from "@tanstack/react-query";
 import MobileHeader from "@/components/layout/mobile-header.tsx";
 import Sidebar from "@/components/layout/sidebar.tsx";
 import MobileNavigation from "@/components/layout/mobile-navigation.tsx";
-import { API_BASE_URL, WEB_SOCKET_URL } from "@/lib/queryClient.ts";
-
-
+import {API_BASE_URL, queryClient} from "@/lib/queryClient.ts";
 
 function getCsrfToken() {
     const name = 'csrftoken';
@@ -33,8 +31,8 @@ export default function ThreadPageWrapper() {
     console.log(id);
 
 
-    const {data: threadsInfo, isLoading: threadinfoLoading} = useQuery({
-        queryKey: ["threads"],
+    const {data: threadsInfo, isLoading: threadinfoLoading, refetch: threadsDataRefetch} = useQuery({
+        queryKey: ["threads", id],
         queryFn: async () => {
             const csrfToken = getCsrfToken();
             const response = await fetch(`${API_BASE_URL}/api/threads/` + id, {
@@ -65,8 +63,8 @@ export default function ThreadPageWrapper() {
         }
     }, [threadsInfo]);
 
-    let {data: commentsInfo, isLoading: commentsInfoLoading, refetch: refetchcomm} = useQuery({
-        queryKey: ["comments"],
+    let {data: commentsInfo, isLoading: commentsInfoLoading, refetch: commentsDataRefetch} = useQuery({
+        queryKey: ["comments", id],
         queryFn: async () => {
             const csrfToken = getCsrfToken();
             const response = await fetch(`${API_BASE_URL}/api/comments/thread/` + id + "/", {
@@ -106,7 +104,7 @@ export default function ThreadPageWrapper() {
                     return item;
                 })
             );
-
+            console.log(enrichedData);
             return enrichedData;
         }
     })
@@ -157,10 +155,10 @@ export default function ThreadPageWrapper() {
         return response
     };
 
-    const handleUpvote = async(replyid:number) =>{
+    const handleUpvote = async(replyid:number) => {
         let comment_element = commentsInfo.filter((f: any) => f.id === replyid)[0]
         comment_element.self_vote = 1;
-
+        console.log("querying for upvote...");
         const csrfToken = getCsrfToken();
         const response = await fetch(`${API_BASE_URL}/api/forum/vote/`, {
             method: "POST",
@@ -174,14 +172,17 @@ export default function ThreadPageWrapper() {
         if (!response.ok) {
             throw new Error('Failed to create thread');
         }
-
-        refetchcomm();
+        console.log("query returned");
+        //queryClient.invalidateQueries({ queryKey: ["comments"]})
+        await threadsDataRefetch();
+        await commentsDataRefetch();
+        
     }
 
     const handleDownvote = async(replyid:number) => {
         let comment_element = commentsInfo.filter((f: any) => f.id === replyid)[0]
         comment_element.self_vote = -1;
-
+        console.log("querying for downvote...");
         const csrfToken = getCsrfToken();
         const response = await fetch(`${API_BASE_URL}/api/forum/vote/`, {
             method: "POST",
@@ -195,8 +196,12 @@ export default function ThreadPageWrapper() {
         if (!response.ok) {
             throw new Error('Failed to create thread');
         }
-
-        refetchcomm();
+        console.log("query returned");
+        //queryClient.invalidateQueries({ queryKey: ["comments"]})
+        //queryClient.invalidateQueries({ queryKey: ["threads"]})
+        await threadsDataRefetch();
+        await commentsDataRefetch();
+        //window.location.reload();
     }
 
 
@@ -264,7 +269,7 @@ export default function ThreadPageWrapper() {
         if (!response.ok) {
             throw new Error('Failed to create thread');
         }
-        fetch_subcomments_data(selectedComment.id);
+        await fetch_subcomments_data(selectedComment.id);
     }
 
     const handledownvote_subc = async (subc_id: number) => {
@@ -284,7 +289,7 @@ export default function ThreadPageWrapper() {
         if (!response.ok) {
             throw new Error('Failed to create thread');
         }
-        fetch_subcomments_data(selectedComment.id);
+        await fetch_subcomments_data(selectedComment.id);
     }
 
 
