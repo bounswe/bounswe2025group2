@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { useTheme } from "@/theme/ThemeContext";
+import { API_BASE_URL} from "@/lib/queryClient.ts";
 
 export function FoodLogger() {
   const [query, setQuery] = useState("");
@@ -9,7 +10,7 @@ export function FoodLogger() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const res = await fetch("http://localhost:8000/api/parse_food/", {
+    const res = await fetch(`${API_BASE_URL}/api/parse_food/`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ query }),
