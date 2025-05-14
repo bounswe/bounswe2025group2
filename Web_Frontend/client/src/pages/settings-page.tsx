@@ -94,41 +94,7 @@ export default function SettingsPage() {
                 </div>
               </div>
 
-              {/* Profile Section */}
-              <div className={cn(
-                "bg-nav-bg rounded-lg p-6 border",
-                theme === 'dark' ? 'border-[#e18d58]' : 'border-[#800000]'
-              )}>
-                <h3 className={cn(
-                  "text-lg font-semibold mb-4",
-                  theme === 'dark' ? 'text-white' : 'text-[#800000]'
-                )}>Profile</h3>
-                
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-3">
-                      <User className={cn(
-                        "h-5 w-5",
-                        theme === 'dark' ? 'text-[#e18d58]' : 'text-[#800000]'
-                      )} />
-                      <Label htmlFor="edit-profile" className={cn(
-                        theme === 'dark' ? 'text-white' : 'text-[#800000]'
-                      )}>Edit Profile</Label>
-                    </div>
-                    <Button
-                      className={cn(
-                        "border-2",
-                        theme === 'dark'
-                          ? 'border-[#e18d58] text-white bg-transparent hover:bg-[#e18d58]/20'
-                          : 'border-[#800000] text-[#800000] bg-transparent hover:bg-[#800000]/20'
-                      )}
-                      onClick={() => setShowEditProfile(true)}
-                    >
-                      Edit
-                    </Button>
-                  </div>
-                </div>
-              </div>
+              
 
               {/* Notifications Section */}
               <div className={cn(
