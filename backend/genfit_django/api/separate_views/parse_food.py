@@ -1,17 +1,18 @@
-import requests
-from django.http import JsonResponse
 from rest_framework.decorators import api_view
-from django.views.decorators.csrf import csrf_exempt
-import os
+from rest_framework.response import Response
+from rest_framework import status
+import requests
 
-@csrf_exempt
 @api_view(['POST'])
 def parse_food(request):
-    APP_ID = "57eefa2c" #os.getenv("NUTRITIONIX_APP_ID")
-    APP_KEY = "3f4e4b38dcc594441858a7811ebcb747" #os.getenv("NUTRITIONIX_APP_KEY")
-   
+    APP_ID = "57eefa2c"
+    APP_KEY = "3f4e4b38dcc594441858a7811ebcb747"
 
     user_input = request.data.get('query')
+    
+    # ✅ Validate input
+    if not user_input:
+        return Response({'error': 'Missing query'}, status=status.HTTP_400_BAD_REQUEST)
 
     try:
         response = requests.post(
@@ -23,6 +24,6 @@ def parse_food(request):
                 'Content-Type': 'application/json'
             }
         )
-        return JsonResponse(response.json(), safe=False)
+        return Response(response.json(), status=response.status_code)
     except Exception as e:
-        return JsonResponse({'error': str(e)}, status=500)
+        return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
