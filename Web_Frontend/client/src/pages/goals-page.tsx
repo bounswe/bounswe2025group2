@@ -134,6 +134,15 @@ const calculateProgress = (current: number, target: number) => {
   return Math.min(Math.round((current / target) * 100), 100);
 };
 
+// Define suggested units for each goal type
+const GOAL_TYPE_UNITS: Record<string, string[]> = {
+  "WALKING_RUNNING": ["km", "miles", "steps"],
+  "WORKOUT": ["minutes", "hours", "sets", "reps"],
+  "CYCLING": ["km", "miles", "minutes", "hours"],
+  "SWIMMING": ["laps", "meters", "km", "minutes"],
+  "SPORTS": ["matches", "points", "goals", "minutes", "hours"]
+};
+
 // Helper function to get goal type icon
 const getGoalTypeIcon = (type: string) => {
   switch (type) {
@@ -222,11 +231,57 @@ export default function GoalsPage() {
     } else if (activeTab === "completed") {
       setFilteredGoals(goals.filter(goal => goal.status === "COMPLETED"));
     }
-  }, [activeTab, goals]);
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+  }, [activeTab, goals]);  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
+    
+    // Special handling for unit input to ensure it's valid for the selected goal type
+    if (name === 'unit') {
+      const lowerCaseValue = value.toLowerCase();
+      const goalTypeUnits = GOAL_TYPE_UNITS[formData.goal_type] || [];
+      
+      // If the user is trying to enter a unit and it's not in the suggested list
+      // show a toast with the suggested units
+      if (value && goalTypeUnits.length > 0 && !goalTypeUnits.includes(lowerCaseValue)) {
+        // Only show the toast if they've typed something substantial (not just starting to type)
+        if (value.length > 2) {
+          toast({
+            title: 'Unit Warning',
+            description: `"${value}" may not be appropriate for ${formData.goal_type.replace('_', '/')}. Suggested units are: ${goalTypeUnits.join(', ')}`,
+            variant: 'destructive',
+          });
+        }
+      }
+    }
+    
     setFormData(prev => ({ ...prev, [name]: value }));
+  };
+  // Handle goal type change with unit suggestions and validation
+  const handleGoalTypeChange = (value: string) => {
+    setFormData(prev => {
+      // Get suggested units for the selected goal type
+      const goalTypeUnits = GOAL_TYPE_UNITS[value] || [];
+      let suggestedUnit = prev.unit;
+      
+      // If the unit is empty or not in the suggested units for the new goal type,
+      // suggest the first unit for the selected goal type
+      if (prev.unit.trim() === '' || !goalTypeUnits.includes(prev.unit.toLowerCase())) {
+        suggestedUnit = goalTypeUnits[0] || '';
+        
+        // Show toast with unit suggestion
+        if (goalTypeUnits.length > 0) {
+          toast({
+            title: 'Unit Suggestion',
+            description: `Suggested units for ${value.replace('_', '/')} are: ${goalTypeUnits.join(', ')}`,
+          });
+        }
+      }
+      
+      return { 
+        ...prev, 
+        goal_type: value,
+        unit: suggestedUnit
+      };
+    });
   };
 
   const handleNumericInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -237,8 +292,56 @@ export default function GoalsPage() {
   const handleProgressChange = (value: number[]) => {
     setProgressData({ current_value: value[0] });
   };
-
   const handleCreateGoal = async () => {
+    // Form validation
+    const validationErrors = [];
+    
+    if (!formData.title.trim()) {
+      validationErrors.push("Title is required");
+    }
+    
+    if (!formData.description.trim()) {
+      validationErrors.push("Description is required");
+    }
+    
+    if (!formData.goal_type) {
+      validationErrors.push("Goal type is required");
+    }
+    
+    if (!formData.target_value || formData.target_value <= 0) {
+      validationErrors.push("Target value must be greater than 0");
+    }
+    
+    if (!formData.unit.trim()) {
+      validationErrors.push("Unit is required");
+    } else {
+      // Validate that the unit is appropriate for the selected goal type
+      const goalTypeUnits = GOAL_TYPE_UNITS[formData.goal_type] || [];
+      if (goalTypeUnits.length > 0 && !goalTypeUnits.includes(formData.unit.toLowerCase())) {
+        validationErrors.push(`Invalid unit for ${formData.goal_type.replace('_', '/')}. Please use one of: ${goalTypeUnits.join(', ')}`);
+      }
+    }
+    
+    if (!formData.target_date) {
+      validationErrors.push("End date is required");
+    }
+    
+    // If there are validation errors, show them and return
+    if (validationErrors.length > 0) {
+      toast({
+        title: 'Missing or Invalid Information',
+        description: (
+          <ul className="list-disc pl-4">
+            {validationErrors.map((error, index) => (
+              <li key={index}>{error}</li>
+            ))}
+          </ul>
+        ),
+        variant: 'destructive',
+      });
+      return;
+    }
+    
     try {
       setIsSubmitting(true);
       // Construct payload with only expected fields
@@ -252,6 +355,12 @@ export default function GoalsPage() {
         // Do not send: user, current_value, status, start_date, last_updated, progress_percentage
       };
       const response = await apiClient.post(`${API_BASE_URL}/api/goals/`, payload);
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.detail || 'Failed to create goal');
+      }
+      
       const newGoal = await response.json();
       setGoals([...goals, newGoal]);
       setIsCreateDialogOpen(false);
@@ -271,22 +380,73 @@ export default function GoalsPage() {
       console.error('Error creating goal:', error);
       toast({
         title: 'Error',
-        description: 'Failed to create goal. Please try again.',
+        description: error instanceof Error ? error.message : 'Failed to create goal. Please try again.',
         variant: 'destructive',
       });
     } finally {
       setIsSubmitting(false);
     }
   };
-
   const handleUpdateGoal = async () => {
     if (!selectedGoal) return;
+    
+    // Form validation
+    const validationErrors = [];
+    
+    if (!formData.title.trim()) {
+      validationErrors.push("Title is required");
+    }
+    
+    if (!formData.description.trim()) {
+      validationErrors.push("Description is required");
+    }
+    
+    if (!formData.goal_type) {
+      validationErrors.push("Goal type is required");
+    }
+    
+    if (!formData.target_value || formData.target_value <= 0) {
+      validationErrors.push("Target value must be greater than 0");
+    }
+    
+    if (!formData.unit.trim()) {
+      validationErrors.push("Unit is required");
+    } else {
+      // Validate that the unit is appropriate for the selected goal type
+      const goalTypeUnits = GOAL_TYPE_UNITS[formData.goal_type] || [];
+      if (goalTypeUnits.length > 0 && !goalTypeUnits.includes(formData.unit.toLowerCase())) {
+        validationErrors.push(`Invalid unit for ${formData.goal_type.replace('_', '/')}. Please use one of: ${goalTypeUnits.join(', ')}`);
+      }
+    }
+    
+    // If there are validation errors, show them and return
+    if (validationErrors.length > 0) {
+      toast({
+        title: 'Missing or Invalid Information',
+        description: (
+          <ul className="list-disc pl-4">
+            {validationErrors.map((error, index) => (
+              <li key={index}>{error}</li>
+            ))}
+          </ul>
+        ),
+        variant: 'destructive',
+      });
+      return;
+    }
+    
     try {
       setIsSubmitting(true);
       const response = await apiClient.fetch(`${API_BASE_URL}/api/goals/${selectedGoal.id}/`, {
         method: 'PUT',
         body: JSON.stringify(formData)
       });
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.detail || 'Failed to update goal');
+      }
+      
       const updatedGoal = await response.json();
       setGoals(goals.map(goal => goal.id === updatedGoal.id ? updatedGoal : goal));
       setIsUpdateDialogOpen(false);
@@ -298,7 +458,7 @@ export default function GoalsPage() {
       console.error('Error updating goal:', error);
       toast({
         title: 'Error',
-        description: 'Failed to update goal. Please try again.',
+        description: error instanceof Error ? error.message : 'Failed to update goal. Please try again.',
         variant: 'destructive',
       });
     } finally {
@@ -730,7 +890,7 @@ export default function GoalsPage() {
               <Select 
                 name="goal_type" 
                 value={formData.goal_type}
-                onValueChange={(value) => setFormData(prev => ({ ...prev, goal_type: value }))}
+                onValueChange={handleGoalTypeChange}
               >
                 <SelectTrigger className={cn(
                   "bg-background",
@@ -766,7 +926,7 @@ export default function GoalsPage() {
               <div className="grid gap-2">
                 <Label className={cn(
                   theme === 'dark' ? 'text-white' : 'text-[#800000]'
-                )}>Unit</Label>
+                )}>Unit                </Label>
                 <Input 
                   name="unit"
                   value={formData.unit}
@@ -777,6 +937,14 @@ export default function GoalsPage() {
                     theme === 'dark' ? 'text-white border-[#e18d58]' : 'text-[#800000] border-[#800000]'
                   )}
                 />
+                {GOAL_TYPE_UNITS[formData.goal_type] && (
+                  <p className={cn(
+                    "text-xs mt-1",
+                    theme === 'dark' ? 'text-white/70' : 'text-[#800000]/70'
+                  )}>
+                    Suggested units: {GOAL_TYPE_UNITS[formData.goal_type].join(', ')}
+                  </p>
+                )}
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
@@ -879,7 +1047,7 @@ export default function GoalsPage() {
               )}>Goal Type</Label>
               <Select
                 value={formData.goal_type}
-                onValueChange={(value) => setFormData(prev => ({ ...prev, goal_type: value }))}
+                onValueChange={handleGoalTypeChange}
               >
                 <SelectTrigger className={cn(
                   "bg-background",
@@ -915,7 +1083,7 @@ export default function GoalsPage() {
               <div className="grid gap-2">
                 <Label className={cn(
                   theme === 'dark' ? 'text-white' : 'text-[#800000]'
-                )}>Unit</Label>
+                )}>Unit                </Label>
                 <Input
                   name="unit"
                   value={formData.unit}
@@ -926,6 +1094,14 @@ export default function GoalsPage() {
                     theme === 'dark' ? 'text-white border-[#e18d58]' : 'text-[#800000] border-[#800000]'
                   )}
                 />
+                {GOAL_TYPE_UNITS[formData.goal_type] && (
+                  <p className={cn(
+                    "text-xs mt-1",
+                    theme === 'dark' ? 'text-white/70' : 'text-[#800000]/70'
+                  )}>
+                    Suggested units: {GOAL_TYPE_UNITS[formData.goal_type].join(', ')}
+                  </p>
+                )}
               </div>
             </div>
           </div>
@@ -938,8 +1114,7 @@ export default function GoalsPage() {
               )}
             >
               Cancel
-            </Button>
-            <Button 
+            </Button>            <Button 
               onClick={handleUpdateGoal}
               disabled={isSubmitting}
               className={cn(
@@ -978,8 +1153,7 @@ export default function GoalsPage() {
           </DialogHeader>
           <div className="py-6">
             <div className="space-y-4">
-              <div>
-                <div className="flex items-center justify-between mb-2">
+              <div>                <div className="flex items-center justify-between mb-2">
                   <Label className={cn(
                     theme === 'dark' ? 'text-white' : 'text-[#800000]'
                   )}>Current Progress</Label>
