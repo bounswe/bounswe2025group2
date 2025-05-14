@@ -8,7 +8,11 @@ export type RootStackParamList = {
   Mentors: undefined;
   Chats: undefined;
   Settings: undefined;
+  Goals: undefined;            // ✅ Unutmuşsun, tab'da var
+  Notifications: undefined;
+  Exercises: undefined;        // ✅ Yeni eklediğimiz Exercises screen
+  Profile: undefined;
   ApiDemo: undefined;
 };
 
-export type RootTabScreenProps<T extends keyof RootStackParamList> = BottomTabScreenProps<RootStackParamList, T>; 
+export type RootTabScreenProps<T extends keyof RootStackParamList> = BottomTabScreenProps<RootStackParamList, T>;

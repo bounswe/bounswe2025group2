@@ -1,3 +1,5 @@
+// src/navigation/AppNavigator.tsx
+
 import React from 'react';
 import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -5,7 +7,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 // Import pages
 import Home from '../Pages/Home';
 import Communities from '../Pages/Communities';
-import AddNew from '../Pages/Add New';
+import AddNew from '../Pages/AddNew';         // ✅ filename düzeltilmiş
 import Mentors from '../Pages/Mentors';
 import Chats from '../Pages/Chats';
 import Settings from '../Pages/Settings';
@@ -14,9 +16,11 @@ import Register from '../Pages/Register';
 import Layout from '../components/Layout';
 import BottomBar from '../components/BottomBar';
 import Goals from '../Pages/Goals';
-import { useAuth } from '../context/AuthContext';
-import ApiDemoScreen from '../Pages/ApiDemoScreen';
+import Notifications from '../Pages/Notifications';
+import ExercisesScreen from '../Pages/ExercisesScreen';   // ✅ Exercises eklendi
 import Profile from '../Pages/Profile';
+import ApiDemoScreen from '../Pages/ApiDemoScreen';
+import { useAuth } from '../context/AuthContext';
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -45,6 +49,8 @@ const MainTabs = () => {
       <Tab.Screen name="Chats" component={withLayout(Chats)} />
       <Tab.Screen name="Settings" component={withLayout(Settings)} />
       <Tab.Screen name="Goals" component={Goals} />
+      <Tab.Screen name="Notifications" component={withLayout(Notifications)} />
+      <Tab.Screen name="Exercises" component={ExercisesScreen} />  {/* ✅ Added */}
     </Tab.Navigator>
   );
 };
@@ -59,8 +65,11 @@ const AppNavigator = () => {
         headerShown: false,
       }}
     >
+      {/* Auth screens */}
       <Stack.Screen name="Login" component={Login} />
       <Stack.Screen name="Register" component={Register} />
+
+      {/* Main app screens */}
       <Stack.Screen name="Main" component={MainTabs} />
       <Stack.Screen name="Profile" component={Profile} />
       <Stack.Screen name="ApiDemo" component={ApiDemoScreen} />
@@ -68,4 +77,4 @@ const AppNavigator = () => {
   );
 };
 
-export default AppNavigator; 
+export default AppNavigator;
