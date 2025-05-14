@@ -42,9 +42,11 @@ Our brief project description is:
 1. Make sure you have Docker and Docker Compose installed on your system
 2. Ensure you have Python virtual environment set up and activated:
 ```bash
-python -m venv venv
-source venv/Scripts/activate  # On Windows
-source venv/bin/activate     # On Unix/macOS
+python -m venv .venv
+
+.venv\Scripts\activate
+   
+source .venv/bin/activate
 ```
 
 ### Database Configuration
