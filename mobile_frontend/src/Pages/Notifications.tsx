@@ -149,17 +149,49 @@ const Notifications = () => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#fff" },
-  header: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", padding: 16 },
-  title: { fontSize: 24, fontWeight: "bold" },
-  markAll: { color: "#007bff" },
-  notification: { padding: 16, borderBottomWidth: 1, borderBottomColor: "#eee" },
-  message: { fontSize: 16 },
-  date: { fontSize: 12, color: "#888", marginTop: 4 },
-  read: { backgroundColor: "#f7f7f7" },
-  unread: { backgroundColor: "#e6f0ff" },
-  empty: { textAlign: "center", marginTop: 32, color: "#888" },
-  centered: { flex: 1, justifyContent: "center", alignItems: "center" },
+  container: { flex: 1, backgroundColor: "#f7f7f7" },
+  header: { 
+    flexDirection: "row", 
+    justifyContent: "space-between", 
+    alignItems: "center", 
+    padding: 16,
+    backgroundColor: "#fff",
+    borderBottomWidth: 1,
+    borderBottomColor: "#800000"
+  },
+  title: { fontSize: 28, fontWeight: "bold", color: "#800000", marginBottom: 4 },
+  markAll: { color: "#800000", fontWeight: "bold", fontSize: 16 },
+  notification: { 
+    backgroundColor: "#fff",
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "#800000",
+    padding: 16,
+    marginHorizontal: 12,
+    marginVertical: 8,
+    shadowColor: "#800000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.07,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  message: { fontSize: 16, color: "#800000", fontWeight: "bold" },
+  date: { fontSize: 13, color: "#800000", marginTop: 4 },
+  read: { opacity: 0.6 },
+  unread: { borderColor: "#800000", borderWidth: 2 },
+  empty: { 
+    textAlign: "center", 
+    marginTop: 32, 
+    color: "#800000", 
+    fontSize: 18, 
+    fontWeight: "bold",
+    backgroundColor: "#fff",
+    borderRadius: 12,
+    padding: 24,
+    borderWidth: 1,
+    borderColor: "#800000"
+  },
+  centered: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#f7f7f7" },
 });
 
 export default Notifications;
