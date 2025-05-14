@@ -20,6 +20,7 @@ import Profile from '../Pages/Profile';
 import ApiDemoScreen from '../Pages/ApiDemoScreen';
 import { useAuth } from '../context/AuthContext';
 import Notifications from '../Pages/Notifications';
+import EditProfile from '../Pages/EditProfile';
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -72,6 +73,7 @@ const AppNavigator = () => {
       <Stack.Screen name="Main" component={MainTabs} />
       <Stack.Screen name="Profile" component={Profile} />
       <Stack.Screen name="ApiDemo" component={ApiDemoScreen} />
+      <Stack.Screen name="EditProfile" component={EditProfile} />
     </Stack.Navigator>
   );
 };
