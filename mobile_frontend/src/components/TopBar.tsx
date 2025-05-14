@@ -105,6 +105,9 @@ const TopBar = () => {
         <Pressable onPress={() => navigation.navigate('Settings')}>
           <SettingsIcon width={36} height={36} fill={colors.border} />
         </Pressable>
+        <Pressable onPress={() => navigation.navigate('Motivation')} style={styles.funCircle}>
+          <Text style={{ color: colors.border, fontWeight: 'bold', fontSize: 16 }}>💡</Text>
+        </Pressable>
         <Pressable onPress={() => navigation.getParent()?.navigate('Profile')}>
           <View style={[styles.profileContainer, { borderColor: colors.border }]}> 
             {loading ? (

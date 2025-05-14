@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { View, StyleSheet, ScrollView } from 'react-native';
 import Thread from '../components/Thread';
 
@@ -44,35 +44,9 @@ const sampleThreads = [
 ];
 
 const Home = () => {
-  const [gifUrl, setGifUrl] = useState(null);
-
-  useEffect(() => {
-    const fetchGif = async () => {
-      try {
-        const response = await fetch('http://10.0.2.2:8000/api/fitness-gifs/');
-        if (response.ok) {
-          const data = await response.json();
-          setGifUrl(data.url);
-        }
-      } catch (error) {
-        // Optionally handle error
-      }
-    };
-    fetchGif();
-  }, []);
-
   return (
     <ScrollView style={styles.container}>
       <View style={styles.content}>
-        {gifUrl && (
-          <View style={{ alignItems: 'center', marginBottom: 16 }}>
-            <Image
-              source={{ uri: gifUrl }}
-              style={{ width: 300, height: 200, resizeMode: 'contain' }}
-              accessibilityLabel="Motivational Gif"
-            />
-          </View>
-        )}
         {sampleThreads.map((thread) => (
           <Thread
             key={thread.id}

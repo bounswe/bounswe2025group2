@@ -47,7 +47,7 @@ const markAsRead = async (id: number) => {
 
 const markAllAsRead = async () => {
   const csrfToken = await AsyncStorage.getItem('@csrf_token');
-  const res = await fetch(`${API_BASE_URL}/notifications/mark-all-as-read/`, {
+  const res = await fetch(`${API_BASE_URL}/notifications/read-all/`, {
     method: "PATCH",
     headers: { 
       'Content-Type': 'application/json',
@@ -55,13 +55,24 @@ const markAllAsRead = async () => {
     },
     credentials: 'include'
   });
+  const text = await res.text();
   if (!res.ok) {
-    const error = await res.json();
+    let error;
+    try {
+      error = text ? JSON.parse(text) : {};
+    } catch (e) {
+      console.error('Non-JSON error response:', text);
+      throw new Error("Failed to mark all notifications as read");
+    }
     throw new Error(error.error || "Failed to mark all notifications as read");
   }
-  // Handle empty response gracefully
-  const text = await res.text();
-  return text ? JSON.parse(text) : {};
+  if (!text) return {};
+  try {
+    return JSON.parse(text);
+  } catch (e) {
+    console.error('Failed to parse response as JSON:', text);
+    return {};
+  }
 };
 
 const NotificationItem = ({ item, onPress }: { item: Notification; onPress: () => void }) => (
@@ -118,8 +129,12 @@ const Notifications = () => {
       await markAllAsRead();
       await loadNotifications();
     } catch (e) {
-      console.error('Failed to mark all notifications as read:', e);
-      Alert.alert('Error', e instanceof Error ? e.message : 'Failed to mark all notifications as read');
+      const msg = e instanceof Error ? e.message : 'Failed to mark all notifications as read';
+      if (!msg || msg.includes('no notifications') || msg === 'Failed to mark all notifications as read') {
+        Alert.alert('All caught up!', 'You have no unread notifications.');
+      } else {
+        Alert.alert('Error', msg);
+      }
     }
   };
 

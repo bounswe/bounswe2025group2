@@ -10,6 +10,7 @@ export type RootStackParamList = {
   Settings: undefined;
   ApiDemo: undefined;
   Notifications: undefined;
+  Motivation: undefined;
 };
 
 export type RootTabScreenProps<T extends keyof RootStackParamList> = BottomTabScreenProps<RootStackParamList, T>;

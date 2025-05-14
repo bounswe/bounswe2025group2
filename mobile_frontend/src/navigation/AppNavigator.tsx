@@ -50,6 +50,7 @@ const MainTabs = () => {
       <Tab.Screen name="Settings" component={withLayout(Settings)} />
       <Tab.Screen name="Goals" component={Goals} />
       <Tab.Screen name="Notifications" component={withLayout(Notifications)} />
+      <Tab.Screen name="Motivation" component={withLayout(require('../Pages/Motivation').default)} />
 
     </Tab.Navigator>
   );

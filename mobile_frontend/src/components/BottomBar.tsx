@@ -13,6 +13,7 @@ import ChatsIcon from '../assets/images/chats.svg';
 import GoalsIcon from '../assets/images/target.svg';
 import NotificationsIcon from '../assets/images/notifications.svg'; // Dartboard/target icon for Goals tab
 
+
 const BottomBar = ({ state, navigation }: BottomTabBarProps) => {
   const { colors } = useTheme();
 
