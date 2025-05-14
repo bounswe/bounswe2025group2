@@ -253,7 +253,7 @@ const Thread = ({ forumName, content, imageUrl, profilePic, username, threadId, 
         <CustomText style={{ color: colors.text, fontWeight: 'bold', fontSize: 16 }}>{likes}</CustomText>
         <Pressable onPress={() => handleVote('DOWNVOTE')} style={{ flexDirection: 'row', alignItems: 'center', opacity: vote === 'DOWNVOTE' ? 1 : 0.6 }}>
           <CustomText style={{ fontSize: 20, color: vote === 'DOWNVOTE' ? colors.mentionText : colors.subText }}>↓</CustomText>
-        </Pressable>
+      </Pressable>
         <View style={{ flexDirection: 'row', alignItems: 'center', marginLeft: 16 }}>
           <CustomText style={{ fontSize: 18, color: colors.subText }}>💬</CustomText>
           <CustomText style={{ color: colors.text, marginLeft: 4 }}>{comments}</CustomText>
