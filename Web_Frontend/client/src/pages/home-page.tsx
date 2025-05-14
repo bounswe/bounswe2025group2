@@ -1,75 +1,173 @@
 import { useAuth } from "@/hooks/use-auth";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import Sidebar from "@/components/layout/sidebar";
 import MobileHeader from "@/components/layout/mobile-header";
 import MobileNavigation from "@/components/layout/mobile-navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Loader2, ArrowRight, Trophy, Users, Calendar, MapPin, Search, UserCircle } from "lucide-react";
+import {Loader2, ArrowRight, Trophy, Users, Calendar, MapPin, Search, UserCircle, Eye, ThumbsUp} from "lucide-react";
 import { QuoteDailyCard } from "@/components/ui/quote-daily-card";
 import { Link, useLocation } from "wouter";
 import { useTheme } from "@/theme/ThemeContext";
 import { cn } from "@/lib/utils";
-import { useState } from 'react';
 import { FoodLogger } from "@/components/ui/food_logger";
+import { API_BASE_URL, WEB_SOCKET_URL } from "@/lib/queryClient.ts";
+
+
+function getCsrfToken() {
+  const name = 'csrftoken';
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; ${name}=`);
+  if (parts.length === 2) {
+    const lastPart = parts.pop();
+    if (lastPart) {
+      const value = lastPart.split(';').shift();
+      return value ?? '';
+    }
+  }
+  return '';
+}
+
+// Create an API client with consistent headers
+const apiClient = {
+  fetch: (url: string, options: RequestInit = {}) => {
+    const csrfToken = getCsrfToken();
+    const defaultOptions: RequestInit = {
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': csrfToken,
+        ...options.headers
+      }
+    };
+
+    // Merge default options with provided options
+    const mergedOptions = {
+      ...defaultOptions,
+      ...options,
+      headers: {
+        ...defaultOptions.headers,
+        ...(options.headers || {})
+      }
+    };
+
+    return fetch(url, mergedOptions);
+  },
+
+  get: (url: string) => {
+    return apiClient.fetch(url);
+  },
+
+  post: (url: string, data: any) => {
+    return apiClient.fetch(url, {
+      method: 'POST',
+      body: JSON.stringify(data)
+    });
+  }
+};
+
+interface Goal {
+  id: number;
+  title: string;
+  description: string;
+  user: number;
+  goal_type: string;
+  target_value: number;
+  current_value: number;
+  unit: string;
+  start_date: string;
+  target_date: string; // Changed from end_date
+  status: string;
+  last_updated: string;
+}
+
+interface Challenge {
+  id: string;
+  title: string;
+  description: string;
+  start_date: string; // Matching backend field name
+  end_date: string;   // Matching backend field name
+  target_value: number; // Matching backend field name
+  challenge_type: string; // Matching backend field name
+  unit: string;
+  status: string;
+  participants: Array<{
+    user: string;
+    current_value: number;
+  }>;
+}
+
+interface Thread {
+  author: string;
+  comment_count: number;
+  created_at: string;
+  forum: string;
+  id: number;
+  title: string;
+  like_count: number;
+  view_count: number;
+}
+
 
 export default function HomePage() {
   const { user } = useAuth();
   const { theme } = useTheme();
   const [, setLocation] = useLocation();
+  const [goals, setGoals] = useState<Goal[]>([]);
+  const [challenges, setChallenges] = useState<Challenge[]>([]);
+  const [threads, setThreads] = useState<Thread[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // const { data: latestThreads, isLoading: threadsLoading } = useQuery({
-  //   queryKey: ["/api/forum/threads"],
-  //   queryFn: async () => {
-  //     const res = await fetch("/api/forum/threads?limit=3");
-  //     if (!res.ok) throw new Error("Failed to fetch threads");
-  //     return res.json();
-  //   },
-  // });
+  useEffect(() => {
+    const fetchGoals = async () => {
+      try {
+        setIsLoading(true);
+        const response = await apiClient.get(`${API_BASE_URL}/api/goals/`);
+        const data = await response.json();
+        setGoals(data);
+      } catch (error) {
+        console.error('Error fetching goals:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchGoals();
+  }, []);
 
-  // const { data: challenges, isLoading: challengesLoading } = useQuery({
-  //   queryKey: ["/api/challenges"],
-  //   queryFn: async () => {
-  //     const res = await fetch("/api/challenges?limit=3");
-  //     if (!res.ok) throw new Error("Failed to fetch challenges");
-  //     return res.json();
-  //   },
-  // });
+  useEffect(() => {
+    const fetchChallenges = async () => {
+      try {
+        setIsLoading(true);
+        const response = await apiClient.get(`${API_BASE_URL}/api/challenges/search/`);
+        const data = await response.json();
+        setChallenges(data);
+      } catch (error) {
+      console.error('Error fetching challenges:', error);
+    } finally {
+        setIsLoading(false);
+    }
+    };
+    fetchChallenges();
+  }, []);
 
-  // const { data: programs, isLoading: programsLoading } = useQuery({
-  //   queryKey: ["/api/programs"],
-  //   queryFn: async () => {
-  //     const res = await fetch("/api/programs?limit=4");
-  //     if (!res.ok) throw new Error("Failed to fetch programs");
-  //     return res.json();
-  //   },
-  // });
+  useEffect(() => {
+    const fetchThreads = async () => {
+      try {
+        setIsLoading(true);
+        const response = await apiClient.get(`${API_BASE_URL}/api/threads/`);
+        const data = await response.json();
+        setThreads(data);
+      } catch (error) {
+      console.error('Error fetching challenges:', error);
+    } finally {
+        setIsLoading(false);
+    }
+    };
+    fetchThreads();
+  }, []);
 
-  // Mock data for demonstration
-  const latestThreads = [
-    {
-      id: 1,
-      category: "Basketball",
-      firstPost: { content: "How to improve my shooting?" },
-      postCount: 5,
-      createdAt: "2023-10-01T12:00:00Z",
-    },
-    {
-      id: 2,
-      category: "Soccer",
-      firstPost: { content: "Best drills for dribbling?" },
-      postCount: 3,
-      createdAt: "2023-10-02T12:00:00Z",
-    },
-  ];
-  const challenges = [
-    { id: 1, title: "30-Day Running Challenge", targetValue: 100, unit: "km" },
-    { id: 2, title: "Weekly Basketball Practice", targetValue: 5, unit: "hours" },
-  ];
-  const programs = [
-    { id: 1, name: "Local Basketball League", location: "Downtown Gym", description: "Join our local basketball league for all ages.", sportType: "Basketball", ageGroups: ["18-25", "26-35"] },
-    { id: 2, name: "Soccer Training Camp", location: "City Park", description: "Intensive training for aspiring soccer players.", sportType: "Soccer", ageGroups: ["12-18"] },
-  ];
+  const latestThreads = threads.slice(0, 3);
 
   const challengesLoading = false;
   const programsLoading = false;
@@ -81,76 +179,6 @@ export default function HomePage() {
       <QuoteDailyCard />
     </div>
   );
-
-  // MOCK DATA START - GOAL PROGRESSES - DESIGN CAN BE CHANGED OR DATA CAN BE REMOVED DURING IMPLEMENTATION
-  const mockGoalProgresses = [
-    {
-      id: 1,
-      title: "Run 5K",
-      progress: 60,
-      type: "running"
-    },
-    {
-      id: 2,
-      title: "Daily Steps",
-      progress: 75,
-      type: "walking"
-    }
-  ];
-  // MOCK DATA END - GOAL PROGRESSES - DESIGN CAN BE CHANGED OR DATA CAN BE REMOVED DURING IMPLEMENTATION
-
-  // MOCK DATA START - CHALLENGES - DESIGN CAN BE CHANGED OR DATA CAN BE REMOVED DURING IMPLEMENTATION
-  const mockChallenges = [
-    {
-      id: 1,
-      title: "10K Steps Challenge",
-      participants: 24,
-      daysLeft: 5
-    },
-    {
-      id: 2,
-      title: "Swimming Marathon",
-      participants: 12,
-      daysLeft: 15
-    }
-  ];
-  // MOCK DATA END - CHALLENGES - DESIGN CAN BE CHANGED OR DATA CAN BE REMOVED DURING IMPLEMENTATION
-
-  // MOCK DATA START - COMMUNITY DISCUSSIONS - DESIGN CAN BE CHANGED OR DATA CAN BE REMOVED DURING IMPLEMENTATION
-  const mockDiscussions = [
-    {
-      id: 1,
-      title: "Best pre-workout routine",
-      author: "John Doe",
-      replies: 12,
-      category: "Training"
-    },
-    {
-      id: 2,
-      title: "Marathon preparation tips",
-      author: "Jane Smith",
-      replies: 8,
-      category: "Running"
-    }
-  ];
-  // MOCK DATA END - COMMUNITY DISCUSSIONS - DESIGN CAN BE CHANGED OR DATA CAN BE REMOVED DURING IMPLEMENTATION
-
-  // MOCK DATA START - SPORTS PROGRAMS - DESIGN CAN BE CHANGED OR DATA CAN BE REMOVED DURING IMPLEMENTATION
-  const mockPrograms = [
-    {
-      id: 1,
-      title: "Basketball Training",
-      location: "Istanbul",
-      price: "500₺/month"
-    },
-    {
-      id: 2,
-      title: "Swimming Classes",
-      location: "Ankara",
-      price: "600₺/month"
-    }
-  ];
-  // MOCK DATA END - SPORTS PROGRAMS - DESIGN CAN BE CHANGED OR DATA CAN BE REMOVED DURING IMPLEMENTATION
 
   return (
     <div className="min-h-screen bg-background">
@@ -185,23 +213,24 @@ export default function HomePage() {
                         ? 'border-[#e18d58] text-white hover:bg-[#e18d58]/20'
                         : 'border-[#800000] text-[#800000] hover:bg-active'
                     )}
-                    onClick={() => setLocation("/goals?new=true")}
+                    onClick={() => setLocation("/goals?")}
                   >
                     Set New Goal
                   </Button>
+
                   <Button
-                    variant="default"
+                    variant="secondary"
                     className={cn(
                       "flex items-center gap-2 bg-nav-bg border",
                       theme === 'dark'
                         ? 'border-[#e18d58] text-white hover:bg-[#e18d58]/20'
                         : 'border-[#800000] text-[#800000] hover:bg-active'
                     )}
-                    onClick={() => setLocation("/programs")}
-                  >
-                    <Search size={20} />
-                    Browse Programs
+                    onClick={() => setLocation(`/challenges`)}>
+
+                    View Challenges
                   </Button>
+
                   <Button
                     variant="secondary"
                     className={cn(
@@ -215,6 +244,7 @@ export default function HomePage() {
                     <UserCircle size={20} />
                     View Profile
                   </Button>
+
                 </div>
               </div>
             </section>
@@ -233,17 +263,17 @@ export default function HomePage() {
                   <CardTitle className={cn(
                     "text-lg",
                     theme === 'dark' ? 'text-[#e18d58]' : 'text-[#800000]'
-                  )}>Your Activity</CardTitle>
+                  )}>Activity</CardTitle>
                   <CardDescription className={cn(
                     theme === 'dark' ? 'text-white/70' : 'text-[#800000]'
-                  )}>Stats for this week</CardDescription>
+                  )}>Personal and Community Stats</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-2 gap-4">
                     {[
-                      { value: "2", label: "Active Goals" },
-                      { value: "3", label: "Forum Posts" },
-                      { value: "1", label: "Challenges" },
+                      { value: goals.length, label: "Active Goals" },
+                      { value: threads.length, label: "Threads" },
+                      { value: challenges.length, label: "Challenges" },
                       { value: "5", label: "Days Active" }
                     ].map((stat, index) => (
                       <div key={index} className={cn(
@@ -277,38 +307,53 @@ export default function HomePage() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    {[
-                      { label: "Running Goal", progress: "3/5 miles", percent: "60%" },
-                      { label: "Basketball Practice", progress: "2/4 hours", percent: "50%" }
-                    ].map((goal, index) => (
-                      <div key={index}>
-                        <div className="flex justify-between text-sm mb-1">
-                          <span className={cn(
-                            "font-medium",
-                            theme === 'dark' ? 'text-white' : 'text-[#800000]'
-                          )}>{goal.label}</span>
-                          <span className={cn(
-                            theme === 'dark' ? 'text-white/70' : 'text-[#800000]'
-                          )}>{goal.progress}</span>
+                    {goals.map((goal, index) => {
+                      const percentage = Math.min(
+                        100,
+                        Math.max(0, (goal.current_value / goal.target_value) * 100)
+                      ).toFixed(1);
+
+                      return (
+                        <div key={index}>
+                          <div className="flex justify-between text-sm mb-1">
+                            <span className={cn(
+                              "font-medium",
+                              theme === 'dark' ? 'text-white' : 'text-[#800000]'
+                            )}>
+                              {goal.title}
+                            </span>
+                            <span className={cn(
+                              theme === 'dark' ? 'text-white/70' : 'text-[#800000]'
+                            )}>
+                              {percentage}%
+                            </span>
+                          </div>
+                          <div className="w-full bg-background rounded-full h-2.5 overflow-hidden">
+                            <div
+                              className={cn(
+                                "h-2.5 rounded-full transition-all duration-300",
+                                theme === 'dark' ? 'bg-[#e18d58]' : 'bg-[#800000]'
+                              )}
+                              style={{ width: `${percentage}%` }}
+                            ></div>
+                          </div>
                         </div>
-                        <div className="w-full bg-background rounded-full h-2.5">
-                          <div className={cn(
-                            "h-2.5 rounded-full",
-                            theme === 'dark' ? 'bg-[#e18d58]' : 'bg-[#800000]'
-                          )} style={{ width: goal.percent }}></div>
-                        </div>
-                      </div>
-                    ))}
-                    <Link href="/goals" className={cn(
-                      "flex items-center text-sm font-medium hover:underline",
-                      theme === 'dark'
-                        ? 'text-[#e18d58] hover:text-[#e18d58]/80'
-                        : 'text-[#800000] hover:text-[#800000]/80'
-                    )}>
+                      );
+                    })}
+                    <Link
+                      href="/goals"
+                      className={cn(
+                        "flex items-center text-sm font-medium hover:underline",
+                        theme === 'dark'
+                          ? 'text-[#e18d58] hover:text-[#e18d58]/80'
+                          : 'text-[#800000] hover:text-[#800000]/80'
+                      )}
+                    >
                       View all goals <ArrowRight className="h-4 w-4 ml-1" />
                     </Link>
                   </div>
                 </CardContent>
+
               </Card>
 
               {/* Active Challenges */}
@@ -405,6 +450,7 @@ export default function HomePage() {
                   View All <ArrowRight className="h-4 w-4 ml-1" />
                 </Link>
               </div>
+
               {threadsLoading ? (
                 <div className="flex justify-center py-8">
                   <Loader2 className={cn(
@@ -414,38 +460,29 @@ export default function HomePage() {
                 </div>
               ) : latestThreads && latestThreads.length > 0 ? (
                 <div className="grid grid-cols-1 gap-4">
-                  {latestThreads.map((thread: any) => (
+                  {latestThreads.map((thread: Thread) => (
                     <div key={thread.id} className={cn(
                       "rounded-xl border p-4 bg-nav-bg",
                       theme === 'dark' ? 'border-[#e18d58]' : 'border-[#800000]'
                     )}>
-                      <div className="flex items-center mb-2">
-                        <Link href={`/forum?category=${encodeURIComponent(thread.category.toLowerCase())}`}
-                          className={cn(
-                            "font-semibold hover:underline cursor-pointer",
-                            theme === 'dark' ? 'text-[#e18d58] hover:text-[#e18d58]/80' : 'text-[#800000] hover:text-[#800000]/80'
-                          )}
-                        >
-                          /{thread.category}
-                        </Link>
-                      </div>
-                      <p className={cn(
-                        "text-sm mb-3",
-                        theme === 'dark' ? 'text-white/70' : 'text-[#800000]'
+                      <h3 className={cn(
+                        "text-base font-medium mb-2",
+                        theme === 'dark' ? 'text-white' : 'text-[#800000]'
                       )}>
-                        {thread.firstPost?.content?.substring(0, 150)}
-                        {thread.firstPost?.content?.length > 150 ? "..." : ""}
-                      </p>
+                        {thread.title}
+                      </h3>
                       <div className={cn(
                         "flex items-center text-xs",
                         theme === 'dark' ? 'text-white/50' : 'text-[#800000]/70'
                       )}>
                         <Users className="h-3 w-3 mr-1" />
-                        <span className="mr-4">{thread.postCount} posts</span>
+                        <span className="mr-4">{thread.comment_count} comments</span>
+                        <Eye className="h-3 w-3 mr-1" />
+                        <span className="mr-4">{thread.view_count} views</span>
+                        <ThumbsUp className="h-3 w-3 mr-1" />
+                        <span className="mr-4">{thread.like_count} likes</span>
                         <Calendar className="h-3 w-3 mr-1" />
-                        <span>
-                          {new Date(thread.createdAt).toLocaleDateString()}
-                        </span>
+                        <span>{new Date(thread.created_at).toLocaleDateString()}</span>
                       </div>
                     </div>
                   ))}
@@ -473,156 +510,7 @@ export default function HomePage() {
               )}
             </section>
 
-            {/* Local Sports Programs */}
-            <section>
-              <div className="flex justify-between items-center mb-4">
-                <h2 className={cn(
-                  "text-xl font-semibold",
-                  theme === 'dark' ? 'text-[#e18d58]' : 'text-[#800000]'
-                )}>
-                  Nearby Sports Programs
-                </h2>
-                <Link href="/programs" className={cn(
-                  "flex items-center text-sm font-medium hover:underline",
-                  theme === 'dark'
-                    ? 'text-[#e18d58] hover:text-[#e18d58]/80'
-                    : 'text-[#800000] hover:text-[#800000]/80'
-                )}>
-                  View All <ArrowRight className="h-4 w-4 ml-1" />
-                </Link>
-              </div>
-              {programsLoading ? (
-                <div className="flex justify-center py-8">
-                  <Loader2 className={cn(
-                    "h-8 w-8 animate-spin",
-                    theme === 'dark' ? 'text-[#e18d58]' : 'text-[#800000]'
-                  )} />
-                </div>
-              ) : programs && programs.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {programs.slice(0, 3).map((program: any) => (
-                    <Card key={program.id} className={cn(
-                      "overflow-hidden border bg-nav-bg",
-                      theme === 'dark' ? 'border-[#e18d58]' : 'border-[#800000]'
-                    )}>
-                      <div className="bg-nav-bg h-40 flex items-center justify-center">
-                        {program.sportType === "Basketball" && (
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            className="h-16 w-16 text-secondary-dark"
-                          >
-                            <circle cx="12" cy="12" r="10" />
-                            <path d="M4.93 4.93a19.4 19.4 0 0 1 4.7 7.28 19.4 19.4 0 0 1-7.28-4.7" />
-                            <path d="M11.5 12.5A19.4 19.4 0 0 1 11.5 19a19.4 19.4 0 0 1 0-13" />
-                            <path d="M12.5 11.5a19.4 19.4 0 0 0 6.5 6.5 19.4 19.4 0 0 0-13 0" />
-                          </svg>
-                        )}
-                        {program.sportType === "Soccer" && (
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            className="h-16 w-16 text-secondary-dark"
-                          >
-                            <circle cx="12" cy="12" r="10" />
-                            <path d="m12 2 3 7h6l-5 5 2 8-6-4-6 4 2-8-5-5h6l3-7z" />
-                          </svg>
-                        )}
-                        {program.sportType !== "Basketball" && program.sportType !== "Soccer" && (
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            className="h-16 w-16 text-secondary-dark"
-                          >
-                            <path d="M18 8c0 2.5-1 4-2 6-1.5 2.5-3 4-3 6" />
-                            <path d="M9 10a3.5 3.5 0 0 0 5 0" />
-                            <path d="M11 6a5 5 0 0 1 10 0c0 2.5-2 4-5 6-3 2-5 3.5-5 6" />
-                            <path d="M3 14c0-2.5 2-4 5-6 3-2 5-3.5 5-6" />
-                          </svg>
-                        )}
-                      </div>
-                      <CardContent className="p-4">
-                        <h3 className={cn(
-                          "font-semibold mb-1",
-                          theme === 'dark' ? 'text-white' : 'text-[#800000]'
-                        )}>{program.name}</h3>
-                        <div className={cn(
-                          "flex items-center text-xs mb-2",
-                          theme === 'dark' ? 'text-white/50' : 'text-[#800000]/70'
-                        )}>
-                          <MapPin className="h-3 w-3 mr-1" />
-                          <span>{program.location}</span>
-                        </div>
-                        <p className={cn(
-                          "text-sm line-clamp-2 mb-3",
-                          theme === 'dark' ? 'text-white/70' : 'text-[#800000]'
-                        )}>{program.description}</p>
-                        <div className="flex flex-wrap gap-1 mb-3">
-                          {program.ageGroups.map((age: string, index: number) => (
-                            <span
-                              key={index}
-                              className={cn(
-                                "inline-block px-2 py-1 text-xs rounded-full border",
-                                theme === 'dark'
-                                  ? 'border-[#e18d58] text-white bg-[#e18d58]/10'
-                                  : 'border-[#800000] text-[#800000] bg-background'
-                              )}
-                            >
-                              {age}
-                            </span>
-                          ))}
-                        </div>
-                        <Link href={`/programs/${program.id}`}>
-                          <Button className={cn(
-                            "w-full bg-nav-bg border",
-                            theme === 'dark'
-                              ? 'border-[#e18d58] text-white hover:bg-[#e18d58]/20'
-                              : 'border-[#800000] text-[#800000] hover:bg-active'
-                          )}>
-                            View Details
-                          </Button>
-                        </Link>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              ) : (
-                <div className={cn(
-                  "text-center py-8 rounded-xl border bg-nav-bg",
-                  theme === 'dark' ? 'border-[#e18d58]' : 'border-[#800000]'
-                )}>
-                  <p className={cn(
-                    "mb-3",
-                    theme === 'dark' ? 'text-white/70' : 'text-[#800000]'
-                  )}>No programs available in your area</p>
-                  <Link href="/programs">
-                    <Button className={cn(
-                      "bg-nav-bg border",
-                      theme === 'dark'
-                        ? 'border-[#e18d58] text-white hover:bg-[#e18d58]/20'
-                        : 'border-[#800000] text-[#800000] hover:bg-active'
-                    )}>
-                      Browse all programs
-                    </Button>
-                  </Link>
-                </div>
-              )}
-            </section>
+
           </div>
           <FoodLogger />
 
