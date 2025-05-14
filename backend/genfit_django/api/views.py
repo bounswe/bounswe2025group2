@@ -30,13 +30,14 @@ def register(request):
 
         try:
             # Send verification email
-            send_mail(
-                subject='Verify your email',
-                message=f'Please click the link to verify your email: {verification_url}',
-                from_email =None,
-                recipient_list=[user.email],
-                fail_silently=False,
-            )
+            # send_mail(
+            #     subject='Verify your email',
+            #     message=f'Please click the link to verify your email: {verification_url}',
+            #     from_email =None,
+            #     recipient_list=[user.email],
+            #     fail_silently=False,
+            # )
+            a = 1
         except:
             # Handle email sending error if needed
             pass
