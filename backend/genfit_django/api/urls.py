@@ -11,6 +11,7 @@ from .separate_views.ai_tutor_views import AiTutorViewSet
 from .separate_views import local_hour
 from .separate_views import quote_views
 from .separate_views import parse_food
+from .separate_views import fitness_gif
 
 
 urlpatterns = [
@@ -36,6 +37,9 @@ urlpatterns = [
 
     #nutrition endpoints
     path('parse_food/', parse_food.parse_food, name='parse_food'),
+
+    # Giphy endpoints
+    path('fitness-gifs/', fitness_gif.random_fitness_gif, name='get_fitness_gif'),
 
     # Fitness Goals URLs
     path('goals/', fitness_goals.fitness_goals, name='fitness_goals'),
