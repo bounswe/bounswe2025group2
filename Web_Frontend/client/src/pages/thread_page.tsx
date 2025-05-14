@@ -31,7 +31,7 @@ export default function ThreadPageWrapper() {
     console.log(id);
 
 
-    const {data: threadsInfo, isLoading: threadinfoLoading} = useQuery({
+    const {data: threadsInfo, isLoading: threadinfoLoading, refetch: threadsDataRefetch} = useQuery({
         queryKey: ["threads", id],
         queryFn: async () => {
             const csrfToken = getCsrfToken();
@@ -63,7 +63,7 @@ export default function ThreadPageWrapper() {
         }
     }, [threadsInfo]);
 
-    let {data: commentsInfo, isLoading: commentsInfoLoading} = useQuery({
+    let {data: commentsInfo, isLoading: commentsInfoLoading, refetch: commentsDataRefetch} = useQuery({
         queryKey: ["comments", id],
         queryFn: async () => {
             const csrfToken = getCsrfToken();
@@ -173,7 +173,10 @@ export default function ThreadPageWrapper() {
             throw new Error('Failed to create thread');
         }
         console.log("query returned");
-        queryClient.invalidateQueries({ queryKey: ["comments"]})
+        //queryClient.invalidateQueries({ queryKey: ["comments"]})
+        await threadsDataRefetch();
+        await commentsDataRefetch();
+        
     }
 
     const handleDownvote = async(replyid:number) => {
@@ -194,8 +197,10 @@ export default function ThreadPageWrapper() {
             throw new Error('Failed to create thread');
         }
         console.log("query returned");
-        queryClient.invalidateQueries({ queryKey: ["comments"]})
-        queryClient.invalidateQueries({ queryKey: ["threads"]})
+        //queryClient.invalidateQueries({ queryKey: ["comments"]})
+        //queryClient.invalidateQueries({ queryKey: ["threads"]})
+        await threadsDataRefetch();
+        await commentsDataRefetch();
         //window.location.reload();
     }
 
