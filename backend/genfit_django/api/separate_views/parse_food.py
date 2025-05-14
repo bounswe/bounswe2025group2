@@ -8,9 +8,8 @@ def parse_food(request):
     APP_ID = "57eefa2c"
     APP_KEY = "3f4e4b38dcc594441858a7811ebcb747"
 
-    user_input = request.data.get('query')
-    
-    # ✅ Validate input
+    user_input = request.data.get('query')    
+   
     if not user_input:
         return Response({'error': 'Missing query'}, status=status.HTTP_400_BAD_REQUEST)
 
