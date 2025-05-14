@@ -59,7 +59,9 @@ const markAllAsRead = async () => {
     const error = await res.json();
     throw new Error(error.error || "Failed to mark all notifications as read");
   }
-  return res.json();
+  // Handle empty response gracefully
+  const text = await res.text();
+  return text ? JSON.parse(text) : {};
 };
 
 const NotificationItem = ({ item, onPress }: { item: Notification; onPress: () => void }) => (
