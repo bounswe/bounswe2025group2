@@ -32,7 +32,7 @@ export default function ThreadPageWrapper() {
 
 
     const {data: threadsInfo, isLoading: threadinfoLoading, refetch: threadsDataRefetch} = useQuery({
-        queryKey: ["threads", id],
+        queryKey: ["threads"],
         queryFn: async () => {
             const csrfToken = getCsrfToken();
             const response = await fetch(`${API_BASE_URL}/api/threads/` + id, {
@@ -63,8 +63,8 @@ export default function ThreadPageWrapper() {
         }
     }, [threadsInfo]);
 
-    let {data: commentsInfo, isLoading: commentsInfoLoading, refetch: commentsDataRefetch} = useQuery({
-        queryKey: ["comments", id],
+    let {data: commentsInfo, isLoading: commentsInfoLoading, refetch: commentsDataRefetch}= useQuery({
+        queryKey: ["comments"],
         queryFn: async () => {
             const csrfToken = getCsrfToken();
             const response = await fetch(`${API_BASE_URL}/api/comments/thread/` + id + "/", {
@@ -157,51 +157,80 @@ export default function ThreadPageWrapper() {
 
     const handleUpvote = async(replyid:number) => {
         let comment_element = commentsInfo.filter((f: any) => f.id === replyid)[0]
-        comment_element.self_vote = 1;
         console.log("querying for upvote...");
-        const csrfToken = getCsrfToken();
-        const response = await fetch(`${API_BASE_URL}/api/forum/vote/`, {
-            method: "POST",
-            credentials: 'include',
-            headers: {
-                'X-CSRFToken': csrfToken,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({content_type: "COMMENT", object_id: replyid, vote_type: "UPVOTE"})
-        });
-        if (!response.ok) {
-            throw new Error('Failed to create thread');
+        if (comment_element.self_vote == 1) {
+            comment_element.self_vote = 0;
+            const csrfToken = getCsrfToken();
+            const response = await fetch(`${API_BASE_URL}/api/forum/vote/comment/` + replyid + "/", {
+                method: "DELETE",
+                credentials: 'include',
+                headers: {
+                    'X-CSRFToken': csrfToken,
+                    'Content-Type': 'application/json'
+                }
+            });
+            if (!response.ok) {
+                throw new Error('Failed to create thread');
+            }
+
+        }else{
+            comment_element.self_vote = 1;
+            const csrfToken = getCsrfToken();
+            const response = await fetch(`${API_BASE_URL}/api/forum/vote/`, {
+                method: "POST",
+                credentials: 'include',
+                headers: {
+                    'X-CSRFToken': csrfToken,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({content_type: "COMMENT", object_id: replyid, vote_type: "UPVOTE"})
+            });
+            if (!response.ok) {
+                throw new Error('Failed to create thread');
+            }
         }
         console.log("query returned");
-        //queryClient.invalidateQueries({ queryKey: ["comments"]})
         await threadsDataRefetch();
         await commentsDataRefetch();
-        
     }
 
     const handleDownvote = async(replyid:number) => {
         let comment_element = commentsInfo.filter((f: any) => f.id === replyid)[0]
-        comment_element.self_vote = -1;
         console.log("querying for downvote...");
-        const csrfToken = getCsrfToken();
-        const response = await fetch(`${API_BASE_URL}/api/forum/vote/`, {
-            method: "POST",
-            credentials: 'include',
-            headers: {
-                'X-CSRFToken': csrfToken,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({content_type: "COMMENT", object_id: replyid, vote_type: "DOWNVOTE"})
-        });
-        if (!response.ok) {
-            throw new Error('Failed to create thread');
+        if (comment_element.self_vote == -1) {
+            comment_element.self_vote = 0;
+            const csrfToken = getCsrfToken();
+            const response = await fetch(`${API_BASE_URL}/api/forum/vote/comment/` + replyid + "/", {
+                method: "DELETE",
+                credentials: 'include',
+                headers: {
+                    'X-CSRFToken': csrfToken,
+                    'Content-Type': 'application/json'
+                }
+            });
+            if (!response.ok) {
+                throw new Error('Failed to create thread');
+            }
+        }else {
+            comment_element.self_vote = -1;
+            const csrfToken = getCsrfToken();
+            const response = await fetch(`${API_BASE_URL}/api/forum/vote/`, {
+                method: "POST",
+                credentials: 'include',
+                headers: {
+                    'X-CSRFToken': csrfToken,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({content_type: "COMMENT", object_id: replyid, vote_type: "DOWNVOTE"})
+            });
+            if (!response.ok) {
+                throw new Error('Failed to create thread');
+            }
+
         }
         console.log("query returned");
-        //queryClient.invalidateQueries({ queryKey: ["comments"]})
-        //queryClient.invalidateQueries({ queryKey: ["threads"]})
         await threadsDataRefetch();
         await commentsDataRefetch();
-        //window.location.reload();
     }
 
 
@@ -254,41 +283,74 @@ export default function ThreadPageWrapper() {
 
     const handleupvote_subc = async (subc_id: number) => {
         let subcomment_element = subcomments.filter((f: any) => f.id === subc_id)[0]
-        subcomment_element.self_vote = 1;
+        if (subcomment_element.self_vote == 1) {
+            subcomment_element.self_vote = 0;
+            const csrfToken = getCsrfToken();
+            const response = await fetch(`${API_BASE_URL}/api/forum/vote/subcomment/` + subc_id + "/", {
+                method: "DELETE",
+                credentials: 'include',
+                headers: {
+                    'X-CSRFToken': csrfToken,
+                    'Content-Type': 'application/json'
+                }
+            });
+            if (!response.ok) {
+                throw new Error('Failed to create thread');
+            }
+        }else{
+            subcomment_element.self_vote = 1;
 
-        const csrfToken = getCsrfToken();
-        const response = await fetch(`${API_BASE_URL}/api/forum/vote/`, {
-            method: "POST",
-            credentials: 'include',
-            headers: {
-                'X-CSRFToken': csrfToken,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({content_type: "SUBCOMMENT", object_id: subc_id, vote_type: "UPVOTE"})
-        });
-        if (!response.ok) {
-            throw new Error('Failed to create thread');
+            const csrfToken = getCsrfToken();
+            const response = await fetch(`${API_BASE_URL}/api/forum/vote/`, {
+                method: "POST",
+                credentials: 'include',
+                headers: {
+                    'X-CSRFToken': csrfToken,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({content_type: "SUBCOMMENT", object_id: subc_id, vote_type: "UPVOTE"})
+            });
+            if (!response.ok) {
+                throw new Error('Failed to create thread');
+            }
         }
         await fetch_subcomments_data(selectedComment.id);
     }
 
     const handledownvote_subc = async (subc_id: number) => {
         let subcomment_element = subcomments.filter((f: any) => f.id === subc_id)[0]
-        subcomment_element.self_vote = -1;
+        if (subcomment_element.self_vote == -1) {
+            subcomment_element.self_vote = 0;
+            const csrfToken = getCsrfToken();
+            const response = await fetch(`${API_BASE_URL}/api/forum/vote/subcomment/` + subc_id + "/", {
+                method: "DELETE",
+                credentials: 'include',
+                headers: {
+                    'X-CSRFToken': csrfToken,
+                    'Content-Type': 'application/json'
+                }
+            });
+            if (!response.ok) {
+                throw new Error('Failed to create thread');
+            }
+        }else{
+            subcomment_element.self_vote = -1;
 
-        const csrfToken = getCsrfToken();
-        const response = await fetch(`${API_BASE_URL}/api/forum/vote/`, {
-            method: "POST",
-            credentials: 'include',
-            headers: {
-                'X-CSRFToken': csrfToken,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({content_type: "SUBCOMMENT", object_id: subc_id, vote_type: "DOWNVOTE"})
-        });
-        if (!response.ok) {
-            throw new Error('Failed to create thread');
+            const csrfToken = getCsrfToken();
+            const response = await fetch(`${API_BASE_URL}/api/forum/vote/`, {
+                method: "POST",
+                credentials: 'include',
+                headers: {
+                    'X-CSRFToken': csrfToken,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({content_type: "SUBCOMMENT", object_id: subc_id, vote_type: "DOWNVOTE"})
+            });
+            if (!response.ok) {
+                throw new Error('Failed to create thread');
+            }
         }
+
         await fetch_subcomments_data(selectedComment.id);
     }
 
