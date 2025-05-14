@@ -197,7 +197,8 @@ export default function ThreadPageWrapper() {
         }
         console.log("query returned");
         queryClient.invalidateQueries({ queryKey: ["comments"]})
-        window.location.reload();
+        queryClient.invalidateQueries({ queryKey: ["threads"]})
+        //window.location.reload();
     }
 
 
