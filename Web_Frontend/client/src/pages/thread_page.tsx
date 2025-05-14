@@ -32,7 +32,7 @@ export default function ThreadPageWrapper() {
 
 
     const {data: threadsInfo, isLoading: threadinfoLoading} = useQuery({
-        queryKey: ["threads"],
+        queryKey: ["threads", id],
         queryFn: async () => {
             const csrfToken = getCsrfToken();
             const response = await fetch(`${API_BASE_URL}/api/threads/` + id, {
@@ -64,7 +64,7 @@ export default function ThreadPageWrapper() {
     }, [threadsInfo]);
 
     let {data: commentsInfo, isLoading: commentsInfoLoading} = useQuery({
-        queryKey: ["comments"],
+        queryKey: ["comments", id],
         queryFn: async () => {
             const csrfToken = getCsrfToken();
             const response = await fetch(`${API_BASE_URL}/api/comments/thread/` + id + "/", {
