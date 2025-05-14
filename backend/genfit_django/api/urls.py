@@ -11,6 +11,7 @@ from .separate_views.ai_tutor_views import AiTutorViewSet
 from .separate_views import local_hour
 from .separate_views import quote_views
 from .separate_views import parse_food
+from .separate_views import fitness_gif
 from .separate_views import ip_location
 
 
@@ -37,6 +38,9 @@ urlpatterns = [
 
     #nutrition endpoints
     path('parse_food/', parse_food.parse_food, name='parse_food'),
+
+    # Giphy endpoints
+    path('fitness-gifs/', fitness_gif.random_fitness_gif, name='get_fitness_gif'),
 
     # IP location endpoint
     path('ip-location/', ip_location.get_location_from_ip, name='get_location_from_ip'),
