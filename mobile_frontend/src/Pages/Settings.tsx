@@ -113,6 +113,12 @@ const Settings = () => {
       </View>
       <TouchableOpacity
         style={[styles.settingItem, { borderBottomColor: colors.border }]}
+        onPress={() => navigation.navigate('EditProfile')}
+      >
+        <CustomText style={[styles.settingText, { color: colors.text }]}>Edit Profile</CustomText>
+      </TouchableOpacity>
+      <TouchableOpacity
+        style={[styles.settingItem, { borderBottomColor: colors.border }]}
         onPress={handleLogout}
       >
         <CustomText style={[styles.settingText, { color: '#000000' }]}>Log Out</CustomText>
