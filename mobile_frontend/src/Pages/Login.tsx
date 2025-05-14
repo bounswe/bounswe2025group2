@@ -6,9 +6,9 @@ import {
   TouchableOpacity,
   StyleSheet,
   SafeAreaView,
-  Alert,
 } from 'react-native';
 import Cookies from '@react-native-cookies/cookies';
+import Toast from 'react-native-toast-message';
 
 const Login = ({ navigation }: any) => {
   const [username, setUsername] = useState('');
@@ -16,7 +16,11 @@ const Login = ({ navigation }: any) => {
 
   const handleLogin = async () => {
     if (!username || !password) {
-      Alert.alert('Error', 'Please fill in all fields');
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'Please fill in all fields',
+      });
       return;
     }
 
@@ -42,14 +46,26 @@ const Login = ({ navigation }: any) => {
         const cookies = await Cookies.get('http://10.0.2.2:8000');
         console.log('Cookies after login and GET:', cookies);
 
-        Alert.alert('Success', data.message || 'Login successful');
+        Toast.show({
+          type: 'success',
+          text1: 'Success',
+          text2: data.message || 'Login successful',
+        });
         navigation.replace('Main');
       } else {
-        Alert.alert('Error', data.error || 'Login failed');
+        Toast.show({
+          type: 'error',
+          text1: 'Error',
+          text2: data.error || 'Login failed',
+        });
       }
     } catch (error) {
       console.error('Login error:', error);
-      Alert.alert('Error', 'Network error. Please try again.');
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'Network error. Please try again.',
+      });
     }
   };
 

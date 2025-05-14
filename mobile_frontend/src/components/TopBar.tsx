@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, StyleSheet, Image, Pressable } from 'react-native';
+import { View, StyleSheet, Image, Pressable, Text } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../context/ThemeContext';
 import CustomText from './CustomText';
@@ -37,17 +37,22 @@ const TopBar = () => {
         <CustomText style={[styles.appTitle, { color: colors.border }]}>GenFit</CustomText>
       </View>
       <View style={styles.rightSection}>
+        <Pressable onPress={() => navigation.navigate('ApiDemo')} style={styles.funCircle}>
+          <Text style={styles.funText}>cat</Text>
+        </Pressable>
         <SearchIcon width={36} height={36} fill={colors.border} />
         <Pressable onPress={() => navigation.navigate('Settings')}>
           <SettingsIcon width={36} height={36} fill={colors.border} />
         </Pressable>
-        <View style={[styles.profileContainer, { borderColor: colors.border }]}>
-          <Image 
-            source={require('../assets/temp_images/profile.png')}
-            style={styles.profile}
-            resizeMode="cover"
-          />
-        </View>
+        <Pressable onPress={() => navigation.getParent()?.navigate('Profile')}>
+          <View style={[styles.profileContainer, { borderColor: colors.border }]}> 
+            <Image 
+              source={require('../assets/temp_images/profile.png')}
+              style={styles.profile}
+              resizeMode="cover"
+            />
+          </View>
+        </Pressable>
       </View>
     </View>
   );
@@ -88,6 +93,23 @@ const styles = StyleSheet.create({
   profile: {
     width: 40,
     height: 40,
+  },
+  funCircle: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#fff',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: '#800000',
+    marginRight: 8,
+  },
+  funText: {
+    color: '#800000',
+    fontWeight: 'bold',
+    fontSize: 16,
+    textTransform: 'lowercase',
   },
 });
 

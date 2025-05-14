@@ -8,6 +8,7 @@ export type RootStackParamList = {
   Mentors: undefined;
   Chats: undefined;
   Settings: undefined;
+  ApiDemo: undefined;
   Notifications: undefined;
 };
 
