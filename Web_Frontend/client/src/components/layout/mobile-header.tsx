@@ -50,7 +50,7 @@ export default function MobileHeader() {
   let date;
   let formattedTime;
   if (localtimeInfo) {
-    date = new Date("2025-05-13T12:23:50.4535226");
+    date = new Date(localtimeInfo.local_time);
     formattedTime = `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
   }
 

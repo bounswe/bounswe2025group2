@@ -42,22 +42,10 @@ export default function Sidebar({ activeTab = "home" }: SidebarProps) {
       id: "home" 
     },
     { 
-      href: "/communities", 
-      label: "Communities", 
-      icon: <Users className="h-5 w-5 mr-3" />, 
-      id: "communities" 
-    },
-    { 
       href: "/forum", 
       label: "Forums", 
       icon: <MessageSquare className="h-5 w-5 mr-3" />, 
       id: "forum" 
-    },
-    { 
-      href: "/mentors", 
-      label: "Mentors", 
-      icon: <User className="h-5 w-5 mr-3" />, 
-      id: "mentors" 
     },
     { 
       href: "/goals", 
@@ -76,12 +64,6 @@ export default function Sidebar({ activeTab = "home" }: SidebarProps) {
       label: "Challenges", 
       icon: <Award className="h-5 w-5 mr-3" />, 
       id: "challenges" 
-    },
-    { 
-      href: "/programs", 
-      label: "Programs", 
-      icon: <FileText className="h-5 w-5 mr-3" />, 
-      id: "programs" 
     },
     {
       href: "/chat",
