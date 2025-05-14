@@ -330,7 +330,8 @@ class Vote(models.Model):
             
 
     def delete(self, *args, **kwargs):
-        self.update_content_like_count(increment=False)
+        if self.vote_type == 'UPVOTE':
+            self.update_content_like_count(increment=False)
         super().delete(*args, **kwargs)
 
 class AiTutorChat(models.Model):
