@@ -110,11 +110,11 @@ ASGI_APPLICATION = 'genfit_django.asgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.environ.get('POSTGRES_DB', 'group2db'),
-        'USER': os.environ.get('POSTGRES_USER', 'group2'),
-        'PASSWORD': os.environ.get('POSTGRES_PASSWORD', 'group2'),
+        'NAME': "postgres",#os.environ.get('POSTGRES_DB', 'group2db'),
+        'USER': "postgres",#os.environ.get('POSTGRES_USER', 'group2'),
+        'PASSWORD': "Se.9032H",#os.environ.get('POSTGRES_PASSWORD', 'group2'),
         'HOST': 'localhost',
-        'PORT': os.environ.get('POSTGRES_PORT', '5432'),
+        'PORT': "5432"#os.environ.get('POSTGRES_PORT', '5432'),
     }
 }
 
