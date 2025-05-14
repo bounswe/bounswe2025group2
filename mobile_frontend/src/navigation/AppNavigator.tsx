@@ -21,6 +21,7 @@ import ExercisesScreen from '../Pages/ExercisesScreen';   // ✅ Exercises eklen
 import Profile from '../Pages/Profile';
 import ApiDemoScreen from '../Pages/ApiDemoScreen';
 import { useAuth } from '../context/AuthContext';
+import Notifications from '../Pages/Notifications';
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -51,6 +52,7 @@ const MainTabs = () => {
       <Tab.Screen name="Goals" component={Goals} />
       <Tab.Screen name="Notifications" component={withLayout(Notifications)} />
       <Tab.Screen name="Exercises" component={ExercisesScreen} />  {/* ✅ Added */}
+
     </Tab.Navigator>
   );
 };
@@ -78,3 +80,4 @@ const AppNavigator = () => {
 };
 
 export default AppNavigator;
+

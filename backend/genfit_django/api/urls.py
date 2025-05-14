@@ -14,6 +14,9 @@ from .separate_views import parse_food
 from .separate_views import cat_info
 from .separate_views import fitness_gif
 from .separate_views import ip_location
+from .separate_views import fitness_gif
+from .separate_views import ip_location
+
 
 urlpatterns = [
     path('register/', views.register, name='register'),
@@ -48,7 +51,6 @@ urlpatterns = [
     path('cats/fact/', cat_info.get_cat_fact, name='get_cat_fact'),
     path('cats/', cat_info.get_cat_info, name='get_random_cats'),
     path('cats/<str:cat_id>/', cat_info.get_cat_info, name='get_cat_info'),
-
     # Fitness Goals URLs
     path('goals/', fitness_goals.fitness_goals, name='fitness_goals'),
     path('goals/<int:goal_id>/', fitness_goals.fitness_goal_detail, name='fitness_goal_detail'),

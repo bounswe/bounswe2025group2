@@ -2,7 +2,7 @@ This is the first part for the mobile frontend of our project. After React Nativ
 
 ```sh
 # To start Metro
-npx raect-native start
+npx react-native start
 
 # Then starting the app on an android emulator
 npx react-native run-android
