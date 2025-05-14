@@ -1,30 +1,218 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Modal, TextInput, Alert } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import { useAuth } from '../context/AuthContext';
+import Cookies from '@react-native-cookies/cookies';
 
 interface Goal {
+  id: number;
   title: string;
-  type: string;
-  value: string;
+  description: string;
+  user: number;
+  mentor: number | null;
+  goal_type: 'WALKING_RUNNING' | 'WORKOUT' | 'CYCLING' | 'SPORTS' | 'SWIMMING' | 'CARDIO' | 'STRENGTH' | 'FLEXIBILITY' | 'BALANCE' | 'OTHER';
+  target_value: number;
+  current_value: number;
   unit: string;
-  date: Date;
-  contributions: number[];
-  isBinary: boolean;
+  start_date: string;
+  target_date: string;
+  status: 'ACTIVE' | 'COMPLETED' | 'RESTARTED';
+  last_updated: string;
 }
 
 const Goals = ({ navigation }: any) => {
+  const { getAuthHeader } = useAuth();
   const [modalVisible, setModalVisible] = useState(false);
   const [goalTitle, setGoalTitle] = useState('');
-  const [goalType, setGoalType] = useState('Walking');
+  const [goalDescription, setGoalDescription] = useState('');
+  const GOAL_TYPE_OPTIONS = [
+    'WALKING_RUNNING',
+    'WORKOUT',
+    'CYCLING',
+    'SPORTS',
+    'SWIMMING',
+  ];
+  const [goalType, setGoalType] = useState(GOAL_TYPE_OPTIONS[0]);
   const [targetValue, setTargetValue] = useState('');
-  const [unit, setUnit] = useState('miles');
+  const [unit, setUnit] = useState('km');
   const [date, setDate] = useState(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [goals, setGoals] = useState<Goal[]>([]);
-  const [contributionModal, setContributionModal] = useState<{ visible: boolean; goalIdx: number | null }>({ visible: false, goalIdx: null });
+  const [contributionModal, setContributionModal] = useState<{ visible: boolean; goalId: number | null }>({ visible: false, goalId: null });
   const [contributionValue, setContributionValue] = useState('');
-  const [activeTab, setActiveTab] = useState<'Active' | 'Completed' | 'Failed' | 'All'>('Active');
-  const [isBinary, setIsBinary] = useState(false);
+  const [activeTab, setActiveTab] = useState<'ACTIVE' | 'COMPLETED' | 'ALL'>('ACTIVE');
+  const [editModalVisible, setEditModalVisible] = useState(false);
+  const [editingGoal, setEditingGoal] = useState<Goal | null>(null);
+  const [editTitle, setEditTitle] = useState('');
+  const [editDescription, setEditDescription] = useState('');
+  const [editGoalType, setEditGoalType] = useState(GOAL_TYPE_OPTIONS[0]);
+  const [editTargetValue, setEditTargetValue] = useState('');
+  const [editUnit, setEditUnit] = useState('');
+  const [editDate, setEditDate] = useState(new Date());
+  const [editShowDatePicker, setEditShowDatePicker] = useState(false);
+
+  useEffect(() => {
+    fetchGoals();
+  }, []);
+
+  const fetchGoals = async () => {
+    try {
+      const response = await fetch('http://10.0.2.2:8000/api/goals/', {
+        headers: {
+          ...getAuthHeader(),
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setGoals(data);
+      } else {
+        const error = await response.json();
+        Alert.alert('Error', error.detail || 'Failed to fetch goals');
+      }
+    } catch (error) {
+      console.error('Error fetching goals:', error);
+      Alert.alert('Error', 'Network error while fetching goals');
+    }
+  };
+
+  // Utility to get CSRF token
+  const getCSRFToken = async () => {
+    const cookies = await Cookies.get('http://10.0.2.2:8000');
+    return cookies.csrftoken?.value;
+  };
+
+  const handleCreateGoal = async () => {
+    if (!goalTitle || !goalDescription || !targetValue || !unit || !date) {
+      Alert.alert('Error', 'Please fill in all fields');
+      return;
+    }
+    try {
+      const csrfToken = await getCSRFToken();
+      if (!csrfToken) {
+        Alert.alert('Error', 'CSRF token not found. Please try logging in again.');
+        return;
+      }
+      const body = {
+        title: goalTitle,
+        description: goalDescription,
+        goal_type: goalType,
+        target_value: parseFloat(targetValue),
+        current_value: 0.0,
+        unit: unit,
+        start_date: new Date().toISOString(),
+        target_date: date.toISOString(),
+      };
+      const response = await fetch('http://10.0.2.2:8000/api/goals/', {
+        method: 'POST',
+        headers: {
+          ...getAuthHeader(),
+          'Content-Type': 'application/json',
+          'X-CSRFToken': csrfToken,
+        },
+        body: JSON.stringify(body),
+      });
+      if (response.ok) {
+        const newGoal = await response.json();
+        setGoals([...goals, newGoal]);
+        closeModal();
+        Alert.alert('Success', 'Goal created successfully!');
+        resetForm();
+        await fetchGoals();
+      } else {
+        const error = await response.json();
+        console.error('Goal creation error response:', error);
+        Alert.alert('Error', error.detail || JSON.stringify(error) || 'Failed to create goal');
+      }
+    } catch (error) {
+      console.error('Error creating goal:', error);
+      Alert.alert('Error', 'Network error while creating goal');
+    }
+  };
+
+  const handleUpdateProgress = async () => {
+    if (!contributionModal.goalId) return;
+    
+    const goal = goals.find(g => g.id === contributionModal.goalId);
+    if (!goal) return;
+
+    const newValue = parseFloat(contributionValue);
+    if (isNaN(newValue) || newValue <= 0) {
+      Alert.alert('Error', 'Please enter a valid number');
+      return;
+    }
+
+    try {
+      const csrfToken = await getCSRFToken();
+      if (!csrfToken) {
+        Alert.alert('Error', 'CSRF token not found. Please try logging in again.');
+        return;
+      }
+      const response = await fetch(`http://10.0.2.2:8000/api/goals/${contributionModal.goalId}/progress/`, {
+        method: 'PATCH',
+        headers: {
+          ...getAuthHeader(),
+          'Content-Type': 'application/json',
+          'X-CSRFToken': csrfToken,
+        },
+        body: JSON.stringify({
+          current_value: newValue,
+        }),
+      });
+
+      if (response.ok) {
+        const updatedGoal = await response.json();
+        setGoals(goals.map(g => g.id === updatedGoal.id ? updatedGoal : g));
+        closeContributionModal();
+        setContributionValue('');
+        Alert.alert('Success', 'Progress updated successfully!');
+        await fetchGoals();
+      } else {
+        const error = await response.json();
+        Alert.alert('Error', error.detail || 'Failed to update progress');
+      }
+    } catch (error) {
+      console.error('Error updating progress:', error);
+      Alert.alert('Error', 'Network error while updating progress');
+    }
+  };
+
+  const handleDeleteGoal = async (goalId: number) => {
+    try {
+      const csrfToken = await getCSRFToken();
+      if (!csrfToken) {
+        Alert.alert('Error', 'CSRF token not found. Please try logging in again.');
+        return;
+      }
+      const response = await fetch(`http://10.0.2.2:8000/api/goals/${goalId}/`, {
+        method: 'DELETE',
+        headers: {
+          ...getAuthHeader(),
+          'X-CSRFToken': csrfToken,
+        },
+      });
+      if (response.status === 204) {
+        setGoals(goals.filter(g => g.id !== goalId));
+        Alert.alert('Success', 'Goal deleted successfully!');
+      } else {
+        const error = await response.json();
+        Alert.alert('Error', error.detail || 'Failed to delete goal');
+      }
+    } catch (error) {
+      console.error('Error deleting goal:', error);
+      Alert.alert('Error', 'Network error while deleting goal');
+    }
+  };
+
+  const resetForm = () => {
+    setGoalTitle('');
+    setGoalDescription('');
+    setGoalType(GOAL_TYPE_OPTIONS[0]);
+    setTargetValue('');
+    setUnit('km');
+    setDate(new Date());
+  };
 
   const openModal = () => setModalVisible(true);
   const closeModal = () => setModalVisible(false);
@@ -34,90 +222,85 @@ const Goals = ({ navigation }: any) => {
     if (selectedDate) setDate(selectedDate);
   };
 
-  const handleCreateGoal = () => {
-    if (!goalTitle || (!isBinary && (!targetValue || !unit)) || !date) {
+  const openContributionModal = (goalId: number) => {
+    setContributionModal({ visible: true, goalId });
+    setContributionValue('');
+  };
+
+  const closeContributionModal = () => setContributionModal({ visible: false, goalId: null });
+
+  const openEditModal = (goal: Goal) => {
+    setEditingGoal(goal);
+    setEditTitle(goal.title);
+    setEditDescription(goal.description);
+    setEditGoalType(goal.goal_type);
+    setEditTargetValue(goal.target_value.toString());
+    setEditUnit(goal.unit);
+    setEditDate(new Date(goal.target_date));
+    setEditModalVisible(true);
+  };
+
+  const closeEditModal = () => {
+    setEditModalVisible(false);
+    setEditingGoal(null);
+  };
+
+  const handleEditDateChange = (event: any, selectedDate?: Date) => {
+    setEditShowDatePicker(false);
+    if (selectedDate) setEditDate(selectedDate);
+  };
+
+  const handleUpdateGoal = async () => {
+    if (!editingGoal) return;
+    if (!editTitle || !editDescription || !editTargetValue || !editUnit || !editDate) {
       Alert.alert('Error', 'Please fill in all fields');
       return;
     }
-    setGoals([
-      ...goals,
-      {
-        title: goalTitle,
-        type: goalType,
-        value: isBinary ? '1' : targetValue,
-        unit: isBinary ? 'times' : unit,
-        date,
-        contributions: [],
-        isBinary,
-      },
-    ]);
-    closeModal();
-    Alert.alert('Success', 'Goal created!');
-    setGoalTitle('');
-    setGoalType('Walking');
-    setTargetValue('');
-    setUnit('miles');
-    setDate(new Date());
-    setIsBinary(false);
-  };
-
-  const openContributionModal = (goalIdx: number) => {
-    setContributionModal({ visible: true, goalIdx });
-    setContributionValue('');
-  };
-  const closeContributionModal = () => setContributionModal({ visible: false, goalIdx: null });
-
-  const handleAddContribution = () => {
-    const idx = contributionModal.goalIdx;
-    if (idx === null) return;
-    const value = parseFloat(contributionValue);
-    if (isNaN(value) || value <= 0) {
-      Alert.alert('Error', 'Please enter a valid number');
-      return;
+    try {
+      const csrfToken = await getCSRFToken();
+      if (!csrfToken) {
+        Alert.alert('Error', 'CSRF token not found. Please try logging in again.');
+        return;
+      }
+      const body = {
+        title: editTitle,
+        description: editDescription,
+        goal_type: editGoalType,
+        target_value: parseFloat(editTargetValue),
+        unit: editUnit,
+        target_date: editDate.toISOString(),
+      };
+      const response = await fetch(`http://10.0.2.2:8000/api/goals/${editingGoal.id}/`, {
+        method: 'PUT',
+        headers: {
+          ...getAuthHeader(),
+          'Content-Type': 'application/json',
+          'X-CSRFToken': csrfToken,
+        },
+        body: JSON.stringify(body),
+      });
+      if (response.ok) {
+        const updatedGoal = await response.json();
+        setGoals(goals.map(g => g.id === updatedGoal.id ? updatedGoal : g));
+        closeEditModal();
+        Alert.alert('Success', 'Goal updated successfully!');
+        await fetchGoals();
+      } else {
+        const error = await response.json();
+        console.error('Goal update error response:', error);
+        Alert.alert('Error', error.detail || JSON.stringify(error) || 'Failed to update goal');
+      }
+    } catch (error) {
+      console.error('Error updating goal:', error);
+      Alert.alert('Error', 'Network error while updating goal');
     }
-    setGoals(goals => goals.map((g, i) => i === idx ? { ...g, contributions: [...g.contributions, value] } : g));
-    closeContributionModal();
-  };
-
-  const getProgress = (goal: Goal) => {
-    if (goal.isBinary) {
-      return goal.contributions.length > 0 ? 1 : 0;
-    }
-    const total = goal.contributions.reduce((a, b) => a + b, 0);
-    const target = parseFloat(goal.value) || 1;
-    return Math.min(total / target, 1);
-  };
-
-  const getCurrentValue = (goal: Goal) => {
-    if (goal.isBinary) {
-      return goal.contributions.length > 0 ? 1 : 0;
-    }
-    const total = goal.contributions.reduce((a, b) => a + b, 0);
-    const target = parseFloat(goal.value) || 1;
-    return Math.min(total, target);
-  };
-
-  const isCompleted = (goal: Goal) => {
-    if (goal.isBinary) {
-      return goal.contributions.length > 0;
-    }
-    return getCurrentValue(goal) >= (parseFloat(goal.value) || 1);
-  };
-
-  const isFailed = (goal: Goal) => {
-    const now = new Date();
-    return !isCompleted(goal) && goal.date < new Date(now.getFullYear(), now.getMonth(), now.getDate());
   };
 
   // Filter goals based on activeTab
-  const filteredGoals = goals
-    .filter(goal =>
-      activeTab === 'Active' ? (!isCompleted(goal) && !isFailed(goal)) :
-      activeTab === 'Completed' ? isCompleted(goal) :
-      activeTab === 'Failed' ? isFailed(goal) :
-      true // 'All' tab shows all goals
-    )
-    .sort((a, b) => b.date.getTime() - a.date.getTime()); // Sort by deadline date (latest first)
+  const filteredGoals = goals.filter(goal =>
+    activeTab === 'ALL' ? true :
+    goal.status === activeTab
+  );
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
@@ -129,60 +312,69 @@ const Goals = ({ navigation }: any) => {
       <View style={styles.statsRow}>
         <View style={styles.statBox}>
           <Text style={styles.statLabel}>Active Goals</Text>
-          <Text style={styles.statValue}>{goals.filter(g => !isCompleted(g) && !isFailed(g)).length}</Text>
+          <Text style={styles.statValue}>{goals.filter(g => g.status === 'ACTIVE').length}</Text>
         </View>
         <View style={styles.statBox}>
           <Text style={styles.statLabel}>Completed</Text>
-          <Text style={styles.statValue}>{goals.filter(g => isCompleted(g)).length}</Text>
-        </View>
-        <View style={styles.statBox}>
-          <Text style={styles.statLabel}>Failed</Text>
-          <Text style={styles.statValue}>{goals.filter(g => isFailed(g)).length}</Text>
+          <Text style={styles.statValue}>{goals.filter(g => g.status === 'COMPLETED').length}</Text>
         </View>
         <View style={styles.statBox}>
           <Text style={styles.statLabel}>Completion Rate</Text>
-          <Text style={styles.statValue}>{goals.length > 0 ? Math.round((goals.filter(g => isCompleted(g)).length / goals.length) * 100) : 0}%</Text>
+          <Text style={styles.statValue}>
+            {goals.length > 0 
+              ? Math.round((goals.filter(g => g.status === 'COMPLETED').length / goals.length) * 100) 
+              : 0}%
+          </Text>
         </View>
       </View>
       <View style={styles.tabsRow}>
-        <TouchableOpacity style={[styles.tab, activeTab === 'Active' && styles.tabActive]} onPress={() => setActiveTab('Active')}>
-          <Text style={activeTab === 'Active' ? styles.tabActiveText : styles.tabText}>Active</Text>
+        <TouchableOpacity 
+          style={[styles.tab, activeTab === 'ACTIVE' && styles.tabActive]} 
+          onPress={() => setActiveTab('ACTIVE')}
+        >
+          <Text style={activeTab === 'ACTIVE' ? styles.tabActiveText : styles.tabText}>Active</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={[styles.tab, activeTab === 'Completed' && styles.tabActive]} onPress={() => setActiveTab('Completed')}>
-          <Text style={activeTab === 'Completed' ? styles.tabActiveText : styles.tabText}>Completed</Text>
+        <TouchableOpacity 
+          style={[styles.tab, activeTab === 'COMPLETED' && styles.tabActive]} 
+          onPress={() => setActiveTab('COMPLETED')}
+        >
+          <Text style={activeTab === 'COMPLETED' ? styles.tabActiveText : styles.tabText}>Completed</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={[styles.tab, activeTab === 'Failed' && styles.tabActive]} onPress={() => setActiveTab('Failed')}>
-          <Text style={activeTab === 'Failed' ? styles.tabActiveText : styles.tabText}>Failed</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={[styles.tab, activeTab === 'All' && styles.tabActive]} onPress={() => setActiveTab('All')}>
-          <Text style={activeTab === 'All' ? styles.tabActiveText : styles.tabText}>All Goals</Text>
+        <TouchableOpacity 
+          style={[styles.tab, activeTab === 'ALL' && styles.tabActive]} 
+          onPress={() => setActiveTab('ALL')}
+        >
+          <Text style={activeTab === 'ALL' ? styles.tabActiveText : styles.tabText}>All Goals</Text>
         </TouchableOpacity>
       </View>
 
-      {/* Show filtered goals if any, otherwise show empty state */}
       {filteredGoals.length > 0 ? (
         <View style={styles.goalsList}>
-          {filteredGoals.map((goal, idx) => {
-            const progress = getProgress(goal);
-            const current = getCurrentValue(goal);
-            const target = parseFloat(goal.value) || 1;
+          {filteredGoals.map((goal) => {
+            const progress = goal.current_value / goal.target_value;
             return (
               <TouchableOpacity
-                key={idx}
+                key={goal.id}
                 style={styles.goalCard}
-                onPress={() => (!isCompleted(goal) && !isFailed(goal)) && openContributionModal(goals.indexOf(goal))}
-                activeOpacity={isFailed(goal) ? 1 : 0.7}
+                onLongPress={() => openEditModal(goal)}
+                onPress={() => goal.status === 'ACTIVE' && openContributionModal(goal.id)}
+                activeOpacity={goal.status !== 'ACTIVE' ? 1 : 0.7}
               >
                 <Text style={styles.goalTitle}>{goal.title}</Text>
-                <Text style={styles.goalType}>{goal.type}</Text>
+                <Text style={styles.goalType}>{goal.goal_type}</Text>
                 <View style={styles.progressBarBg}>
                   <View style={[styles.progressBarFill, { flex: progress }]} />
                   <View style={{ flex: 1 - progress }} />
                 </View>
-                <Text style={styles.goalValue}>{current}/{target} {goal.unit}</Text>
-                <Text style={styles.goalDate}>Deadline: {goal.date.toLocaleDateString()}</Text>
-                {isCompleted(goal) && <Text style={styles.completedLabel}>Completed!</Text>}
-                {isFailed(goal) && <Text style={styles.failedLabel}>Failed (Deadline Passed)</Text>}
+                <Text style={styles.goalValue}>
+                  {goal.current_value}/{goal.target_value} {goal.unit}
+                </Text>
+                <Text style={styles.goalDate}>
+                  Deadline: {new Date(goal.target_date).toLocaleDateString()}
+                </Text>
+                {goal.status === 'COMPLETED' && (
+                  <Text style={styles.completedLabel}>Completed!</Text>
+                )}
               </TouchableOpacity>
             );
           })}
@@ -190,8 +382,10 @@ const Goals = ({ navigation }: any) => {
       ) : (
         <View style={styles.emptyBox}>
           <Text style={styles.emptyTitle}>No {activeTab.toLowerCase()} goals found</Text>
-          <Text style={styles.emptyText}>You don't have any {activeTab.toLowerCase()} goals. Set a new fitness goal to start tracking your progress.</Text>
-          {activeTab === 'Active' && (
+          <Text style={styles.emptyText}>
+            You don't have any {activeTab.toLowerCase()} goals. Set a new fitness goal to start tracking your progress.
+          </Text>
+          {activeTab === 'ACTIVE' && (
             <TouchableOpacity style={styles.setGoalButton2} onPress={openModal}>
               <Text style={styles.setGoalButtonText}>Set New Goal</Text>
             </TouchableOpacity>
@@ -212,28 +406,39 @@ const Goals = ({ navigation }: any) => {
             <Text style={styles.modalSubtitle}>Create a new fitness goal to track your progress</Text>
             <TextInput
               style={styles.input}
-              placeholder="E.g., Run 5K in 30 minutes"
+              placeholder="Goal Title"
               value={goalTitle}
               onChangeText={setGoalTitle}
             />
             <TextInput
               style={styles.input}
-              placeholder="Goal Type (e.g., Walking, Running, Yoga)"
-              value={goalType}
-              onChangeText={setGoalType}
+              placeholder="Goal Description"
+              value={goalDescription}
+              onChangeText={setGoalDescription}
+              multiline
             />
-            <View style={styles.binaryToggle}>
-              <Text style={styles.binaryLabel}>All-or-Nothing Goal (e.g., Go to gym)</Text>
+            <View style={styles.categorySelector}>
+              <Text style={styles.label}>Goal Type:</Text>
+              <View style={styles.categoryButtons}>
+                {GOAL_TYPE_OPTIONS.map((type) => (
               <TouchableOpacity
-                style={[styles.binaryButton, isBinary && styles.binaryButtonActive]}
-                onPress={() => setIsBinary(!isBinary)}
-              >
-                <Text style={[styles.binaryButtonText, isBinary && styles.binaryButtonTextActive]}>
-                  {isBinary ? 'Yes' : 'No'}
+                    key={type}
+                    style={[
+                      styles.categoryButton,
+                      goalType === type && styles.categoryButtonActive
+                    ]}
+                    onPress={() => setGoalType(type)}
+                  >
+                    <Text style={[
+                      styles.categoryButtonText,
+                      goalType === type && styles.categoryButtonTextActive
+                    ]}>
+                      {type.replace('_', ' ')}
                 </Text>
               </TouchableOpacity>
+                ))}
+              </View>
             </View>
-            {!isBinary && (
               <View style={{ flexDirection: 'row', gap: 8 }}>
                 <TextInput
                   style={[styles.input, { flex: 1 }]}
@@ -244,14 +449,15 @@ const Goals = ({ navigation }: any) => {
                 />
                 <TextInput
                   style={[styles.input, { flex: 1 }]}
-                  placeholder="Unit"
+                placeholder="Unit (e.g., km, kg, reps)"
                   value={unit}
                   onChangeText={setUnit}
                 />
               </View>
-            )}
             <TouchableOpacity style={styles.input} onPress={() => setShowDatePicker(true)}>
-              <Text style={{ color: date ? '#000' : '#aaa' }}>{date ? date.toLocaleDateString() : 'Target Date'}</Text>
+              <Text style={{ color: date ? '#000' : '#aaa' }}>
+                {date ? date.toLocaleDateString() : 'Target Date'}
+              </Text>
             </TouchableOpacity>
             {showDatePicker && (
               <DateTimePicker
@@ -282,64 +488,129 @@ const Goals = ({ navigation }: any) => {
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Add Contribution</Text>
+            <Text style={styles.modalTitle}>Update Progress</Text>
             {(() => {
-              if (contributionModal.goalIdx === null) return null;
-              const goal = goals[contributionModal.goalIdx];
-              if (goal.isBinary) {
-                return (
-                  <TouchableOpacity
-                    style={styles.binaryContributionBox}
-                    onPress={() => {
-                      setGoals(goals => goals.map((g, i) => 
-                        i === contributionModal.goalIdx 
-                          ? { ...g, contributions: [1] } 
-                          : g
-                      ));
-                      closeContributionModal();
-                    }}
-                  >
-                    <Text style={styles.binaryContributionText}>Mark as Done</Text>
-                  </TouchableOpacity>
-                );
-              }
+              if (contributionModal.goalId === null) return null;
+              const goal = goals.find(g => g.id === contributionModal.goalId);
+              if (!goal) return null;
+
               return (
+                <>
+                  <Text style={styles.modalSubtitle}>{goal.title}</Text>
                 <TextInput
                   style={styles.input}
-                  placeholder="Enter amount"
+                    placeholder="Enter current value"
                   value={contributionValue}
                   onChangeText={setContributionValue}
                   keyboardType="numeric"
-                  editable={!isFailed(goal)}
-                />
+                    editable={goal.status === 'ACTIVE'}
+                  />
+                  <View style={{ flexDirection: 'row', justifyContent: 'flex-end', marginTop: 16 }}>
+                    <TouchableOpacity onPress={closeContributionModal} style={[styles.modalButton, { marginRight: 8 }]}> 
+                      <Text style={{ color: '#800000' }}>Cancel</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      onPress={handleUpdateProgress}
+                      style={[styles.modalButton, { backgroundColor: '#800000' }]}
+                      disabled={goal.status !== 'ACTIVE'}
+                    >
+                      <Text style={{ color: '#fff' }}>Update</Text>
+                    </TouchableOpacity>
+                  </View>
+                  {goal.status !== 'ACTIVE' && (
+                    <Text style={{ color: 'red', marginTop: 8 }}>
+                      You cannot update progress for a {goal.status.toLowerCase()} goal.
+                    </Text>
+                  )}
+                </>
               );
             })()}
+          </View>
+        </View>
+      </Modal>
+
+      {/* Edit Modal */}
+      <Modal
+        visible={editModalVisible}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={closeEditModal}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Edit Goal</Text>
+            <Text style={styles.modalSubtitle}>Update your fitness goal details</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Goal Title"
+              value={editTitle}
+              onChangeText={setEditTitle}
+            />
+            <TextInput
+              style={styles.input}
+              placeholder="Goal Description"
+              value={editDescription}
+              onChangeText={setEditDescription}
+              multiline
+            />
+            <View style={styles.categorySelector}>
+              <Text style={styles.label}>Goal Type:</Text>
+              <View style={styles.categoryButtons}>
+                {GOAL_TYPE_OPTIONS.map((type) => (
+                  <TouchableOpacity
+                    key={type}
+                    style={[
+                      styles.categoryButton,
+                      editGoalType === type && styles.categoryButtonActive
+                    ]}
+                    onPress={() => setEditGoalType(type)}
+                  >
+                    <Text style={[
+                      styles.categoryButtonText,
+                      editGoalType === type && styles.categoryButtonTextActive
+                    ]}>
+                      {type.replace('_', ' ')}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+            <View style={{ flexDirection: 'row', gap: 8 }}>
+              <TextInput
+                style={[styles.input, { flex: 1 }]}
+                placeholder="Target Value"
+                value={editTargetValue}
+                onChangeText={setEditTargetValue}
+                keyboardType="numeric"
+              />
+              <TextInput
+                style={[styles.input, { flex: 1 }]}
+                placeholder="Unit (e.g., km, kg, reps)"
+                value={editUnit}
+                onChangeText={setEditUnit}
+              />
+            </View>
+            <TouchableOpacity style={styles.input} onPress={() => setEditShowDatePicker(true)}>
+              <Text style={{ color: editDate ? '#000' : '#aaa' }}>
+                {editDate ? editDate.toLocaleDateString() : 'Target Date'}
+              </Text>
+            </TouchableOpacity>
+            {editShowDatePicker && (
+              <DateTimePicker
+                value={editDate}
+                mode="date"
+                display="default"
+                onChange={handleEditDateChange}
+              />
+            )}
             <View style={{ flexDirection: 'row', justifyContent: 'flex-end', marginTop: 16 }}>
-              <TouchableOpacity onPress={closeContributionModal} style={[styles.modalButton, { marginRight: 8 }]}> 
+              <TouchableOpacity onPress={closeEditModal} style={[styles.modalButton, { marginRight: 8 }]}> 
                 <Text style={{ color: '#800000' }}>Cancel</Text>
               </TouchableOpacity>
-              {!goals[contributionModal.goalIdx || 0]?.isBinary && (
-                <TouchableOpacity
-                  onPress={handleAddContribution}
-                  style={[styles.modalButton, { backgroundColor: '#800000' }]}
-                  disabled={(() => {
-                    if (contributionModal.goalIdx === null) return false;
-                    const goal = goals[contributionModal.goalIdx];
-                    return isFailed(goal);
-                  })()}
-                >
-                  <Text style={{ color: '#fff' }}>Add</Text>
+              <TouchableOpacity onPress={handleUpdateGoal} style={[styles.modalButton, { backgroundColor: '#800000' }]}> 
+                <Text style={{ color: '#fff' }}>Save</Text>
                 </TouchableOpacity>
-              )}
             </View>
-            {(() => {
-              if (contributionModal.goalIdx === null) return null;
-              const goal = goals[contributionModal.goalIdx];
-              if (isFailed(goal)) {
-                return <Text style={{ color: 'red', marginTop: 8 }}>You cannot add contributions to a failed goal.</Text>;
-              }
-              return null;
-            })()}
           </View>
         </View>
       </Modal>
@@ -382,47 +653,31 @@ const styles = StyleSheet.create({
   progressBarBg: { flexDirection: 'row', height: 16, backgroundColor: '#eee', borderRadius: 8, overflow: 'hidden', marginVertical: 8 },
   progressBarFill: { backgroundColor: '#800000', height: 16, borderRadius: 8 },
   completedLabel: { color: '#008000', fontWeight: 'bold', marginTop: 8, textAlign: 'center' },
-  failedLabel: { color: 'red', fontWeight: 'bold', marginTop: 8, textAlign: 'center' },
-  binaryToggle: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+  categorySelector: {
     marginBottom: 12,
   },
-  binaryLabel: {
-    color: '#800000',
-    fontSize: 16,
+  categoryButtons: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginTop: 8,
   },
-  binaryButton: {
+  categoryButton: {
     borderWidth: 1,
     borderColor: '#800000',
     borderRadius: 8,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
   },
-  binaryButtonActive: {
+  categoryButtonActive: {
     backgroundColor: '#800000',
   },
-  binaryButtonText: {
+  categoryButtonText: {
     color: '#800000',
+    fontSize: 14,
   },
-  binaryButtonTextActive: {
+  categoryButtonTextActive: {
     color: '#fff',
-  },
-  binaryContributionBox: {
-    borderWidth: 2,
-    borderColor: '#800000',
-    borderRadius: 8,
-    padding: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#fff',
-    marginBottom: 12,
-  },
-  binaryContributionText: {
-    color: '#800000',
-    fontSize: 18,
-    fontWeight: 'bold',
   },
 });
 

@@ -8,6 +8,7 @@ import {
   SafeAreaView,
   Alert,
 } from 'react-native';
+import Cookies from '@react-native-cookies/cookies';
 
 const Login = ({ navigation }: any) => {
   const [username, setUsername] = useState('');
@@ -20,6 +21,7 @@ const Login = ({ navigation }: any) => {
     }
 
     try {
+      // 1. Login (POST)
       const response = await fetch('http://10.0.2.2:8000/api/login/', {
         method: 'POST',
         headers: {
@@ -32,13 +34,21 @@ const Login = ({ navigation }: any) => {
         }),
       });
       const data = await response.json();
+      console.log('Login response:', data);
+
       if (response.ok) {
+        // 2. After login, fetch CSRF token as authenticated user
+        await fetch('http://10.0.2.2:8000/api/goals/', { method: 'GET' });
+        const cookies = await Cookies.get('http://10.0.2.2:8000');
+        console.log('Cookies after login and GET:', cookies);
+
         Alert.alert('Success', data.message || 'Login successful');
         navigation.replace('Main');
       } else {
         Alert.alert('Error', data.error || 'Login failed');
       }
     } catch (error) {
+      console.error('Login error:', error);
       Alert.alert('Error', 'Network error. Please try again.');
     }
   };

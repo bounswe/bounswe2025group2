@@ -2,7 +2,8 @@ import React from 'react';
 import { View, StyleSheet, Switch, TouchableOpacity } from 'react-native';
 import CustomText from '@components/CustomText';
 import { useTheme } from '../context/ThemeContext';
-const { useNavigation } = require('@react-navigation/native');
+import { useNavigation } from '@react-navigation/native';
+import Cookies from '@react-native-cookies/cookies';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const Settings = () => {
@@ -30,12 +31,27 @@ const Settings = () => {
     } catch (e) {}
   };
 
-  const handleLogout = () => {
-    // Navigate to Login screen
-    navigation.reset({
-      index: 0,
-      routes: [{ name: 'Login' }],
-    });
+  const handleLogout = async () => {
+    try {
+      // Call logout endpoint
+      await fetch('http://10.0.2.2:8000/api/logout/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        // credentials: 'include', // Not supported in React Native fetch
+      });
+      // Clear all cookies for the API domain
+      await Cookies.clearAll(true);
+      console.log('Cookies cleared after logout');
+    } catch (error) {
+      console.error('Logout error:', error);
+    } finally {
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'Login' }],
+      });
+    }
   };
 
   return (

@@ -8,7 +8,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Menu, Search, Bell } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTheme } from "@/theme/ThemeContext";
-import { apiRequest } from "@/lib/queryClient";
+import {API_BASE_URL, apiRequest} from "@/lib/queryClient";
 
 export default function MobileHeader() {
   const { user, logoutMutation } = useAuth();
@@ -26,6 +26,33 @@ export default function MobileHeader() {
     },
     enabled: !!user
   });
+
+  const { data: localtimeInfo, isLoading: localtimeInfoLoading } = useQuery({
+    queryKey: ["localtime"],
+    queryFn: async () => {
+      const location_resp = await fetch(`http://ip-api.com/json/`);
+      const data_ll = await location_resp.json();
+
+      const latitude = data_ll.lat;
+      const longitude = data_ll.lon;
+
+      const response = await fetch(`${API_BASE_URL}/api/localtime/${latitude}/${longitude}`);
+      if (!response.ok) {
+        throw new Error("Network response was not ok");
+      }
+      console.log(response);
+      const data = await response.json();
+      console.log(data)
+      return data;
+    }
+  });
+
+  let date;
+  let formattedTime;
+  if (localtimeInfo) {
+    date = new Date(localtimeInfo.local_time);
+    formattedTime = `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
+  }
 
   const unreadCount = notifications?.filter((n: any) => !n.read).length || 0;
 
@@ -96,8 +123,13 @@ export default function MobileHeader() {
                 "p-1 rounded-full focus:outline-none relative",
                 theme === 'dark' ? 'text-[#e18d58]' : ''
               )}
-              onClick={() => setShowNotifications(!showNotifications)}
-            >
+              onClick={() => setShowNotifications(!showNotifications)}>
+
+              {localtimeInfo && (<div className="hidden md:flex flex-col text-right pr-2 text-xs leading-tight text-sub">
+                <span>{localtimeInfo.timezone}</span>
+                <span>{formattedTime}</span>
+              </div>)}
+
               <Bell className={cn(
                 "h-6 w-6",
                 theme === 'dark' ? 'text-[#e18d58]' : ''

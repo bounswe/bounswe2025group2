@@ -8,7 +8,9 @@ from .separate_views import forum_comments
 from .separate_views import forum_vote
 from .separate_views import challenges
 from .separate_views.ai_tutor_views import AiTutorViewSet
+from .separate_views import local_hour
 from .separate_views import quote_views
+from .separate_views import parse_food
 
 
 urlpatterns = [
@@ -31,6 +33,9 @@ urlpatterns = [
     # Quote endpoints
     path('quotes/random/', quote_views.get_random_quote, name='get_random_quote'),
     path('quotes/daily/', quote_views.get_daily_quote, name='get_daily_quote'),
+
+    #nutrition endpoints
+    path('parse_food/', parse_food.parse_food, name='parse_food'),
 
     # Fitness Goals URLs
     path('goals/', fitness_goals.fitness_goals, name='fitness_goals'),
@@ -74,11 +79,15 @@ urlpatterns = [
     # get info about whether a user voted on the content
     path('forum/vote/<str:content_type>/<int:object_id>/status/', forum_vote.get_user_vote, name='get_user_vote'),
 
+    path('localtime/<str:lat>/<str:lon>', local_hour.get_local_hour, name='get_local_hour'),
+  
     # Challenge-related views
     path('challenges/<int:challenge_id>/', challenges.get_challenge_detail, name='get_challenge_detail'),
     path('challenges/create/', challenges.create_challenge, name='create_challenge'),
     path('challenges/<int:challenge_id>/update/', challenges.update_challenge, name='update_challenge'),
     path('challenges/<int:challenge_id>/delete/', challenges.delete_challenge, name='delete_challenge'),
+    path('challenges/joined/', challenges.get_joined_challenges, name='get_joined_challenges'),
+    path('challenges/progress/', challenges.get_challenge_progresses, name='get_progress_challenges'),
 
     # Participant-related views
     path('challenges/<int:challenge_id>/join/', challenges.join_challenge, name='join_challenge'),
@@ -87,6 +96,9 @@ urlpatterns = [
 
     # Leaderboard-related view
     path('challenges/<int:challenge_id>/leaderboard/', challenges.challenge_leaderboard, name='challenge_leaderboard'),
+
+    # Interactive search directory for challenges
+    path('challenges/search/', challenges.search_challenges, name='search-challenges'),
 ]
 
 router = DefaultRouter()

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useParams } from "wouter";
+import { useParams, useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
 import Sidebar from "@/components/layout/sidebar";
 import MobileHeader from "@/components/layout/mobile-header";
@@ -18,8 +18,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { User, Loader2, Settings, Edit, Camera, Trophy, MessageSquare, Target } from "lucide-react";
-import { useMutation, useQuery } from "@tanstack/react-query";
-import { queryClient } from "@/lib/queryClient.ts";
+import {useMutation, useQuery} from "@tanstack/react-query";
+import {API_BASE_URL, queryClient} from "@/lib/queryClient.ts";
+
 
 interface UserFields {
   email: string;
@@ -35,6 +36,7 @@ interface UserProfileDetails {
   birth_date: string;
   location: string;
   name: string;
+  surname: string; // Added surname
 }
 
 interface UserGoal {
@@ -111,11 +113,10 @@ export default function ProfilePage() {
   const [isEditing, setIsEditing] = useState(false);
   const [editedProfile, setEditedProfile] = useState({
     name: "",
+    surname: "", // Added surname
     bio: "",
-    interests: [] as string[],
-    visibility: "public",
-    role: "",
     location: "",
+    birth_date: "", // Added birth_date
     age: "",
   });
 
@@ -127,7 +128,7 @@ export default function ProfilePage() {
     queryKey: ['api/profile/picture'],
     queryFn: async () => {
       try {
-        const res = await apiClient.get('http://localhost:8000/api/profile/picture/');
+        const res = await apiClient.get(`${API_BASE_URL}/api/profile/picture/`);
 
         // Check if the response is successful
         if (!res.ok) {
@@ -161,7 +162,7 @@ export default function ProfilePage() {
     queryKey: ['/api/profile/'],
     queryFn: async () => {
       try {
-        const res = await apiClient.get('http://localhost:8000/api/profile/');
+        const res = await apiClient.get(`${API_BASE_URL}/api/profile/`);
 
         // Check if the response is successful
         if (!res.ok) {
@@ -193,7 +194,7 @@ export default function ProfilePage() {
       console.log("File Type:", file.type);
       console.log("File:", file);
 
-      const response = await fetch('http://localhost:8000/api/profile/picture/upload/', {
+      const response = await fetch(`${API_BASE_URL}/api/profile/picture/upload/`, {
         method: "POST",
         body: formData,
         credentials: 'include',
@@ -222,7 +223,7 @@ export default function ProfilePage() {
     mutationFn: async () => {
       const csrfToken = getCsrfToken();
 
-      const response = await fetch('http://localhost:8000/api/profile/picture/delete/', {
+      const response = await fetch(`${API_BASE_URL}/api/profile/picture/delete/`, {
         method: 'DELETE',
         headers: {
           'X-CSRFToken': csrfToken
@@ -256,17 +257,18 @@ export default function ProfilePage() {
 
 
   // Set default values for editing
-  useState(() => {
+  useEffect(() => {
     if (profileDetails) {
       setEditedProfile({
-        interests: [], role: "", visibility: "",
         name: profileDetails.name || "",
+        surname: profileDetails.surname || "", // Added surname
         location: profileDetails.location || "",
         bio: profileDetails.bio || "",
+        birth_date: profileDetails.birth_date || "", // Added birth_date
         age: profileDetails.age || ""
       });
     }
-  });
+  }, [profileDetails]);
 
   const isOwnProfile = currentUser?.id === profileUser?.id;
   const isPrivateProfile = false;
@@ -276,12 +278,27 @@ export default function ProfilePage() {
 
     updateProfileMutation.mutate({
       name: editedProfile.name,
+      surname: editedProfile.surname, // Added surname
       bio: editedProfile.bio,
-      interests: editedProfile.interests,
-      visibility: editedProfile.visibility
+      location: editedProfile.location, // Added location
+      birth_date: editedProfile.birth_date // Added birth_date
     }, {
       onSuccess: () => {
         setIsEditing(false);
+        profileDetails.name = editedProfile.name;
+        profileDetails.surname = editedProfile.surname; // Added surname
+        profileDetails.location = editedProfile.location; // Added location
+        profileDetails.bio = editedProfile.bio; // Added bio
+        profileDetails.birth_date = editedProfile.birth_date; // Added birth_date
+        //calculate age
+        const birthDate = new Date(editedProfile.birth_date);
+        const today = new Date();
+        let age = today.getFullYear() - birthDate.getFullYear();
+        const m = today.getMonth() - birthDate.getMonth();
+        if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+          age--;
+        }
+        profileDetails.age = age.toString();
       }
     });
 
@@ -293,22 +310,6 @@ export default function ProfilePage() {
 
   };
 
-  const addInterest = () => {
-    if (newInterest.trim() && !editedProfile.interests.includes(newInterest.trim())) {
-      setEditedProfile({
-        ...editedProfile,
-        interests: [...editedProfile.interests, newInterest.trim()]
-      });
-      setNewInterest("");
-    }
-  };
-
-  const removeInterest = (interest: string) => {
-    setEditedProfile({
-      ...editedProfile,
-      interests: editedProfile.interests.filter(i => i !== interest)
-    });
-  };
 
   if (!username) {
     return (
@@ -329,7 +330,8 @@ export default function ProfilePage() {
         <main className="flex-1 md:ml-56 p-4 pb-20">
           <div className="max-w-4xl mx-auto">
             {/* Profile Header */}
-            <div className="bg-primary rounded-xl p-6 mb-6 relative">
+            {/* add a warm color */}
+            <div className="bg-amber-500 rounded-xl p-6 mb-6 relative">
               <div className="flex flex-col md:flex-row items-center md:items-start gap-4">
                 <div className="relative">
                   {profileUser && (<AvatarWithBadge
@@ -481,7 +483,22 @@ export default function ProfilePage() {
                           onChange={(e) => setEditedProfile({ ...editedProfile, name: e.target.value })}
                         />
                       </div>
-
+                      <div className="space-y-2">
+                        <Label htmlFor="surname">Surname</Label>
+                        <Input
+                          id="surname"
+                          value={editedProfile.surname}
+                          onChange={(e) => setEditedProfile({ ...editedProfile, surname: e.target.value })}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                          <Label htmlFor="location">Location</Label>
+                          <Input
+                          id="location"
+                          value={editedProfile.location}
+                          onChange={(e) => setEditedProfile({ ...editedProfile, location: e.target.value })}
+                          />
+                      </div>
                       <div className="space-y-2">
                         <Label htmlFor="bio">Bio</Label>
                         <Textarea
@@ -490,48 +507,16 @@ export default function ProfilePage() {
                           onChange={(e) => setEditedProfile({ ...editedProfile, bio: e.target.value })}
                         />
                       </div>
-
                       <div className="space-y-2">
-                        <Label>Interests</Label>
-                        <div className="flex flex-wrap gap-2 mb-2">
-                          {editedProfile.interests.map((interest, index) => (
-                            <Badge key={index} variant="secondary" className="px-2 py-1">
-                              {interest}
-                              <button
-                                className="ml-1 text-muted-foreground hover:text-foreground"
-                                onClick={() => removeInterest(interest)}
-                              >
-                                ×
-                              </button>
-                            </Badge>
-                          ))}
-                        </div>
-                        <div className="flex gap-2">
-                          <Input
-                            placeholder="Add interest..."
-                            value={newInterest}
-                            onChange={(e) => setNewInterest(e.target.value)}
-                            onKeyDown={(e) => e.key === 'Enter' && addInterest()}
-                          />
-                          <Button type="button" onClick={addInterest}>Add</Button>
-                        </div>
+                        <Label htmlFor="birth_date">Birth Date</Label>
+                        <Input
+                          id="birth_date"
+                          type="date"
+                          value={editedProfile.birth_date}
+                          onChange={(e) => setEditedProfile({ ...editedProfile, birth_date: e.target.value })}
+                        />
                       </div>
 
-                      <div className="space-y-2">
-                        <Label htmlFor="visibility">Profile Visibility</Label>
-                        <Select
-                          value={editedProfile.visibility}
-                          onValueChange={(value) => setEditedProfile({ ...editedProfile, visibility: value })}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select visibility" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="public">Public</SelectItem>
-                            <SelectItem value="private">Private</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
 
                       <div className="flex justify-end gap-2 pt-4">
                         <Button variant="outline" onClick={() => setIsEditing(false)}>
@@ -555,6 +540,47 @@ export default function ProfilePage() {
               )}
             </div>
 
+            {/* Profile Information */}
+            {!isPrivateProfile && profileDetails && (
+              <Card className="mb-6">
+                <CardHeader>
+                  <CardTitle>Profile Information</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <h3 className="text-sm font-medium text-muted-foreground mb-1">Full Name</h3>
+                      <p className="text-base">
+                        {profileDetails.name && profileDetails.surname 
+                          ? `${profileDetails.name} ${profileDetails.surname}` 
+                          : "Not specified"}
+                      </p>
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-medium text-muted-foreground mb-1">Location</h3>
+                      <p className="text-base">{profileDetails.location || "Not specified"}</p>
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-medium text-muted-foreground mb-1">Birth Date</h3>
+                      <p className="text-base">
+                        {profileDetails.birth_date 
+                          ? new Date(profileDetails.birth_date).toLocaleDateString() 
+                          : "Not specified"}
+                      </p>
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-medium text-muted-foreground mb-1">Age</h3>
+                      <p className="text-base">{profileDetails.age || "Not specified"}</p>
+                    </div>
+                    <div className="md:col-span-2">
+                      <h3 className="text-sm font-medium text-muted-foreground mb-1">Bio</h3>
+                      <p className="text-base">{profileDetails.bio || "No bio provided."}</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+            
             {/* Stats Cards */}
             {!isPrivateProfile && (
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
@@ -667,9 +693,11 @@ export default function ProfilePage() {
                           ? "You haven't set any fitness goals yet."
                           : `This person hasn't set any fitness goals yet.`
                         }
-                      </p>
-                      {isOwnProfile && (
-                        <Button className="bg-secondary text-white hover:bg-secondary-dark">
+                      </p>                      {isOwnProfile && (
+                        <Button 
+                          className="bg-secondary text-white hover:bg-secondary-dark"
+                          onClick={() => window.location.href = "/goals?new=true"}
+                        >
                           Set Your First Goal
                         </Button>
                       )}
