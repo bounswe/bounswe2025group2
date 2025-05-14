@@ -596,24 +596,6 @@ export default function ProfilePage() {
                     <p className="text-muted-foreground text-sm">Active Goals</p>
                   </CardContent>
                 </Card>
-                <Card>
-                  <CardContent className="pt-6 text-center">
-                    <div className="bg-primary inline-flex p-2 rounded-full mb-2">
-                      <MessageSquare className="h-6 w-6 text-secondary-dark" />
-                    </div>
-                    <h3 className="text-xl font-bold">0</h3>
-                    <p className="text-muted-foreground text-sm">Forum Posts</p>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardContent className="pt-6 text-center">
-                    <div className="bg-primary inline-flex p-2 rounded-full mb-2">
-                      <Trophy className="h-6 w-6 text-secondary-dark" />
-                    </div>
-                    <h3 className="text-xl font-bold">0</h3>
-                    <p className="text-muted-foreground text-sm">Achievements</p>
-                  </CardContent>
-                </Card>
               </div>
             )}
 
@@ -631,11 +613,6 @@ export default function ProfilePage() {
               <Tabs defaultValue="goals" className="w-full">
                 <TabsList className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 mb-6">
                   <TabsTrigger value="goals">Goals</TabsTrigger>
-                  <TabsTrigger value="posts">Forum Posts</TabsTrigger>
-                  <TabsTrigger value="achievements">Achievements</TabsTrigger>
-                  {(username === "johndoe" || username === "janedoe") && (
-                    <TabsTrigger value="mentees">Mentees</TabsTrigger>
-                  )}
                 </TabsList>
 
                 <TabsContent value="goals">
