@@ -1,13 +1,48 @@
-import React from 'react';
-import { View, StyleSheet, Switch, TouchableOpacity } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, StyleSheet, Switch, TouchableOpacity, Alert } from 'react-native';
 import CustomText from '@components/CustomText';
 import { useTheme } from '../context/ThemeContext';
 import { useNavigation } from '@react-navigation/native';
+import { useAuth } from '../context/AuthContext';
 import Cookies from '@react-native-cookies/cookies';
 
 const Settings = () => {
   const { colors, isDark, toggleTheme } = useTheme();
   const navigation = useNavigation();
+  const { getAuthHeader } = useAuth();
+  const [location, setLocation] = useState<string>('Loading...');
+
+  // Utility to get CSRF token
+  const getCSRFToken = async () => {
+    const cookies = await Cookies.get('http://10.0.2.2:8000');
+    return cookies.csrftoken?.value;
+  };
+
+  useEffect(() => {
+    fetchLocation();
+  }, []);
+
+  const fetchLocation = async () => {
+    try {
+      const response = await fetch('http://10.0.2.2:8000/api/ip-location/', {
+        headers: {
+          ...getAuthHeader(),
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setLocation(data.region || 'Unknown');
+      } else {
+        console.error('Failed to fetch location:', response.status);
+        setLocation('Not available');
+      }
+    } catch (error) {
+      console.error('Error fetching location:', error);
+      setLocation('Error');
+    }
+  };
 
   const handleLogout = async () => {
     try {
@@ -43,6 +78,10 @@ const Settings = () => {
           onValueChange={toggleTheme}
         />
       </View>
+      <View style={[styles.settingItem, { borderBottomColor: colors.border }]}>
+        <CustomText style={[styles.settingText, { color: colors.text }]}>Location</CustomText>
+        <CustomText style={[styles.settingValue, { color: colors.text }]}>{location}</CustomText>
+      </View>
       <TouchableOpacity 
         style={[styles.settingItem, { borderBottomColor: colors.border }]}
         onPress={handleLogout}
@@ -66,6 +105,10 @@ const styles = StyleSheet.create({
   },
   settingText: {
     fontSize: 16,
+  },
+  settingValue: {
+    fontSize: 16,
+    fontStyle: 'italic',
   },
 });
 

@@ -11,6 +11,7 @@ from .separate_views.ai_tutor_views import AiTutorViewSet
 from .separate_views import local_hour
 from .separate_views import quote_views
 from .separate_views import parse_food
+from .separate_views import ip_location
 
 
 urlpatterns = [
@@ -36,6 +37,9 @@ urlpatterns = [
 
     #nutrition endpoints
     path('parse_food/', parse_food.parse_food, name='parse_food'),
+
+    # IP location endpoint
+    path('ip-location/', ip_location.get_location_from_ip, name='get_location_from_ip'),
 
     # Fitness Goals URLs
     path('goals/', fitness_goals.fitness_goals, name='fitness_goals'),
