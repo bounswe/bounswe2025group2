@@ -3,6 +3,7 @@ from django.dispatch import receiver
 from django.contrib.contenttypes.models import ContentType
 from .models import Vote, Notification, Thread, Comment, Subcomment, FitnessGoal, Challenge
 from chat.models import DirectMessage
+from django.utils import timezone
 
 @receiver(post_save, sender=Vote)
 def create_vote_notification(sender, instance, created, **kwargs):

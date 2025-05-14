@@ -11,6 +11,9 @@ from .separate_views.ai_tutor_views import AiTutorViewSet
 from .separate_views import local_hour
 from .separate_views import quote_views
 from .separate_views import parse_food
+from .separate_views import cat_info
+from .separate_views import fitness_gif
+from .separate_views import ip_location
 from .separate_views import fitness_gif
 from .separate_views import ip_location
 
@@ -25,7 +28,6 @@ urlpatterns = [
     path('change-password/', views.change_password, name='change_password'),
     path('delete-account/', views.delete_account, name='delete_account'),
 
-
     # Notifications
     path('notifications/', views.get_user_notifications, name='get_notifications'),
     path('notifications/<int:notification_id>/', views.get_single_notification, name='get_single_notification'),
@@ -36,7 +38,7 @@ urlpatterns = [
     path('quotes/random/', quote_views.get_random_quote, name='get_random_quote'),
     path('quotes/daily/', quote_views.get_daily_quote, name='get_daily_quote'),
 
-    #nutrition endpoints
+    # Nutrition endpoints
     path('parse_food/', parse_food.parse_food, name='parse_food'),
 
     # Giphy endpoints
@@ -45,13 +47,17 @@ urlpatterns = [
     # IP location endpoint
     path('ip-location/', ip_location.get_location_from_ip, name='get_location_from_ip'),
 
+    # Cat info endpoints
+    path('cats/fact/', cat_info.get_cat_fact, name='get_cat_fact'),
+    path('cats/', cat_info.get_cat_info, name='get_random_cats'),
+    path('cats/<str:cat_id>/', cat_info.get_cat_info, name='get_cat_info'),
     # Fitness Goals URLs
     path('goals/', fitness_goals.fitness_goals, name='fitness_goals'),
     path('goals/<int:goal_id>/', fitness_goals.fitness_goal_detail, name='fitness_goal_detail'),
     path('goals/<int:goal_id>/progress/', fitness_goals.update_goal_progress, name='update_goal_progress'),
     path('goals/check-inactive/', fitness_goals.check_inactive_goals, name='check_inactive_goals'),
 
-    #Profile URLs
+    # Profile URLs
     path('profile/', profile.profile_detail, name='profile-detail'),
     path('profile/other/<str:username>/', profile.other_profile_detail, name='other-profile-detail'),
     path('profile/picture/upload/', profile.upload_profile_picture, name='upload-profile-picture'),
@@ -84,11 +90,11 @@ urlpatterns = [
     # Vote URLs
     path('forum/vote/', forum_vote.create_vote, name='create_vote'),
     path('forum/vote/<str:content_type>/<int:object_id>/', forum_vote.delete_vote, name='delete_vote'),
-    # get info about whether a user voted on the content
     path('forum/vote/<str:content_type>/<int:object_id>/status/', forum_vote.get_user_vote, name='get_user_vote'),
 
+    # Local time
     path('localtime/<str:lat>/<str:lon>', local_hour.get_local_hour, name='get_local_hour'),
-  
+
     # Challenge-related views
     path('challenges/<int:challenge_id>/', challenges.get_challenge_detail, name='get_challenge_detail'),
     path('challenges/create/', challenges.create_challenge, name='create_challenge'),
@@ -102,13 +108,14 @@ urlpatterns = [
     path('challenges/<int:challenge_id>/leave/', challenges.leave_challenge, name='leave_challenge'),
     path('challenges/<int:challenge_id>/update-progress/', challenges.update_progress, name='update_progress'),
 
-    # Leaderboard-related view
+    # Leaderboard
     path('challenges/<int:challenge_id>/leaderboard/', challenges.challenge_leaderboard, name='challenge_leaderboard'),
 
-    # Interactive search directory for challenges
+    # Challenge search
     path('challenges/search/', challenges.search_challenges, name='search-challenges'),
 ]
 
+# Routers
 router = DefaultRouter()
 router.register(r'forums', ForumViewSet)
 router.register(r'threads', ThreadViewSet)

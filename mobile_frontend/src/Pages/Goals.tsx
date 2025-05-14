@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Modal, TextInput, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Modal, TextInput, Alert, ProgressBarAndroid, Platform, ProgressViewIOS } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useAuth } from '../context/AuthContext';
 import Cookies from '@react-native-cookies/cookies';
@@ -301,6 +301,8 @@ const Goals = ({ navigation }: any) => {
     activeTab === 'ALL' ? true :
     goal.status === activeTab
   );
+
+  const progress = 0.7; // 70% progress
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
@@ -614,6 +616,19 @@ const Goals = ({ navigation }: any) => {
           </View>
         </View>
       </Modal>
+
+      <View style={styles.goalStatistics}>
+        <Text style={styles.goalStatisticsTitle}>Goal Statistics</Text>
+        <Text style={styles.goalStatisticsStat}>Completed Goals: {goals.filter(g => g.status === 'COMPLETED').length}</Text>
+        <Text style={styles.goalStatisticsStat}>Active Goals: {goals.filter(g => g.status === 'ACTIVE').length}</Text>
+        <Text style={styles.goalStatisticsLabel}>Overall Progress</Text>
+        {Platform.OS === 'android' ? (
+          <ProgressBarAndroid styleAttr="Horizontal" indeterminate={false} progress={progress} color="#800000" style={styles.goalStatisticsProgressBar} />
+        ) : (
+          <ProgressViewIOS progress={progress} progressTintColor="#800000" style={styles.goalStatisticsProgressBar} />
+        )}
+        <Text style={styles.goalStatisticsMotivation}>Keep pushing! You're almost there!</Text>
+      </View>
     </ScrollView>
   );
 };
@@ -679,6 +694,19 @@ const styles = StyleSheet.create({
   categoryButtonTextActive: {
     color: '#fff',
   },
+  goalStatistics: {
+    marginTop: 24,
+    padding: 16,
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#800000',
+  },
+  goalStatisticsTitle: { fontSize: 22, fontWeight: 'bold', color: '#800000', marginBottom: 8 },
+  goalStatisticsStat: { fontSize: 18, marginBottom: 8 },
+  goalStatisticsLabel: { fontSize: 16, marginTop: 16, marginBottom: 8 },
+  goalStatisticsProgressBar: { width: 220, height: 16, marginBottom: 16 },
+  goalStatisticsMotivation: { fontSize: 16, color: '#800000', marginTop: 16, textAlign: 'center' },
 });
 
 export default Goals; 

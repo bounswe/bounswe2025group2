@@ -42,24 +42,6 @@ const BottomBar = ({ state, navigation }: BottomTabBarProps) => {
           Home
         </CustomText>
       </Pressable>
-      <Pressable style={styles.tab} onPress={() => navigateToScreen('Communities')}>
-        <CommunitiesIcon 
-          width={32} 
-          height={32} 
-          fill={isActiveRoute('Communities') ? colors.active : colors.passive} 
-        />
-        <CustomText 
-          style={[
-            styles.label, 
-            { 
-              color: isActiveRoute('Communities') ? colors.active : colors.passive,
-              fontWeight: isActiveRoute('Communities') ? 'bold' : 'normal'
-            }
-          ]}
-        >
-          Communities
-        </CustomText>
-      </Pressable>
       <Pressable style={styles.tab} onPress={() => navigateToScreen('AddNew')}>
         <NewIcon 
           width={32} 
@@ -76,24 +58,6 @@ const BottomBar = ({ state, navigation }: BottomTabBarProps) => {
           ]}
         >
           New
-        </CustomText>
-      </Pressable>
-      <Pressable style={styles.tab} onPress={() => navigateToScreen('Mentors')}>
-        <MentorsIcon 
-          width={32} 
-          height={32} 
-          fill={isActiveRoute('Mentors') ? colors.active : colors.passive} 
-        />
-        <CustomText 
-          style={[
-            styles.label, 
-            { 
-              color: isActiveRoute('Mentors') ? colors.active : colors.passive,
-              fontWeight: isActiveRoute('Mentors') ? 'bold' : 'normal'
-            }
-          ]}
-        >
-          Mentors
         </CustomText>
       </Pressable>
       <Pressable style={styles.tab} onPress={() => navigateToScreen('Chats')}>

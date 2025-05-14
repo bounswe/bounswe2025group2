@@ -6,9 +6,9 @@ import {
   TouchableOpacity,
   StyleSheet,
   SafeAreaView,
-  Alert,
 } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
+import Toast from 'react-native-toast-message';
 
 const Register = ({ navigation }: any) => {
   const [username, setUsername] = useState('');
@@ -26,17 +26,29 @@ const Register = ({ navigation }: any) => {
 
   const handleRegister = async () => {
     if (!username || !email || !password || !confirmPassword) {
-      Alert.alert('Error', 'Please fill in all fields');
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'Please fill in all fields',
+      });
       return;
     }
 
     if (password !== confirmPassword) {
-      Alert.alert('Error', 'Passwords do not match');
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'Passwords do not match',
+      });
       return;
     }
 
     if (userType === 'Coach' && !verificationFile) {
-      Alert.alert('Error', 'Please upload a verification file for Coach registration.');
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'Please upload a verification file for Coach registration.',
+      });
       return;
     }
 
@@ -57,23 +69,27 @@ const Register = ({ navigation }: any) => {
       });
       const data = await response.json();
       if (response.ok) {
-        Alert.alert(
-          'Success',
-          data.message || 'Registration successful! Please check your email to verify your account.',
-          [
-            {
-              text: 'OK',
-              onPress: () => navigation.navigate('Login')
-            }
-          ]
-        );
+        Toast.show({
+          type: 'success',
+          text1: 'Success',
+          text2: data.message || 'Registration successful! Please check your email to verify your account.',
+        });
+        setTimeout(() => navigation.navigate('Login'), 1500);
       } else {
         // Show first error message from API
         const errorMsg = data.username?.[0] || data.email?.[0] || data.password?.[0] || data.error || 'Registration failed';
-        Alert.alert('Error', errorMsg);
+        Toast.show({
+          type: 'error',
+          text1: 'Error',
+          text2: errorMsg,
+        });
       }
     } catch (error) {
-      Alert.alert('Error', 'Network error. Please try again.');
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'Network error. Please try again.',
+      });
     }
   };
 

@@ -338,8 +338,8 @@ export default function ProfilePage() {
                     fallback={profileUser.username[0].toUpperCase()}
 
                     size="lg"
-                    role={username === "johndoe" ? "trainee" : username === "janedoe" ? "coach" : ""}
-                    verified={username === "johndoe" || username === "janedoe"}
+                    role={profileUser?.user_type?.toLowerCase() || ""}
+                    verified={profileUser?.is_verified_coach || false}
                     src={profilePictureLoading ? "" : profilePicture}
                   />)}
                   {isOwnProfile && (
@@ -396,9 +396,9 @@ export default function ProfilePage() {
                     <Badge
                       className="text-xs py-0 h-5"
                     >
-                      {username === "johndoe" ? "Trainee" : username === "janedoe" ? "Coach" : "Trainee"}
+                      {profileUser?.user_type === "Coach" ? "Coach" : "User"}
                     </Badge>
-                    {username === "johndoe" || username === "janedoe" && (
+                    {profileUser?.is_verified_coach && (
                       <Badge variant="outline" className="text-xs py-0 h-5 border-green-500 text-green-600">
                         Verified
                       </Badge>
