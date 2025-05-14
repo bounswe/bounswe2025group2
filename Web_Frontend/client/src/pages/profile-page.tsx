@@ -582,22 +582,6 @@ export default function ProfilePage() {
             )}
             
             {/* Stats Cards */}
-            {!isPrivateProfile && (
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-                <Card>
-                  <CardContent className="pt-6 text-center">
-                    <div className="bg-primary inline-flex p-2 rounded-full mb-2">
-                      <Target className="h-6 w-6 text-secondary-dark" />
-                    </div>
-                    <h3 className="text-xl font-bold">
-                      {userGoals?.filter(goal => goal.status === 'ACTIVE').length ?? 0}
-                    </h3>
-
-                    <p className="text-muted-foreground text-sm">Active Goals</p>
-                  </CardContent>
-                </Card>
-              </div>
-            )}
 
             {isPrivateProfile ? (
               <div className="bg-card rounded-xl border border-border p-8 text-center">

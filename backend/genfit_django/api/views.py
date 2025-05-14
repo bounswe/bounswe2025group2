@@ -111,7 +111,7 @@ def change_password(request):
     return Response({"detail": "Password changed successfully."}, status=status.HTTP_200_OK)
 
 
-@api_view(['DELETE'])
+@api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def delete_account(request):
     user = request.user

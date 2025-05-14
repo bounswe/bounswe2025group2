@@ -10,6 +10,59 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Moon, Mail, User, Trash2, Calendar, UserCircle } from "lucide-react";
 import { useTheme } from "@/theme/ThemeContext";
 import { cn } from "@/lib/utils";
+import {API_BASE_URL, queryClient} from "@/lib/queryClient.ts";
+
+
+function getCsrfToken() {
+  const name = 'csrftoken';
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; ${name}=`);
+  if (parts.length === 2) {
+    const lastPart = parts.pop();
+    if (lastPart) {
+      const value = lastPart.split(';').shift();
+      return value ?? '';
+    }
+  }
+  return '';
+}
+
+const apiClient = {
+  fetch: (url: string, options: RequestInit = {}) => {
+    const csrfToken = getCsrfToken();
+    const defaultOptions: RequestInit = {
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': csrfToken,
+        ...options.headers
+      }
+    };
+
+    // Merge default options with provided options
+    const mergedOptions = {
+      ...defaultOptions,
+      ...options,
+      headers: {
+        ...defaultOptions.headers,
+        ...(options.headers || {})
+      }
+    };
+
+    return fetch(url, mergedOptions);
+  },
+
+  get: (url: string) => {
+    return apiClient.fetch(url);
+  },
+
+  post: (url: string, data: any, p0: { headers: { 'Content-Type': string; }; }) => {
+    return apiClient.fetch(url, {
+      method: 'POST',
+      body: JSON.stringify(data)
+    });
+  }
+};
 
 export default function SettingsPage() {
   const { theme, toggleTheme } = useTheme();
@@ -33,8 +86,26 @@ export default function SettingsPage() {
 
   // Handle delete confirmation
   const handleDeleteConfirm = () => {
-    // TODO: Implement delete account functionality
+
+    // Call API to delete account
+    apiClient.post(`${API_BASE_URL}/api/delete-account/`, {}, { headers: { 'Content-Type': 'application/json' } })
+      .then(response => {
+        if (response.ok) {
+          // Handle successful account deletion
+          console.log("Account deleted successfully");
+        } else {
+          // Handle error
+          console.error("Error deleting account");
+        }
+      })
+      .catch(error => {
+        console.error("Error deleting account:", error);
+      });
+
     setShowDeleteConfirmation(false);
+
+    // redirect to the /auth page
+    window.location.href = '/auth';
   };
 
   return (
