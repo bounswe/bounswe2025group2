@@ -327,6 +327,7 @@ class Vote(models.Model):
             # Only increment like count if it's an upvote
             if self.vote_type == 'UPVOTE':
                 self.update_content_like_count(increment=True)
+            
 
     def delete(self, *args, **kwargs):
         self.update_content_like_count(increment=False)

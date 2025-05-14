@@ -285,6 +285,20 @@ export default function ProfilePage() {
     }, {
       onSuccess: () => {
         setIsEditing(false);
+        profileDetails.name = editedProfile.name;
+        profileDetails.surname = editedProfile.surname; // Added surname
+        profileDetails.location = editedProfile.location; // Added location
+        profileDetails.bio = editedProfile.bio; // Added bio
+        profileDetails.birth_date = editedProfile.birth_date; // Added birth_date
+        //calculate age
+        const birthDate = new Date(editedProfile.birth_date);
+        const today = new Date();
+        let age = today.getFullYear() - birthDate.getFullYear();
+        const m = today.getMonth() - birthDate.getMonth();
+        if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+          age--;
+        }
+        profileDetails.age = age.toString();
       }
     });
 
@@ -525,6 +539,47 @@ export default function ProfilePage() {
               )}
             </div>
 
+            {/* Profile Information */}
+            {!isPrivateProfile && profileDetails && (
+              <Card className="mb-6">
+                <CardHeader>
+                  <CardTitle>Profile Information</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <h3 className="text-sm font-medium text-muted-foreground mb-1">Full Name</h3>
+                      <p className="text-base">
+                        {profileDetails.name && profileDetails.surname 
+                          ? `${profileDetails.name} ${profileDetails.surname}` 
+                          : "Not specified"}
+                      </p>
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-medium text-muted-foreground mb-1">Location</h3>
+                      <p className="text-base">{profileDetails.location || "Not specified"}</p>
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-medium text-muted-foreground mb-1">Birth Date</h3>
+                      <p className="text-base">
+                        {profileDetails.birth_date 
+                          ? new Date(profileDetails.birth_date).toLocaleDateString() 
+                          : "Not specified"}
+                      </p>
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-medium text-muted-foreground mb-1">Age</h3>
+                      <p className="text-base">{profileDetails.age || "Not specified"}</p>
+                    </div>
+                    <div className="md:col-span-2">
+                      <h3 className="text-sm font-medium text-muted-foreground mb-1">Bio</h3>
+                      <p className="text-base">{profileDetails.bio || "No bio provided."}</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+            
             {/* Stats Cards */}
             {!isPrivateProfile && (
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
