@@ -341,9 +341,13 @@ class ChallengeSerializer(serializers.ModelSerializer):
         # Auto-geocode if location is provided but lat/lon are missing
         location = validated_data.get('location')
         if (not validated_data.get('latitude') or not validated_data.get('longitude')) and location:
-            lat, lon = geocode_location(location)
-            validated_data['latitude'] = lat
-            validated_data['longitude'] = lon
+            try:
+                lat, lon = geocode_location(location)
+                validated_data['latitude'] = lat
+                validated_data['longitude'] = lon
+            except:
+                validated_data['latitude'] = None
+                validated_data['longitude'] = None
 
         return super().create(validated_data)
 
