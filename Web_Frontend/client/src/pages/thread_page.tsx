@@ -175,7 +175,7 @@ export default function ThreadPageWrapper() {
             throw new Error('Failed to create thread');
         }
         console.log("query returned");
-        //queryClient.invalidateQueries({ queryKey: ["comments"]})
+        queryClient.invalidateQueries({ queryKey: ["comments"]})
     }
 
     const handleDownvote = async(replyid:number) => {
@@ -196,7 +196,7 @@ export default function ThreadPageWrapper() {
             throw new Error('Failed to create thread');
         }
         console.log("query returned");
-        //queryClient.invalidateQueries({ queryKey: ["comments"]})
+        queryClient.invalidateQueries({ queryKey: ["comments"]})
         window.location.reload();
     }
 
