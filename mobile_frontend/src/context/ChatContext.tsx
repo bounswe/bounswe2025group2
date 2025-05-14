@@ -1,53 +1,55 @@
 import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import axios from 'axios';
+import { useAuth } from './AuthContext';
+import Cookies from '@react-native-cookies/cookies';
 
 // Types for our chat system
 export type Message = {
-  id: string;
-  content: string;
-  timestamp: number;
-  senderId: string;
-  receiverId: string;
-  read: boolean;
-  imageUri?: string; // Add imageUri for image messages
+  id: number;
+  sender: string;
+  body: string;
+  created: string;
+  is_read: boolean;
 };
 
 export type Contact = {
-  id: string;
-  name: string;
-  avatar: any;
-  lastSeen: string;
-  status: 'online' | 'offline' | 'away';
-  unreadCount: number;
+  id: number;
+  username: string;
+  first_name?: string;
+  last_name?: string;
+  email?: string;
+  is_staff?: boolean;
+  user_type?: string;
+  // Add any other fields that might come from /api/users/
 };
 
-export type Conversation = {
-  contactId: string;
-  messages: Message[];
+export type Chat = {
+  id: number;
+  participants: Contact[];
+  other_user: Contact;
+  created: string;
+  last_message: Message | null;
+  unread_count: number;
 };
 
 type ChatContextType = {
   contacts: Contact[];
-  conversations: Conversation[];
-  activeContactId: string | null;
-  setActiveContactId: (id: string | null) => void;
-  sendMessage: (content: string, receiverId: string, imageUri?: string) => void;
-  getMessages: (contactId: string) => Message[];
-  getUnreadCount: (contactId: string) => number;
-  markAsRead: (contactId: string) => void;
-  getTotalUnread: () => number;
+  chats: Chat[];
+  activeChatId: number | null;
+  setActiveChatId: (id: number | null) => void;
+  fetchContacts: () => Promise<void>;
+  fetchChats: () => Promise<void>;
+  createChat: (userId: number) => Promise<Chat | null>;
 };
 
 const ChatContext = createContext<ChatContextType>({
   contacts: [],
-  conversations: [],
-  activeContactId: null,
-  setActiveContactId: () => {},
-  sendMessage: () => {},
-  getMessages: () => [],
-  getUnreadCount: () => 0,
-  markAsRead: () => {},
-  getTotalUnread: () => 0,
+  chats: [],
+  activeChatId: null,
+  setActiveChatId: () => {},
+  fetchContacts: async () => {},
+  fetchChats: async () => {},
+  createChat: async () => null,
 });
 
 export const useChat = () => useContext(ChatContext);
@@ -56,187 +58,113 @@ type ChatProviderProps = {
   children: ReactNode;
 };
 
-// Initial mock data
-const initialContacts: Contact[] = [
-  {
-    id: '1',
-    name: 'Coach Smith',
-    avatar: require('../assets/temp_images/pp1.png'),
-    lastSeen: 'Today, 9:41 AM',
-    status: 'online',
-    unreadCount: 0,
-  },
-  {
-    id: '2',
-    name: 'Sarah Jones',
-    avatar: require('../assets/temp_images/pp2.png'),
-    lastSeen: 'Yesterday',
-    status: 'offline',
-    unreadCount: 0,
-  },
-  {
-    id: '3',
-    name: 'Basketball Team',
-    avatar: require('../assets/temp_images/pp3.png'),
-    lastSeen: 'Today, 11:20 AM',
-    status: 'online',
-    unreadCount: 0,
-  },
-  {
-    id: '4',
-    name: 'Fitness Buddy',
-    avatar: require('../assets/temp_images/profile.png'),
-    lastSeen: '3 days ago',
-    status: 'away',
-    unreadCount: 0,
-  },
-];
-
-const generateInitialMessages = (contacts: Contact[]): Conversation[] => {
-  return contacts.map(contact => ({
-    contactId: contact.id,
-    messages: [], // Start with empty messages
-  }));
-};
-
 export const ChatProvider = ({ children }: ChatProviderProps) => {
-  const [contacts, setContacts] = useState<Contact[]>(initialContacts);
-  const [conversations, setConversations] = useState<Conversation[]>(
-    generateInitialMessages(initialContacts)
-  );
-  const [activeContactId, setActiveContactId] = useState<string | null>(null);
+  const { token, getAuthHeader } = useAuth();
+  const [contacts, setContacts] = useState<Contact[]>([]);
+  const [chats, setChats] = useState<Chat[]>([]);
+  const [activeChatId, setActiveChatId] = useState<number | null>(null);
 
-  // Load conversations from storage on mount
-  useEffect(() => {
-    const loadData = async () => {
-      try {
-        const storedConversations = await AsyncStorage.getItem('conversations');
-        const storedContacts = await AsyncStorage.getItem('contacts');
-        
-        if (storedConversations) {
-          setConversations(JSON.parse(storedConversations));
-        }
-        
-        if (storedContacts) {
-          setContacts(JSON.parse(storedContacts));
-        }
-      } catch (error) {
-        console.error('Failed to load chat data:', error);
-      }
-    };
-    
-    loadData();
-  }, []);
-
-  // Save conversations to storage whenever they change
-  useEffect(() => {
-    const saveData = async () => {
-      try {
-        await AsyncStorage.setItem('conversations', JSON.stringify(conversations));
-        await AsyncStorage.setItem('contacts', JSON.stringify(contacts));
-      } catch (error) {
-        console.error('Failed to save chat data:', error);
-      }
-    };
-    
-    saveData();
-  }, [conversations, contacts]);
-
-  // Send a new message (text or image)
-  const sendMessage = (content: string, receiverId: string, imageUri?: string) => {
-    if (!content.trim() && !imageUri) return;
-    
-    const newMessage: Message = {
-      id: `msg-${Date.now()}`,
-      content,
-      timestamp: Date.now(),
-      senderId: 'currentUser',
-      receiverId,
-      read: true,
-      ...(imageUri ? { imageUri } : {}),
-    };
-    
-    // Find the conversation or create a new one
-    const conversationIndex = conversations.findIndex(c => c.contactId === receiverId);
-    
-    if (conversationIndex !== -1) {
-      // Update existing conversation
-      const updatedConversations = [...conversations];
-      updatedConversations[conversationIndex] = {
-        ...updatedConversations[conversationIndex],
-        messages: [...updatedConversations[conversationIndex].messages, newMessage],
-      };
-      setConversations(updatedConversations);
-    } else {
-      // Create new conversation
-      setConversations([
-        ...conversations,
-        {
-          contactId: receiverId,
-          messages: [newMessage],
+  const fetchContacts = async () => {
+    try {
+      const cookies = await Cookies.get('http://10.0.2.2:8000');
+      const csrfToken = cookies.csrftoken?.value;
+      
+      const res = await axios.get('http://10.0.2.2:8000/api/users/', {
+        headers: {
+          ...getAuthHeader(),
+          'Content-Type': 'application/json',
+          ...(csrfToken ? { 'X-CSRFToken': csrfToken } : {}),
         },
-      ]);
+        withCredentials: true,
+      });
+      
+      // Log response for debugging
+      console.log('User API Response:', res.data);
+      
+      // Ensure we transform the data to match our Contact type if needed
+      const mappedContacts: Contact[] = Array.isArray(res.data) 
+        ? res.data.map((user: any) => ({
+            id: user.id,
+            username: user.username,
+            first_name: user.first_name,
+            last_name: user.last_name,
+            email: user.email,
+            is_staff: user.is_staff,
+            user_type: user.user_type,
+          }))
+        : [];
+      
+      setContacts(mappedContacts);
+    } catch (err) {
+      console.error('Failed to fetch users:', err);
+      setContacts([]);
     }
   };
 
-  // Get messages for a specific contact
-  const getMessages = (contactId: string): Message[] => {
-    const conversation = conversations.find(c => c.contactId === contactId);
-    return conversation ? conversation.messages : [];
-  };
-
-  // Get unread message count for a contact
-  const getUnreadCount = (contactId: string): number => {
-    const contact = contacts.find(c => c.id === contactId);
-    return contact ? contact.unreadCount : 0;
-  };
-
-  // Mark all messages from a contact as read
-  const markAsRead = (contactId: string) => {
-    // Update messages
-    const conversationIndex = conversations.findIndex(c => c.contactId === contactId);
-    if (conversationIndex !== -1) {
-      const updatedConversations = [...conversations];
-      updatedConversations[conversationIndex] = {
-        ...updatedConversations[conversationIndex],
-        messages: updatedConversations[conversationIndex].messages.map(msg => ({
-          ...msg,
-          read: true
-        })),
-      };
-      setConversations(updatedConversations);
-    }
-    
-    // Update contact unread count
-    const updatedContacts = [...contacts];
-    const contactIndex = updatedContacts.findIndex(c => c.id === contactId);
-    if (contactIndex !== -1) {
-      updatedContacts[contactIndex] = {
-        ...updatedContacts[contactIndex],
-        unreadCount: 0,
-      };
-      setContacts(updatedContacts);
+  const fetchChats = async () => {
+    try {
+      const cookies = await Cookies.get('http://10.0.2.2:8000');
+      const csrfToken = cookies.csrftoken?.value;
+      
+      const res = await axios.get('http://10.0.2.2:8000/chat/get-chats/', {
+        headers: {
+          ...getAuthHeader(),
+          'Content-Type': 'application/json',
+          ...(csrfToken ? { 'X-CSRFToken': csrfToken } : {}),
+        },
+        withCredentials: true,
+      });
+      setChats(res.data);
+    } catch (err) {
+      console.error('Failed to fetch chats:', err);
+      setChats([]);
     }
   };
 
-  // Get total number of unread messages
-  const getTotalUnread = (): number => {
-    return contacts.reduce((total, contact) => total + contact.unreadCount, 0);
+  const createChat = async (userId: number) => {
+    try {
+      const cookies = await Cookies.get('http://10.0.2.2:8000');
+      const csrfToken = cookies.csrftoken?.value;
+      
+      const res = await axios.post(
+        'http://10.0.2.2:8000/chat/create-chat/',
+        { user_id: userId },
+        { 
+          headers: {
+            ...getAuthHeader(),
+            'Content-Type': 'application/json',
+            ...(csrfToken ? { 'X-CSRFToken': csrfToken } : {}),
+          },
+          withCredentials: true,
+        }
+      );
+      await fetchChats();
+      return res.data;
+    } catch (err) {
+      console.error('Failed to create chat:', err);
+      return null;
+    }
   };
+
+  useEffect(() => {
+    if (token) {
+      fetchContacts();
+      fetchChats();
+    }
+  }, [token]);
 
   return (
     <ChatContext.Provider
       value={{
         contacts,
-        conversations,
-        activeContactId,
-        setActiveContactId,
-        sendMessage,
-        getMessages,
-        getUnreadCount,
-        markAsRead,
-        getTotalUnread,
-      }}>
+        chats,
+        activeChatId,
+        setActiveChatId,
+        fetchContacts,
+        fetchChats,
+        createChat,
+      }}
+    >
       {children}
     </ChatContext.Provider>
   );

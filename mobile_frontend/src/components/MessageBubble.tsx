@@ -13,17 +13,14 @@ const MessageBubble = ({ message, isMine }: MessageBubbleProps) => {
   const { colors } = useTheme();
 
   // Format the timestamp for display
-  const formatTime = (timestamp: number): string => {
-    const date = new Date(timestamp);
+  const formatTime = (created: string): string => {
+    const date = new Date(created);
     let hours = date.getHours();
     const minutes = date.getMinutes();
     const ampm = hours >= 12 ? 'PM' : 'AM';
-    
     hours = hours % 12;
     hours = hours ? hours : 12; // Convert 0 to 12
-    
     const minutesStr = minutes < 10 ? '0' + minutes : minutes;
-    
     return `${hours}:${minutesStr} ${ampm}`;
   };
 
@@ -44,17 +41,14 @@ const MessageBubble = ({ message, isMine }: MessageBubbleProps) => {
           },
         ]}
       >
-        {message.imageUri && (
-          <Image source={{ uri: message.imageUri }} style={styles.image} />
-        )}
-        {message.content ? (
+        {message.body ? (
           <CustomText
             style={[
               styles.text,
               { color: isMine ? '#FFFFFF' : colors.text },
             ]}
           >
-            {message.content}
+            {message.body}
           </CustomText>
         ) : null}
         <View style={styles.timeContainer}>
@@ -64,18 +58,8 @@ const MessageBubble = ({ message, isMine }: MessageBubbleProps) => {
               { color: isMine ? 'rgba(255,255,255,0.7)' : colors.subText },
             ]}
           >
-            {formatTime(message.timestamp)}
+            {formatTime(message.created)}
           </CustomText>
-          {isMine && (
-            <CustomText
-              style={[
-                styles.status,
-                { color: message.read ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.4)' },
-              ]}
-            >
-              {message.read ? '✓✓' : '✓'}
-            </CustomText>
-          )}
         </View>
       </View>
     </View>
@@ -119,10 +103,6 @@ const styles = StyleSheet.create({
   },
   time: {
     fontSize: 10,
-  },
-  status: {
-    fontSize: 10,
-    marginLeft: 4,
   },
 });
 
