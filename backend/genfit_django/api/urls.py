@@ -11,6 +11,7 @@ from .separate_views.ai_tutor_views import AiTutorViewSet
 from .separate_views import local_hour
 from .separate_views import quote_views
 from .separate_views import parse_food
+from .separate_views import cat_info
 
 
 urlpatterns = [
@@ -36,6 +37,11 @@ urlpatterns = [
 
     #nutrition endpoints
     path('parse_food/', parse_food.parse_food, name='parse_food'),
+
+    # Cat info endpoints
+    path('cats/fact/', cat_info.get_cat_fact, name='get_cat_fact'),
+    path('cats/', cat_info.get_cat_info, name='get_random_cats'),
+    path('cats/<str:cat_id>/', cat_info.get_cat_info, name='get_cat_info'),
 
     # Fitness Goals URLs
     path('goals/', fitness_goals.fitness_goals, name='fitness_goals'),
