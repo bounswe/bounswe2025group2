@@ -86,6 +86,8 @@ urlpatterns = [
     path('challenges/create/', challenges.create_challenge, name='create_challenge'),
     path('challenges/<int:challenge_id>/update/', challenges.update_challenge, name='update_challenge'),
     path('challenges/<int:challenge_id>/delete/', challenges.delete_challenge, name='delete_challenge'),
+    path('challenges/joined/', challenges.get_joined_challenges, name='get_joined_challenges'),
+    path('challenges/progress/', challenges.get_challenge_progresses, name='get_progress_challenges'),
 
     # Participant-related views
     path('challenges/<int:challenge_id>/join/', challenges.join_challenge, name='join_challenge'),

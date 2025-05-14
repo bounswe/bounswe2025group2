@@ -18,21 +18,36 @@ def get_challenge_detail(request, challenge_id):
     challenge = get_object_or_404(Challenge, id=challenge_id)
     challenge_data = ChallengeSerializer(challenge).data
 
+    participants = ChallengeParticipant.objects.filter(challenge=challenge)
+    joined = participants.filter(user=request.user).exists()
+
+    return Response({
+        "joined": joined,
+        "challenge": challenge_data,
+        "participants": ChallengeParticipantSerializer(participants, many=True).data if joined else []
+    }, status=status.HTTP_200_OK)
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_joined_challenges(request):
+    # Get all challenge ids from the challenge participants table
+    challenge_ids = ChallengeParticipant.objects.filter(user=request.user).values_list('challenge_id', flat=True)
+    # Return as a list of dicts with stringified IDs
+    joined_challenges = [{"id": str(ch_id)} for ch_id in challenge_ids]
+    
+    return Response(joined_challenges)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_challenge_progresses(request, challenge_id):
+    challenge = get_object_or_404(Challenge, id=challenge_id)
+    if not challenge.is_active():
+        return Response({"detail": "This challenge is not active"}, status=status.HTTP_403_FORBIDDEN)
+
     participant = ChallengeParticipant.objects.filter(challenge=challenge, user=request.user).first()
-
-    if participant:
-        participant_data = ChallengeParticipantSerializer(participant).data
-        return Response({
-            "joined": True,
-            "challenge": challenge_data,
-            "participant": participant_data
-        }, status=status.HTTP_200_OK)
-    else:
-        return Response({
-            "joined": False,
-            "challenge": challenge_data
-        }, status=status.HTTP_200_OK)
-
+    serializer = ChallengeParticipantSerializer(participant)
+    return Response(serializer.data, status=status.HTTP_200_OK)
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])

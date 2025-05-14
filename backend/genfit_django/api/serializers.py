@@ -360,7 +360,12 @@ class ChallengeSerializer(serializers.ModelSerializer):
 
         return super().update(instance, validated_data)
 
+class ChallengePartSerializer(serializers.ModelSerializer):
+    challenge_id = serializers.IntegerField(source='challenge.id')
 
+    class Meta:
+        model = ChallengeParticipant
+        fields = ['challenge_id'] 
 
 class ChallengeParticipantSerializer(serializers.ModelSerializer):
     username = serializers.SerializerMethodField()
