@@ -12,6 +12,7 @@ from .separate_views import local_hour
 from .separate_views import quote_views
 from .separate_views import parse_food
 from .separate_views import fitness_gif
+from .separate_views import ip_location
 
 
 urlpatterns = [
@@ -40,6 +41,9 @@ urlpatterns = [
 
     # Giphy endpoints
     path('fitness-gifs/', fitness_gif.random_fitness_gif, name='get_fitness_gif'),
+
+    # IP location endpoint
+    path('ip-location/', ip_location.get_location_from_ip, name='get_location_from_ip'),
 
     # Fitness Goals URLs
     path('goals/', fitness_goals.fitness_goals, name='fitness_goals'),
