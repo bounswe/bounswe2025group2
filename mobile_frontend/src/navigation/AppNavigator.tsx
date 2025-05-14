@@ -7,7 +7,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 // Import pages
 import Home from '../Pages/Home';
 import Communities from '../Pages/Communities';
-import AddNew from '../Pages/AddNew';         // ✅ filename düzeltilmiş
+import AddNew from '../Pages/Add New';         // ✅ filename düzeltilmiş
 import Mentors from '../Pages/Mentors';
 import Chats from '../Pages/Chats';
 import Settings from '../Pages/Settings';
@@ -16,8 +16,6 @@ import Register from '../Pages/Register';
 import Layout from '../components/Layout';
 import BottomBar from '../components/BottomBar';
 import Goals from '../Pages/Goals';
-import Notifications from '../Pages/Notifications';
-import ExercisesScreen from '../Pages/ExercisesScreen';   // ✅ Exercises eklendi
 import Profile from '../Pages/Profile';
 import ApiDemoScreen from '../Pages/ApiDemoScreen';
 import { useAuth } from '../context/AuthContext';
@@ -51,7 +49,6 @@ const MainTabs = () => {
       <Tab.Screen name="Settings" component={withLayout(Settings)} />
       <Tab.Screen name="Goals" component={Goals} />
       <Tab.Screen name="Notifications" component={withLayout(Notifications)} />
-      <Tab.Screen name="Exercises" component={ExercisesScreen} />  {/* ✅ Added */}
 
     </Tab.Navigator>
   );
