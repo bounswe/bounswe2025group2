@@ -239,6 +239,49 @@ export default function GoalsPage() {
   };
 
   const handleCreateGoal = async () => {
+    // Form validation
+    const validationErrors = [];
+    
+    if (!formData.title.trim()) {
+      validationErrors.push("Title is required");
+    }
+    
+    if (!formData.description.trim()) {
+      validationErrors.push("Description is required");
+    }
+    
+    if (!formData.goal_type) {
+      validationErrors.push("Goal type is required");
+    }
+    
+    if (!formData.target_value || formData.target_value <= 0) {
+      validationErrors.push("Target value must be greater than 0");
+    }
+    
+    if (!formData.unit.trim()) {
+      validationErrors.push("Unit is required");
+    }
+    
+    if (!formData.target_date) {
+      validationErrors.push("End date is required");
+    }
+    
+    // If there are validation errors, show them and return
+    if (validationErrors.length > 0) {
+      toast({
+        title: 'Missing Information',
+        description: (
+          <ul className="list-disc pl-4">
+            {validationErrors.map((error, index) => (
+              <li key={index}>{error}</li>
+            ))}
+          </ul>
+        ),
+        variant: 'destructive',
+      });
+      return;
+    }
+    
     try {
       setIsSubmitting(true);
       // Construct payload with only expected fields
@@ -252,6 +295,12 @@ export default function GoalsPage() {
         // Do not send: user, current_value, status, start_date, last_updated, progress_percentage
       };
       const response = await apiClient.post(`${API_BASE_URL}/api/goals/`, payload);
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.detail || 'Failed to create goal');
+      }
+      
       const newGoal = await response.json();
       setGoals([...goals, newGoal]);
       setIsCreateDialogOpen(false);
@@ -271,7 +320,7 @@ export default function GoalsPage() {
       console.error('Error creating goal:', error);
       toast({
         title: 'Error',
-        description: 'Failed to create goal. Please try again.',
+        description: error instanceof Error ? error.message : 'Failed to create goal. Please try again.',
         variant: 'destructive',
       });
     } finally {
@@ -281,12 +330,58 @@ export default function GoalsPage() {
 
   const handleUpdateGoal = async () => {
     if (!selectedGoal) return;
+    
+    // Form validation
+    const validationErrors = [];
+    
+    if (!formData.title.trim()) {
+      validationErrors.push("Title is required");
+    }
+    
+    if (!formData.description.trim()) {
+      validationErrors.push("Description is required");
+    }
+    
+    if (!formData.goal_type) {
+      validationErrors.push("Goal type is required");
+    }
+    
+    if (!formData.target_value || formData.target_value <= 0) {
+      validationErrors.push("Target value must be greater than 0");
+    }
+    
+    if (!formData.unit.trim()) {
+      validationErrors.push("Unit is required");
+    }
+    
+    // If there are validation errors, show them and return
+    if (validationErrors.length > 0) {
+      toast({
+        title: 'Missing Information',
+        description: (
+          <ul className="list-disc pl-4">
+            {validationErrors.map((error, index) => (
+              <li key={index}>{error}</li>
+            ))}
+          </ul>
+        ),
+        variant: 'destructive',
+      });
+      return;
+    }
+    
     try {
       setIsSubmitting(true);
       const response = await apiClient.fetch(`${API_BASE_URL}/api/goals/${selectedGoal.id}/`, {
         method: 'PUT',
         body: JSON.stringify(formData)
       });
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.detail || 'Failed to update goal');
+      }
+      
       const updatedGoal = await response.json();
       setGoals(goals.map(goal => goal.id === updatedGoal.id ? updatedGoal : goal));
       setIsUpdateDialogOpen(false);
@@ -298,7 +393,7 @@ export default function GoalsPage() {
       console.error('Error updating goal:', error);
       toast({
         title: 'Error',
-        description: 'Failed to update goal. Please try again.',
+        description: error instanceof Error ? error.message : 'Failed to update goal. Please try again.',
         variant: 'destructive',
       });
     } finally {
@@ -938,8 +1033,7 @@ export default function GoalsPage() {
               )}
             >
               Cancel
-            </Button>
-            <Button 
+            </Button>            <Button 
               onClick={handleUpdateGoal}
               disabled={isSubmitting}
               className={cn(
@@ -978,8 +1072,7 @@ export default function GoalsPage() {
           </DialogHeader>
           <div className="py-6">
             <div className="space-y-4">
-              <div>
-                <div className="flex items-center justify-between mb-2">
+              <div>                <div className="flex items-center justify-between mb-2">
                   <Label className={cn(
                     theme === 'dark' ? 'text-white' : 'text-[#800000]'
                   )}>Current Progress</Label>
