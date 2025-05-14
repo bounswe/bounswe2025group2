@@ -307,7 +307,7 @@ export default function HomePage() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    {goals.map((goal, index) => {
+                    {Array.isArray(goals) && goals.map((goal, index) => {
                       const percentage = Math.min(
                         100,
                         Math.max(0, (goal.current_value / goal.target_value) * 100)

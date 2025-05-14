@@ -42,7 +42,12 @@ CORS_ALLOW_CREDENTIALS = True
 CSRF_TRUSTED_ORIGINS = [
     'http://localhost:3000',
     'http://localhost:5000',
-    'http://10.0.2.2:8000'
+    'http://10.0.2.2:8000',
+    'http://10.0.2.2:5000',
+    'http://10.0.2.2:3000',
+    'http://165.232.79.200:8000',
+    'http://165.232.79.200:3000',
+    'http://165.232.79.200:5000',
 ]
 
 
@@ -122,7 +127,12 @@ CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5000", 
     "http://localhost:8000",
-    "http://10.0.2.2:8000"
+    "http://10.0.2.2:8000",
+    "http://10.0.2.2:5000",
+    "http://10.0.2.2:3000",
+    'http://165.232.79.200:8000',
+    'http://165.232.79.200:3000',
+    'http://165.232.79.200:5000',
 ]
 
 
