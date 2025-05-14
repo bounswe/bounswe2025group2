@@ -1,5 +1,5 @@
 import {JSXElementConstructor, ReactElement, ReactNode, ReactPortal, useEffect, useState} from "react";
-import {Link} from "wouter";
+import {Link, useLocation} from "wouter";
 import Sidebar from "@/components/layout/sidebar";
 import MobileHeader from "@/components/layout/mobile-header";
 import MobileNavigation from "@/components/layout/mobile-navigation";
@@ -45,11 +45,13 @@ function getCsrfToken() {
 
 export default function ForumPage() {
   const {theme} = useTheme();
+  const [location] = useLocation();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<number>(1);
   const [selectedcategoryName, setSelectedcategoryName] = useState<string>("");
+  
   const {data: forums, isLoading: forumsLoading} = useQuery({
-    queryKey: ["forums"],
+    queryKey: ["forums", location],
     queryFn: async () => {
       const response = await fetch(`${API_BASE_URL}/api/forums`);
 
@@ -58,7 +60,8 @@ export default function ForumPage() {
       }
 
       return response.json();
-    }
+    },
+    staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
   console.log(forums);
@@ -72,14 +75,15 @@ export default function ForumPage() {
 
   console.log("component rendered");
   const { data: threads, isLoading: threadsLoading } = useQuery({
-    queryKey: ["threads"],
+    queryKey: ["threads", selectedcategoryName, location],
     queryFn: async () => {
       const response = await fetch(`${API_BASE_URL}/api/threads/`);
       if (!response.ok) {
         throw new Error("Network response was not ok");
       }
       return await response.json();
-    }
+    },
+    staleTime: 5 * 60 * 1000, // 5 minutes
   });
   console.log(threads, threadsLoading);
 
