@@ -330,7 +330,8 @@ export default function ProfilePage() {
         <main className="flex-1 md:ml-56 p-4 pb-20">
           <div className="max-w-4xl mx-auto">
             {/* Profile Header */}
-            <div className="bg-primary rounded-xl p-6 mb-6 relative">
+            {/* add a warm color */}
+            <div className="bg-amber-500 rounded-xl p-6 mb-6 relative">
               <div className="flex flex-col md:flex-row items-center md:items-start gap-4">
                 <div className="relative">
                   {profileUser && (<AvatarWithBadge
