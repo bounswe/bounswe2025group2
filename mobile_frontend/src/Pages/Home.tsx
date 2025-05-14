@@ -1,7 +1,10 @@
-import React from 'react';
-import { View, StyleSheet, ScrollView } from 'react-native';
+import React, { useEffect, useState, useCallback } from 'react';
+import { View, StyleSheet, ScrollView, RefreshControl } from 'react-native';
 import Thread from '../components/Thread';
+import { useThreads } from '../context/ThreadContext';
+import { useTheme } from '../context/ThemeContext';
 
+// Keep this as fallback if no threads are available
 const sampleThreads = [
   {
     id: 1,
@@ -44,10 +47,37 @@ const sampleThreads = [
 ];
 
 const Home = () => {
+  const [refreshing, setRefreshing] = useState(false);
+  const { threads, loadThreads } = useThreads();
+  const { colors } = useTheme();
+
+  useEffect(() => {
+    loadThreads();
+  }, [loadThreads]);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await loadThreads();
+    setRefreshing(false);
+  }, [loadThreads]);
+
+  // Display user-created threads first, followed by sample threads if needed
+  const displayThreads = threads.length > 0 ? threads : sampleThreads;
+
   return (
-    <ScrollView style={styles.container}>
+    <ScrollView 
+      style={styles.container}
+      refreshControl={
+        <RefreshControl 
+          refreshing={refreshing} 
+          onRefresh={onRefresh}
+          colors={[colors.mentionText]}
+          tintColor={colors.mentionText}
+        />
+      }
+    >
       <View style={styles.content}>
-        {sampleThreads.map((thread) => (
+        {displayThreads.map((thread) => (
           <Thread
             key={thread.id}
             forumName={thread.forumName}

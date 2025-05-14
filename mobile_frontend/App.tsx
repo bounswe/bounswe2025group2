@@ -4,6 +4,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import AppNavigator from './src/navigation/AppNavigator';
 import { ThemeProvider } from './src/context/ThemeContext';
 import { AuthProvider } from './src/context/AuthContext';
+import { ThreadProvider } from './src/context/ThreadContext';
 import Toast from 'react-native-toast-message';
 
 const App = () => {
@@ -11,10 +12,12 @@ const App = () => {
     <SafeAreaProvider>
       <AuthProvider>
         <ThemeProvider>
-          <NavigationContainer>
-            <AppNavigator />
-          </NavigationContainer>
-          <Toast />
+          <ThreadProvider>
+            <NavigationContainer>
+              <AppNavigator />
+            </NavigationContainer>
+            <Toast />
+          </ThreadProvider>
         </ThemeProvider>
       </AuthProvider>
     </SafeAreaProvider>
