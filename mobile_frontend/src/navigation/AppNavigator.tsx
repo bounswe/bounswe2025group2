@@ -15,6 +15,8 @@ import Layout from '../components/Layout';
 import BottomBar from '../components/BottomBar';
 import Goals from '../Pages/Goals';
 import { useAuth } from '../context/AuthContext';
+import ApiDemoScreen from '../Pages/ApiDemoScreen';
+import Profile from '../Pages/Profile';
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -60,6 +62,8 @@ const AppNavigator = () => {
       <Stack.Screen name="Login" component={Login} />
       <Stack.Screen name="Register" component={Register} />
       <Stack.Screen name="Main" component={MainTabs} />
+      <Stack.Screen name="Profile" component={Profile} />
+      <Stack.Screen name="ApiDemo" component={ApiDemoScreen} />
     </Stack.Navigator>
   );
 };
