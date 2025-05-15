@@ -2,6 +2,7 @@ import React, { useEffect, useState, useCallback } from "react";
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, RefreshControl, ActivityIndicator, Alert } from "react-native";
 const { useFocusEffect } = require("@react-navigation/native");
 const AsyncStorage = require("@react-native-async-storage/async-storage").default;
+import { useTheme } from '../context/ThemeContext';
 
 
 // Define types for better type safety
@@ -62,20 +63,32 @@ const markAllAsRead = async () => {
   return res.json();
 };
 
-const NotificationItem = ({ item, onPress }: { item: Notification; onPress: () => void }) => (
-  <TouchableOpacity
-    style={[styles.notification, item.is_read ? styles.read : styles.unread]}
-    onPress={onPress}
-  >
-    <Text style={styles.message}>{item.message}</Text>
-    <Text style={styles.date}>{new Date(item.created_at).toLocaleString()}</Text>
-  </TouchableOpacity>
-);
+const NotificationItem = ({ item, onPress }: { item: Notification; onPress: () => void }) => {
+  const { colors } = useTheme();
+  return (
+    <TouchableOpacity
+      style={[
+        styles.notification,
+        { 
+          backgroundColor: colors.navBar,
+          borderColor: colors.border,
+          shadowColor: colors.border
+        },
+        item.is_read ? [styles.read] : [styles.unread, { borderColor: colors.active }]
+      ]}
+      onPress={onPress}
+    >
+      <Text style={[styles.message, { color: colors.text }]}>{item.message}</Text>
+      <Text style={[styles.date, { color: colors.subText }]}>{new Date(item.created_at).toLocaleString()}</Text>
+    </TouchableOpacity>
+  );
+};
 
 const Notifications = () => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const { colors } = useTheme();
   const loadNotifications = useCallback(async () => {
     setLoading(true);
     try {
@@ -123,16 +136,18 @@ const Notifications = () => {
 
   if (loading) {
     return (
-      <View style={styles.centered}><ActivityIndicator size="large" /></View>
+      <View style={[styles.centered, { backgroundColor: colors.background }]}>
+        <ActivityIndicator size="large" color={colors.active} />
+      </View>
     );
   }
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Notifications</Text>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <View style={[styles.header, { backgroundColor: colors.navBar, borderBottomColor: colors.border }]}>
+        <Text style={[styles.title, { color: colors.text }]}>Notifications</Text>
         <TouchableOpacity onPress={handleMarkAllAsRead}>
-          <Text style={styles.markAll}>Mark all as read</Text>
+          <Text style={[styles.markAll, { color: colors.mentionText }]}>Mark all as read</Text>
         </TouchableOpacity>
       </View>
       <FlatList<Notification>
@@ -141,57 +156,67 @@ const Notifications = () => {
         renderItem={({ item }: { item: Notification }) => (
           <NotificationItem item={item} onPress={() => handleMarkAsRead(item.id)} />
         )}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-        ListEmptyComponent={<Text style={styles.empty}>No notifications</Text>}
+        refreshControl={
+          <RefreshControl 
+            refreshing={refreshing} 
+            onRefresh={onRefresh}
+            tintColor={colors.active}
+            colors={[colors.active]}
+          />
+        }
+        ListEmptyComponent={
+          <Text style={[
+            styles.empty, 
+            { 
+              color: colors.text,
+              backgroundColor: colors.navBar,
+              borderColor: colors.border 
+            }
+          ]}>
+            No notifications
+          </Text>
+        }
       />
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#f7f7f7" },
+  container: { flex: 1 },
   header: { 
     flexDirection: "row", 
     justifyContent: "space-between", 
     alignItems: "center", 
     padding: 16,
-    backgroundColor: "#fff",
     borderBottomWidth: 1,
-    borderBottomColor: "#800000"
   },
-  title: { fontSize: 28, fontWeight: "bold", color: "#800000", marginBottom: 4 },
-  markAll: { color: "#800000", fontWeight: "bold", fontSize: 16 },
+  title: { fontSize: 28, fontWeight: "bold", marginBottom: 4 },
+  markAll: { fontWeight: "bold", fontSize: 16 },
   notification: { 
-    backgroundColor: "#fff",
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: "#800000",
     padding: 16,
     marginHorizontal: 12,
     marginVertical: 8,
-    shadowColor: "#800000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.07,
     shadowRadius: 4,
     elevation: 2,
   },
-  message: { fontSize: 16, color: "#800000", fontWeight: "bold" },
-  date: { fontSize: 13, color: "#800000", marginTop: 4 },
+  message: { fontSize: 16, fontWeight: "bold" },
+  date: { fontSize: 13, marginTop: 4 },
   read: { opacity: 0.6 },
-  unread: { borderColor: "#800000", borderWidth: 2 },
+  unread: { borderWidth: 2 },
   empty: { 
     textAlign: "center", 
     marginTop: 32, 
-    color: "#800000", 
     fontSize: 18, 
     fontWeight: "bold",
-    backgroundColor: "#fff",
     borderRadius: 12,
     padding: 24,
     borderWidth: 1,
-    borderColor: "#800000"
   },
-  centered: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#f7f7f7" },
+  centered: { flex: 1, justifyContent: "center", alignItems: "center" },
 });
 
 export default Notifications;

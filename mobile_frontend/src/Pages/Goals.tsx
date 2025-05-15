@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Modal, TextInput, Alert, ProgressBarAndroid, Platform, ProgressViewIOS } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Modal, TextInput, Alert, ProgressBarAndroid } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useAuth } from '../context/AuthContext';
 import Cookies from '@react-native-cookies/cookies';
+import { useTheme } from '../context/ThemeContext';
 
 interface Goal {
   id: number;
@@ -22,6 +23,7 @@ interface Goal {
 
 const Goals = ({ navigation }: any) => {
   const { getAuthHeader } = useAuth();
+  const { colors, isDark } = useTheme();
   const [modalVisible, setModalVisible] = useState(false);
   const [goalTitle, setGoalTitle] = useState('');
   const [goalDescription, setGoalDescription] = useState('');
@@ -305,48 +307,44 @@ const Goals = ({ navigation }: any) => {
   const progress = 0.7; // 70% progress
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.title}>My Fitness Goals</Text>
-      <Text style={styles.subtitle}>Track and manage your personal fitness journey</Text>
-      <TouchableOpacity style={styles.setGoalButton} onPress={openModal}>
-        <Text style={styles.setGoalButtonText}>+ Set New Goal</Text>
+    <ScrollView contentContainerStyle={[styles.container, { backgroundColor: colors.background }]}>
+      <Text style={[styles.title, { color: colors.text }]}>My Fitness Goals</Text>
+      <Text style={[styles.subtitle, { color: colors.subText }]}>Track and manage your personal fitness journey</Text>
+      <TouchableOpacity style={[styles.setGoalButton, { borderColor: colors.border }]} onPress={openModal}>
+        <Text style={[styles.setGoalButtonText, { color: colors.mentionText }]}>+ Set New Goal</Text>
       </TouchableOpacity>
       <View style={styles.statsRow}>
-        <View style={styles.statBox}>
-          <Text style={styles.statLabel}>Active Goals</Text>
-          <Text style={styles.statValue}>{goals.filter(g => g.status === 'ACTIVE').length}</Text>
+        <View style={[styles.statBox, { borderColor: colors.border, backgroundColor: colors.navBar }]}> 
+          <Text style={[styles.statLabel, { color: colors.subText }]}>Active Goals</Text>
+          <Text style={[styles.statValue, { color: colors.text }]}>{goals.filter(g => g.status === 'ACTIVE').length}</Text>
         </View>
-        <View style={styles.statBox}>
-          <Text style={styles.statLabel}>Completed</Text>
-          <Text style={styles.statValue}>{goals.filter(g => g.status === 'COMPLETED').length}</Text>
+        <View style={[styles.statBox, { borderColor: colors.border, backgroundColor: colors.navBar }]}> 
+          <Text style={[styles.statLabel, { color: colors.subText }]}>Completed</Text>
+          <Text style={[styles.statValue, { color: colors.text }]}>{goals.filter(g => g.status === 'COMPLETED').length}</Text>
         </View>
-        <View style={styles.statBox}>
-          <Text style={styles.statLabel}>Completion Rate</Text>
-          <Text style={styles.statValue}>
-            {goals.length > 0 
-              ? Math.round((goals.filter(g => g.status === 'COMPLETED').length / goals.length) * 100) 
-              : 0}%
-          </Text>
+        <View style={[styles.statBox, { borderColor: colors.border, backgroundColor: colors.navBar }]}> 
+          <Text style={[styles.statLabel, { color: colors.subText }]}>Completion Rate</Text>
+          <Text style={[styles.statValue, { color: colors.text }]}>{goals.length > 0 ? Math.round((goals.filter(g => g.status === 'COMPLETED').length / goals.length) * 100) : 0}%</Text>
         </View>
       </View>
       <View style={styles.tabsRow}>
         <TouchableOpacity 
-          style={[styles.tab, activeTab === 'ACTIVE' && styles.tabActive]} 
+          style={[styles.tab, activeTab === 'ACTIVE' && [styles.tabActive, { backgroundColor: colors.active }], { borderColor: colors.border }]} 
           onPress={() => setActiveTab('ACTIVE')}
         >
-          <Text style={activeTab === 'ACTIVE' ? styles.tabActiveText : styles.tabText}>Active</Text>
+          <Text style={activeTab === 'ACTIVE' ? [styles.tabActiveText, { color: colors.navBar }] : [styles.tabText, { color: colors.text }]}>Active</Text>
         </TouchableOpacity>
         <TouchableOpacity 
-          style={[styles.tab, activeTab === 'COMPLETED' && styles.tabActive]} 
+          style={[styles.tab, activeTab === 'COMPLETED' && [styles.tabActive, { backgroundColor: colors.active }], { borderColor: colors.border }]} 
           onPress={() => setActiveTab('COMPLETED')}
         >
-          <Text style={activeTab === 'COMPLETED' ? styles.tabActiveText : styles.tabText}>Completed</Text>
+          <Text style={activeTab === 'COMPLETED' ? [styles.tabActiveText, { color: colors.navBar }] : [styles.tabText, { color: colors.text }]}>Completed</Text>
         </TouchableOpacity>
         <TouchableOpacity 
-          style={[styles.tab, activeTab === 'ALL' && styles.tabActive]} 
+          style={[styles.tab, activeTab === 'ALL' && [styles.tabActive, { backgroundColor: colors.active }], { borderColor: colors.border }]} 
           onPress={() => setActiveTab('ALL')}
         >
-          <Text style={activeTab === 'ALL' ? styles.tabActiveText : styles.tabText}>All Goals</Text>
+          <Text style={activeTab === 'ALL' ? [styles.tabActiveText, { color: colors.navBar }] : [styles.tabText, { color: colors.text }]}>All Goals</Text>
         </TouchableOpacity>
       </View>
 
@@ -357,39 +355,39 @@ const Goals = ({ navigation }: any) => {
             return (
               <TouchableOpacity
                 key={goal.id}
-                style={styles.goalCard}
+                style={[styles.goalCard, { backgroundColor: colors.navBar, borderColor: colors.border }]}
                 onLongPress={() => openEditModal(goal)}
                 onPress={() => goal.status === 'ACTIVE' && openContributionModal(goal.id)}
                 activeOpacity={goal.status !== 'ACTIVE' ? 1 : 0.7}
               >
-                <Text style={styles.goalTitle}>{goal.title}</Text>
-                <Text style={styles.goalType}>{goal.goal_type}</Text>
-                <View style={styles.progressBarBg}>
-                  <View style={[styles.progressBarFill, { flex: progress }]} />
+                <Text style={[styles.goalTitle, { color: colors.text }]}>{goal.title}</Text>
+                <Text style={[styles.goalType, { color: colors.subText }]}>{goal.goal_type}</Text>
+                <View style={[styles.progressBarBg, { backgroundColor: colors.background }]}> 
+                  <View style={[styles.progressBarFill, { flex: progress, backgroundColor: colors.active }]} />
                   <View style={{ flex: 1 - progress }} />
                 </View>
-                <Text style={styles.goalValue}>
+                <Text style={[styles.goalValue, { color: colors.text }]}>
                   {goal.current_value}/{goal.target_value} {goal.unit}
                 </Text>
-                <Text style={styles.goalDate}>
+                <Text style={[styles.goalDate, { color: colors.subText }]}>
                   Deadline: {new Date(goal.target_date).toLocaleDateString()}
                 </Text>
                 {goal.status === 'COMPLETED' && (
-                  <Text style={styles.completedLabel}>Completed!</Text>
+                  <Text style={[styles.completedLabel, { color: colors.active }]}>Completed!</Text>
                 )}
               </TouchableOpacity>
             );
           })}
         </View>
       ) : (
-        <View style={styles.emptyBox}>
-          <Text style={styles.emptyTitle}>No {activeTab.toLowerCase()} goals found</Text>
-          <Text style={styles.emptyText}>
+        <View style={[styles.emptyBox, { backgroundColor: colors.navBar, borderColor: colors.border }]}> 
+          <Text style={[styles.emptyTitle, { color: colors.active }]}>No {activeTab.toLowerCase()} goals found</Text>
+          <Text style={[styles.emptyText, { color: colors.text }]}>
             You don't have any {activeTab.toLowerCase()} goals. Set a new fitness goal to start tracking your progress.
           </Text>
           {activeTab === 'ACTIVE' && (
-            <TouchableOpacity style={styles.setGoalButton2} onPress={openModal}>
-              <Text style={styles.setGoalButtonText}>Set New Goal</Text>
+            <TouchableOpacity style={[styles.setGoalButton2, { borderColor: colors.active }]} onPress={openModal}>
+              <Text style={[styles.setGoalButtonText, { color: colors.active }]}>Set New Goal</Text>
             </TouchableOpacity>
           )}
         </View>
@@ -402,62 +400,68 @@ const Goals = ({ navigation }: any) => {
         transparent={true}
         onRequestClose={closeModal}
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Set a New Goal</Text>
-            <Text style={styles.modalSubtitle}>Create a new fitness goal to track your progress</Text>
+        <View style={[styles.modalOverlay, { backgroundColor: isDark ? 'rgba(0,0,0,0.7)' : 'rgba(0,0,0,0.3)' }]}> 
+          <View style={[styles.modalContent, { backgroundColor: colors.background }]}> 
+            <Text style={[styles.modalTitle, { color: colors.mentionText }]}>Set a New Goal</Text>
+            <Text style={[styles.modalSubtitle, { color: colors.subText }]}>Create a new fitness goal to track your progress</Text>
             <TextInput
-              style={styles.input}
+              style={[styles.input, { borderColor: colors.border, backgroundColor: colors.navBar, color: colors.text }]}
               placeholder="Goal Title"
+              placeholderTextColor={colors.subText}
               value={goalTitle}
               onChangeText={setGoalTitle}
             />
             <TextInput
-              style={styles.input}
+              style={[styles.input, { borderColor: colors.border, backgroundColor: colors.navBar, color: colors.text }]}
               placeholder="Goal Description"
+              placeholderTextColor={colors.subText}
               value={goalDescription}
               onChangeText={setGoalDescription}
               multiline
             />
             <View style={styles.categorySelector}>
-              <Text style={styles.label}>Goal Type:</Text>
+              <Text style={[styles.label, { color: colors.text }]}>Goal Type:</Text>
               <View style={styles.categoryButtons}>
                 {GOAL_TYPE_OPTIONS.map((type) => (
-              <TouchableOpacity
+                  <TouchableOpacity
                     key={type}
                     style={[
                       styles.categoryButton,
-                      goalType === type && styles.categoryButtonActive
+                      { borderColor: colors.border },
+                      goalType === type && [styles.categoryButtonActive, { backgroundColor: colors.active }]
                     ]}
                     onPress={() => setGoalType(type)}
                   >
                     <Text style={[
                       styles.categoryButtonText,
-                      goalType === type && styles.categoryButtonTextActive
+                      { color: colors.text },
+                      goalType === type && [styles.categoryButtonTextActive, { color: colors.navBar }]
                     ]}>
                       {type.replace('_', ' ')}
-                </Text>
-              </TouchableOpacity>
+                    </Text>
+                  </TouchableOpacity>
                 ))}
               </View>
             </View>
-              <View style={{ flexDirection: 'row', gap: 8 }}>
-                <TextInput
-                  style={[styles.input, { flex: 1 }]}
-                  placeholder="Target Value"
-                  value={targetValue}
-                  onChangeText={setTargetValue}
-                  keyboardType="numeric"
-                />
-                <TextInput
-                  style={[styles.input, { flex: 1 }]}
+            <View style={{ flexDirection: 'row', gap: 8 }}>
+              <TextInput
+                style={[styles.input, { flex: 1, borderColor: colors.border, backgroundColor: colors.navBar, color: colors.text }]}
+                placeholder="Target Value"
+                placeholderTextColor={colors.subText}
+                value={targetValue}
+                onChangeText={setTargetValue}
+                keyboardType="numeric"
+              />
+              <TextInput
+                style={[styles.input, { flex: 1, borderColor: colors.border, backgroundColor: colors.navBar, color: colors.text }]}
                 placeholder="Unit (e.g., km, kg, reps)"
-                  value={unit}
-                  onChangeText={setUnit}
-                />
-              </View>
-            <TouchableOpacity style={styles.input} onPress={() => setShowDatePicker(true)}>
-              <Text style={{ color: date ? '#000' : '#aaa' }}>
+                placeholderTextColor={colors.subText}
+                value={unit}
+                onChangeText={setUnit}
+              />
+            </View>
+            <TouchableOpacity style={[styles.input, { borderColor: colors.border, backgroundColor: colors.navBar }]} onPress={() => setShowDatePicker(true)}>
+              <Text style={{ color: colors.text }}>
                 {date ? date.toLocaleDateString() : 'Target Date'}
               </Text>
             </TouchableOpacity>
@@ -470,11 +474,11 @@ const Goals = ({ navigation }: any) => {
               />
             )}
             <View style={{ flexDirection: 'row', justifyContent: 'flex-end', marginTop: 16 }}>
-              <TouchableOpacity onPress={closeModal} style={[styles.modalButton, { marginRight: 8 }]}> 
-                <Text style={{ color: '#800000' }}>Cancel</Text>
+              <TouchableOpacity onPress={closeModal} style={[styles.modalButton, { marginRight: 8, borderColor: colors.border, borderWidth: 1 }]}> 
+                <Text style={{ color: colors.mentionText }}>Cancel</Text>
               </TouchableOpacity>
-              <TouchableOpacity onPress={handleCreateGoal} style={[styles.modalButton, { backgroundColor: '#800000' }]}> 
-                <Text style={{ color: '#fff' }}>Create Goal</Text>
+              <TouchableOpacity onPress={handleCreateGoal} style={[styles.modalButton, { backgroundColor: colors.active }]}> 
+                <Text style={{ color: colors.navBar }}>Create Goal</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -488,9 +492,9 @@ const Goals = ({ navigation }: any) => {
         transparent={true}
         onRequestClose={closeContributionModal}
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Update Progress</Text>
+        <View style={[styles.modalOverlay, { backgroundColor: isDark ? 'rgba(0,0,0,0.7)' : 'rgba(0,0,0,0.3)' }]}> 
+          <View style={[styles.modalContent, { backgroundColor: colors.background }]}> 
+            <Text style={[styles.modalTitle, { color: colors.mentionText }]}>Update Progress</Text>
             {(() => {
               if (contributionModal.goalId === null) return null;
               const goal = goals.find(g => g.id === contributionModal.goalId);
@@ -498,25 +502,25 @@ const Goals = ({ navigation }: any) => {
 
               return (
                 <>
-                  <Text style={styles.modalSubtitle}>{goal.title}</Text>
+                  <Text style={[styles.modalSubtitle, { color: colors.subText }]}>{goal.title}</Text>
                 <TextInput
-                  style={styles.input}
-                    placeholder="Enter current value"
+                  style={[styles.input, { borderColor: colors.border, backgroundColor: colors.navBar, color: colors.text }]}
+                  placeholder="Enter current value"
                   value={contributionValue}
                   onChangeText={setContributionValue}
                   keyboardType="numeric"
-                    editable={goal.status === 'ACTIVE'}
-                  />
+                  editable={goal.status === 'ACTIVE'}
+                />
                   <View style={{ flexDirection: 'row', justifyContent: 'flex-end', marginTop: 16 }}>
-                    <TouchableOpacity onPress={closeContributionModal} style={[styles.modalButton, { marginRight: 8 }]}> 
-                      <Text style={{ color: '#800000' }}>Cancel</Text>
+                    <TouchableOpacity onPress={closeContributionModal} style={[styles.modalButton, { marginRight: 8, borderColor: colors.border, borderWidth: 1 }]}> 
+                      <Text style={{ color: colors.mentionText }}>Cancel</Text>
                     </TouchableOpacity>
                     <TouchableOpacity
                       onPress={handleUpdateProgress}
-                      style={[styles.modalButton, { backgroundColor: '#800000' }]}
+                      style={[styles.modalButton, { backgroundColor: colors.active }]}
                       disabled={goal.status !== 'ACTIVE'}
                     >
-                      <Text style={{ color: '#fff' }}>Update</Text>
+                      <Text style={{ color: colors.navBar }}>Update</Text>
                     </TouchableOpacity>
                   </View>
                   {goal.status !== 'ACTIVE' && (
@@ -538,38 +542,40 @@ const Goals = ({ navigation }: any) => {
         transparent={true}
         onRequestClose={closeEditModal}
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Edit Goal</Text>
-            <Text style={styles.modalSubtitle}>Update your fitness goal details</Text>
+        <View style={[styles.modalOverlay, { backgroundColor: isDark ? 'rgba(0,0,0,0.7)' : 'rgba(0,0,0,0.3)' }]}> 
+          <View style={[styles.modalContent, { backgroundColor: colors.background }]}> 
+            <Text style={[styles.modalTitle, { color: colors.mentionText }]}>Edit Goal</Text>
+            <Text style={[styles.modalSubtitle, { color: colors.subText }]}>Update your fitness goal details</Text>
             <TextInput
-              style={styles.input}
+              style={[styles.input, { borderColor: colors.border, backgroundColor: colors.navBar, color: colors.text }]}
               placeholder="Goal Title"
               value={editTitle}
               onChangeText={setEditTitle}
             />
             <TextInput
-              style={styles.input}
+              style={[styles.input, { borderColor: colors.border, backgroundColor: colors.navBar, color: colors.text }]}
               placeholder="Goal Description"
               value={editDescription}
               onChangeText={setEditDescription}
               multiline
             />
             <View style={styles.categorySelector}>
-              <Text style={styles.label}>Goal Type:</Text>
+              <Text style={[styles.label, { color: colors.text }]}>Goal Type:</Text>
               <View style={styles.categoryButtons}>
                 {GOAL_TYPE_OPTIONS.map((type) => (
                   <TouchableOpacity
                     key={type}
                     style={[
                       styles.categoryButton,
-                      editGoalType === type && styles.categoryButtonActive
+                      { borderColor: colors.border },
+                      editGoalType === type && [styles.categoryButtonActive, { backgroundColor: colors.active }]
                     ]}
                     onPress={() => setEditGoalType(type)}
                   >
                     <Text style={[
                       styles.categoryButtonText,
-                      editGoalType === type && styles.categoryButtonTextActive
+                      { color: colors.text },
+                      editGoalType === type && [styles.categoryButtonTextActive, { color: colors.navBar }]
                     ]}>
                       {type.replace('_', ' ')}
                     </Text>
@@ -579,21 +585,21 @@ const Goals = ({ navigation }: any) => {
             </View>
             <View style={{ flexDirection: 'row', gap: 8 }}>
               <TextInput
-                style={[styles.input, { flex: 1 }]}
+                style={[styles.input, { flex: 1, borderColor: colors.border, backgroundColor: colors.navBar, color: colors.text }]}
                 placeholder="Target Value"
                 value={editTargetValue}
                 onChangeText={setEditTargetValue}
                 keyboardType="numeric"
               />
               <TextInput
-                style={[styles.input, { flex: 1 }]}
+                style={[styles.input, { flex: 1, borderColor: colors.border, backgroundColor: colors.navBar, color: colors.text }]}
                 placeholder="Unit (e.g., km, kg, reps)"
                 value={editUnit}
                 onChangeText={setEditUnit}
               />
             </View>
-            <TouchableOpacity style={styles.input} onPress={() => setEditShowDatePicker(true)}>
-              <Text style={{ color: editDate ? '#000' : '#aaa' }}>
+            <TouchableOpacity style={[styles.input, { borderColor: colors.border, backgroundColor: colors.navBar }]} onPress={() => setEditShowDatePicker(true)}>
+              <Text style={{ color: colors.text }}>
                 {editDate ? editDate.toLocaleDateString() : 'Target Date'}
               </Text>
             </TouchableOpacity>
@@ -606,37 +612,24 @@ const Goals = ({ navigation }: any) => {
               />
             )}
             <View style={{ flexDirection: 'row', justifyContent: 'flex-end', marginTop: 16 }}>
-              <TouchableOpacity onPress={closeEditModal} style={[styles.modalButton, { marginRight: 8 }]}> 
-                <Text style={{ color: '#800000' }}>Cancel</Text>
+              <TouchableOpacity onPress={closeEditModal} style={[styles.modalButton, { marginRight: 8, borderColor: colors.border, borderWidth: 1 }]}> 
+                <Text style={{ color: colors.mentionText }}>Cancel</Text>
               </TouchableOpacity>
-              <TouchableOpacity onPress={handleUpdateGoal} style={[styles.modalButton, { backgroundColor: '#800000' }]}> 
-                <Text style={{ color: '#fff' }}>Save</Text>
-                </TouchableOpacity>
+              <TouchableOpacity onPress={handleUpdateGoal} style={[styles.modalButton, { backgroundColor: colors.active }]}> 
+                <Text style={{ color: colors.navBar }}>Save</Text>
+              </TouchableOpacity>
             </View>
           </View>
         </View>
       </Modal>
-
-      <View style={styles.goalStatistics}>
-        <Text style={styles.goalStatisticsTitle}>Goal Statistics</Text>
-        <Text style={styles.goalStatisticsStat}>Completed Goals: {goals.filter(g => g.status === 'COMPLETED').length}</Text>
-        <Text style={styles.goalStatisticsStat}>Active Goals: {goals.filter(g => g.status === 'ACTIVE').length}</Text>
-        <Text style={styles.goalStatisticsLabel}>Overall Progress</Text>
-        {Platform.OS === 'android' ? (
-          <ProgressBarAndroid styleAttr="Horizontal" indeterminate={false} progress={progress} color="#800000" style={styles.goalStatisticsProgressBar} />
-        ) : (
-          <ProgressViewIOS progress={progress} progressTintColor="#800000" style={styles.goalStatisticsProgressBar} />
-        )}
-        <Text style={styles.goalStatisticsMotivation}>Keep pushing! You're almost there!</Text>
-      </View>
     </ScrollView>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { flexGrow: 1, backgroundColor: '#f7f7f7', padding: 16 },
-  title: { fontSize: 28, fontWeight: 'bold', color: '#800000', marginBottom: 4 },
-  subtitle: { fontSize: 16, color: '#800000', marginBottom: 16 },
+  container: { flexGrow: 1, padding: 16 },
+  title: { fontSize: 28, fontWeight: 'bold', marginBottom: 4 },
+  subtitle: { fontSize: 16, marginBottom: 16 },
   setGoalButton: { alignSelf: 'flex-end', borderWidth: 1, borderColor: '#800000', borderRadius: 8, paddingHorizontal: 16, paddingVertical: 8, marginBottom: 16 },
   setGoalButtonText: { color: '#800000', fontWeight: 'bold', fontSize: 16 },
   statsRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 16 },
@@ -694,19 +687,6 @@ const styles = StyleSheet.create({
   categoryButtonTextActive: {
     color: '#fff',
   },
-  goalStatistics: {
-    marginTop: 24,
-    padding: 16,
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#800000',
-  },
-  goalStatisticsTitle: { fontSize: 22, fontWeight: 'bold', color: '#800000', marginBottom: 8 },
-  goalStatisticsStat: { fontSize: 18, marginBottom: 8 },
-  goalStatisticsLabel: { fontSize: 16, marginTop: 16, marginBottom: 8 },
-  goalStatisticsProgressBar: { width: 220, height: 16, marginBottom: 16 },
-  goalStatisticsMotivation: { fontSize: 16, color: '#800000', marginTop: 16, textAlign: 'center' },
 });
 
 export default Goals; 
