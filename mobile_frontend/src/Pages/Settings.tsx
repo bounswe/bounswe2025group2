@@ -121,7 +121,7 @@ const Settings = () => {
         style={[styles.settingItem, { borderBottomColor: colors.border }]}
         onPress={handleLogout}
       >
-        <CustomText style={[styles.settingText, { color: '#000000' }]}>Log Out</CustomText>
+        <CustomText style={[styles.settingText, { color: colors.text }]}>Log Out</CustomText>
       </TouchableOpacity>
     </View>
   );

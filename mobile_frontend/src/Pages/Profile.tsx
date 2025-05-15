@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, Image, StyleSheet, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 // @ts-ignore: If types are missing, install @types/react-native-image-picker or ignore for now
 import { launchImageLibrary } from 'react-native-image-picker';
 import Cookies from '@react-native-cookies/cookies';
@@ -26,6 +27,7 @@ interface Goal {
 const Profile = () => {
   const navigation = useNavigation();
   const { getAuthHeader } = useAuth();
+  const { colors, isDark } = useTheme();
   const [profileImage, setProfileImage] = useState<string | null>(null);
   const [username, setUsername] = useState('');
   const [name, setName] = useState('');
@@ -177,63 +179,63 @@ const Profile = () => {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Header with Back Button */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Text style={styles.backButtonText}>{'←'}</Text>
+          <Text style={[styles.backButtonText, { color: colors.text }]}>{'←'}</Text>
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Profile</Text>
+        <Text style={[styles.headerTitle, { color: colors.text }]}>Profile</Text>
       </View>
 
       {/* Avatar and User Info */}
       {loading ? (
-        <ActivityIndicator size="large" color="#800000" style={{ marginVertical: 24 }} />
+        <ActivityIndicator size="large" color={colors.mentionText} style={{ marginVertical: 24 }} />
       ) : (
         <TouchableOpacity onPress={handleProfileImagePress} activeOpacity={0.7}>
           {profileImage && !profileImage.endsWith('default.png') ? (
             <Image
               source={{ uri: profileImage }}
-              style={styles.avatar}
+              style={[styles.avatar, { borderColor: colors.border }]}
             />
           ) : username ? (
-            <View style={[styles.avatar, styles.fallbackCircle]}> 
+            <View style={[styles.avatar, styles.fallbackCircle, { backgroundColor: colors.active }]}> 
               <Text style={styles.fallbackText}>{username[0]?.toUpperCase() || '?'}</Text>
             </View>
           ) : (
-            <View style={[styles.avatar, styles.fallbackCircle]}> 
+            <View style={[styles.avatar, styles.fallbackCircle, { backgroundColor: colors.active }]}> 
               <Text style={styles.fallbackText}>?</Text>
             </View>
           )}
         </TouchableOpacity>
       )}
-      <Text style={styles.name}>{name || username}</Text>
-      <Text style={styles.email}>{email}</Text>
-      <Text style={styles.bio}>{bio}</Text>
+      <Text style={[styles.name, { color: isDark ? colors.mentionText : colors.text }]}>{name || username}</Text>
+      <Text style={[styles.email, { color: colors.subText }]}>{email}</Text>
+      <Text style={[styles.bio, { color: colors.text }]}>{bio}</Text>
 
       {/* Goal Statistics Card */}
-      <View style={styles.statsCard}>
-        <Text style={styles.statsTitle}>Goal Statistics</Text>
+      <View style={[styles.statsCard, { backgroundColor: colors.navBar, shadowColor: colors.text }]}>
+        <Text style={[styles.statsTitle, { color: colors.text }]}>Goal Statistics</Text>
         {goalsLoading ? (
-          <ActivityIndicator size="small" color="#800000" style={{ marginVertical: 16 }} />
+          <ActivityIndicator size="small" color={colors.mentionText} style={{ marginVertical: 16 }} />
         ) : (
           <>
             <View style={styles.statsRow}>
               <View style={styles.statBox}>
-                <Text style={styles.statLabel}>Completed</Text>
-                <Text style={styles.statValue}>{completedCount}</Text>
+                <Text style={[styles.statLabel, { color: colors.subText }]}>Completed</Text>
+                <Text style={[styles.statValue, { color: colors.text }]}>{completedCount}</Text>
               </View>
               <View style={styles.statBox}>
-                <Text style={styles.statLabel}>Active</Text>
-                <Text style={styles.statValue}>{activeCount}</Text>
+                <Text style={[styles.statLabel, { color: colors.subText }]}>Active</Text>
+                <Text style={[styles.statValue, { color: colors.text }]}>{activeCount}</Text>
               </View>
             </View>
-            <Text style={styles.progressLabel}>Overall Progress</Text>
-            <View style={styles.progressBarBackground}>
-              <View style={[styles.progressBarFill, { flex: progress }]} />
+            <Text style={[styles.progressLabel, { color: colors.subText }]}>Overall Progress</Text>
+            <View style={[styles.progressBarBackground, { backgroundColor: colors.background }]}>
+              <View style={[styles.progressBarFill, { flex: progress, backgroundColor: colors.active }]} />
               <View style={{ flex: 1 - progress }} />
             </View>
-            <Text style={styles.motivation}>Keep pushing! You're almost there!</Text>
+            <Text style={[styles.motivation, { color: colors.mentionText }]}>Keep pushing! You're almost there!</Text>
           </>
         )}
       </View>

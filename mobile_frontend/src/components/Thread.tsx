@@ -17,7 +17,7 @@ type ThreadProps = {
 };
 
 const Thread = ({ forumName, content, imageUrl, profilePic, username, threadId, likeCount = 0, commentCount = 0 }: ThreadProps) => {
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const { getAuthHeader } = useAuth();
   const [vote, setVote] = useState<null | 'UPVOTE' | 'DOWNVOTE'>(null);
   const [likes, setLikes] = useState(likeCount);
@@ -267,7 +267,7 @@ const Thread = ({ forumName, content, imageUrl, profilePic, username, threadId, 
           <CustomText style={{ color: colors.subText, fontStyle: 'italic' }}>No comments yet.</CustomText>
         ) : (
           commentList.map((c, idx) => (
-            <View key={c.id || idx} style={{ marginBottom: 4, padding: 6, backgroundColor: '#f7f7f7', borderRadius: 6 }}>
+            <View key={c.id || idx} style={{ marginBottom: 4, padding: 6, backgroundColor: isDark ? '#555555' : '#f7f7f7', borderRadius: 6 }}>
               <CustomText style={{ fontWeight: 'bold', color: colors.mentionText }}>@{c.author_username || c.author || 'user'}</CustomText>
               <CustomText style={{ color: colors.text }}>{c.content}</CustomText>
             </View>
@@ -277,7 +277,7 @@ const Thread = ({ forumName, content, imageUrl, profilePic, username, threadId, 
       {/* Comment input */}
       <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
         <TextInput
-          style={{ flex: 1, borderWidth: 1, borderColor: colors.border, borderRadius: 8, padding: 8, color: colors.text, backgroundColor: '#fff' }}
+          style={{ flex: 1, borderWidth: 1, borderColor: colors.border, borderRadius: 8, padding: 8, color: isDark ? '#333333' : colors.text, backgroundColor: '#fff' }}
           placeholder="Add a comment..."
           placeholderTextColor={colors.subText}
           value={commentText}
