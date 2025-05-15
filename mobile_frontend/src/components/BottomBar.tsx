@@ -82,7 +82,7 @@ const BottomBar = ({ state, navigation }: BottomTabBarProps) => {
         <GoalsIcon 
           width={32} 
           height={32} 
-          fill={isActiveRoute('Goals') ? colors.active : colors.passive} 
+          color={isActiveRoute('Goals') ? colors.active : colors.passive} 
         />
         <CustomText 
           style={[
@@ -100,7 +100,7 @@ const BottomBar = ({ state, navigation }: BottomTabBarProps) => {
         <NotificationsIcon 
           width={32} 
           height={32} 
-          fill={isActiveRoute('Notifications') ? colors.active : colors.passive} 
+          color={isActiveRoute('Notifications') ? colors.active : colors.passive} 
         />
         <CustomText 
           style={[

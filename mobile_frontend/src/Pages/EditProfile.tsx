@@ -4,10 +4,12 @@ import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../context/AuthContext';
 import Toast from 'react-native-toast-message';
 import Cookies from '@react-native-cookies/cookies';
+import { useTheme } from '../context/ThemeContext';
 
 const EditProfile = () => {
   const navigation = useNavigation();
   const { getAuthHeader } = useAuth();
+  const { colors, isDark } = useTheme();
   const [name, setName] = useState('');
   const [surname, setSurname] = useState('');
   const [bio, setBio] = useState('');
@@ -87,41 +89,46 @@ const EditProfile = () => {
   };
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.title}>Edit Profile</Text>
+    <ScrollView contentContainerStyle={[styles.container, { backgroundColor: colors.background }]}>
+      <Text style={[styles.title, { color: isDark ? colors.mentionText : colors.text }]}>Edit Profile</Text>
       <TextInput
-        style={styles.input}
+        style={[styles.input, { borderColor: colors.border, backgroundColor: colors.navBar, color: colors.text }]}
         placeholder="Name"
+        placeholderTextColor={colors.subText}
         value={name}
         onChangeText={setName}
       />
       <TextInput
-        style={styles.input}
+        style={[styles.input, { borderColor: colors.border, backgroundColor: colors.navBar, color: colors.text }]}
         placeholder="Surname"
+        placeholderTextColor={colors.subText}
         value={surname}
         onChangeText={setSurname}
       />
       <TextInput
-        style={styles.input}
+        style={[styles.input, { borderColor: colors.border, backgroundColor: colors.navBar, color: colors.text }]}
         placeholder="Bio"
+        placeholderTextColor={colors.subText}
         value={bio}
         onChangeText={setBio}
         multiline
       />
       <TextInput
-        style={styles.input}
+        style={[styles.input, { borderColor: colors.border, backgroundColor: colors.navBar, color: colors.text }]}
         placeholder="Location"
+        placeholderTextColor={colors.subText}
         value={location}
         onChangeText={setLocation}
       />
       <TextInput
-        style={styles.input}
+        style={[styles.input, { borderColor: colors.border, backgroundColor: colors.navBar, color: colors.text }]}
         placeholder="Birth Date (YYYY-MM-DD)"
+        placeholderTextColor={colors.subText}
         value={birthDate}
         onChangeText={setBirthDate}
       />
-      <TouchableOpacity style={styles.saveButton} onPress={handleSave} disabled={loading}>
-        <Text style={styles.saveButtonText}>{loading ? 'Saving...' : 'Save'}</Text>
+      <TouchableOpacity style={[styles.saveButton, { backgroundColor: colors.mentionText }]} onPress={handleSave} disabled={loading}>
+        <Text style={[styles.saveButtonText, { color: colors.navBar }]}>{loading ? 'Saving...' : 'Save'}</Text>
       </TouchableOpacity>
     </ScrollView>
   );
