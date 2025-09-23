@@ -1,0 +1,17 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15
+    container_name: group2_standalone
+    environment:
+      POSTGRES_DB: group2db
+      POSTGRES_USER: group2
+      POSTGRES_PASSWORD: group2
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:
