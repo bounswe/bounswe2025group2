@@ -1,5 +1,6 @@
 # BOUNSWE2025 Group 2  
-![CMPE352 Group2 Banner](https://github.com/user-attachments/assets/c3e1d7b3-dce5-4667-b2ea-b8f0dfca5b09)
+![CMPE352 Group2 Banner](https://github.com/user-attachments/assets/b3aabda0-598b-476b-8fe1-940e3cce8162)
+
 
 Welcome to our project repository! We are **BOUNSWE2025 Group 2**, and we are working on developing a fitness-themed platform as a team.
 Please visit our **[wiki page](https://github.com/bounswe/bounswe2025group2/wiki)** to reach the details of the project.
