@@ -35,6 +35,7 @@ Our brief project description is:
   - [Talha Başıbüyük](https://github.com/bounswe/bounswe2025group2/wiki/Talha-Ba%C5%9F%C4%B1b%C3%BCy%C3%BCk)
   - [Volkan Bora Seki](https://github.com/bounswe/bounswe2025group2/wiki/Volkan-Bora-Seki)
   - [Yusuf Akdoğan](https://github.com/bounswe/bounswe2025group2/wiki/Yusuf-Akdo%C4%9Fan-Self-Introduction)
+  - [Abdullah Umut Hamzaoğulları](https://github.com/bounswe/bounswe2025group2/wiki/Abdullah-Umut-Hamzao%C4%9Fullar%C4%B1)
 
 ## Docker Compose Setup and Usage
 
