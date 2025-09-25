@@ -22,6 +22,17 @@ def register(request):
     if serializer.is_valid():
         user = serializer.save()
         
+        # Automatically log in the user after registration
+        login(request, user)
+        
+        # Handle remember me functionality if provided
+        remember_me = serializer.validated_data.get('remember_me', False)
+        if remember_me:
+            # Session will last for 2 weeks (same as SESSION_COOKIE_AGE)
+            request.session.set_expiry(1209600)
+        else:
+            request.session.set_expiry(0)  # Session expires when browser closes
+        
         # Generate verification token
         token = default_token_generator.make_token(user)
         uid = urlsafe_base64_encode(force_bytes(user.pk))
@@ -43,7 +54,7 @@ def register(request):
             pass
         
         return Response({
-            'message': 'Registration successful. Please check your email to verify your account.',
+            'message': 'Registration successful and logged in.',
             'user_id': user.pk
         }, status=status.HTTP_201_CREATED)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

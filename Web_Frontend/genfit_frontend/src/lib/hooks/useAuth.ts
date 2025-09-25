@@ -1,0 +1,106 @@
+/**
+ * Authentication Hooks for GenFit Frontend
+ * React hooks for managing authentication state and operations
+ */
+
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import AuthService from '../auth/authService';
+import { createQueryKey } from '../query/queryClient';
+import type { LoginCredentials, RegisterData } from '../types/api';
+
+/**
+ * Hook to get current user data
+ */
+export function useUser() {
+  return useQuery({
+    queryKey: createQueryKey('/api/user/'),
+    queryFn: () => AuthService.getCurrentUser(),
+    retry: false, // Don't retry on auth failures
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+}
+
+/**
+ * Hook to check if user is authenticated
+ */
+export function useIsAuthenticated() {
+  const { data: user, isLoading, error } = useUser();
+  // If we have user data and no error, user is authenticated
+  const isAuthenticated = !!(user && !error);
+  
+  return {
+    isAuthenticated,
+    isLoading,
+    user,
+  };
+}
+
+/**
+ * Hook for login mutation
+ */
+export function useLogin() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: (credentials: LoginCredentials) => AuthService.login(credentials),
+    onSuccess: () => {
+      // Login endpoint only returns success message, not user data
+      // Invalidate user query to trigger refetch of user data
+      queryClient.invalidateQueries({ queryKey: createQueryKey('/api/user/') });
+      
+      // Invalidate other queries that might depend on auth state
+      queryClient.invalidateQueries({ queryKey: ['/api/'] });
+    },
+    onError: (error) => {
+      console.error('Login failed:', error);
+    },
+  });
+}
+
+/**
+ * Hook for register mutation
+ */
+export function useRegister() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: (data: RegisterData) => AuthService.register(data),
+    onSuccess: () => {
+      // Registration endpoint returns success message, not user data
+      // Invalidate user query to trigger refetch of user data
+      queryClient.invalidateQueries({ queryKey: createQueryKey('/api/user/') });
+      
+      // Invalidate other queries that might depend on auth state
+      queryClient.invalidateQueries({ queryKey: ['/api/'] });
+    },
+    onError: (error) => {
+      console.error('Registration failed:', error);
+    },
+  });
+}
+
+/**
+ * Hook for logout mutation
+ */
+export function useLogout() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: () => AuthService.logout(),
+    onSuccess: () => {
+      // Clear user data from cache
+      queryClient.setQueryData(createQueryKey('/api/user/'), null);
+      
+      // Clear all cached data on logout
+      queryClient.clear();
+    },
+    onError: (error) => {
+      console.error('Logout failed:', error);
+      
+      // Even if logout fails on server, clear local cache
+      queryClient.setQueryData(createQueryKey('/api/user/'), null);
+      queryClient.clear();
+    },
+  });
+}
+
