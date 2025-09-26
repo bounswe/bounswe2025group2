@@ -5,7 +5,6 @@ import { QueryClientProvider } from '@tanstack/react-query';
 import { queryClient } from './lib';
 import HomePage from "./pages/home/HomePage";
 import AuthPage from "./pages/auth/AuthPage";
-import { AuthExample } from './examples/AuthExample';
 import './global.css';
 
 
@@ -17,7 +16,6 @@ function App() {
           <Route path="/" element={<HomePage />} />
           <Route path="/home" element={<HomePage />} />
           <Route path="/auth" element={<AuthPage />} />
-          <Route path="/example" element={<AuthExample />} />
         </Routes>
       </Router>
     </QueryClientProvider>

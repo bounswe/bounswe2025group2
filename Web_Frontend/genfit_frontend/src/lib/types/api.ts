@@ -52,6 +52,51 @@ export interface User {
   is_verified_coach: boolean;
 }
 
+// Goal Types
+export interface Goal {
+  id: number;
+  title: string;
+  description: string;
+  user: number;
+  goal_type: string;
+  target_value: number;
+  current_value: number;
+  unit: string;
+  start_date: string;
+  target_date: string;
+  status: string;
+  last_updated: string;
+}
+
+// Challenge Types
+export interface Challenge {
+  id: string;
+  title: string;
+  description: string;
+  start_date: string;
+  end_date: string;
+  target_value: number;
+  challenge_type: string;
+  unit: string;
+  status: string;
+  participants: Array<{
+    user: string;
+    current_value: number;
+  }>;
+}
+
+// Forum Thread Types
+export interface ForumThread {
+  id: number;
+  title: string;
+  author: string;
+  comment_count: number;
+  created_at: string;
+  forum: string;
+  like_count: number;
+  view_count: number;
+}
+
 // Configuration
 export interface ApiConfig {
   baseUrl: string;
