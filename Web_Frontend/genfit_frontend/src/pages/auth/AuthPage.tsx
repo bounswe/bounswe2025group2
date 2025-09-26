@@ -72,132 +72,141 @@ function AuthPage() {
 
   return (
     <div className="auth-container">
-      <div className="auth-card">
-        <div className="auth-header">
-          <h1 className="auth-title">GenFit</h1>
-          <p className="auth-subtitle">
-            {isLogin ? 'Welcome back!' : 'Join the fitness community'}
-          </p>
+      {/* Left section - Logo (2/3 of the page) */}
+      <div className="auth-logo-section">
+        <div className="logo-content">
+          <h1 className="main-logo">GenFit</h1>
+          <p className="logo-tagline">Transform Your Fitness Journey</p>
+          <div className="auth-features">
+            <h3>Why GenFit?</h3>
+            <ul>
+              <li>•  Set and track fitness goals</li>
+              <li>•  Join challenges and compete</li>
+              <li>•  Connect with fitness community</li>
+              <li>•  Monitor your progress</li>
+            </ul>
+          </div>
         </div>
+      </div>
 
-        <div className="auth-tabs">
-          <button
-            className={`auth-tab ${isLogin ? 'active' : ''}`}
-            onClick={() => setIsLogin(true)}
-          >
-            Login
-          </button>
-          <button
-            className={`auth-tab ${!isLogin ? 'active' : ''}`}
-            onClick={() => setIsLogin(false)}
-          >
-            Register
-          </button>
-        </div>
-
-        <form onSubmit={handleSubmit} className="auth-form">
-          {error && <div className="auth-error">{error}</div>}
-
-          <div className="form-group">
-            <label htmlFor="username">Username</label>
-            <input
-              type="text"
-              id="username"
-              name="username"
-              value={formData.username}
-              onChange={handleInputChange}
-              required
-              disabled={isLoading}
-            />
+      {/* Right section - Auth Form (1/3 of the page) */}
+      <div className="auth-form-section">
+        <div className="auth-card">
+          <div className="auth-header">
+            <h2 className="auth-title">
+              {isLogin ? 'Welcome back!' : 'Join the fitness community'}
+            </h2>
           </div>
 
-          {!isLogin && (
-            <>
-              <div className="form-group">
-                <label htmlFor="email">Email</label>
-                <input
-                  type="email"
-                  id="email"
-                  name="email"
-                  value={formData.email}
-                  onChange={handleInputChange}
-                  required
-                  disabled={isLoading}
-                />
-              </div>
+          <div className="auth-tabs">
+            <button
+              className={`auth-tab ${isLogin ? 'active' : ''}`}
+              onClick={() => setIsLogin(true)}
+            >
+              Login
+            </button>
+            <button
+              className={`auth-tab ${!isLogin ? 'active' : ''}`}
+              onClick={() => setIsLogin(false)}
+            >
+              Register
+            </button>
+          </div>
 
-              <div className="form-group">
-                <label htmlFor="user_type">Account Type</label>
-                <select
-                  id="user_type"
-                  name="user_type"
-                  value={formData.user_type}
-                  onChange={handleInputChange}
-                  required
-                  disabled={isLoading}
-                >
-                  <option value="User">User</option>
-                  <option value="Coach">Coach</option>
-                </select>
-              </div>
+          <form onSubmit={handleSubmit} className="auth-form">
+            {error && <div className="auth-error">{error}</div>}
 
-              <div className="form-row">
+            <div className="form-group">
+              <label htmlFor="username">Username</label>
+              <input
+                type="text"
+                id="username"
+                name="username"
+                value={formData.username}
+                onChange={handleInputChange}
+                required
+                disabled={isLoading}
+              />
+            </div>
+
+            {!isLogin && (
+              <>
                 <div className="form-group">
-                  <label htmlFor="first_name">First Name</label>
+                  <label htmlFor="email">Email</label>
                   <input
-                    type="text"
-                    id="first_name"
-                    name="first_name"
-                    value={formData.first_name}
+                    type="email"
+                    id="email"
+                    name="email"
+                    value={formData.email}
                     onChange={handleInputChange}
+                    required
                     disabled={isLoading}
                   />
                 </div>
+
                 <div className="form-group">
-                  <label htmlFor="last_name">Last Name</label>
-                  <input
-                    type="text"
-                    id="last_name"
-                    name="last_name"
-                    value={formData.last_name}
+                  <label htmlFor="user_type">Account Type</label>
+                  <select
+                    id="user_type"
+                    name="user_type"
+                    value={formData.user_type}
                     onChange={handleInputChange}
+                    required
                     disabled={isLoading}
-                  />
+                  >
+                    <option value="User">User</option>
+                    <option value="Coach">Coach</option>
+                  </select>
                 </div>
-              </div>
-            </>
-          )}
 
-          <div className="form-group">
-            <label htmlFor="password">Password</label>
-            <input
-              type="password"
-              id="password"
-              name="password"
-              value={formData.password}
-              onChange={handleInputChange}
-              required
+                <div className="form-row">
+                  <div className="form-group">
+                    <label htmlFor="first_name">First Name</label>
+                    <input
+                      type="text"
+                      id="first_name"
+                      name="first_name"
+                      value={formData.first_name}
+                      onChange={handleInputChange}
+                      disabled={isLoading}
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label htmlFor="last_name">Last Name</label>
+                    <input
+                      type="text"
+                      id="last_name"
+                      name="last_name"
+                      value={formData.last_name}
+                      onChange={handleInputChange}
+                      disabled={isLoading}
+                    />
+                  </div>
+                </div>
+              </>
+            )}
+
+            <div className="form-group">
+              <label htmlFor="password">Password</label>
+              <input
+                type="password"
+                id="password"
+                name="password"
+                value={formData.password}
+                onChange={handleInputChange}
+                required
+                disabled={isLoading}
+              />
+            </div>
+
+            <button
+              type="submit"
+              className="auth-submit"
               disabled={isLoading}
-            />
-          </div>
-
-          <button
-            type="submit"
-            className="auth-submit"
-            disabled={isLoading}
-          >
-            {isLoading ? 'Loading...' : (isLogin ? 'Login' : 'Register')}
-          </button>
-        </form>
-
-        <div className="auth-features">
-          <h3>Why GenFit?</h3>
-          <ul>
-            <li>🎯 Set and track fitness goals</li>
-            <li>🏆 Join challenges and compete</li>
-            <li>👥 Connect with fitness community</li>
-            <li>📊 Monitor your progress</li>
-          </ul>
+            >
+              {isLoading ? 'Loading...' : (isLogin ? 'Login' : 'Register')}
+            </button>
+          </form>
         </div>
       </div>
     </div>
