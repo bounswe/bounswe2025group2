@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { useIsAuthenticated, useGoals, useChallenges, useForumThreads, useUserStats } from '../../lib';
+import {useIsAuthenticated, useGoals, useChallenges, useForumThreads, useUserStats, useDailyQuote} from '../../lib';
 import { Layout } from '../../components';
 import './home_page.css';
 
@@ -11,6 +11,7 @@ function HomePage() {
   const { data: goals = [], isLoading: goalsLoading, error: goalsError } = useGoals();
   const { data: challenges = [], isLoading: challengesLoading, error: challengesError } = useChallenges();
   const { data: threads = [], isLoading: threadsLoading, error: threadsError } = useForumThreads();
+    const { data: dailyQuote, error: quoteError } = useDailyQuote();
   const stats = useUserStats();
 
   // Redirect to auth if not authenticated
@@ -74,6 +75,16 @@ function HomePage() {
   return (
     <Layout onSearch={handleSearch}>
       <div className="home-content">
+        {/* Daily Quote Section */}
+        {dailyQuote && !quoteError && (
+          <section className="quote-section">
+            <blockquote className="quote-text">
+              “{dailyQuote.text}”
+            </blockquote>
+            <cite className="quote-author">— {dailyQuote.author}</cite>
+          </section>
+        )}
+
         {/* Quick Stats */}
         <section className="stats-section">
           <h2>Your Stats</h2>
@@ -85,14 +96,6 @@ function HomePage() {
             <div className="stat-card">
               <div className="stat-number">{stats.completedChallenges}</div>
               <div className="stat-label">Completed Challenges</div>
-            </div>
-            <div className="stat-card">
-              <div className="stat-number">{stats.daysActive}</div>
-              <div className="stat-label">Days Active</div>
-            </div>
-            <div className="stat-card">
-              <div className="stat-number">#{stats.communityRank}</div>
-              <div className="stat-label">Community Rank</div>
             </div>
           </div>
         </section>

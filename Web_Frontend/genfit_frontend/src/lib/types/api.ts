@@ -97,6 +97,12 @@ export interface ForumThread {
   view_count: number;
 }
 
+// Quote Types
+export interface Quote {
+  text: string;
+  author: string;
+}
+
 // Configuration
 export interface ApiConfig {
   baseUrl: string;

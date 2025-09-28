@@ -6,7 +6,7 @@
 import { useQuery } from '@tanstack/react-query';
 import GFapi from '../api/GFapi';
 import { createQueryKey } from '../query/queryClient';
-import type { Goal, Challenge, ForumThread } from '../types/api';
+import type { Goal, Challenge, ForumThread, Quote } from '../types/api';
 
 /**
  * Hook to fetch user's goals
@@ -40,6 +40,29 @@ export function useForumThreads() {
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 }
+
+/**
+ * Hook to fetch the daily quote
+ */
+export function useDailyQuote() {
+  return useQuery({
+    queryKey: createQueryKey('/api/quotes/daily/'),
+    queryFn: () => GFapi.get<Quote>('/api/quotes/daily/'),
+    staleTime: 24 * 60 * 60 * 1000, // 24 hours
+  });
+}
+
+/**
+ * Hook to fetch notifications
+ */
+export function useNotifications() {
+  return useQuery({
+    queryKey: createQueryKey('/api/notifications/'),
+    queryFn: () => GFapi.get<any[]>('/api/notifications/'),
+    staleTime: 60 * 1000, // 1 minute
+  });
+}
+
 
 /**
  * Hook to fetch user statistics (derived from other data)

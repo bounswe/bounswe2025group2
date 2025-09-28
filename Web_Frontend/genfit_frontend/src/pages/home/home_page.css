@@ -44,9 +44,34 @@
   font-size: 1rem;
 }
 
+/* Quote Section */
+.quote-section {
+  background: #3a0a0a;
+  color: white;
+  padding: 2rem;
+  border-radius: 8px;
+  margin-bottom: 2rem;
+  text-align: center;
+  box-shadow: 0 0 25px rgba(255, 100, 100, 0.4);
+}
+
+.quote-text {
+  font-size: 1.5rem;
+  font-style: italic;
+  font-weight: 300;
+  margin-bottom: 1rem;
+  line-height: 1.4;
+}
+
+.quote-author {
+  font-size: 1rem;
+  font-weight: 500;
+  opacity: 0.8;
+}
+
 /* Stats Section */
 .stats-section {
-  margin-bottom: 3rem;
+  margin-bottom: 2rem;
 }
 
 .stats-section h2 {
@@ -116,7 +141,7 @@
 
 /* Goals Section */
 .goals-section {
-  margin-bottom: 3rem;
+  margin-bottom: 2rem;
 }
 
 .goals-grid {
@@ -168,7 +193,7 @@
 
 /* Challenges Section */
 .challenges-section {
-  margin-bottom: 3rem;
+  margin-bottom: 2rem;
 }
 
 .challenges-grid {
@@ -178,7 +203,7 @@
 }
 
 .challenge-card {
-  background: white;
+  background: #fbfbfb;
   padding: 1.5rem;
   border-radius: 8px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
@@ -205,7 +230,7 @@
 
 .join-btn {
   background: #059669;
-  color: white;
+  color: #fbfbfb;
   border: none;
   padding: 0.5rem 1rem;
   border-radius: 6px;
@@ -220,56 +245,9 @@
   background: #047857;
 }
 
-/* Actions Section */
-.actions-section {
-  margin-bottom: 3rem;
-}
-
-.actions-section h2 {
-  font-size: 1.5rem;
-  font-weight: bold;
-  color: #1f2937;
-  margin-bottom: 1.5rem;
-}
-
-.actions-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 1.5rem;
-}
-
-.action-card {
-  background: white;
-  padding: 1.5rem;
-  border-radius: 8px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  border: none;
-  cursor: pointer;
-  transition: transform 0.2s, box-shadow 0.2s;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.75rem;
-}
-
-.action-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-}
-
-.action-icon {
-  font-size: 2rem;
-}
-
-.action-text {
-  font-size: 1rem;
-  font-weight: 500;
-  color: #1f2937;
-}
-
 /* Forum Section */
 .forum-section {
-  margin-bottom: 3rem;
+  margin-bottom: 2rem;
 }
 
 .forum-threads {
@@ -279,7 +257,7 @@
 }
 
 .thread-card {
-  background: white;
+  background: #fbfbfb;
   padding: 1.5rem;
   border-radius: 8px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
@@ -347,3 +325,28 @@
     align-items: stretch;
   }
 }
+
+ /* Quote Section */
+.quote-section {
+    background: #fbfbfb;
+    color: #240202;
+    padding: 2rem;
+    border-radius: 8px;
+    margin-bottom: 3rem;
+    text-align: center;
+    box-shadow: 0 0 25px rgba(78, 4, 4, 0.81);
+  }
+
+.quote-text {
+    font-size: 1.5rem;
+    font-style: italic;
+    font-weight: 300;
+    margin-bottom: 1rem;
+    line-height: 1.4;
+ }
+
+.quote-author {
+    font-size: 1rem;
+    font-weight: 500;
+    opacity: 0.8;
+ }
