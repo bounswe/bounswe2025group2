@@ -1,11 +1,24 @@
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {useIsAuthenticated, useGoals, useChallenges, useForumThreads, useUserStats, useDailyQuote} from '../../lib';
 import { Layout } from '../../components';
+import { Button } from '../../components/ui/button';
 import './home_page.css';
+
+const GOAL_TAB_OPTIONS = [
+    { key: 'ALL', label: 'All Goals' },
+    { key: 'ACTIVE', label: 'Active' },
+    { key: 'COMPLETED', label: 'Completed' },
+    { key: 'INACTIVE', label: 'Inactive' },
+    { key: 'RESTARTED', label: 'Restarted' }
+];
 
 function HomePage() {
   const { isAuthenticated, isLoading: authLoading } = useIsAuthenticated();
   const navigate = useNavigate();
+  
+  // State for goal tab filtering
+  const [activeGoalTab, setActiveGoalTab] = useState('ALL');
 
   // Data hooks
   const { data: goals = [], isLoading: goalsLoading, error: goalsError } = useGoals();
@@ -29,11 +42,31 @@ function HomePage() {
     // Implement search functionality here
   };
 
-  // Calculate progress for goals
+  // Calculate progress for goals and group them by status
   const goalsWithProgress = goals.map(goal => ({
     ...goal,
     progress: Math.min(100, Math.max(0, (goal.current_value / goal.target_value) * 100))
   }));
+
+  const groupedGoals = goalsWithProgress.reduce((acc, goal) => {
+    const status = goal.status || 'INACTIVE';
+    if (!acc[status]) {
+      acc[status] = [];
+    }
+    acc[status].push(goal);
+    return acc;
+  }, {} as { [key: string]: typeof goalsWithProgress });
+
+  // Filter goals based on active tab
+  const getFilteredGoals = () => {
+    if (activeGoalTab === 'ALL') {
+      return goalsWithProgress;
+    }
+    return groupedGoals[activeGoalTab] || [];
+  };
+
+  const filteredGoals = getFilteredGoals();
+
 
   // Calculate days left for challenges
   const challengesWithDaysLeft = challenges.map(challenge => ({
@@ -63,9 +96,9 @@ function HomePage() {
           <div className="home-error">
             <h2>Unable to load dashboard</h2>
             <p>Please try refreshing the page or check your connection.</p>
-            <button onClick={() => window.location.reload()} className="action-btn">
+            <Button onClick={() => window.location.reload()} className="action-btn">
               Refresh Page
-            </button>
+            </Button>
           </div>
         </div>
       </Layout>
@@ -100,34 +133,68 @@ function HomePage() {
           </div>
         </section>
 
-        {/* Current Goals */}
+        {/* Goals Section */}
         <section className="goals-section">
           <div className="section-header">
-            <h2>Current Goals</h2>
-            <button className="action-btn">View All</button>
+            <h2>Your Goals</h2>
+            <Button className="action-btn">View All</Button>
           </div>
-          <div className="goals-grid">
-            {goalsWithProgress.length > 0 ? (
-              goalsWithProgress.slice(0, 3).map(goal => (
-                <div key={goal.id} className="goal-card">
-                  <h3>{goal.title}</h3>
-                  <div className="goal-progress">
-                    <div className="progress-bar">
-                      <div 
-                        className="progress-fill" 
-                        style={{ width: `${goal.progress}%` }}
-                      ></div>
+          
+          {/* Goal Status Tabs */}
+          <div className="goal-tabs">
+            {GOAL_TAB_OPTIONS.map(tab => (
+              <button
+                key={tab.key}
+                className={`goal-tab ${activeGoalTab === tab.key ? 'active' : ''}`}
+                onClick={() => setActiveGoalTab(tab.key)}
+              >
+                {tab.label}
+                {tab.key !== 'ALL' && groupedGoals[tab.key] && (
+                  <span className="goal-count">({groupedGoals[tab.key].length})</span>
+                )}
+                {tab.key === 'ALL' && (
+                  <span className="goal-count">({goalsWithProgress.length})</span>
+                )}
+              </button>
+            ))}
+          </div>
+
+          <div className="goals-content">
+            {filteredGoals.length > 0 ? (
+              <div className="goals-grid">
+                {filteredGoals.map(goal => (
+                  <div key={goal.id} className="goal-card">
+                    <div className="goal-card-header">
+                      <h4>{goal.title}</h4>
+                      <span className={`goal-status-badge ${goal.status?.toLowerCase()}`}>
+                        {goal.status}
+                      </span>
                     </div>
-                    <div className="progress-text">
-                      {goal.current_value} / {goal.target_value} {goal.unit} ({Math.round(goal.progress)}%)
+                    <div className="goal-progress">
+                      <div className="progress-bar">
+                        <div
+                          className="progress-fill"
+                          style={{ width: `${goal.progress}%` }}
+                        ></div>
+                      </div>
+                      <div className="progress-text">
+                        {goal.current_value} / {goal.target_value} {goal.unit} ({Math.round(goal.progress)}%)
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))
+                ))}
+              </div>
             ) : (
               <div className="empty-state">
-                <p>No goals yet. Set your first goal to get started!</p>
-                <button className="action-btn">Create Goal</button>
+                <p>
+                  {activeGoalTab === 'ALL' 
+                    ? 'No goals yet. Set your first goal to get started!' 
+                    : `No ${activeGoalTab.toLowerCase()} goals found.`
+                  }
+                </p>
+                {activeGoalTab === 'ALL' && (
+                  <Button className="action-btn">Create Goal</Button>
+                )}
               </div>
             )}
           </div>
@@ -137,7 +204,7 @@ function HomePage() {
         <section className="challenges-section">
           <div className="section-header">
             <h2>Active Challenges</h2>
-            <button className="action-btn">Browse All</button>
+            <Button className="action-btn">Browse All</Button>
           </div>
           <div className="challenges-grid">
             {challengesWithDaysLeft.length > 0 ? (
@@ -148,13 +215,13 @@ function HomePage() {
                     <span className="participants">👥 {challenge.participants} participants</span>
                     <span className="days-left">⏰ {challenge.daysLeft} days left</span>
                   </div>
-                  <button className="join-btn">Join Challenge</button>
+                  <Button className="join-btn">Join Challenge</Button>
                 </div>
               ))
             ) : (
               <div className="empty-state">
                 <p>No active challenges. Browse challenges to join one!</p>
-                <button className="action-btn">Browse Challenges</button>
+                <Button className="action-btn">Browse Challenges</Button>
               </div>
             )}
           </div>
@@ -164,11 +231,11 @@ function HomePage() {
         <section className="forum-section">
           <div className="section-header">
             <h2>Recent Community Discussions</h2>
-            <button className="action-btn">View Forum</button>
+            <Button className="action-btn">View Forum</Button>
           </div>
-          <div className="forum-threads">
+          <div className="forum-grid">
             {threads.length > 0 ? (
-              threads.slice(0, 3).map(thread => (
+              threads.slice(0, 4).map(thread => (
                 <div key={thread.id} className="thread-card">
                   <h3>{thread.title}</h3>
                   <div className="thread-meta">
@@ -185,7 +252,7 @@ function HomePage() {
             ) : (
               <div className="empty-state">
                 <p>No forum discussions yet. Start a conversation!</p>
-                <button className="action-btn">Start Discussion</button>
+                <Button className="action-btn">Start Discussion</Button>
               </div>
             )}
           </div>

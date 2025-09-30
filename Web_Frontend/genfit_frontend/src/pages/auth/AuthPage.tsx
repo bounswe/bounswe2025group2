@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLogin, useRegister, useIsAuthenticated } from '../../lib';
 import type { LoginCredentials, RegisterData } from '../../lib';
+import { Button } from '../../components/ui/button';
 import './auth_page.css';
 
 function AuthPage() {
@@ -99,18 +100,20 @@ function AuthPage() {
           </div>
 
           <div className="auth-tabs">
-            <button
+            <Button
+              variant="ghost"
               className={`auth-tab ${isLogin ? 'active' : ''}`}
               onClick={() => setIsLogin(true)}
             >
               Login
-            </button>
-            <button
+            </Button>
+            <Button
+              variant="ghost"
               className={`auth-tab ${!isLogin ? 'active' : ''}`}
               onClick={() => setIsLogin(false)}
             >
               Register
-            </button>
+            </Button>
           </div>
 
           <form onSubmit={handleSubmit} className="auth-form">
@@ -199,13 +202,13 @@ function AuthPage() {
               />
             </div>
 
-            <button
+            <Button
               type="submit"
               className="auth-submit"
               disabled={isLoading}
             >
               {isLoading ? 'Loading...' : (isLogin ? 'Login' : 'Register')}
-            </button>
+            </Button>
           </form>
         </div>
       </div>

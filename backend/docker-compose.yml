@@ -23,7 +23,7 @@ services:
       context: ./genfit_django
       dockerfile: Dockerfile
     container_name: genfit_web
-    command: sh -c "python manage.py migrate && python manage.py runserver 0.0.0.0:8000 && python manage.py populate_db"
+    command: sh -c "python manage.py migrate && python manage.py populate_db && python manage.py runserver 0.0.0.0:8000"
     volumes:
       - ./genfit_django:/app
     ports:
@@ -34,7 +34,7 @@ services:
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-group2}
       - POSTGRES_HOST=db
       - POSTGRES_PORT=5432
-      - SECRET_KEY=${SECRET_KEY:-django-insecure-p6p*^^1$rp!n(^wo$dqu72al_wq^+5v#kw=8lw#)1i9h5qgq42}
+      - SECRET_KEY=${SECRET_KEY:-django-insecure-p6p*^^1rp!n(^dqu72al_wq^+5v#kw=8lw#)1i9h5qgq42}
       - DEBUG=${DEBUG:-True}
       - GROQ_API_KEY=${GROQ_API_KEY}
     depends_on:

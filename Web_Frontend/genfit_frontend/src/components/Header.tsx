@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useIsAuthenticated, useLogout } from '../lib';
 import { useNavigate } from 'react-router-dom';
+import { Button } from './ui/button';
 import './Header.css';
 
 interface HeaderProps {
@@ -68,12 +69,12 @@ const Header: React.FC<HeaderProps> = ({ onSearch }) => {
               onChange={(e) => setSearchTerm(e.target.value)}
               className="search-input"
             />
-            <button type="submit" className="search-button">
+            <Button type="submit" variant="ghost" className="search-button">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <circle cx="11" cy="11" r="8"></circle>
                 <path d="m21 21-4.35-4.35"></path>
               </svg>
-            </button>
+            </Button>
           </div>
         </form>
 
@@ -107,7 +108,8 @@ const Header: React.FC<HeaderProps> = ({ onSearch }) => {
           {/* Profile Dropdown */}
           {showProfileDropdown && (
             <div className="profile-dropdown">
-              <button 
+              <Button 
+                variant="ghost"
                 className="dropdown-item"
                 onClick={() => handleProfileAction('profile')}
               >
@@ -116,8 +118,9 @@ const Header: React.FC<HeaderProps> = ({ onSearch }) => {
                   <circle cx="12" cy="7" r="4"></circle>
                 </svg>
                 Profile
-              </button>
-              <button 
+              </Button>
+              <Button 
+                variant="ghost"
                 className="dropdown-item"
                 onClick={() => handleProfileAction('settings')}
               >
@@ -126,9 +129,10 @@ const Header: React.FC<HeaderProps> = ({ onSearch }) => {
                   <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
                 </svg>
                 Settings
-              </button>
+              </Button>
               <div className="dropdown-divider"></div>
-              <button 
+              <Button 
+                variant="ghost"
                 className="dropdown-item logout-item"
                 onClick={() => handleProfileAction('logout')}
                 disabled={logoutMutation.isPending}
@@ -139,7 +143,7 @@ const Header: React.FC<HeaderProps> = ({ onSearch }) => {
                   <line x1="21" y1="12" x2="9" y2="12"></line>
                 </svg>
                 {logoutMutation.isPending ? 'Logging out...' : 'Logout'}
-              </button>
+              </Button>
             </div>
           )}
         </div>

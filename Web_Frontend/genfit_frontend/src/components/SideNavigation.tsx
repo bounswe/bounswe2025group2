@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import './SideNavigation.css';
 import { useNotifications } from '../lib';
+import { Button } from './ui/button';
 
 interface NavigationItem {
   id: string;
@@ -147,7 +148,8 @@ const SideNavigation: React.FC<SideNavigationProps> = ({
             <h2 className="brand-title">GenFit</h2>
           </div>
         )}
-        <button
+        <Button
+          variant="ghost"
           className="collapse-btn"
           onClick={toggleCollapse}
           title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
@@ -180,14 +182,15 @@ const SideNavigation: React.FC<SideNavigationProps> = ({
               <line x1="6" y1="6" x2="18" y2="18"></line>
             </svg>
           )}
-        </button>
+        </Button>
       </div>
 
       <div className="nav-content">
         <ul className="nav-list">
           {navigationItems.map((item) => (
             <li key={item.id} className="nav-item">
-              <button
+              <Button
+                variant="ghost"
                 className={`nav-link ${isActive(item.path) ? 'active' : ''}`}
                 onClick={() => handleNavigation(item.path)}
                 title={isCollapsed ? item.label : ''}
@@ -203,7 +206,7 @@ const SideNavigation: React.FC<SideNavigationProps> = ({
                     )}
                   </>
                 )}
-              </button>
+              </Button>
             </li>
           ))}
         </ul>

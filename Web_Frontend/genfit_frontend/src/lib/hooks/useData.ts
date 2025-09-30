@@ -70,17 +70,11 @@ export function useNotifications() {
 export function useUserStats() {
   const { data: goals = [] } = useGoals();
   const { data: challenges = [] } = useChallenges();
-  const { data: threads = [] } = useForumThreads();
 
   console.log(goals)
 
   return {
     activeGoals: goals.filter(goal => goal.status === 'ACTIVE').length,
     completedChallenges: challenges.filter(challenge => challenge.status === 'COMPLETED').length,
-    daysActive: 15, // This would need to be calculated from user activity data
-    communityRank: 42, // This would need to come from a separate endpoint
-    totalGoals: goals.length,
-    totalChallenges: challenges.length,
-    totalThreads: threads.length,
   };
 }

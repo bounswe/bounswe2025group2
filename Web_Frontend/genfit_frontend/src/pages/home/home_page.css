@@ -1,6 +1,4 @@
-.home-content {
-  /* Layout component handles the positioning and padding */
-}
+/* Layout component handles the positioning and padding for .home-content */
 
 .home-loading {
   display: flex;
@@ -44,31 +42,6 @@
   font-size: 1rem;
 }
 
-/* Quote Section */
-.quote-section {
-  background: #3a0a0a;
-  color: white;
-  padding: 2rem;
-  border-radius: 8px;
-  margin-bottom: 2rem;
-  text-align: center;
-  box-shadow: 0 0 25px rgba(255, 100, 100, 0.4);
-}
-
-.quote-text {
-  font-size: 1.5rem;
-  font-style: italic;
-  font-weight: 300;
-  margin-bottom: 1rem;
-  line-height: 1.4;
-}
-
-.quote-author {
-  font-size: 1rem;
-  font-weight: 500;
-  opacity: 0.8;
-}
-
 /* Stats Section */
 .stats-section {
   margin-bottom: 2rem;
@@ -90,7 +63,7 @@
 .stat-card {
   background: white;
   padding: 1.5rem;
-  border-radius: 8px;
+  border-radius: 20px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   text-align: center;
   border-left: 4px solid #800000;
@@ -144,6 +117,67 @@
   margin-bottom: 2rem;
 }
 
+/* Goal Tabs */
+.goal-tabs {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+  border-bottom: 2px solid #f3f4f6;
+  overflow-x: visible;
+  border-bottom: 4px solid #800000;
+}
+
+.goal-tab {
+  background: none;
+  border: none;
+  padding: 0.75rem 1rem;
+  border-radius: 8px 8px 0 0;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #6b7280;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  position: relative;
+}
+
+.goal-tab:hover {
+  background: #f9fafb;
+  color: #374151;
+}
+
+.goal-tab.active {
+  background: #800000;
+  color: white;
+  font-weight: 600;
+}
+
+.goal-tab.active::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: #800000;
+}
+
+.goal-count {
+  font-size: 0.75rem;
+  background: rgba(255, 255, 255, 0.2);
+  padding: 0.125rem 0.375rem;
+  border-radius: 10px;
+  font-weight: 500;
+}
+
+.goal-tab:not(.active) .goal-count {
+  background: #e5e7eb;
+  color: #6b7280;
+}
+
 .goals-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
@@ -155,18 +189,65 @@
   padding: 1.5rem;
   border-radius: 8px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
-.goal-card h3 {
+.goal-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.goal-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+  gap: 1rem;
+}
+
+.goal-card-header h4 {
   font-size: 1.1rem;
   font-weight: 600;
   color: #1f2937;
-  margin-bottom: 1rem;
+  margin: 0;
+  flex: 1;
 }
+
+.goal-status-badge {
+  font-size: 0.75rem;
+  font-weight: 500;
+  padding: 0.25rem 0.5rem;
+  border-radius: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+  white-space: nowrap;
+}
+
+.goal-status-badge.active {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.goal-status-badge.completed {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.goal-status-badge.inactive {
+  background: #f3f4f6;
+  color: #6b7280;
+}
+
+.goal-status-badge.restarted {
+  background: #fef3c7;
+  color: #92400e;
+}
+
 
 .goal-progress {
   display: flex;
   flex-direction: column;
+  margin-top: 8px;
   gap: 0.5rem;
 }
 
@@ -250,10 +331,10 @@
   margin-bottom: 2rem;
 }
 
-.forum-threads {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
+.forum-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.5rem;
 }
 
 .thread-card {
@@ -304,18 +385,47 @@
   }
   
   .goals-grid,
-  .challenges-grid {
+  .challenges-grid,
+  .forum-grid {
     grid-template-columns: 1fr;
   }
   
-  .actions-grid {
-    grid-template-columns: repeat(2, 1fr);
+
+  .goal-tabs {
+    gap: 0.25rem;
+  }
+
+  .goal-tab {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.8rem;
+  }
+
+  .goal-card-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
+  .goal-status-badge {
+    align-self: flex-start;
+  }
+
+  .quote-section {
+    padding: 2rem 1.5rem;
+  }
+
+  .quote-section::after {
+    font-size: 3rem;
+    left: 1rem;
+  }
+
+  .quote-text {
+    font-size: 1.25rem;
   }
 }
 
 @media (max-width: 480px) {
-  .stats-grid,
-  .actions-grid {
+  .stats-grid {
     grid-template-columns: 1fr;
   }
   
@@ -324,29 +434,93 @@
     gap: 1rem;
     align-items: stretch;
   }
-}
 
- /* Quote Section */
-.quote-section {
-    background: #fbfbfb;
-    color: #240202;
-    padding: 2rem;
-    border-radius: 8px;
-    margin-bottom: 3rem;
-    text-align: center;
-    box-shadow: 0 0 25px rgba(78, 4, 4, 0.81);
+  .goal-tabs {
+    flex-wrap: wrap;
+    gap: 0.25rem;
   }
 
-.quote-text {
-    font-size: 1.5rem;
-    font-style: italic;
-    font-weight: 300;
+  .goal-tab {
+    flex: 1;
+    min-width: fit-content;
+    justify-content: center;
+  }
+
+  .quote-section {
+    padding: 1.5rem 1rem;
+    margin-bottom: 2rem;
+  }
+
+  .quote-section::after {
+    font-size: 2.5rem;
+    left: 0.5rem;
+  }
+
+  .quote-text {
+    font-size: 1.125rem;
     margin-bottom: 1rem;
-    line-height: 1.4;
- }
+  }
+
+  .quote-author {
+    font-size: 0.875rem;
+  }
+}
+
+/* Quote Section */
+.quote-section {
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+  color: #1f2937;
+  padding: 1.5rem 2.5rem;
+  border-radius: 16px;
+  margin-bottom: 1.5rem;
+  text-align: center;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05), 0 10px 15px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e5e7eb;
+  position: relative;
+  overflow: hidden;
+}
+
+.quote-section::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #800000, #a00000, #800000);
+}
+
+.quote-section::after {
+  content: '"';
+  position: absolute;
+  top: 1rem;
+  left: 2rem;
+  font-size: 4rem;
+  color: #800000;
+  opacity: 0.1;
+  font-family: serif;
+  line-height: 1;
+}
+
+.quote-text {
+  font-size: 1.375rem;
+  font-style: italic;
+  font-weight: 400;
+  margin-bottom: 1.5rem;
+  line-height: 1.6;
+  color: #374151;
+  position: relative;
+  z-index: 1;
+  max-width: 800px;
+  margin-left: auto;
+  margin-right: auto;
+}
 
 .quote-author {
-    font-size: 1rem;
-    font-weight: 500;
-    opacity: 0.8;
- }
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #800000;
+  position: relative;
+  z-index: 1;
+  letter-spacing: 0.025em;
+}

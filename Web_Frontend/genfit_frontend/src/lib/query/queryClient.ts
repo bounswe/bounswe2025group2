@@ -5,7 +5,6 @@
 
 import { QueryClient, type QueryFunction } from '@tanstack/react-query';
 import GFapi from '../api/GFapi';
-import { formatApiError } from '../utils';
 
 /**
  * Default query function that uses GFapi
@@ -22,7 +21,7 @@ const defaultQueryFn: QueryFunction = async ({ queryKey, signal }) => {
     return await GFapi.get(url, params);
   } catch (error) {
     // Format error for better UX
-    const formattedError = new Error(formatApiError(error));
+    const formattedError = new Error(error as string);
     
     // Preserve original error properties
     if (error instanceof Error && 'status' in error) {
@@ -64,7 +63,7 @@ export const queryClient = new QueryClient({
       retry: false, // Don't retry mutations by default
       onError: (error) => {
         // Global error handling for mutations
-        console.error('Mutation error:', formatApiError(error));
+        console.error('Mutation error:', (error));
       },
     },
   },
