@@ -1,53 +1,70 @@
 version: '3.8'
 
 services:
-  postgres:
+  # PostgreSQL Database
+  db:
     image: postgres:15
-    container_name: group2
+    container_name: genfit_db
     environment:
-      POSTGRES_DB: group2db
-      POSTGRES_USER: group2
-      POSTGRES_PASSWORD: group2
-    ports:
-      - "5432:5432"
+      - POSTGRES_DB=${POSTGRES_DB:-group2db}
+      - POSTGRES_USER=${POSTGRES_USER:-group2}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-group2}
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U group2 -d group2db"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-group2} -d ${POSTGRES_DB:-group2db}"]
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - genfit-network
 
+  # Django Backend
   backend:
     build:
       context: ./backend/genfit_django
       dockerfile: Dockerfile
-    depends_on:
-      postgres:
-        condition: service_healthy
-    env_file:
-      - .env
-    environment:
-      - DATABASE_URL=postgresql://group2:group2@postgres:5432/group2db
+    container_name: genfit_backend
+    command: sh -c "python manage.py migrate && python manage.py populate_db && python manage.py runserver 0.0.0.0:8000"
+    volumes:
+      - ./backend/genfit_django:/app
     ports:
       - "8000:8000"
-    command: >
-      sh -c "
-        python manage.py migrate &&
-        echo 'Populating database...' &&
-        python manage.py populate_db > /dev/null 2>&1 &&
-        echo 'Database populated successfully!' &&
-        python manage.py runserver 0.0.0.0:8000
-      "
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB:-group2db}
+      - POSTGRES_USER=${POSTGRES_USER:-group2}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-group2}
+      - POSTGRES_HOST=db
+      - POSTGRES_PORT=5432
+      - SECRET_KEY=${SECRET_KEY:-django-insecure-p6p*^^1rp!n(^dqu72al_wq^+5v#kw=8lw#)1i9h5qgq42}
+      - DEBUG=${DEBUG:-True}
+      - GROQ_API_KEY=${GROQ_API_KEY}
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - genfit-network
 
+  # React Frontend
   frontend:
     build:
-      context: ./Web_Frontend
+      context: ./Web_frontend/genfit_frontend
       dockerfile: Dockerfile
+      args:
+        - VITE_API_BASE_URL=http://localhost:8000
+    container_name: genfit_frontend
     ports:
-      - "3000:5000"
+      - "3000:80"
     depends_on:
       - backend
+    networks:
+      - genfit-network
 
 volumes:
   postgres_data:
+
+networks:
+  genfit-network:
+    driver: bridge
