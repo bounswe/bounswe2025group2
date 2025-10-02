@@ -20,6 +20,7 @@
   --color-accent-foreground: #0f172a;
   --color-destructive: #800000;
   --color-destructive-foreground: #f8fafc;
+  --color-destructive-800: #7b1419;
   --color-border: #e2e8f0;
   --color-input: #e2e8f0;
   --color-ring: #800000;
@@ -87,6 +88,7 @@
   --accent: #f1f5f9;
   --accent-foreground: #0f172a;
   --destructive: #c84343;
+  --destructive-800: #7b1419;
   --destructive-foreground: #f8fafc;
   --border: #e2e8f0;
   --input: #e2e8f0;
@@ -306,6 +308,18 @@ a {
 
 .bg-emerald-600 {
   background-color: var(--emerald-600) !important;
+}
+
+.bg-destructive-800 {
+    background-color: var(--destructive-800) !important;
+}
+
+.hover\:bg-destructive-800:hover {
+  background-color: var(--destructive-800) !important;
+}
+
+.hover\:bg-accent:hover {
+  background-color: var(--accent) !important;
 }
 
 .hover\:bg-emerald-600:hover {
