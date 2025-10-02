@@ -1,7 +1,6 @@
 version: '3.8'
 
 services:
-  # PostgreSQL Database
   db:
     image: postgres:15
     container_name: genfit_db
@@ -18,18 +17,15 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-    networks:
-      - genfit-network
 
-  # Django Backend
-  backend:
+  web:
     build:
-      context: ./backend/genfit_django
+      context: ./genfit_django
       dockerfile: Dockerfile
-    container_name: genfit_backend
+    container_name: genfit_web
     command: sh -c "python manage.py migrate && python manage.py populate_db && python manage.py runserver 0.0.0.0:8000"
     volumes:
-      - ./backend/genfit_django:/app
+      - ./genfit_django:/app
     ports:
       - "8000:8000"
     environment:
@@ -44,27 +40,6 @@ services:
     depends_on:
       db:
         condition: service_healthy
-    networks:
-      - genfit-network
-
-  # React Frontend
-  frontend:
-    build:
-      context: ./Web_frontend/genfit_frontend
-      dockerfile: Dockerfile
-      args:
-        - VITE_API_BASE_URL=http://localhost:8000
-    container_name: genfit_frontend
-    ports:
-      - "3000:80"
-    depends_on:
-      - backend
-    networks:
-      - genfit-network
 
 volumes:
   postgres_data:
-
-networks:
-  genfit-network:
-    driver: bridge

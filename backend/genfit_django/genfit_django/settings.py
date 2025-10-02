@@ -41,6 +41,7 @@ CORS_ALLOW_CREDENTIALS = True
 
 CSRF_TRUSTED_ORIGINS = [
     'http://localhost:3000',
+    'http://localhost:5173',
     'http://localhost:5000',
     'http://10.0.2.2:8000',
     'http://10.0.2.2:5000',
@@ -62,6 +63,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
+    'django_extensions',
     'corsheaders',
     'api',
     'channels',
@@ -118,15 +120,15 @@ DATABASES = {
         'NAME': os.environ.get('POSTGRES_DB', 'group2db'),
         'USER': os.environ.get('POSTGRES_USER', 'group2'),
         'PASSWORD': os.environ.get('POSTGRES_PASSWORD', 'group2'),
-        'HOST': 'postgres',
+        'HOST': os.environ.get('POSTGRES_HOST', 'localhost'),
         'PORT': os.environ.get('POSTGRES_PORT', '5432'),
     }
 }
 
-CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOWED_ORIGINS = [
-    "http://localhost:5000", 
+    "http://localhost:5000",
     "http://localhost:8000",
+    "http://localhost:5173",
     "http://10.0.2.2:8000",
     "http://10.0.2.2:5000",
     "http://10.0.2.2:3000",
