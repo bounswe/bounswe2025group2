@@ -24,7 +24,7 @@ function HomePage() {
   const { data: goals = [], isLoading: goalsLoading, error: goalsError } = useGoals();
   const { data: challenges = [], isLoading: challengesLoading, error: challengesError } = useChallenges();
   const { data: threads = [], isLoading: threadsLoading, error: threadsError } = useForumThreads();
-    const { data: dailyQuote, error: quoteError } = useDailyQuote();
+  const { data: dailyQuote, error: quoteError } = useDailyQuote();
   const stats = useUserStats();
 
   // Redirect to auth if not authenticated
