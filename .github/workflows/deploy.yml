@@ -30,12 +30,12 @@ jobs:
           pwd
           echo "Directory contents:"
           ls -la
-          echo "Web_frontend contents:"
-          ls -la Web_frontend/
+          echo "Web_Frontend contents:"
+          ls -la Web_Frontend/
           
       - name: Build and push frontend
         run: |
-          docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/genfit-frontend ./Web_frontend/genfit_frontend \
+          docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/genfit-frontend ./Web_Frontend/genfit_frontend \
             --build-arg VITE_API_BASE_URL=http://${{ secrets.DROPLET_IP }}:8000
           docker push ${{ secrets.DOCKERHUB_USERNAME }}/genfit-frontend
 
