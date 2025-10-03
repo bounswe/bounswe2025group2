@@ -24,6 +24,15 @@ jobs:
           docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/genfit-backend ./backend/genfit_django
           docker push ${{ secrets.DOCKERHUB_USERNAME }}/genfit-backend
 
+      - name: Debug - List directories
+        run: |
+          echo "Current directory:"
+          pwd
+          echo "Directory contents:"
+          ls -la
+          echo "Web_frontend contents:"
+          ls -la Web_frontend/
+          
       - name: Build and push frontend
         run: |
           docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/genfit-frontend ./Web_frontend/genfit_frontend \
