@@ -47,5 +47,11 @@ jobs:
             echo "SECRET_KEY=${{ secrets.SECRET_KEY }}" >> .env
             echo "GROQ_API_KEY=${{ secrets.GROQ_API_KEY }}" >> .env
             echo "DEBUG=False" >> .env
+            # Stop and remove existing containers
+            docker-compose -f docker-compose.prod.yml down --remove-orphans
+            # Clean up any dangling containers and images
+            docker system prune -f
+            # Pull latest images
             docker-compose -f docker-compose.prod.yml pull
-            docker-compose -f docker-compose.prod.yml up -d --remove-orphans
+            # Start services with fresh containers
+            docker-compose -f docker-compose.prod.yml up -d --force-recreate
