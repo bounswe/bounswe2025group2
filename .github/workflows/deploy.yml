@@ -24,15 +24,6 @@ jobs:
           docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/genfit-backend ./backend/genfit_django
           docker push ${{ secrets.DOCKERHUB_USERNAME }}/genfit-backend
 
-      - name: Debug - List directories
-        run: |
-          echo "Current directory:"
-          pwd
-          echo "Directory contents:"
-          ls -la
-          echo "Web_Frontend contents:"
-          ls -la Web_Frontend/
-          
       - name: Build and push frontend
         run: |
           docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/genfit-frontend ./Web_Frontend/genfit_frontend \
@@ -55,5 +46,6 @@ jobs:
             echo "POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}" >> .env
             echo "SECRET_KEY=${{ secrets.SECRET_KEY }}" >> .env
             echo "GROQ_API_KEY=${{ secrets.GROQ_API_KEY }}" >> .env
+            echo "DEBUG=False" >> .env
             docker-compose -f docker-compose.prod.yml pull
             docker-compose -f docker-compose.prod.yml up -d --remove-orphans
