@@ -6,6 +6,7 @@ import { queryClient } from './lib';
 import HomePage from "./pages/home/HomePage";
 import AuthPage from "./pages/auth/AuthPage";
 import GoalPage from "./pages/goal/GoalPage";
+import ForumPage from "./pages/forum/forum_page";
 import '../index.css';
 
 
@@ -18,6 +19,7 @@ function App() {
           <Route path="/home" element={<HomePage />} />
           <Route path="/auth" element={<AuthPage />} />
           <Route path="/goals" element={<GoalPage />} />
+          <Route path="/forum" element={<ForumPage />} />
         </Routes>
       </Router>
     </QueryClientProvider>

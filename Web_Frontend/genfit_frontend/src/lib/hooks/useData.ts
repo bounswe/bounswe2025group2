@@ -6,7 +6,7 @@
 import { useQuery } from '@tanstack/react-query';
 import GFapi from '../api/GFapi';
 import { createQueryKey } from '../query/queryClient';
-import type { Goal, Challenge, ForumThread, Quote } from '../types/api';
+import type { Goal, Challenge, ForumThread, Quote, Forum, Comment } from '../types/api';
 
 /**
  * Hook to fetch user's goals
@@ -26,17 +26,6 @@ export function useChallenges() {
   return useQuery({
     queryKey: createQueryKey('/api/challenges/search/'),
     queryFn: () => GFapi.get<Challenge[]>('/api/challenges/search/'),
-    staleTime: 5 * 60 * 1000, // 5 minutes
-  });
-}
-
-/**
- * Hook to fetch forum threads
- */
-export function useForumThreads() {
-  return useQuery({
-    queryKey: createQueryKey('/api/threads/'),
-    queryFn: () => GFapi.get<ForumThread[]>('/api/threads/'),
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 }
@@ -77,4 +66,29 @@ export function useUserStats() {
     activeGoals: goals.filter(goal => goal.status === 'ACTIVE').length,
     completedChallenges: challenges.filter(challenge => challenge.status === 'COMPLETED').length,
   };
+}
+
+export function useForums() {
+  return useQuery({
+    queryKey: createQueryKey('/api/forums/'),
+    queryFn: () => GFapi.get<Forum[]>('/api/forums/'),
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+}
+
+export function useForumThreads(forumId?: number) {
+  return useQuery({
+    queryKey: createQueryKey(`/api/forums/${forumId}/threads/`),
+    queryFn: () => GFapi.get<ForumThread[]>(`/api/forums/${forumId}/threads/`),
+    staleTime: 5 * 60 * 1000,
+    enabled: !!forumId,
+  });
+}
+
+export function useThreadComments(threadId: number, sortBy: 'date' | 'likes' = 'date') {
+  return useQuery({
+    queryKey: createQueryKey(`/api/comments/thread/${threadId}/${sortBy}/`),
+    queryFn: () => GFapi.get<Comment[]>(`/api/comments/thread/${threadId}/${sortBy}/`),
+    staleTime: 5 * 60 * 1000,
+  });
 }
