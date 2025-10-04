@@ -28,12 +28,17 @@
 .page-title {
     font-size: 2.5rem;
     font-weight: 700;
-    color: var(--foreground);
+    color: #800000;
     margin: 0 0 0.5rem 0;
-    background: linear-gradient(135deg, var(--primary), var(--primary-foreground));
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+    transition: all 0.3s ease;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    cursor: default;
+}
+
+.page-title:hover {
+    color: #a00000;
+    transform: scale(1.02);
+    text-shadow: 0 2px 4px rgba(128, 0, 0, 0.3);
 }
 
 .page-subtitle {
