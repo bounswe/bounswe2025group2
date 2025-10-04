@@ -74,7 +74,7 @@ const Register = ({ navigation }: any) => {
         Toast.show({
           type: 'success',
           text1: 'Success',
-          text2: data.message || 'Registration successful! Please check your email to verify your account.',
+          text2: data.message || 'Registration successful!',
         });
         setTimeout(() => navigation.navigate('Login'), 1500);
       } else {
