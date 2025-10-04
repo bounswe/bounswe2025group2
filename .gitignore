@@ -13,3 +13,7 @@ __pycache__/
 !/backend/genfit_django/media/profile_pictures/default.png
 
 node_modules/
+backend/genfit_django/api/.DS_Store
+backend/.DS_Store
+backend/genfit_django/.DS_Store
+.DS_Store

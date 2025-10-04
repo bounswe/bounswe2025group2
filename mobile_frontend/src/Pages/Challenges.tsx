@@ -3,7 +3,7 @@ import { View, StyleSheet, ScrollView } from 'react-native';
 import CustomText from '@components/CustomText';
 import { useTheme } from '../context/ThemeContext';
 
-const Notifications = () => {
+const Challenges = () => {
   const { colors } = useTheme();
 
   return (
@@ -33,4 +33,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default Notifications; 
+export default Challenges; 
