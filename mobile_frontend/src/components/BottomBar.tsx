@@ -96,18 +96,18 @@ const BottomBar = ({ state, navigation }: BottomTabBarProps) => {
           Goals
         </CustomText>
       </Pressable>
-      <Pressable style={styles.tab} onPress={() => navigateToScreen('Notifications')}>
+      <Pressable style={styles.tab} onPress={() => navigateToScreen('Challenges')}>
         <NotificationsIcon 
           width={32} 
           height={32} 
-          color={isActiveRoute('Notifications') ? colors.active : colors.passive} 
+          color={isActiveRoute('Challenges') ? colors.active : colors.passive} 
         />
         <CustomText 
           style={[
             styles.label, 
             { 
-              color: isActiveRoute('Notifications') ? colors.active : colors.passive,
-              fontWeight: isActiveRoute('Notifications') ? 'bold' : 'normal'
+              color: isActiveRoute('Challenges') ? colors.active : colors.passive,
+              fontWeight: isActiveRoute('Challenges') ? 'bold' : 'normal'
             }
           ]}
         >

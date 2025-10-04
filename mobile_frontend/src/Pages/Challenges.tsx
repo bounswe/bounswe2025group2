@@ -1,9 +1,13 @@
-import React from 'react';
+import React, {useEffect, useState, useCallback} from 'react';
 import { View, StyleSheet, ScrollView } from 'react-native';
 import CustomText from '@components/CustomText';
 import { useTheme } from '../context/ThemeContext';
+import { useAuth } from '../context/AuthContext';
 
 const Challenges = () => {
+  const [challenges, setChallenges] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const { colors } = useTheme();
 
   return (
