@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react'
+import { useParams } from 'react-router-dom'
 import { useQuery, useMutation } from '@tanstack/react-query'
 import { createQueryKey, queryClient } from '../../lib/query/queryClient'
 import GFapi from '../../lib/api/GFapi'
 import { Layout } from '../../components'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../components/ui/dialog'
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card'
 import { Button } from '../../components/ui/button'
 import { Input } from '../../components/ui/input'
@@ -24,6 +26,8 @@ interface ProfileDetailsResponse {
 }
 
 export default function ProfilePage() {
+  const params = useParams();
+  const otherUsername = params.username;
   const [isEditing, setIsEditing] = useState(false)
   const [editedProfile, setEditedProfile] = useState({
     name: '',
@@ -33,15 +37,33 @@ export default function ProfilePage() {
     birth_date: '',
   })
 
+  const [isGoalDetailOpen, setIsGoalDetailOpen] = useState(false)
+  const [selectedGoal, setSelectedGoal] = useState<any | null>(null)
+
+  const handleDeleteSelectedGoal = async () => {
+    if (!selectedGoal) return
+    if (!confirm('Are you sure you want to delete this goal?')) return
+    try {
+      await GFapi.delete(`/api/goals/${selectedGoal.id}/`)
+      await queryClient.invalidateQueries({ queryKey: createQueryKey('/api/goals/') })
+      setIsGoalDetailOpen(false)
+      setSelectedGoal(null)
+    } catch (e) {
+      console.error('Failed to delete goal', e)
+      alert('Failed to delete goal. Please try again.')
+    }
+  }
+
   const { data: profileDetails } = useQuery<ProfileDetailsResponse>({
-    queryKey: createQueryKey('/api/profile/'),
+    queryKey: createQueryKey(otherUsername ? `/api/profile/other/${otherUsername}/` : '/api/profile/'),
   })
 
   const { data: profilePicture } = useQuery<string | { image: string }>({
-    queryKey: createQueryKey('/api/profile/picture/'),
+    queryKey: createQueryKey(otherUsername ? `/api/profile/other/picture/${otherUsername}/` : '/api/profile/picture/'),
     queryFn: async () => {
       const base = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
-      const response = await fetch(new URL('/api/profile/picture/', base).toString(), {
+      const endpoint = otherUsername ? `/api/profile/other/picture/${otherUsername}/` : '/api/profile/picture/'
+      const response = await fetch(new URL(endpoint, base).toString(), {
         credentials: 'include',
       })
       if (!response.ok) throw new Error('Failed to fetch profile picture')
@@ -116,7 +138,7 @@ export default function ProfilePage() {
     } as any)
   }
 
-  const { data: goals = [] } = useGoals()
+  const { data: goals = [] } = useGoals(otherUsername || undefined)
 
   return (
     <Layout>
@@ -144,14 +166,16 @@ export default function ProfilePage() {
                   }}
                   style={{ display: 'none' }}
                 />
-                <div className="avatar-buttons">
-                  <Button variant="outline" size="sm" onClick={() => document.getElementById('upload-photo')?.click()}>
-                    Upload
-                  </Button>
-                  <Button variant="outline" size="sm" onClick={() => deletePictureMutation.mutate()}>
-                    Delete
-                  </Button>
-                </div>
+                {!otherUsername && (
+                  <div className="avatar-buttons">
+                    <Button variant="outline" size="sm" onClick={() => document.getElementById('upload-photo')?.click()}>
+                      Upload
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => deletePictureMutation.mutate()}>
+                      Delete
+                    </Button>
+                  </div>
+                )}
               </div>
             </div>
             <div className="hero-center">
@@ -189,9 +213,11 @@ export default function ProfilePage() {
                     <div className="label">Bio</div>
                     <div className="value">{profileDetails?.bio || 'No bio provided.'}</div>
                   </div>
-                  <div className="info-actions">
-                    <Button variant="outline" size="sm" onClick={() => setIsEditing(true)}>Edit Profile</Button>
-                  </div>
+                  {!otherUsername && (
+                    <div className="info-actions">
+                      <Button size="sm" className="nav-btn" onClick={() => setIsEditing(true)}>Edit Profile</Button>
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div className="edit-grid">
@@ -229,15 +255,21 @@ export default function ProfilePage() {
           <Card className="profile-card">
             <CardHeader className="profile-card-header goals-header">
               <CardTitle>Goals</CardTitle>
-              <Button className="action-btn" onClick={() => window.location.href = '/goals?new=true'}>
-                Create Goal
-              </Button>
+              {!otherUsername && goals.length > 0 && (
+                <Button className="nav-btn" onClick={() => window.location.href = '/goals?new=true'}>
+                  Create Goal
+                </Button>
+              )}
             </CardHeader>
             <CardContent className="profile-card-content">
               {goals.length > 0 ? (
                 <div className="goals-grid">
                   {goals.map((goal: any) => (
-                    <div key={goal.id} className="goal-card">
+                    <div
+                      key={goal.id}
+                      className="goal-card"
+                      onClick={() => { setSelectedGoal(goal); setIsGoalDetailOpen(true); }}
+                    >
                       <div className="goal-header">
                         <h4>{goal.title}</h4>
                         <span className={`goal-status ${String(goal.status || '').toLowerCase()}`}>{goal.status}</span>
@@ -258,15 +290,41 @@ export default function ProfilePage() {
                 <div className="empty-goals">
                   <div className="empty-icon">🎯</div>
                   <div className="empty-title">No Goals Set</div>
-                  <div className="empty-desc">You haven't set any fitness goals yet.</div>
-                  <Button className="action-btn" onClick={() => window.location.href = '/goals?new=true'}>
-                    Set Your First Goal
-                  </Button>
+                  <div className="empty-desc">{otherUsername ? 'This user has not set any goals yet.' : "You haven't set any fitness goals yet."}</div>
+                  {!otherUsername && (
+                    <Button className="nav-btn" onClick={() => window.location.href = '/goals?new=true'}>
+                      Set Your First Goal
+                    </Button>
+                  )}
                 </div>
               )}
             </CardContent>
           </Card>
         </section>
+
+        <Dialog open={isGoalDetailOpen} onOpenChange={setIsGoalDetailOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>{selectedGoal?.title || 'Goal Details'}</DialogTitle>
+            </DialogHeader>
+            {selectedGoal && (
+              <div className="goal-detail">
+                <div className="detail-row"><span className="label">Type</span><span className="value">{selectedGoal.goal_type}</span></div>
+                <div className="detail-row"><span className="label">Status</span><span className="value">{selectedGoal.status}</span></div>
+                <div className="detail-row"><span className="label">Description</span><span className="value">{selectedGoal.description || '—'}</span></div>
+                <div className="detail-row"><span className="label">Progress</span><span className="value">{selectedGoal.current_value} / {selectedGoal.target_value} {selectedGoal.unit}</span></div>
+                <div className="detail-row"><span className="label">Started</span><span className="value">{new Date(selectedGoal.start_date).toLocaleDateString()}</span></div>
+                <div className="detail-row"><span className="label">Target Date</span><span className="value">{new Date(selectedGoal.target_date).toLocaleDateString()}</span></div>
+                <div className="dialog-actions">
+                  <Button className="nav-btn" onClick={() => setIsGoalDetailOpen(false)}>Close</Button>
+                  {!otherUsername && (
+                    <Button className="nav-btn" onClick={handleDeleteSelectedGoal}>Delete Goal</Button>
+                  )}
+                </div>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
       </div>
     </Layout>
   )

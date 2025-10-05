@@ -21,6 +21,7 @@ function App() {
           <Route path="/goals" element={<GoalPage />} />
           <Route path="/notifications" element={<NotificationsPage />} /> 
           <Route path="/profile" element={<ProfilePage />} />
+          <Route path="/profile/other/:username" element={<ProfilePage />} />
         </Routes>
       </Router>
     </QueryClientProvider>
