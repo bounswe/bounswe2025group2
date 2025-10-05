@@ -20,9 +20,10 @@ export function useGoals() {
 }
 
 /**
- * Hook to fetch challenges
+ * Hook to fetch challenges (deprecated - use useChallenges from useChallenges.ts instead)
+ * Keeping for backward compatibility
  */
-export function useChallenges() {
+export function useChallengesLegacy() {
   return useQuery({
     queryKey: createQueryKey('/api/challenges/search/'),
     queryFn: () => GFapi.get<Challenge[]>('/api/challenges/search/'),
@@ -69,7 +70,7 @@ export function useNotifications() {
  */
 export function useUserStats() {
   const { data: goals = [] } = useGoals();
-  const { data: challenges = [] } = useChallenges();
+  const { data: challenges = [] } = useChallengesLegacy();
 
   console.log(goals)
 

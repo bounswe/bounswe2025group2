@@ -243,5 +243,5 @@ def search_challenges(request):
             ]
 
     # Serialize the results
-    serializer = ChallengeSerializer(challenges, many=True)
+    serializer = ChallengeSerializer(challenges, many=True, context={'request': request})
     return Response(serializer.data, status=status.HTTP_200_OK)
