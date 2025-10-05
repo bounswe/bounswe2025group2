@@ -120,12 +120,8 @@ ASGI_APPLICATION = 'genfit_django.asgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.environ.get('POSTGRES_DB', 'group2db'),
-        'USER': os.environ.get('POSTGRES_USER', 'group2'),
-        'PASSWORD': os.environ.get('POSTGRES_PASSWORD', 'group2'),
-        'HOST': os.environ.get('POSTGRES_HOST', 'localhost'),
-        'PORT': os.environ.get('POSTGRES_PORT', '5432'),
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': 'db.sqlite3',
     }
 }
 
