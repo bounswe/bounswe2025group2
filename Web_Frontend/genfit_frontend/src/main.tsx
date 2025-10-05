@@ -6,7 +6,7 @@ import { queryClient } from './lib';
 import HomePage from "./pages/home/HomePage";
 import AuthPage from "./pages/auth/AuthPage";
 import GoalPage from "./pages/goal/GoalPage";
-import NotificationsPage from "./pages/notifications/notificationPage"; // Add this import
+import NotificationsPage from "./pages/notifications/notificationPage"; 
 import '../index.css';
 
 function App() {
@@ -18,7 +18,7 @@ function App() {
           <Route path="/home" element={<HomePage />} />
           <Route path="/auth" element={<AuthPage />} />
           <Route path="/goals" element={<GoalPage />} />
-          <Route path="/notifications" element={<NotificationsPage />} /> {/* Add this route */}
+          <Route path="/notifications" element={<NotificationsPage />} /> 
         </Routes>
       </Router>
     </QueryClientProvider>
