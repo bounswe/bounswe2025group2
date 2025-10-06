@@ -37,6 +37,7 @@ const getChallengeTabOptions = (isCoach: boolean) => {
         { key: 'ALL', label: 'All Challenges' },
         { key: 'JOINED', label: 'Joined' },
         { key: 'ACTIVE', label: 'Active' },
+        { key: 'INACTIVE', label: 'Inactive' },
         { key: 'COMPLETED', label: 'Completed' }
     ];
 
@@ -192,12 +193,18 @@ const ChallengesPage = () => {
         if (now < startDate) {
             return 'UPCOMING';
         } else if (now > endDate) {
-            return 'COMPLETED';
+            return 'INACTIVE'; // Challenge has ended (was previously "COMPLETED")
         } else if (challenge.is_active) {
             return 'ACTIVE';
         } else {
             return 'INACTIVE';
         }
+    };
+
+    // Helper function to check if user successfully completed a challenge
+    const isUserCompleted = (challenge: Challenge) => {
+        return challenge.is_joined && 
+               (challenge.user_progress || 0) >= challenge.target_value;
     };
 
     // Calculate progress for challenges and group them by status (adapted from GoalPage)
@@ -219,6 +226,12 @@ const ChallengesPage = () => {
         if (isCoach && user && challenge.coach === user.id) {
             if (!acc['MY_CHALLENGES']) acc['MY_CHALLENGES'] = [];
             acc['MY_CHALLENGES'].push(challenge);
+        }
+
+        // Group challenges user has successfully completed
+        if (isUserCompleted(challenge)) {
+            if (!acc['COMPLETED']) acc['COMPLETED'] = [];
+            acc['COMPLETED'].push(challenge);
         }
 
         // Group by calculated status
@@ -243,7 +256,7 @@ const ChallengesPage = () => {
     // Calculate statistics (adapted from GoalPage)
     const totalChallenges = challenges.length;
     const joinedChallenges = challenges.filter(challenge => challenge.is_joined).length;
-    const completedChallenges = challengesWithProgress.filter(challenge => challenge.status === "COMPLETED" && challenge.is_joined).length;
+    const completedChallenges = challengesWithProgress.filter(challenge => isUserCompleted(challenge)).length;
     const myChallenges = isCoach && user ? challenges.filter(challenge => challenge.coach === user.id).length : 0;
 
     return (
@@ -375,6 +388,7 @@ const ChallengesPage = () => {
                         <h3 className="text-lg font-semibold mb-2">
                             {activeChallengeTab === 'ALL' ? 'No challenges yet' :
                                 activeChallengeTab === 'MY_CHALLENGES' ? 'No challenges created yet' :
+                                activeChallengeTab === 'COMPLETED' ? 'No completed challenges yet' :
                                     `No ${activeChallengeTab.toLowerCase().replace('_', ' ')} challenges`}
                         </h3>
                         <p className="text-muted-foreground mb-4">
@@ -382,6 +396,8 @@ const ChallengesPage = () => {
                                 ? (isCoach ? 'Create your first challenge!' : 'Check back later for new challenges!')
                                 : activeChallengeTab === 'MY_CHALLENGES'
                                     ? 'Create your first challenge to get started!'
+                                    : activeChallengeTab === 'COMPLETED'
+                                    ? 'Complete a challenge by reaching its target to see it here!'
                                     : `No ${activeChallengeTab.toLowerCase().replace('_', ' ')} challenges found.`
                             }
                         </p>
