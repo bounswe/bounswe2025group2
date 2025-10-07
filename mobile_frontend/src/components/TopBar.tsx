@@ -98,9 +98,6 @@ const TopBar = () => {
         <CustomText style={[styles.appTitle, { color: colors.border }]}>GenFit</CustomText>
       </View>
       <View style={styles.rightSection}>
-        <Pressable onPress={() => navigation.navigate('ApiDemo')} style={[styles.funCircle, { borderColor: colors.border, backgroundColor: 'transparent' }]}> 
-          <Text style={[styles.funText, { color: colors.subText }]}>cat</Text>
-        </Pressable>
         <SearchIcon width={36} height={36} fill={colors.border} />
         <Pressable onPress={() => navigation.navigate('Settings')}>
           <SettingsIcon width={36} height={36} fill={colors.border} />
