@@ -1,22 +1,23 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import {useIsAuthenticated, useGoals, useChallenges, useForumThreads, useUserStats, useDailyQuote} from '../../lib';
+import { useIsAuthenticated, useGoals, useChallenges, useForumThreads, useUserStats, useDailyQuote } from '../../lib';
+
 import { Layout } from '../../components';
 import { Button } from '../../components/ui/button';
 import './home_page.css';
 
 const GOAL_TAB_OPTIONS = [
-    { key: 'ALL', label: 'All Goals' },
-    { key: 'ACTIVE', label: 'Active' },
-    { key: 'COMPLETED', label: 'Completed' },
-    { key: 'INACTIVE', label: 'Inactive' },
-    { key: 'RESTARTED', label: 'Restarted' }
+  { key: 'ALL', label: 'All Goals' },
+  { key: 'ACTIVE', label: 'Active' },
+  { key: 'COMPLETED', label: 'Completed' },
+  { key: 'INACTIVE', label: 'Inactive' },
+  { key: 'RESTARTED', label: 'Restarted' }
 ];
 
 function HomePage() {
   const { isAuthenticated, isLoading: authLoading } = useIsAuthenticated();
   const navigate = useNavigate();
-  
+
   // State for goal tab filtering
   const [activeGoalTab, setActiveGoalTab] = useState('ALL');
 
@@ -26,6 +27,8 @@ function HomePage() {
   const { data: threads = [], isLoading: threadsLoading, error: threadsError } = useForumThreads();
   const { data: dailyQuote, error: quoteError } = useDailyQuote();
   const stats = useUserStats();
+
+
 
   // Redirect to auth if not authenticated
   if (authLoading) {
@@ -41,6 +44,8 @@ function HomePage() {
     console.log('Searching for:', searchTerm);
     // Implement search functionality here
   };
+
+
 
   // Calculate progress for goals and group them by status
   const goalsWithProgress = goals.map(goal => ({
@@ -68,12 +73,29 @@ function HomePage() {
   const filteredGoals = getFilteredGoals();
 
 
-  // Calculate days left for challenges
-  const challengesWithDaysLeft = challenges.map(challenge => ({
-    ...challenge,
-    daysLeft: Math.max(0, Math.ceil((new Date(challenge.end_date).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))),
-    participants: challenge.participants?.length || 0
-  }));
+  // Get joined challenges first, then other active challenges
+  const joinedChallenges = challenges
+    .filter(challenge => challenge.is_active && challenge.is_joined)
+    .map(challenge => ({
+      ...challenge,
+      daysLeft: Math.max(0, Math.ceil((new Date(challenge.end_date).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))),
+      participants: challenge.participant_count || 0,
+      progress: challenge.user_progress ? Math.min(100, Math.max(0, (challenge.user_progress / challenge.target_value) * 100)) : 0
+    }))
+    .sort((a, b) => (b.participant_count || 0) - (a.participant_count || 0));
+
+  const otherActiveChallenges = challenges
+    .filter(challenge => challenge.is_active && !challenge.is_joined)
+    .map(challenge => ({
+      ...challenge,
+      daysLeft: Math.max(0, Math.ceil((new Date(challenge.end_date).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))),
+      participants: challenge.participant_count || 0,
+      progress: 0 // No progress for non-joined challenges
+    }))
+    .sort((a, b) => (b.participant_count || 0) - (a.participant_count || 0));
+
+  // Combine them: joined first, then others
+  const allActiveChallenges = [...joinedChallenges, ...otherActiveChallenges];
 
   // Show loading state
   const isLoading = goalsLoading || challengesLoading || threadsLoading;
@@ -137,9 +159,9 @@ function HomePage() {
         <section className="goals-section">
           <div className="section-header">
             <h2>Your Goals</h2>
-            <Button className="action-btn">View All</Button>
+            <Button className="action-btn" onClick={() => navigate('/goals')}>View All</Button>
           </div>
-          
+
           {/* Goal Status Tabs */}
           <div className="goal-tabs">
             {GOAL_TAB_OPTIONS.map(tab => (
@@ -187,13 +209,13 @@ function HomePage() {
             ) : (
               <div className="empty-state">
                 <p>
-                  {activeGoalTab === 'ALL' 
-                    ? 'No goals yet. Set your first goal to get started!' 
+                  {activeGoalTab === 'ALL'
+                    ? 'No goals yet. Set your first goal to get started!'
                     : `No ${activeGoalTab.toLowerCase()} goals found.`
                   }
                 </p>
                 {activeGoalTab === 'ALL' && (
-                  <Button className="action-btn">Create Goal</Button>
+                  <Button className="action-btn" onClick={() => navigate('/goals')}>Create Goal</Button>
                 )}
               </div>
             )}
@@ -204,24 +226,49 @@ function HomePage() {
         <section className="challenges-section">
           <div className="section-header">
             <h2>Active Challenges</h2>
-            <Button className="action-btn">Browse All</Button>
+            <Button className="action-btn" onClick={() => navigate('/challenges')}>Browse All</Button>
           </div>
           <div className="challenges-grid">
-            {challengesWithDaysLeft.length > 0 ? (
-              challengesWithDaysLeft.slice(0, 3).map(challenge => (
-                <div key={challenge.id} className="challenge-card">
-                  <h3>{challenge.title}</h3>
-                  <div className="challenge-info">
-                    <span className="participants">👥 {challenge.participants} participants</span>
-                    <span className="days-left">⏰ {challenge.daysLeft} days left</span>
+            {allActiveChallenges.length > 0 ? (
+              allActiveChallenges.slice(0, 3).map(challenge => (
+                <div key={challenge.id} className="home-challenge-card">
+                  <div className="home-challenge-header">
+                    <h4>{challenge.title}</h4>
+                    {challenge.is_joined ? (
+                      <span className="home-challenge-badge joined">Joined</span>
+                    ) : (
+                      <span className="home-challenge-badge available">Available</span>
+                    )}
                   </div>
-                  <Button className="join-btn">Join Challenge</Button>
+
+                  {/* Show progress only for joined challenges */}
+                  {challenge.is_joined ? (
+                    <div className="home-challenge-progress">
+                      <div className="progress-bar">
+                        <div
+                          className="progress-fill"
+                          style={{ width: `${challenge.progress}%` }}
+                        />
+                      </div>
+                      <div className="progress-text">
+                        {challenge.user_progress || 0} / {challenge.target_value} {challenge.unit} ({Math.round(challenge.progress)}%)
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="home-challenge-spacer"></div>
+                  )}
+
+                  {/* Challenge meta info at bottom */}
+                  <div className="home-challenge-meta">
+                    <span>👥 {challenge.participants} participants</span>
+                    <span>⏰ {challenge.daysLeft} days left</span>
+                  </div>
                 </div>
               ))
             ) : (
               <div className="empty-state">
                 <p>No active challenges. Browse challenges to join one!</p>
-                <Button className="action-btn">Browse Challenges</Button>
+                <Button className="action-btn" onClick={() => navigate('/challenges')}>Browse Challenges</Button>
               </div>
             )}
           </div>
@@ -231,7 +278,7 @@ function HomePage() {
         <section className="forum-section">
           <div className="section-header">
             <h2>Recent Community Discussions</h2>
-            <Button className="action-btn">View Forum</Button>
+            <Button className="action-btn" onClick={() => navigate('/forum')}>View Forum</Button>
           </div>
           <div className="forum-grid">
             {threads.length > 0 ? (
@@ -252,7 +299,7 @@ function HomePage() {
             ) : (
               <div className="empty-state">
                 <p>No forum discussions yet. Start a conversation!</p>
-                <Button className="action-btn">Start Discussion</Button>
+                <Button className="action-btn" onClick={() => navigate('/forum')}>Start Discussion</Button>
               </div>
             )}
           </div>

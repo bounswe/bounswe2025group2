@@ -9,6 +9,8 @@ from django.contrib.auth.tokens import default_token_generator
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.utils.encoding import force_bytes, force_str
 from django.contrib.sites.shortcuts import get_current_site
+from django.middleware.csrf import get_token
+from django.views.decorators.csrf import ensure_csrf_cookie
 from .serializers import UserRegistrationSerializer, UserLoginSerializer, NotificationSerializer, UserSerializer
 from .models import Notification
 
@@ -189,6 +191,15 @@ def get_users(request):
     users = User.objects.all()
     serializer = UserSerializer(users, many=True)
     return Response(serializer.data)
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+@ensure_csrf_cookie
+def get_csrf_token(request):
+    """
+    Get CSRF token for frontend authentication
+    """
+    return Response({'csrfToken': get_token(request)})
 
 
 

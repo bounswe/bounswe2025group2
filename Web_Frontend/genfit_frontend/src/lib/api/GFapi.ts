@@ -32,13 +32,13 @@ class GFApiClient {
    */
   private createUrl(endpoint: string, params?: Record<string, string | number | boolean>): string {
     const url = new URL(endpoint, this.config.baseUrl);
-    
+
     if (params) {
       Object.entries(params).forEach(([key, value]) => {
         url.searchParams.append(key, String(value));
       });
     }
-    
+
     return url.toString();
   }
 
@@ -67,7 +67,7 @@ class GFApiClient {
   private async handleResponse<T>(response: Response): Promise<T> {
     if (!response.ok) {
       let errorMessage: string;
-      
+
       try {
         const errorData = await response.json();
         errorMessage = errorData.error || errorData.message || response.statusText;
@@ -79,7 +79,7 @@ class GFApiClient {
       error.status = response.status;
       error.statusText = response.statusText;
       error.response = response;
-      
+
       throw error;
     }
 
@@ -102,7 +102,7 @@ class GFApiClient {
    */
   private async makeRequest<T>(config: ApiRequestConfig): Promise<T> {
     const { method, url, data, params, headers: customHeaders } = config;
-    
+
     const fullUrl = this.createUrl(url, params);
     const headers = this.prepareHeaders(customHeaders);
 
@@ -131,11 +131,11 @@ class GFApiClient {
       return await this.handleResponse<T>(response);
     } catch (error) {
       clearTimeout(timeoutId);
-      
+
       if (error instanceof Error && error.name === 'AbortError') {
         throw new Error(`Request timeout after ${this.config.timeout}ms`);
       }
-      
+
       throw error;
     }
   }
@@ -194,6 +194,17 @@ class GFApiClient {
    */
   getConfig(): Required<ApiConfig> {
     return { ...this.config };
+  }
+
+  /**
+   * Initialize CSRF token by fetching it from the backend
+   */
+  async initializeCSRF(): Promise<void> {
+    try {
+      await this.get('/api/csrf-token/');
+    } catch (error) {
+      console.warn('Failed to initialize CSRF token:', error);
+    }
   }
 }
 

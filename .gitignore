@@ -1,4 +1,6 @@
 .env
+.kiro
+.vscode
 .venv
 __pycache__/
 *.pyc

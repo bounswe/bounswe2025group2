@@ -70,7 +70,7 @@ export interface Goal {
 
 // Challenge Types
 export interface Challenge {
-  id: string;
+  id: number;
   title: string;
   description: string;
   start_date: string;
@@ -78,11 +78,65 @@ export interface Challenge {
   target_value: number;
   challenge_type: string;
   unit: string;
-  status: string;
-  participants: Array<{
-    user: string;
-    current_value: number;
-  }>;
+  location?: string;
+  longitude?: number;
+  latitude?: number;
+  created_at: string;
+  min_age?: number;
+  max_age?: number;
+  coach: number; // Coach user ID from backend
+  is_active: boolean; // From backend serializer
+  // Frontend-only fields
+  coach_username?: string; // Coach name to display (calculated in frontend)
+  participant_count?: number;
+  is_joined?: boolean;
+  user_progress?: number; // Current user's progress
+  user_ranking?: number; // Current user's rank
+  progress_percentage?: number; // Calculated progress %
+}
+
+export interface ChallengeParticipant {
+  id: number;
+  user: number;
+  username: string;
+  current_value: number;
+  joined_date: string;
+  last_updated: string;
+}
+
+export interface ChallengeProgress {
+  challenge: string;
+  current_value: number;
+  progress_percentage: number;
+}
+
+export interface CreateChallengeData {
+  title: string;
+  description: string;
+  challenge_type: string;
+  target_value: number;
+  unit: string;
+  start_date: string;
+  end_date: string;
+}
+
+export interface LeaderboardEntry {
+  user_id: number;
+  username: string;
+  current_value: number;
+  progress_percentage: number;
+  ranking: number;
+  last_updated: string;
+  completion_time?: string;
+}
+
+export interface ChallengeHistory {
+  challenge: Challenge;
+  final_ranking: number;
+  final_progress: number;
+  completion_status: 'COMPLETED' | 'ABANDONED' | 'EXPIRED';
+  joined_date: string;
+  completion_date?: string;
 }
 
 // Forum Thread Types
