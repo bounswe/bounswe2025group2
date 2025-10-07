@@ -24,8 +24,8 @@ const Challenges: React.FC = () => {
   const [items, setItems] = useState<ChallengeListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  // Optional: tweak your default filters here
-  // Example: only active challenges
+  
+  // only active challenges
   const defaultParams = { is_active: 'true' };
 
   const buildUrl = () => {
