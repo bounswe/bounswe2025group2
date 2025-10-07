@@ -8,6 +8,7 @@ import {
   SafeAreaView,
 } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
+import Cookies from '@react-native-cookies/cookies';
 import Toast from 'react-native-toast-message';
 import { useTheme } from '../context/ThemeContext';
 
@@ -55,10 +56,19 @@ const Register = ({ navigation }: any) => {
     }
 
     try {
+      await fetch('http://10.0.2.2:8000/api/quotes/random/', { 
+        method: 'GET',
+        credentials: 'include',
+      });
+
+      const cookies = await Cookies.get('http://10.0.2.2:8000');
+      const csrfToken = cookies.csrftoken?.value;
+      
       const response = await fetch('http://10.0.2.2:8000/api/register/', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          ...(csrfToken ? { 'X-CSRFToken': csrfToken } : {}),
         },
         body: JSON.stringify({
           username: username,
