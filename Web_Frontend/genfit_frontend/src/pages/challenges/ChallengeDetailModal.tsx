@@ -1,4 +1,4 @@
-import { Button } from '../../components/ui/button';
+// Button import removed as it's not used in this component
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../components/ui/dialog';
 import { useChallengeParticipants } from '../../lib/hooks/useChallenges';
 import type { Challenge, User } from '../../lib/types/api';
@@ -29,10 +29,10 @@ interface ChallengeDetailModalProps {
     user: User | undefined;
 }
 
-const ChallengeDetailModal = ({ 
-    isOpen, 
-    onClose, 
-    challenge, 
+const ChallengeDetailModal = ({
+    isOpen,
+    onClose,
+    challenge,
     user
 }: ChallengeDetailModalProps) => {
     const { data: participants = [], isLoading: participantsLoading } = useChallengeParticipants(
@@ -53,21 +53,21 @@ const ChallengeDetailModal = ({
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent className="detail-modal">
+            <DialogContent className="detail-modal" style={{ maxWidth: '1400px', width: '60vw' }}>
                 <DialogHeader>
                     <DialogTitle className="challenge-detail-title">
                         <Trophy className="w-6 h-6 text-yellow-500" />
                         {challenge.title}
                     </DialogTitle>
                 </DialogHeader>
-                
+
                 <div className="challenge-detail-content">
-                    {/* Challenge Info Section */}
-                    <div className="challenge-info-section">
+                    {/* Left Column - Challenge Info */}
+                    <div className="challenge-info-column">
                         <div className="challenge-description">
                             <p>{challenge.description || 'No description provided.'}</p>
                         </div>
-                        
+
                         <div className="challenge-meta-grid">
                             <div className="meta-item">
                                 <Calendar className="meta-icon" />
@@ -78,7 +78,7 @@ const ChallengeDetailModal = ({
                                     </span>
                                 </div>
                             </div>
-                            
+
                             <div className="meta-item">
                                 <Target className="meta-icon" />
                                 <div>
@@ -88,7 +88,7 @@ const ChallengeDetailModal = ({
                                     </span>
                                 </div>
                             </div>
-                            
+
                             <div className="meta-item">
                                 <Users className="meta-icon" />
                                 <div>
@@ -98,7 +98,7 @@ const ChallengeDetailModal = ({
                                     </span>
                                 </div>
                             </div>
-                            
+
                             {challenge.location && (
                                 <div className="meta-item">
                                     <MapPin className="meta-icon" />
@@ -129,10 +129,10 @@ const ChallengeDetailModal = ({
                                         )}
                                     </div>
                                     <div className="progress-bar">
-                                        <div 
-                                            className="progress-fill" 
-                                            style={{ 
-                                                width: `${calculateProgress(challenge.user_progress || 0, challenge.target_value)}%` 
+                                        <div
+                                            className="progress-fill"
+                                            style={{
+                                                width: `${calculateProgress(challenge.user_progress || 0, challenge.target_value)}%`
                                             }}
                                         />
                                     </div>
@@ -141,8 +141,8 @@ const ChallengeDetailModal = ({
                         )}
                     </div>
 
-                    {/* Leaderboard Section */}
-                    <div className="leaderboard-section">
+                    {/* Right Column - Leaderboard */}
+                    <div className="leaderboard-column">
                         <div className="leaderboard-header">
                             <h3 className="section-title">Leaderboard</h3>
                         </div>
@@ -159,9 +159,9 @@ const ChallengeDetailModal = ({
                                 {sortedParticipants.map((participant, index) => {
                                     const progress = calculateProgress(participant.current_value, challenge.target_value);
                                     const isCurrentUser = participant.user === user?.id;
-                                    
+
                                     return (
-                                        <div 
+                                        <div
                                             key={participant.id}
                                             className={`leaderboard-entry ${isCurrentUser ? 'current-user' : ''}`}
                                         >

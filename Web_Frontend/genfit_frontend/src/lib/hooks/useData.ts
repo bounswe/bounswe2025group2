@@ -76,6 +76,6 @@ export function useUserStats() {
 
   return {
     activeGoals: goals.filter(goal => goal.status === 'ACTIVE').length,
-    completedChallenges: challenges.filter(challenge => challenge.status === 'COMPLETED').length,
+    completedChallenges: challenges.filter(challenge => challenge.is_active === false).length,
   };
 }

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useIsAuthenticated, useChallenges } from '../../lib';
-import { useJoinChallenge, useLeaveChallenge, useDeleteChallenge } from '../../lib/hooks/useChallenges';
+import { useJoinChallenge, useLeaveChallenge } from '../../lib/hooks/useChallenges';
 import { Layout } from '../../components';
 import { Button } from '../../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
@@ -55,7 +55,6 @@ const ChallengesPage = () => {
 
     const joinChallengeMutation = useJoinChallenge();
     const leaveChallengeMutation = useLeaveChallenge();
-    const deleteChallengeMutation = useDeleteChallenge();
 
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [isProgressDialogOpen, setIsProgressDialogOpen] = useState(false);
@@ -91,27 +90,8 @@ const ChallengesPage = () => {
         setEditingChallenge(null);
     };
 
-    const handleDeleteChallenge = async (challengeId: number) => {
-        if (!confirm('Are you sure you want to delete this challenge? This action cannot be undone.')) {
-            return;
-        }
-
-        try {
-            await deleteChallengeMutation.mutateAsync(challengeId);
-        } catch (error: any) {
-            console.error('Failed to delete challenge:', error);
-            // Extract more detailed error message from the API response
-            let errorMessage = 'Failed to delete challenge. Please try again.';
-            
-            if (error?.response?.data?.detail) {
-                errorMessage = error.response.data.detail;
-            } else if (error?.message) {
-                errorMessage = error.message;
-            }
-            
-            alert(errorMessage);
-        }
-    };
+    // handleDeleteChallenge function removed as it's not used in this component
+    // Delete functionality is handled within ChallengeFormDialog
 
     const handleJoinChallenge = async (challengeId: number) => {
         // Find the challenge to debug

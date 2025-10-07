@@ -10,7 +10,6 @@ import type {
   Challenge,
   ChallengeParticipant,
   CreateChallengeData,
-  ChallengeProgress,
   LeaderboardEntry,
   ChallengeHistory,
   User
@@ -54,7 +53,7 @@ export function useChallenges(searchParams?: {
     ? createQueryKey('/api/challenges/search/', searchParams)
     : createQueryKey('/api/challenges/search/');
 
-  const { data: users = [], error: usersError, isLoading: usersLoading } = useUsers();
+  const { data: users = [], error: usersError } = useUsers();
 
   // Log users data for debugging
   if (usersError) {

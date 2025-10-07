@@ -7,7 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Select, SelectItem } from '../../components/ui/select';
 import { useCreateChallenge, useUpdateChallenge, useDeleteChallenge } from '../../lib/hooks/useChallenges';
 import type { Challenge } from '../../lib/types/api';
-import { Save, X, Trash2 } from 'lucide-react';
+import { Save, Trash2 } from 'lucide-react';
 
 // Define suggested units for each challenge type (adapted from GOAL_TYPE_UNITS)
 const CHALLENGE_TYPE_UNITS: Record<string, string[]> = {
