@@ -364,3 +364,4 @@ Deletes the currently authenticated user's account.
 ## Error Responses
 
 The API returns validation errors with appropriate HTTP status codes and descriptive messages.
+
