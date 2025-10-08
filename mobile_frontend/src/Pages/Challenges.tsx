@@ -17,6 +17,7 @@ import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/dat
 import Cookies from '@react-native-cookies/cookies';
 import { useAuth } from '../context/AuthContext';
 import ChallengeCard from '../components/ChallengeCard';
+import CustomText from '@components/CustomText';
 
 type ChallengeListItem = { id: number };
 
@@ -408,6 +409,58 @@ const ChallengeDetailContent: React.FC<{ id: number; api: string; onClose: () =>
   const [challenge, setChallenge] = useState<any>(null);
   const [participant, setParticipant] = useState<any>(null);
   const [participantsCount, setParticipantsCount] = useState<number | null>(null);
+  const [showParticipants, setShowParticipants] = useState(false);
+  const [leaderboard, setLeaderboard] = useState<LeaderboardRow[]>([]);
+  const [leaderboardLoading, setLeaderboardLoading] = useState(false);
+  const [leaderboardLoaded, setLeaderboardLoaded] = useState(false);
+
+  type LeaderboardRow = {
+    id?: number;
+    user?: number;
+    username?: string;
+    current_value?: number;
+    finish_date?: string;
+  };
+
+  // Leaderboard
+  const cookieOrigin = api.replace(/\/api\/?$/, '');
+
+  const loadLeaderboard = async () => {
+    if (leaderboardLoading || leaderboardLoaded) return;
+    setLeaderboardLoading(true);
+    try {
+      const cookies = await Cookies.get(cookieOrigin);
+      const csrf = cookies.csrftoken?.value;
+      const r2 = await fetch(`${api}/challenges/${id}/leaderboard/`, {
+        headers: { ...getAuthHeader(), 'Content-Type': 'application/json', ...(csrf ? { 'X-CSRFToken': csrf } : {}) },
+        credentials: 'include',
+      });
+      if (r2.ok) {
+        const list = await r2.json();
+        setLeaderboard(Array.isArray(list) ? list : []);
+      }
+    } finally {
+      setLeaderboardLoading(false);
+      setLeaderboardLoaded(true);
+    }
+  };
+
+  const onToggleParticipants = async () => {
+    const next = !showParticipants;
+    setShowParticipants(next);
+    if (next && !leaderboardLoaded) {
+      await loadLeaderboard();
+    }
+  };
+
+
+  const medal = (rank: number) => (rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : '');
+  
+  const pct = (value?: number) => {
+    const t = Number(challenge?.target_value || 0);
+    if (!t) return 0;
+    return Math.max(0, Math.min(100, Math.round(((value ?? 0) / t) * 100)));
+  };
 
   useEffect(() => {
     let alive = true;
@@ -445,6 +498,7 @@ const ChallengeDetailContent: React.FC<{ id: number; api: string; onClose: () =>
         });
         if (r2.ok) {
           const list = await r2.json();
+          setLeaderboard(Array.isArray(list) ? list : []);
           if (alive) setParticipantsCount(Array.isArray(list) ? list.length : null);
         }
       } catch (e: any) {
@@ -482,7 +536,38 @@ const ChallengeDetailContent: React.FC<{ id: number; api: string; onClose: () =>
       <Text>Target: {challenge.target_value ?? '—'} {challenge.unit || ''}</Text>
       <Text>Joined: {joined ? 'Yes' : 'No'}</Text>
       {participantsCount != null && <Text>Participants: {participantsCount}</Text>}
+      <View style={{ marginTop: 12 }}>
+        <Pressable
+          onPress={onToggleParticipants}
+          style={{ paddingVertical: 8, paddingHorizontal: 12, borderWidth: 1, borderColor: '#b46d6d', borderRadius: 8 }}
+        >
+          <CustomText style={{ color: '#8a2e2e' }}>
+            {showParticipants ? 'Hide participants' : `Show participants${participantsCount != null ? ` (${participantsCount})` : ''}`}
+          </CustomText>
+        </Pressable>
 
+        {showParticipants && (
+          <View style={{ marginTop: 10 }}>
+            {leaderboardLoading ? (
+              <ActivityIndicator />
+            ) : leaderboard.length === 0 ? (
+              <CustomText>No participants yet.</CustomText>
+            ) : (
+              leaderboard.map((p) => (
+                <View key={p.id ?? `${p.user}-${p.username ?? 'u'}`} style={{ paddingVertical: 6 }}>
+                  <CustomText style={{ fontWeight: '600' }}>{p.username || `User #${p.user}`}</CustomText>
+                  <CustomText>
+                    {(p.current_value ?? 0)} / {challenge.target_value} {challenge.unit || ''}
+                  </CustomText>
+                  {p.finish_date && (
+                    <CustomText style={{ color: '#666' }}>Finished: {fmt(p.finish_date)}</CustomText>
+                  )}
+                </View>
+              ))
+            )}
+          </View>
+        )}
+      </View>
       {/* Time window */}
       <Text style={{ marginTop: 12, fontWeight: '600' }}>Schedule</Text>
       <Text>Starts: {fmt(challenge.start_date)}</Text>
