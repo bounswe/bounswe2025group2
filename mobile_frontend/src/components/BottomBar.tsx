@@ -98,9 +98,9 @@ const BottomBar = ({ state, navigation }: BottomTabBarProps) => {
       </Pressable>
       <Pressable style={styles.tab} onPress={() => navigateToScreen('Challenges')}>
         <ChallengesIcon 
-          width={32} 
-          height={32} 
-          color={isActiveRoute('Challenges') ? colors.active : colors.passive} 
+          width={36} 
+          height={40} 
+          fill={isActiveRoute('Challenges') ? colors.active : colors.passive} 
         />
         <CustomText 
           style={[
