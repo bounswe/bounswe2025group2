@@ -455,7 +455,7 @@ const ChallengeDetailContent: React.FC<{ id: number; api: string; onClose: () =>
 
 
   const medal = (rank: number) => (rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : '');
-  
+
   const pct = (value?: number) => {
     const t = Number(challenge?.target_value || 0);
     if (!t) return 0;
@@ -553,17 +553,44 @@ const ChallengeDetailContent: React.FC<{ id: number; api: string; onClose: () =>
             ) : leaderboard.length === 0 ? (
               <CustomText>No participants yet.</CustomText>
             ) : (
-              leaderboard.map((p) => (
-                <View key={p.id ?? `${p.user}-${p.username ?? 'u'}`} style={{ paddingVertical: 6 }}>
-                  <CustomText style={{ fontWeight: '600' }}>{p.username || `User #${p.user}`}</CustomText>
-                  <CustomText>
-                    {(p.current_value ?? 0)} / {challenge.target_value} {challenge.unit || ''}
-                  </CustomText>
-                  {p.finish_date && (
-                    <CustomText style={{ color: '#666' }}>Finished: {fmt(p.finish_date)}</CustomText>
-                  )}
-                </View>
-              ))
+              
+
+              leaderboard.map((p, idx) => {
+                const rank = idx + 1;                   // respects server sort
+                const percent = pct(p.current_value);
+                return (
+                  <View
+                    key={p.id ?? `${p.user}-${p.username ?? 'u'}-${idx}`}
+                    style={{ padding: 8, borderWidth: 1, borderColor: '#eee', borderRadius: 8 }}
+                  >
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <CustomText style={{ fontWeight: '700' }}>
+                        {medal(rank)} #{rank} {p.username || `User #${p.user}`}
+                      </CustomText>
+                      {p.finish_date && <CustomText style={{ color: '#2e7d32' }}>Finished</CustomText>}
+                    </View>
+
+                    <CustomText style={{ marginTop: 4 }}>
+                      {(p.current_value ?? 0)} / {challenge.target_value} {challenge.unit || ''} ({percent}%)
+                    </CustomText>
+
+                    {/* tiny progress bar */}
+                    <View style={{ height: 8, backgroundColor: '#eee', borderRadius: 999, overflow: 'hidden', marginTop: 6 }}>
+                      <View style={{ width: `${percent}%`, height: '100%', backgroundColor: '#8a2e2e' }} />
+                    </View>
+
+                    {p.finish_date && (
+                      <CustomText style={{ color: '#666', marginTop: 4 }}>
+                        Finished: {fmt(p.finish_date)}
+                      </CustomText>
+                    )}
+                  </View>
+                );
+              })
+
+
+
+
             )}
           </View>
         )}
