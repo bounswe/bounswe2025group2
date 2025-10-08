@@ -409,10 +409,48 @@ const ChallengeDetailContent: React.FC<{ id: number; api: string; onClose: () =>
   const [challenge, setChallenge] = useState<any>(null);
   const [participant, setParticipant] = useState<any>(null);
   const [participantsCount, setParticipantsCount] = useState<number | null>(null);
+  
   const [showParticipants, setShowParticipants] = useState(false);
   const [leaderboard, setLeaderboard] = useState<LeaderboardRow[]>([]);
   const [leaderboardLoading, setLeaderboardLoading] = useState(false);
   const [leaderboardLoaded, setLeaderboardLoaded] = useState(false);
+  
+  type SortKey = 'progress' | 'finish_date' | 'joined_at' | 'username';
+  const [sortKey, setSortKey] = useState<SortKey>('progress');
+  const [sortReverse, setSortReverse] = useState(false);
+
+  const [showProgress, setShowProgress] = useState(false);
+  const [progressMode, setProgressMode] = useState<'add' | 'set'>('add');
+  const [progressVal, setProgressVal] = useState('');
+  const [progressLoading, setProgressLoading] = useState(false);
+
+  const [isEditing, setIsEditing] = useState(false);
+  const [edit, setEdit] = useState({
+    title: '',
+    description: '',
+    location: '',
+    target_value: '',
+    unit: '',
+    start_date: '',
+    end_date: '',
+    min_age: '',
+    max_age: '',
+  });
+
+  // date values for the edit form
+  const [editStart, setEditStart] = useState<Date | null>(null);
+  const [editEnd, setEditEnd] = useState<Date | null>(null);
+
+  // picker mechanics
+  const [editPickerVisible, setEditPickerVisible] = useState(false);
+  const [editPickerTarget, setEditPickerTarget] = useState<'start' | 'end' | null>(null);
+  const [editPickerMode, setEditPickerMode] = useState<'date' | 'time' | 'datetime'>('date');
+  const [editTempDate, setEditTempDate] = useState<Date | null>(null);
+
+  const fmtLocal = (d: Date | null) =>
+    d
+      ? d.toLocaleString(undefined, { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+      : 'Pick date & time';
 
   type LeaderboardRow = {
     id?: number;
@@ -425,13 +463,15 @@ const ChallengeDetailContent: React.FC<{ id: number; api: string; onClose: () =>
   // Leaderboard
   const cookieOrigin = api.replace(/\/api\/?$/, '');
 
-  const loadLeaderboard = async () => {
-    if (leaderboardLoading || leaderboardLoaded) return;
+  const loadLeaderboard = async (force = false) => {
+    if (leaderboardLoading || (leaderboardLoaded && !force)) return;
     setLeaderboardLoading(true);
     try {
-      const cookies = await Cookies.get(cookieOrigin);
+      const cookies = await Cookies.get(api.replace(/\/api\/?$/, ''));
       const csrf = cookies.csrftoken?.value;
-      const r2 = await fetch(`${api}/challenges/${id}/leaderboard/`, {
+
+      const qs = `${sortKey}=${sortReverse ? '-' : ''}`;
+      const r2 = await fetch(`${api}/challenges/${id}/leaderboard/?${qs}`, {
         headers: { ...getAuthHeader(), 'Content-Type': 'application/json', ...(csrf ? { 'X-CSRFToken': csrf } : {}) },
         credentials: 'include',
       });
@@ -453,6 +493,61 @@ const ChallengeDetailContent: React.FC<{ id: number; api: string; onClose: () =>
     }
   };
 
+  const changeSortKey = async (key: SortKey) => {
+    setSortKey(key);
+    setSortReverse(false);
+    if (showParticipants) await loadLeaderboard(true);
+  };
+
+  const toggleSortDir = async () => {
+    setSortReverse(v => !v);
+    if (showParticipants) await loadLeaderboard(true);
+  };
+
+  const joinChallenge = async () => {
+    try {
+      const cookies = await Cookies.get(cookieOrigin);
+      const csrf = cookies.csrftoken?.value;
+      const res = await fetch(`${api}/challenges/${id}/join/`, {
+        method: 'POST',
+        headers: { ...getAuthHeader(), 'Content-Type': 'application/json', ...(csrf ? { 'X-CSRFToken': csrf } : {}) },
+        credentials: 'include',
+      });
+      if (res.status === 201 || res.ok) {
+        setJoined(true);
+        // bump counts/UI
+        if (typeof participantsCount === 'number') setParticipantsCount(participantsCount + 1);
+        if (showParticipants) await loadLeaderboard(true);
+      } else {
+        const msg = await res.text();
+        Alert.alert('Join failed', msg || 'Unable to join.');
+      }
+    } catch {
+      Alert.alert('Join failed', 'Network error.');
+    }
+  };
+
+  const leaveChallenge = async () => {
+    try {
+      const cookies = await Cookies.get(cookieOrigin);
+      const csrf = cookies.csrftoken?.value;
+      const res = await fetch(`${api}/challenges/${id}/leave/`, {
+        method: 'POST',
+        headers: { ...getAuthHeader(), 'Content-Type': 'application/json', ...(csrf ? { 'X-CSRFToken': csrf } : {}) },
+        credentials: 'include',
+      });
+      if (res.status === 204 || res.ok) {
+        setJoined(false);
+        if (typeof participantsCount === 'number') setParticipantsCount(Math.max(0, participantsCount - 1));
+        if (showParticipants) await loadLeaderboard(true);
+      } else {
+        const msg = await res.text();
+        Alert.alert('Leave failed', msg || 'Unable to leave.');
+      }
+    } catch {
+      Alert.alert('Leave failed', 'Network error.');
+    }
+  };
 
   const medal = (rank: number) => (rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : '');
 
@@ -462,6 +557,207 @@ const ChallengeDetailContent: React.FC<{ id: number; api: string; onClose: () =>
     return Math.max(0, Math.min(100, Math.round(((value ?? 0) / t) * 100)));
   };
 
+  const submitProgress = async () => {
+    const v = parseFloat(progressVal);
+    if (Number.isNaN(v)) {
+      Alert.alert('Invalid input', 'Enter a number.');
+      return;
+    }
+
+    setProgressLoading(true);
+    try {
+      const cookies = await Cookies.get(cookieOrigin);
+      const csrf = cookies.csrftoken?.value;
+
+      const body =
+        progressMode === 'add' ? { added_value: v } : { current_value: v };
+
+      const res = await fetch(`${api}/challenges/${id}/update-progress/`, {
+        method: 'POST',
+        headers: { ...getAuthHeader(), 'Content-Type': 'application/json', ...(csrf ? { 'X-CSRFToken': csrf } : {}) },
+        credentials: 'include',
+        body: JSON.stringify(body),
+      });
+
+      if (!res.ok) {
+        const t = await res.text();
+        Alert.alert('Update failed', t || 'Unable to update progress.');
+        return;
+      }
+
+      
+      const nowIso = new Date().toISOString();
+      setParticipant((prev: { current_value: any; finish_date: any; }) => {
+        if (!prev) return prev;
+        const newVal = progressMode === 'add' ? (prev.current_value ?? 0) + v : v;
+        const finished = (challenge?.target_value ?? Infinity) <= newVal;
+        return {
+          ...prev,
+          current_value: newVal,
+          last_updated: nowIso,
+          finish_date: finished ? (prev.finish_date ?? nowIso) : null,
+        };
+      });
+
+      // If panel open, refresh leaderboard to reflect new order
+      if (showParticipants) await loadLeaderboard(true);
+
+      setShowProgress(false);
+      setProgressVal('');
+    } catch {
+      Alert.alert('Network error', 'Please try again.');
+    } finally {
+      setProgressLoading(false);
+    }
+  };
+
+  const openEdit = () => {
+    if (!challenge) return;
+    setEditStart(challenge.start_date ? new Date(challenge.start_date) : null);
+    setEditEnd(challenge.end_date ? new Date(challenge.end_date) : null);
+    setEdit({
+      title: challenge.title ?? '',
+      description: challenge.description ?? '',
+      location: challenge.location ?? '',
+      target_value: challenge.target_value != null ? String(challenge.target_value) : '',
+      unit: challenge.unit ?? '',
+      start_date: challenge.start_date ?? '',
+      end_date: challenge.end_date ?? '',
+      min_age: challenge.min_age != null ? String(challenge.min_age) : '',
+      max_age: challenge.max_age != null ? String(challenge.max_age) : '',
+    });
+    setIsEditing(true);
+  };
+
+  const cancelEdit = () => setIsEditing(false);
+
+  const saveEdit = async () => {
+    try {
+      const cookieOrigin = api.replace(/\/api\/?$/, '');
+      const cookies = await Cookies.get(cookieOrigin);
+      const csrf = cookies.csrftoken?.value;
+
+      // Only send fields that actually changed (backend keeps others as-is)
+      const body: any = {};
+      const num = (v: string) => (v.trim() === '' ? undefined : Number(v));
+      const maybe = (k: keyof typeof edit, conv?: (s: string)=>any) => {
+        const oldVal = (challenge as any)[k];
+        const newVal = edit[k];
+        if (newVal === '') return; // skip empty optional fields
+        const out = conv ? conv(newVal) : newVal.trim();
+        if (out !== oldVal) body[k] = out;
+      };
+
+      maybe('title');
+      maybe('description');
+      maybe('location');
+      maybe('unit');
+      maybe('target_value', (s) => Number(s));
+      maybe('min_age', (s) => Number(s));
+      maybe('max_age', (s) => Number(s));
+      if (editStart && editStart.toISOString() !== challenge.start_date) body.start_date = editStart.toISOString();
+      if (editEnd && editEnd.toISOString() !== challenge.end_date) body.end_date = editEnd.toISOString();
+
+      const res = await fetch(`${api}/challenges/${id}/update/`, {
+        method: 'PUT',
+        headers: { ...getAuthHeader(), 'Content-Type': 'application/json', ...(csrf ? { 'X-CSRFToken': csrf } : {}) },
+        credentials: 'include',
+        body: JSON.stringify(body),
+      });
+
+      if (!res.ok) {
+        const t = await res.text();
+        Alert.alert(res.status === 403 ? 'Forbidden' : 'Update failed', t || 'Could not update.');
+        return;
+      }
+
+      const updated = await res.json();
+      setChallenge(updated);     // refresh local detail
+      setIsEditing(false);
+    } catch {
+      Alert.alert('Network error', 'Please try again.');
+    }
+  };
+
+  const deleteChallenge = () => {
+    Alert.alert('Delete challenge?', 'This cannot be undone.', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            const cookieOrigin = api.replace(/\/api\/?$/, '');
+            const cookies = await Cookies.get(cookieOrigin);
+            const csrf = cookies.csrftoken?.value;
+
+            const res = await fetch(`${api}/challenges/${id}/delete/`, {
+              method: 'DELETE',
+              headers: { ...getAuthHeader(), 'Content-Type': 'application/json', ...(csrf ? { 'X-CSRFToken': csrf } : {}) },
+              credentials: 'include',
+            });
+            if (res.status === 204 || res.ok) {
+              onClose(); // close the modal; parent can refresh list
+            } else {
+              const t = await res.text();
+              Alert.alert('Delete failed', t || 'Could not delete.');
+            }
+          } catch {
+            Alert.alert('Network error', 'Please try again.');
+          }
+        },
+      },
+    ]);
+  };
+
+  const openEditPicker = (which: 'start' | 'end') => {
+    setEditPickerTarget(which);
+    if (Platform.OS === 'ios') {
+      setEditPickerMode('datetime');
+      setEditPickerVisible(true);
+    } else {
+      setEditPickerMode('date');
+      setEditPickerVisible(true);
+    }
+  };
+
+  const onEditPickerChange = (event: any, selected?: Date) => {
+    if (Platform.OS === 'android') {
+      if (event.type === 'dismissed') {
+        setEditPickerVisible(false);
+        setEditTempDate(null);
+        return;
+      }
+      if (editPickerMode === 'date') {
+        const base = selected || new Date();
+        setEditTempDate(base);
+        setEditPickerVisible(false);
+        setTimeout(() => {
+          setEditPickerMode('time');
+          setEditPickerVisible(true);
+        }, 0);
+      } else {
+        const time = selected || new Date();
+        const base = editTempDate || new Date();
+        const merged = new Date(base);
+        merged.setHours(time.getHours(), time.getMinutes(), 0, 0);
+        if (editPickerTarget === 'start') setEditStart(merged);
+        if (editPickerTarget === 'end') setEditEnd(merged);
+        setEditPickerVisible(false);
+        setEditTempDate(null);
+      }
+    } else {
+      if (event.type === 'dismissed') {
+        setEditPickerVisible(false);
+        return;
+      }
+      if (selected) {
+        if (editPickerTarget === 'start') setEditStart(selected);
+        if (editPickerTarget === 'end') setEditEnd(selected);
+      }
+      setEditPickerVisible(false);
+    }
+  };
   useEffect(() => {
     let alive = true;
     const load = async () => {
@@ -530,12 +826,172 @@ const ChallengeDetailContent: React.FC<{ id: number; api: string; onClose: () =>
         <Text style={{ fontSize: 20, fontWeight: '700', color: '#8a2e2e', flexShrink: 1 }}>{challenge.title}</Text>
         <Pressable onPress={onClose} style={{ padding: 8 }}><Text>Close</Text></Pressable>
       </View>
+      <View style={{ flexDirection: 'row', gap: 8, marginTop: 12 }}>
+        <Pressable onPress={openEdit} style={{ paddingVertical: 8, paddingHorizontal: 12, borderWidth: 1, borderColor: '#b46d6d', borderRadius: 8 }}>
+          <Text style={{ color: '#8a2e2e' }}>Edit</Text>
+        </Pressable>
+        <Pressable onPress={deleteChallenge} style={{ paddingVertical: 8, paddingHorizontal: 12, backgroundColor: '#b00020', borderRadius: 8 }}>
+          <Text style={{ color: '#fff' }}>Delete</Text>
+        </Pressable>
+      </View>
+      {isEditing && (
+        <View style={{ marginTop: 10, gap: 8 }}>
+          <TextInput
+            value={edit.title}
+            onChangeText={(t) => setEdit((s) => ({ ...s, title: t }))}
+            placeholder="Title"
+            style={{ borderWidth: 1, borderColor: '#b46d6d', borderRadius: 8, padding: 10, backgroundColor: '#fff' }}
+          />
+          <TextInput
+            value={edit.description}
+            onChangeText={(t) => setEdit((s) => ({ ...s, description: t }))}
+            placeholder="Description"
+            multiline
+            style={{ borderWidth: 1, borderColor: '#b46d6d', borderRadius: 8, padding: 10, backgroundColor: '#fff', minHeight: 80 }}
+          />
+          <TextInput
+            value={edit.location}
+            onChangeText={(t) => setEdit((s) => ({ ...s, location: t }))}
+            placeholder="Location"
+            style={{ borderWidth: 1, borderColor: '#b46d6d', borderRadius: 8, padding: 10, backgroundColor: '#fff' }}
+          />
 
+          <View style={{ flexDirection: 'row', gap: 8 }}>
+            <TextInput
+              value={edit.target_value}
+              onChangeText={(t) => setEdit((s) => ({ ...s, target_value: t }))}
+              placeholder="Target"
+              keyboardType="numeric"
+              style={{ flex: 1, borderWidth: 1, borderColor: '#b46d6d', borderRadius: 8, padding: 10, backgroundColor: '#fff' }}
+            />
+            <TextInput
+              value={edit.unit}
+              onChangeText={(t) => setEdit((s) => ({ ...s, unit: t }))}
+              placeholder="Unit"
+              style={{ width: 100, borderWidth: 1, borderColor: '#b46d6d', borderRadius: 8, padding: 10, backgroundColor: '#fff' }}
+            />
+          </View>
+
+          <Pressable onPress={() => openEditPicker('start')} style={{ borderWidth: 1, borderColor: '#b46d6d', borderRadius: 8, padding: 12, backgroundColor: '#fff' }}>
+            <Text style={{ color: '#8a2e2e' }}>Start: {fmtLocal(editStart)}</Text>
+          </Pressable>
+          <Pressable onPress={() => openEditPicker('end')} style={{ borderWidth: 1, borderColor: '#b46d6d', borderRadius: 8, padding: 12, backgroundColor: '#fff', marginTop: 8 }}>
+            <Text style={{ color: '#8a2e2e' }}>End: {fmtLocal(editEnd)}</Text>
+          </Pressable>
+
+          {editPickerVisible && (
+            <DateTimePicker
+              value={(editPickerTarget === 'start' ? editStart : editEnd) || new Date()}
+              mode={editPickerMode}
+              display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+              onChange={onEditPickerChange}
+            />
+          )}
+
+          <View style={{ flexDirection: 'row', gap: 8 }}>
+            <TextInput
+              value={edit.min_age}
+              onChangeText={(t) => setEdit((s) => ({ ...s, min_age: t }))}
+              placeholder="Min age"
+              keyboardType="numeric"
+              style={{ flex: 1, borderWidth: 1, borderColor: '#b46d6d', borderRadius: 8, padding: 10, backgroundColor: '#fff' }}
+            />
+            <TextInput
+              value={edit.max_age}
+              onChangeText={(t) => setEdit((s) => ({ ...s, max_age: t }))}
+              placeholder="Max age"
+              keyboardType="numeric"
+              style={{ flex: 1, borderWidth: 1, borderColor: '#b46d6d', borderRadius: 8, padding: 10, backgroundColor: '#fff' }}
+            />
+          </View>
+
+          <View style={{ flexDirection: 'row', justifyContent: 'flex-end', gap: 8 }}>
+            <Pressable onPress={cancelEdit} style={{ paddingVertical: 8, paddingHorizontal: 12, borderWidth: 1, borderColor: '#b46d6d', borderRadius: 8 }}>
+              <Text style={{ color: '#8a2e2e' }}>Cancel</Text>
+            </Pressable>
+            <Pressable onPress={saveEdit} style={{ paddingVertical: 8, paddingHorizontal: 12, backgroundColor: '#8a2e2e', borderRadius: 8 }}>
+              <Text style={{ color: '#fff' }}>Save</Text>
+            </Pressable>
+          </View>
+        </View>
+      )}
       {/* Basic facts */}
       <Text style={{ marginTop: 12 }}>Type: {challenge.challenge_type || '—'}</Text>
       <Text>Target: {challenge.target_value ?? '—'} {challenge.unit || ''}</Text>
       <Text>Joined: {joined ? 'Yes' : 'No'}</Text>
       {participantsCount != null && <Text>Participants: {participantsCount}</Text>}
+      <View style={{ flexDirection: 'row', gap: 12, marginTop: 12 }}>
+        {joined ? (
+          <Pressable
+            onPress={leaveChallenge}
+            style={{ paddingVertical: 8, paddingHorizontal: 12, borderWidth: 1, borderColor: '#b46d6d', borderRadius: 8 }}
+          >
+            <Text style={{ color: '#8a2e2e' }}>Leave challenge</Text>
+          </Pressable>
+        ) : (
+          <Pressable
+            onPress={joinChallenge}
+            style={{ paddingVertical: 8, paddingHorizontal: 12, backgroundColor: '#8a2e2e', borderRadius: 8 }}
+          >
+            <Text style={{ color: '#fff' }}>Join challenge</Text>
+          </Pressable>
+        )}
+      </View>
+      {/* Update Progress (visible only if joined) */}
+      {joined && (
+        <View style={{ marginTop: 12 }}>
+          {!showProgress ? (
+            <Pressable
+              onPress={() => setShowProgress(true)} 
+              style={{ paddingVertical: 8, paddingHorizontal: 12, backgroundColor: '#8a2e2e', borderRadius: 8, alignSelf: 'flex-start' }}
+            >
+              <Text style={{ color: '#fff' }}>Update progress</Text>
+            </Pressable>
+          ) : (
+            <View style={{ gap: 8 }}>
+              {/* Mode toggle */}
+              <View style={{ flexDirection: 'row', gap: 8 }}>
+                <Pressable
+                  onPress={() => setProgressMode('add')}
+                  style={{ paddingVertical: 6, paddingHorizontal: 10, borderWidth: 1, borderColor: '#b46d6d', borderRadius: 8, backgroundColor: progressMode === 'add' ? '#f5dede' : '#fff' }}
+                >
+                  <Text style={{ color: '#8a2e2e' }}>Add</Text>
+                </Pressable>
+                <Pressable
+                  onPress={() => setProgressMode('set')}
+                  style={{ paddingVertical: 6, paddingHorizontal: 10, borderWidth: 1, borderColor: '#b46d6d', borderRadius: 8, backgroundColor: progressMode === 'set' ? '#f5dede' : '#fff' }}
+                >
+                  <Text style={{ color: '#8a2e2e' }}>Set</Text>
+                </Pressable>
+              </View>
+
+              {/* Input + actions */}
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <TextInput
+                  value={progressVal}
+                  onChangeText={setProgressVal}
+                  placeholder={progressMode === 'add' ? 'Added value' : 'Current value'}
+                  keyboardType="numeric"
+                  style={{ flex: 1, borderWidth: 1, borderColor: '#b46d6d', borderRadius: 8, padding: 10, backgroundColor: '#fff' }}
+                />
+                <Pressable
+                  onPress={submitProgress}
+                  disabled={progressLoading}
+                  style={{ paddingVertical: 10, paddingHorizontal: 14, backgroundColor: '#8a2e2e', borderRadius: 8, opacity: progressLoading ? 0.7 : 1 }}
+                >
+                  <Text style={{ color: '#fff' }}>{progressLoading ? 'Saving…' : 'Save'}</Text>
+                </Pressable>
+                <Pressable
+                  onPress={() => { setShowProgress(false); setProgressVal(''); }}
+                  style={{ paddingVertical: 10, paddingHorizontal: 14, borderWidth: 1, borderColor: '#b46d6d', borderRadius: 8 }}
+                >
+                  <Text style={{ color: '#8a2e2e' }}>Cancel</Text>
+                </Pressable>
+              </View>
+            </View>
+          )}
+        </View>
+      )}
       <View style={{ marginTop: 12 }}>
         <Pressable
           onPress={onToggleParticipants}
@@ -548,13 +1004,42 @@ const ChallengeDetailContent: React.FC<{ id: number; api: string; onClose: () =>
 
         {showParticipants && (
           <View style={{ marginTop: 10 }}>
+            {/* Sort controls */}
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 10, marginBottom: 6 }}>
+              {(['progress', 'finish_date', 'joined_at', 'username'] as SortKey[]).map((k) => (
+                <Pressable
+                  key={k}
+                  onPress={() => changeSortKey(k)}
+                  style={{
+                    paddingVertical: 6,
+                    paddingHorizontal: 10,
+                    borderWidth: 1,
+                    borderColor: '#b46d6d',
+                    borderRadius: 8,
+                    backgroundColor: sortKey === k ? '#f5dede' : '#fff',
+                  }}
+                >
+                  <CustomText style={{ color: '#8a2e2e' }}>
+                    {k === 'progress' ? 'Progress' : k === 'finish_date' ? 'Finish' : k === 'joined_at' ? 'Joined' : 'Name'}
+                  </CustomText>
+                </Pressable>
+              ))}
+
+              <Pressable
+                onPress={toggleSortDir}
+                style={{ paddingVertical: 6, paddingHorizontal: 10, borderWidth: 1, borderColor: '#b46d6d', borderRadius: 8 }}
+              >
+                <CustomText style={{ color: '#8a2e2e' }}>
+                  {sortReverse ? '↓' : '↑'}
+                </CustomText>
+              </Pressable>
+            </View>
+
             {leaderboardLoading ? (
               <ActivityIndicator />
             ) : leaderboard.length === 0 ? (
               <CustomText>No participants yet.</CustomText>
             ) : (
-              
-
               leaderboard.map((p, idx) => {
                 const rank = idx + 1;                   // respects server sort
                 const percent = pct(p.current_value);
@@ -587,10 +1072,6 @@ const ChallengeDetailContent: React.FC<{ id: number; api: string; onClose: () =>
                   </View>
                 );
               })
-
-
-
-
             )}
           </View>
         )}
