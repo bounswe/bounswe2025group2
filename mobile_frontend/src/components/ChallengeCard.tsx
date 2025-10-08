@@ -24,7 +24,7 @@ type Challenge = {
 type Props = {
   challengeId: number;
   onViewDetails?: (id: number) => void;
-  baseUrl?: string; // optional override
+  baseUrl?: string;
 };
 
 const ChallengeCard: React.FC<Props> = ({ challengeId, onViewDetails, baseUrl }) => {
@@ -172,7 +172,13 @@ const ChallengeCard: React.FC<Props> = ({ challengeId, onViewDetails, baseUrl })
           </Text>
         </Pressable>
 
-        <Pressable onPress={() => onViewDetails?.(challengeId)} style={styles.linkBtn}>
+        <Pressable onPress={() => {
+            console.log('View details pressed for', challengeId);
+            onViewDetails?.(challengeId)
+          }}
+            hitSlop={8}
+            android_ripple={{ color: '#e0e0e0' }}
+            style={styles.linkBtn}>
           <Text style={styles.linkText}>View Details</Text>
         </Pressable>
       </View>
