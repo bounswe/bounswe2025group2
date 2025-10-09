@@ -12,6 +12,7 @@ import {
   ScrollView,
   StyleSheet,
   Platform,
+  Switch,
 } from 'react-native';
 import Toast from 'react-native-toast-message';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
@@ -38,8 +39,24 @@ const Challenges: React.FC = () => {
   // detail modal state
   const [detailId, setDetailId] = useState<number | null>(null);
 
-  // Default filter: active challenges
-  const defaultParams = { is_active: 'true' };
+  // Filters UI
+  const [filterOpen, setFilterOpen] = useState(false);
+  type BoolParam = '' | 'true' | 'false';
+  const [filters, setFilters] = useState<{
+    is_active: BoolParam;
+    user_participating: BoolParam;
+    min_age: string;
+    max_age: string;
+    location: string;
+    radius_km: string;
+  }>({
+    is_active: 'true',
+    user_participating: '',
+    min_age: '',
+    max_age: '',
+    location: '',
+    radius_km: '10',
+  });
 
   const handleMembershipChange = (challengeId: number, joined: boolean) => {
     setItems(prev =>
@@ -52,10 +69,20 @@ const Challenges: React.FC = () => {
   };
 
   const buildUrl = () => {
-    const qs = Object.entries(defaultParams)
-      .filter(([, v]) => v != null && String(v).length > 0)
-      .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(String(v))}`)
+    const params: Record<string, string> = {};
+    if (filters.is_active) params.is_active = filters.is_active;
+    if (filters.user_participating) params.user_participating = filters.user_participating;
+    if (filters.min_age.trim()) params.min_age = filters.min_age.trim();
+    if (filters.max_age.trim()) params.max_age = filters.max_age.trim();
+    if (filters.location.trim()) {
+      params.location = filters.location.trim();
+      if (filters.radius_km.trim()) params.radius_km = filters.radius_km.trim();
+    }
+
+    const qs = Object.entries(params)
+      .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`)
       .join('&');
+
     return `${API}/challenges/search/${qs ? `?${qs}` : ''}`;
   };
 
@@ -284,6 +311,31 @@ const Challenges: React.FC = () => {
         Found {items.length} challenge{items.length === 1 ? '' : 's'}
       </Text>
 
+      {/* Toolbar */}
+      <View style={styles.toolbar}>
+        <Pressable onPress={() => setFilterOpen(true)} style={styles.toolbarBtn}>
+          <Text style={styles.toolbarBtnText}>Filters</Text>
+        </Pressable>
+
+        <Pressable
+          onPress={() => {
+            setFilters({
+              is_active: 'true',
+              user_participating: '',
+              min_age: '',
+              max_age: '',
+              location: '',
+              radius_km: '10',
+            });
+            setRefreshing(true);
+            fetchChallenges();
+          }}
+          style={[styles.toolbarBtn, { backgroundColor: '#eee', borderColor: '#ccc' }]}
+        >
+          <Text style={[styles.toolbarBtnText, { color: '#333' }]}>Reset</Text>
+        </Pressable>
+      </View>
+
       <FlatList
         data={items}
         keyExtractor={(item) => `${item.id}-${item.is_joined ? 1 : 0}`}
@@ -401,6 +453,91 @@ const Challenges: React.FC = () => {
           />
         )}
       </Modal>
+      
+      {/* Filters modal */}
+      <Modal visible={filterOpen} animationType="slide" onRequestClose={() => setFilterOpen(false)}>
+        <View style={styles.modalWrap}>
+          <Text style={styles.modalTitle}>Filters</Text>
+
+          <ScrollView contentContainerStyle={{ paddingBottom: 24 }}>
+            {/* Active only */}
+            <View style={styles.filterRow}>
+              <Text style={styles.filterLabel}>Active only</Text>
+              <Switch
+                value={filters.is_active === 'true'}
+                onValueChange={(on) =>
+                  setFilters((f) => ({ ...f, is_active: on ? 'true' : '' }))
+                }
+              />
+            </View>
+
+            {/* Joined only */}
+            <View style={styles.filterRow}>
+              <Text style={styles.filterLabel}>Joined only</Text>
+              <Switch
+                value={filters.user_participating === 'true'}
+                onValueChange={(on) =>
+                  setFilters((f) => ({ ...f, user_participating: on ? 'true' : '' }))
+                }
+              />
+            </View>
+
+            {/* Age range */}
+            <View style={{ flexDirection: 'row', gap: 10 }}>
+              <TextInput
+                placeholder="Min age"
+                keyboardType="numeric"
+                value={filters.min_age}
+                onChangeText={(t) => setFilters((f) => ({ ...f, min_age: t }))}
+                style={[styles.input, { flex: 1 }]}
+              />
+              <TextInput
+                placeholder="Max age"
+                keyboardType="numeric"
+                value={filters.max_age}
+                onChangeText={(t) => setFilters((f) => ({ ...f, max_age: t }))}
+                style={[styles.input, { flex: 1 }]}
+              />
+            </View>
+
+            {/* Location + radius */}
+            <TextInput
+              placeholder="Location (e.g., Kadıköy, Istanbul)"
+              value={filters.location}
+              onChangeText={(t) => setFilters((f) => ({ ...f, location: t }))}
+              style={styles.input}
+            />
+            <TextInput
+              placeholder="Radius (km)"
+              keyboardType="numeric"
+              value={filters.radius_km}
+              onChangeText={(t) => setFilters((f) => ({ ...f, radius_km: t }))}
+              style={styles.input}
+            />
+
+            {/* Actions */}
+            <View style={styles.row}>
+              <Pressable
+                onPress={() => setFilterOpen(false)}
+                style={[styles.btn, styles.btnSecondary]}
+              >
+                <Text style={styles.btnSecondaryText}>Cancel</Text>
+              </Pressable>
+              <Pressable
+                onPress={() => {
+                  setFilterOpen(false);
+                  setRefreshing(true);
+                  fetchChallenges();
+                }}
+                style={[styles.btn, styles.btnPrimary]}
+              >
+                <Text style={styles.btnPrimaryText}>Apply</Text>
+              </Pressable>
+            </View>
+          </ScrollView>
+        </View>
+      </Modal>
+
       <Modal visible={detailId != null} animationType="slide" onRequestClose={() => setDetailId(null)}>
         <View style={{ flex: 1, backgroundColor: '#fff' }}>
           {detailId != null && (
@@ -1281,6 +1418,35 @@ const styles = StyleSheet.create({
   btnSecondaryText: { color: '#8a2e2e' },
   btnPrimary: { backgroundColor: '#8a2e2e' },
   btnPrimaryText: { color: '#fff', fontWeight: '600' },
+  toolbar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingHorizontal: 16,
+    paddingTop: 8,
+  },
+  toolbarBtn: {
+    borderWidth: 1,
+    borderColor: '#b46d6d',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    backgroundColor: '#fff',
+  },
+  toolbarBtnText: {
+    color: '#8a2e2e',
+    fontWeight: '600',
+  },
+  filterRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  filterLabel: {
+    fontSize: 16,
+    color: '#8a2e2e',
+  },
 });
 
 export default Challenges;
