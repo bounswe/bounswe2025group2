@@ -25,26 +25,46 @@ type Props = {
   challengeId: number;
   onViewDetails?: (id: number) => void;
   baseUrl?: string;
-  joined?: boolean;
+  joined?: boolean; // controlled from parent
   onMembershipChange?: (id: number, joined: boolean) => void;
 };
 
-const ChallengeCard: React.FC<Props> = ({ challengeId, onViewDetails, baseUrl }) => {
+const ChallengeCard: React.FC<Props> = ({
+  challengeId,
+  onViewDetails,
+  baseUrl,
+  joined: joinedProp,
+  onMembershipChange,
+}) => {
   const { getAuthHeader } = useAuth();
   const API = baseUrl ?? 'http://10.0.2.2:8000/api';
+  const cookieOrigin = API.replace(/\/api\/?$/, '');
 
   const [loading, setLoading] = useState(true);
   const [joining, setJoining] = useState(false);
-  const [joined, setJoined] = useState(false);
+
+  // Local mirror of "joined" so the button can disable immediately.
+  // Initialized from prop if provided; otherwise null until we fetch.
+  const [localJoined, setLocalJoined] = useState<boolean | null>(
+    typeof joinedProp === 'boolean' ? joinedProp : null
+  );
+
   const [challenge, setChallenge] = useState<Challenge | null>(null);
   const [participants, setParticipants] = useState(0);
+
+  // Keep local state in sync if parent changes its truth
+  useEffect(() => {
+    if (typeof joinedProp === 'boolean') {
+      setLocalJoined(joinedProp);
+    }
+  }, [joinedProp]);
 
   useEffect(() => {
     let mounted = true;
     const load = async () => {
       setLoading(true);
       try {
-        const cookies = await Cookies.get('http://10.0.2.2:8000');
+        const cookies = await Cookies.get(cookieOrigin);
         const csrf = cookies.csrftoken?.value;
 
         // Detail
@@ -59,8 +79,13 @@ const ChallengeCard: React.FC<Props> = ({ challengeId, onViewDetails, baseUrl })
         if (!response.ok) throw new Error('detail failed');
         const data = await response.json();
         if (!mounted) return;
-        setJoined(Boolean(data.joined));
+
         setChallenge(data.challenge);
+
+        // Only set joined from server if parent didn't supply it
+        if (typeof joinedProp !== 'boolean') {
+          setLocalJoined(Boolean(data.joined));
+        }
 
         // Participants via leaderboard length
         const response2 = await fetch(`${API}/challenges/${challengeId}/leaderboard/`, {
@@ -71,9 +96,9 @@ const ChallengeCard: React.FC<Props> = ({ challengeId, onViewDetails, baseUrl })
           },
           credentials: 'include',
         });
-        if (response2.ok) {
+        if (response2.ok && mounted) {
           const list = await response2.json();
-          if (mounted) setParticipants(Array.isArray(list) ? list.length : 0);
+          setParticipants(Array.isArray(list) ? list.length : 0);
         } else if (mounted) {
           setParticipants(0);
         }
@@ -87,12 +112,13 @@ const ChallengeCard: React.FC<Props> = ({ challengeId, onViewDetails, baseUrl })
     return () => {
       mounted = false;
     };
-  }, [API, challengeId, getAuthHeader]);
+  }, [API, challengeId, getAuthHeader, cookieOrigin, joinedProp]);
 
   const join = async () => {
+    if (joining || localJoined) return;
     setJoining(true);
     try {
-      const cookies = await Cookies.get('http://10.0.2.2:8000');
+      const cookies = await Cookies.get(cookieOrigin);
       const csrf = cookies.csrftoken?.value;
 
       const response = await fetch(`${API}/challenges/${challengeId}/join/`, {
@@ -105,9 +131,10 @@ const ChallengeCard: React.FC<Props> = ({ challengeId, onViewDetails, baseUrl })
         credentials: 'include',
       });
 
-      if (response.ok) {
-        setJoined(true);
+      if (response.ok || response.status === 201) {
+        setLocalJoined(true);
         setParticipants((p) => p + 1);
+        onMembershipChange?.(challengeId, true); // notify parent
       } else {
         const text = await response.text();
         Alert.alert('Join failed', text || 'Unable to join.');
@@ -135,13 +162,16 @@ const ChallengeCard: React.FC<Props> = ({ challengeId, onViewDetails, baseUrl })
     );
   }
 
-  const dateStr = (challenge.start_date || challenge.end_date)
-    ? new Date(challenge.start_date || challenge.end_date!).toLocaleDateString(undefined, {
-        month: 'long',
-        day: 'numeric',
-        year: 'numeric',
-      })
-    : '';
+  const dateStr =
+    challenge.start_date || challenge.end_date
+      ? new Date(challenge.start_date || challenge.end_date!).toLocaleDateString(undefined, {
+          month: 'long',
+          day: 'numeric',
+          year: 'numeric',
+        })
+      : '';
+
+  const joinedUI = Boolean(localJoined);
 
   return (
     <View style={styles.card}>
@@ -150,7 +180,9 @@ const ChallengeCard: React.FC<Props> = ({ challengeId, onViewDetails, baseUrl })
           <View style={styles.pill}>
             <Text style={styles.pillText}>{challenge.challenge_type}</Text>
           </View>
-        ) : <View />}
+        ) : (
+          <View />
+        )}
         <Text style={styles.dateText}>{dateStr}</Text>
       </View>
 
@@ -166,21 +198,22 @@ const ChallengeCard: React.FC<Props> = ({ challengeId, onViewDetails, baseUrl })
       <View style={styles.actions}>
         <Pressable
           onPress={join}
-          disabled={joined || joining}
-          style={[styles.primaryBtn, (joined || joining) && styles.disabledBtn]}
+          disabled={joinedUI || joining}
+          style={[styles.primaryBtn, (joinedUI || joining) && styles.disabledBtn]}
         >
           <Text style={styles.primaryBtnText}>
-            {joined ? 'Joined' : 'Join Challenge'}
+            {joinedUI ? 'Joined' : 'Join Challenge'}
           </Text>
         </Pressable>
 
-        <Pressable onPress={() => {
-            console.log('View details pressed for', challengeId);
-            onViewDetails?.(challengeId)
+        <Pressable
+          onPress={() => {
+            onViewDetails?.(challengeId);
           }}
-            hitSlop={8}
-            android_ripple={{ color: '#e0e0e0' }}
-            style={styles.linkBtn}>
+          hitSlop={8}
+          android_ripple={{ color: '#e0e0e0' }}
+          style={styles.linkBtn}
+        >
           <Text style={styles.linkText}>View Details</Text>
         </Pressable>
       </View>
