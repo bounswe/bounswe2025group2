@@ -25,6 +25,8 @@ type Props = {
   challengeId: number;
   onViewDetails?: (id: number) => void;
   baseUrl?: string;
+  joined?: boolean;
+  onMembershipChange?: (id: number, joined: boolean) => void;
 };
 
 const ChallengeCard: React.FC<Props> = ({ challengeId, onViewDetails, baseUrl }) => {

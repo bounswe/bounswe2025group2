@@ -13,13 +13,14 @@ import {
   StyleSheet,
   Platform,
 } from 'react-native';
+import Toast from 'react-native-toast-message';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import Cookies from '@react-native-cookies/cookies';
 import { useAuth } from '../context/AuthContext';
 import ChallengeCard from '../components/ChallengeCard';
 import CustomText from '@components/CustomText';
 
-type ChallengeListItem = { id: number };
+type ChallengeListItem = { id: number; is_joined?: boolean };
 
 const API = 'http://10.0.2.2:8000/api';
 
@@ -39,6 +40,16 @@ const Challenges: React.FC = () => {
 
   // Default filter: active challenges
   const defaultParams = { is_active: 'true' };
+
+  const handleMembershipChange = (challengeId: number, joined: boolean) => {
+    setItems(prev =>
+      prev.map(c =>
+        c.id === challengeId
+          ? { ...c, is_joined: joined /* and maybe user_progress reset to 0 on leave */ }
+          : c
+      )
+    );
+  };
 
   const buildUrl = () => {
     const qs = Object.entries(defaultParams)
@@ -275,7 +286,7 @@ const Challenges: React.FC = () => {
 
       <FlatList
         data={items}
-        keyExtractor={(item) => String(item.id)}
+        keyExtractor={(item) => `${item.id}-${item.is_joined ? 1 : 0}`}
         contentContainerStyle={{ padding: 16, gap: 12, paddingBottom: 96 }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         ListEmptyComponent={<Text style={{ padding: 16 }}>No challenges match your filters.</Text>}
@@ -283,6 +294,7 @@ const Challenges: React.FC = () => {
           <ChallengeCard
             challengeId={item.id}
             baseUrl={API}
+            joined={item.is_joined}
             onViewDetails={(id: number) => setDetailId(id)}
           />
         )}
@@ -392,7 +404,12 @@ const Challenges: React.FC = () => {
       <Modal visible={detailId != null} animationType="slide" onRequestClose={() => setDetailId(null)}>
         <View style={{ flex: 1, backgroundColor: '#fff' }}>
           {detailId != null && (
-            <ChallengeDetailContent id={detailId} api={API} onClose={() => setDetailId(null)} />
+            <ChallengeDetailContent
+              id={detailId}
+              api={API}
+              onClose={() => setDetailId(null)}
+              onMembershipChange={handleMembershipChange}
+            />
           )}
         </View>
       </Modal>
@@ -401,7 +418,7 @@ const Challenges: React.FC = () => {
 };
 
 // Minimal detail content for the popup
-const ChallengeDetailContent: React.FC<{ id: number; api: string; onClose: () => void }> = ({ id, api, onClose }) => {
+const ChallengeDetailContent: React.FC<{ id: number; api: string; onMembershipChange?: (challengeId: number, joined: boolean) => void; onClose: () => void }> = ({ id, api, onMembershipChange, onClose }) => {
   const { user, getAuthHeader } = useAuth();
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
@@ -424,6 +441,9 @@ const ChallengeDetailContent: React.FC<{ id: number; api: string; onClose: () =>
   const [progressVal, setProgressVal] = useState('');
   const [progressLoading, setProgressLoading] = useState(false);
 
+  const [joining, setJoining] = useState(false);
+  const [leaving, setLeaving] = useState(false);
+
   const [isEditing, setIsEditing] = useState(false);
   const [edit, setEdit] = useState({
     title: '',
@@ -436,6 +456,8 @@ const ChallengeDetailContent: React.FC<{ id: number; api: string; onClose: () =>
     min_age: '',
     max_age: '',
   });
+
+  const busy = joining || leaving;
 
   const isCoach = Boolean(user?.user_type === 'Coach' || user?.is_verified_coach);
   const coachIdFromChallenge =
@@ -454,6 +476,17 @@ const ChallengeDetailContent: React.FC<{ id: number; api: string; onClose: () =>
   const [editPickerTarget, setEditPickerTarget] = useState<'start' | 'end' | null>(null);
   const [editPickerMode, setEditPickerMode] = useState<'date' | 'time' | 'datetime'>('date');
   const [editTempDate, setEditTempDate] = useState<Date | null>(null);
+
+  const visibleRef = React.useRef(true);
+  React.useEffect(() => {
+    visibleRef.current = true;
+    return () => { visibleRef.current = false; };
+  }, []);
+
+  const showToast = (t: 'success' | 'error', text1: string, text2?: string) => {
+    if (!visibleRef.current) return; // don't toast after modal closes
+    Toast.show({ type: t, text1, ...(text2 ? { text2 } : {}) });
+  };
 
   const fmtLocal = (d: Date | null) =>
     d
@@ -513,6 +546,13 @@ const ChallengeDetailContent: React.FC<{ id: number; api: string; onClose: () =>
   };
 
   const joinChallenge = async () => {
+    if (joining) return;
+    setJoining(true);
+
+    // optimistic
+    setJoined(true);
+    onMembershipChange?.(id, true);
+
     try {
       const cookies = await Cookies.get(cookieOrigin);
       const csrf = cookies.csrftoken?.value;
@@ -521,21 +561,57 @@ const ChallengeDetailContent: React.FC<{ id: number; api: string; onClose: () =>
         headers: { ...getAuthHeader(), 'Content-Type': 'application/json', ...(csrf ? { 'X-CSRFToken': csrf } : {}) },
         credentials: 'include',
       });
+
       if (res.status === 201 || res.ok) {
-        setJoined(true);
-        // bump counts/UI
         if (typeof participantsCount === 'number') setParticipantsCount(participantsCount + 1);
-        if (showParticipants) await loadLeaderboard(true);
+        showToast('success', 'Joined challenge');
+        if (showParticipants) { loadLeaderboard(true).catch(() => {}); }
       } else {
+        // rollback
+        setJoined(false);
+        onMembershipChange?.(id, false);
         const msg = await res.text();
-        Alert.alert('Join failed', msg || 'Unable to join.');
+        showToast('error', 'Join failed', msg || 'Please try again.');
       }
-    } catch {
-      Alert.alert('Join failed', 'Network error.');
+    } catch (e) {
+      // Verify actual server state before rollback
+      try {
+        const res2 = await fetch(`${api}/challenges/${id}/`, {
+          method: 'GET',
+          headers: { ...getAuthHeader(), 'Content-Type': 'application/json' },
+          credentials: 'include',
+        });
+        if (res2.ok) {
+          const data2 = await res2.json();
+          const reallyJoined = !!data2.joined;
+          setJoined(reallyJoined);
+          onMembershipChange?.(id, reallyJoined);
+          if (reallyJoined) {
+            // Server shows we *did* join; suppress the error.
+            return;
+          }
+        }
+      } catch {
+        // ignore; fallback to rollback
+      }
+
+      // Only if verification says we're not joined (or verify failed), rollback + error
+      setJoined(false);
+      onMembershipChange?.(id, false);
+      showToast('error', 'Network error');
+    } finally {
+      setJoining(false);
     }
   };
 
-  const leaveChallenge = async () => {
+  const doLeave = async () => {
+    if (leaving) return;
+    setLeaving(true);
+
+    // optimistic
+    setJoined(false);
+    onMembershipChange?.(id, false);
+
     try {
       const cookies = await Cookies.get(cookieOrigin);
       const csrf = cookies.csrftoken?.value;
@@ -544,17 +620,59 @@ const ChallengeDetailContent: React.FC<{ id: number; api: string; onClose: () =>
         headers: { ...getAuthHeader(), 'Content-Type': 'application/json', ...(csrf ? { 'X-CSRFToken': csrf } : {}) },
         credentials: 'include',
       });
+
       if (res.status === 204 || res.ok) {
-        setJoined(false);
         if (typeof participantsCount === 'number') setParticipantsCount(Math.max(0, participantsCount - 1));
-        if (showParticipants) await loadLeaderboard(true);
+        showToast('success', 'Left challenge');
+        if (showParticipants) { loadLeaderboard(true).catch(() => {}); }
       } else {
+        // rollback
+        setJoined(true);
+        onMembershipChange?.(id, true);
         const msg = await res.text();
-        Alert.alert('Leave failed', msg || 'Unable to leave.');
+        showToast('error', 'Leave failed', msg || 'Please try again.');
       }
-    } catch {
-      Alert.alert('Leave failed', 'Network error.');
+    } catch (e: any) {
+      // Before rolling back, verify with a quick GET whether we actually left.
+      try {
+        const res2 = await fetch(`${api}/challenges/${id}/`, {
+          method: 'GET',
+          headers: { ...getAuthHeader(), 'Content-Type': 'application/json' },
+          credentials: 'include',
+        });
+        if (res2.ok) {
+          const data2 = await res2.json();
+          const reallyJoined = !!data2.joined;
+          setJoined(reallyJoined);
+          onMembershipChange?.(id, reallyJoined);
+          if (!reallyJoined) {
+            // Server shows we *did* leave; don’t show an error or rollback.
+            return;
+          }
+        }
+      } catch {
+        // ignore verification errors; we’ll rollback below
+      }
+
+      // Only if verification says we're still joined (or verify failed), rollback + error
+      setJoined(true);
+      onMembershipChange?.(id, true);
+      showToast('error', 'Network error');
+    } finally {
+      setLeaving(false);
     }
+  };
+
+  const confirmLeave = () => {
+    if (leaving || joining) return;
+    Alert.alert(
+      'Leave challenge?',
+      'You will be removed from the leaderboard.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Leave', style: 'destructive', onPress: doLeave },
+      ],
+    );
   };
 
   const medal = (rank: number) => (rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : '');
@@ -609,9 +727,10 @@ const ChallengeDetailContent: React.FC<{ id: number; api: string; onClose: () =>
 
       // If panel open, refresh leaderboard to reflect new order
       if (showParticipants) await loadLeaderboard(true);
-
+      
       setShowProgress(false);
       setProgressVal('');
+      Toast.show({ type: 'success', text1: 'Progress updated' });
     } catch {
       Alert.alert('Network error', 'Please try again.');
     } finally {
@@ -682,6 +801,7 @@ const ChallengeDetailContent: React.FC<{ id: number; api: string; onClose: () =>
       const updated = await res.json();
       setChallenge(updated);     // refresh local detail
       setIsEditing(false);
+      Toast.show({ type: 'success', text1: 'Challenge updated' });
     } catch {
       Alert.alert('Network error', 'Please try again.');
     }
@@ -705,6 +825,7 @@ const ChallengeDetailContent: React.FC<{ id: number; api: string; onClose: () =>
               credentials: 'include',
             });
             if (res.status === 204 || res.ok) {
+              Toast.show({ type: 'success', text1: 'Challenge deleted' });
               onClose(); // close the modal; parent can refresh list
             } else {
               const t = await res.text();
@@ -933,17 +1054,19 @@ const ChallengeDetailContent: React.FC<{ id: number; api: string; onClose: () =>
       <View style={{ flexDirection: 'row', gap: 12, marginTop: 12 }}>
         {joined ? (
           <Pressable
-            onPress={leaveChallenge}
-            style={{ paddingVertical: 8, paddingHorizontal: 12, borderWidth: 1, borderColor: '#b46d6d', borderRadius: 8 }}
+            onPress={confirmLeave}
+            disabled={busy}
+            style={{ paddingVertical: 8, paddingHorizontal: 12, borderWidth: 1, borderColor: '#b46d6d', borderRadius: 8, opacity: leaving ? 0.7 : 1 }}
           >
-            <Text style={{ color: '#8a2e2e' }}>Leave challenge</Text>
+            <Text style={{ color: '#8a2e2e' }}>{leaving ? 'Leaving…' : 'Leave challenge'}</Text>
           </Pressable>
         ) : (
           <Pressable
             onPress={joinChallenge}
-            style={{ paddingVertical: 8, paddingHorizontal: 12, backgroundColor: '#8a2e2e', borderRadius: 8 }}
+            disabled={busy}
+            style={{ paddingVertical: 8, paddingHorizontal: 12, backgroundColor: '#8a2e2e', borderRadius: 8, opacity: joining ? 0.7 : 1 }}
           >
-            <Text style={{ color: '#fff' }}>Join challenge</Text>
+            <Text style={{ color: '#fff' }}>{joining ? 'Joining…' : 'Join challenge'}</Text>
           </Pressable>
         )}
       </View>
