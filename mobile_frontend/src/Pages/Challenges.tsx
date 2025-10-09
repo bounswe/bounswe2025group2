@@ -402,7 +402,7 @@ const Challenges: React.FC = () => {
 
 // Minimal detail content for the popup
 const ChallengeDetailContent: React.FC<{ id: number; api: string; onClose: () => void }> = ({ id, api, onClose }) => {
-  const { getAuthHeader } = useAuth();
+  const { user, getAuthHeader } = useAuth();
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
   const [joined, setJoined] = useState<boolean>(false);
@@ -436,6 +436,14 @@ const ChallengeDetailContent: React.FC<{ id: number; api: string; onClose: () =>
     min_age: '',
     max_age: '',
   });
+
+  const isCoach = Boolean(user?.user_type === 'Coach' || user?.is_verified_coach);
+  const coachIdFromChallenge =
+    challenge?.coach?.id ?? challenge?.coach_id ?? challenge?.coach;
+
+  // If we don't know our id yet (no chats), fall back to coach-only.
+  const canEditDelete = isCoach && (user?.id == null ? true : coachIdFromChallenge === user.id);
+
 
   // date values for the edit form
   const [editStart, setEditStart] = useState<Date | null>(null);
@@ -826,6 +834,7 @@ const ChallengeDetailContent: React.FC<{ id: number; api: string; onClose: () =>
         <Text style={{ fontSize: 20, fontWeight: '700', color: '#8a2e2e', flexShrink: 1 }}>{challenge.title}</Text>
         <Pressable onPress={onClose} style={{ padding: 8 }}><Text>Close</Text></Pressable>
       </View>
+      { canEditDelete && (
       <View style={{ flexDirection: 'row', gap: 8, marginTop: 12 }}>
         <Pressable onPress={openEdit} style={{ paddingVertical: 8, paddingHorizontal: 12, borderWidth: 1, borderColor: '#b46d6d', borderRadius: 8 }}>
           <Text style={{ color: '#8a2e2e' }}>Edit</Text>
@@ -834,6 +843,7 @@ const ChallengeDetailContent: React.FC<{ id: number; api: string; onClose: () =>
           <Text style={{ color: '#fff' }}>Delete</Text>
         </Pressable>
       </View>
+      )}
       {isEditing && (
         <View style={{ marginTop: 10, gap: 8 }}>
           <TextInput
