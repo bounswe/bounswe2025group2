@@ -127,6 +127,17 @@ export interface Comment {
   updated_at: string;
 }
 
+export interface Subcomment {
+  id: number;
+  author_id: number;
+  author_username: string;
+  comment_id: number;
+  content: string;
+  like_count: number;
+  created_at: string;
+  updated_at: string;
+}
+
 // Vote Types
 export interface Vote {
   id: number;

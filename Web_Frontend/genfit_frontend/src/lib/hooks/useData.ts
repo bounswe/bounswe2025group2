@@ -5,8 +5,8 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import GFapi from '../api/GFapi';
-import { createQueryKey, invalidateQueries } from '../query/queryClient';
-import type { Goal, Challenge, ForumThread, Quote, Forum, Comment, Vote } from '../types/api';
+import { createQueryKey } from '../query/queryClient';
+import type { Goal, Challenge, ForumThread, Quote, Forum, Comment, Subcomment, Vote } from '../types/api';
 
 /**
  * Hook to fetch user's goals
@@ -364,6 +364,58 @@ export function useDeleteComment() {
           const queryKey = query.queryKey as string[];
           return queryKey.some(key => 
             typeof key === 'string' && key.includes('/api/threads/')
+          );
+        }
+      });
+    },
+  });
+}
+
+/**
+ * Hook to get subcomments for a comment
+ */
+export function useSubcomments(commentId?: number, sortBy: 'date' | 'likes' = 'date') {
+  const endpoint = commentId ? `/api/subcomments/comment/${commentId}/?sort_by=${sortBy}` : null;
+  
+  return useQuery({
+    queryKey: createQueryKey(endpoint),
+    queryFn: () => GFapi.get<Subcomment[]>(endpoint!),
+    staleTime: 5 * 60 * 1000,
+    enabled: !!commentId,
+  });
+}
+
+/**
+ * Hook to add a subcomment to a comment
+ */
+export function useAddSubcomment() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: ({ commentId, content }: { commentId: number; content: string }) =>
+      GFapi.post<Subcomment>(`/api/subcomments/add/${commentId}/`, { content }),
+    onSuccess: (data, variables) => {
+      // Invalidate subcomments for this comment
+      queryClient.invalidateQueries({ 
+        predicate: (query) => {
+          const queryKey = query.queryKey as string[];
+          return queryKey.some(key => 
+            typeof key === 'string' && key.includes(`/api/subcomments/comment/${variables.commentId}`)
+          );
+        }
+      });
+      
+      // Invalidate the parent comment to update subcomment count
+      queryClient.invalidateQueries({ 
+        queryKey: createQueryKey(`/api/comments/${variables.commentId}/`) 
+      });
+      
+      // Invalidate all thread comments queries to refresh the comment list
+      queryClient.invalidateQueries({ 
+        predicate: (query) => {
+          const queryKey = query.queryKey as string[];
+          return queryKey.some(key => 
+            typeof key === 'string' && key.includes('/api/comments/thread/')
           );
         }
       });

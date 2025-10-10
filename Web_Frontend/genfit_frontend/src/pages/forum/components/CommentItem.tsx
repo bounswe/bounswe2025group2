@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { Card } from '../../../components/ui/card';
 import { Button } from '../../../components/ui/button';
-import { User, MessageCircle, Save, X } from 'lucide-react';
-import { useUpdateComment } from '../../../lib/hooks/useData';
+import { User, MessageCircle, Save, X, ChevronDown, ChevronUp } from 'lucide-react';
+import { useUpdateComment, useSubcomments } from '../../../lib/hooks/useData';
 import CommentActions from './CommentActions';
+import SubcommentItem from './SubcommentItem';
 import type { Comment } from '../../../lib/types/api';
 
 interface CommentItemProps {
@@ -13,7 +14,15 @@ interface CommentItemProps {
 const CommentItem: React.FC<CommentItemProps> = ({ comment }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState(comment.content);
+  const [showSubcomments, setShowSubcomments] = useState(false);
   const updateCommentMutation = useUpdateComment();
+  
+  // Fetch subcomments when they should be shown
+  const { 
+    data: subcomments, 
+    isLoading: subcommentsLoading, 
+    error: subcommentsError 
+  } = useSubcomments(showSubcomments ? comment.id : undefined);
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -49,6 +58,10 @@ const CommentItem: React.FC<CommentItemProps> = ({ comment }) => {
   const handleCancel = () => {
     setIsEditing(false);
     setEditContent(comment.content);
+  };
+
+  const toggleSubcomments = () => {
+    setShowSubcomments(!showSubcomments);
   };
 
   return (
@@ -105,14 +118,47 @@ const CommentItem: React.FC<CommentItemProps> = ({ comment }) => {
         <div className="comment-footer">
           <CommentActions comment={comment} onEdit={handleEdit} />
           {comment.subcomment_count > 0 && (
-            <div className="comment-stats">
-              <div className="stat-item">
-                <MessageCircle className="w-4 h-4" />
-                <span>{comment.subcomment_count} replies</span>
-              </div>
-            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={toggleSubcomments}
+              className="text-blue-600 hover:text-blue-800 hover:bg-blue-50 transition-colors"
+            >
+              <MessageCircle className="w-4 h-4 mr-2" />
+              <span>{comment.subcomment_count} replies</span>
+              {showSubcomments ? (
+                <ChevronUp className="w-4 h-4 ml-2" />
+              ) : (
+                <ChevronDown className="w-4 h-4 ml-2" />
+              )}
+            </Button>
           )}
         </div>
+        
+        {/* Subcomments Section */}
+        {showSubcomments && (
+          <div className="mt-4 border-t border-gray-200 pt-4">
+            {subcommentsLoading ? (
+              <div className="flex items-center justify-center py-4">
+                <p className="text-sm text-gray-500">Loading replies...</p>
+              </div>
+            ) : subcommentsError ? (
+              <div className="flex items-center justify-center py-4">
+                <p className="text-sm text-red-500">Error loading replies. Please try again.</p>
+              </div>
+            ) : subcomments && subcomments.length > 0 ? (
+              <div className="space-y-2">
+                {subcomments.map((subcomment) => (
+                  <SubcommentItem key={subcomment.id} subcomment={subcomment} />
+                ))}
+              </div>
+            ) : (
+              <div className="flex items-center justify-center py-4">
+                <p className="text-sm text-gray-500">No replies yet.</p>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </Card>
   );
