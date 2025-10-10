@@ -100,7 +100,7 @@ const CommentActions: React.FC<CommentActionsProps> = ({ comment, onEdit }) => {
             variant="ghost"
             size="sm"
             onClick={onEdit}
-            className="edit-button"
+            className="vote-button edit-button"
             disabled={isLoading}
             title="Edit comment"
           >
@@ -111,7 +111,7 @@ const CommentActions: React.FC<CommentActionsProps> = ({ comment, onEdit }) => {
             variant="ghost"
             size="sm"
             onClick={handleDelete}
-            className="delete-button text-red-600 hover:text-red-700"
+            className="vote-button delete-button"
             disabled={isLoading}
             title="Delete comment"
           >

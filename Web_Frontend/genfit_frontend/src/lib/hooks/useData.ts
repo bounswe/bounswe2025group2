@@ -378,7 +378,7 @@ export function useSubcomments(commentId?: number, sortBy: 'date' | 'likes' = 'd
   const endpoint = commentId ? `/api/subcomments/comment/${commentId}/?sort_by=${sortBy}` : null;
   
   return useQuery({
-    queryKey: createQueryKey(endpoint),
+    queryKey: endpoint ? createQueryKey(endpoint) : [],
     queryFn: () => GFapi.get<Subcomment[]>(endpoint!),
     staleTime: 5 * 60 * 1000,
     enabled: !!commentId,

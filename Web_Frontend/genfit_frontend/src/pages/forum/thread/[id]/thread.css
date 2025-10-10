@@ -330,7 +330,9 @@
 
 /* Comment Actions Styles */
 .comment-actions {
-  margin-top: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .vote-buttons {
@@ -381,43 +383,36 @@
   cursor: not-allowed;
 }
 
-/* Owner Actions Styles */
-.comment-actions {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 16px;
-}
-
-.owner-actions {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.edit-button {
-  padding: 4px 8px;
-  border-radius: 6px;
-  transition: all 0.2s ease;
-  border: 1px solid transparent;
-  color: #3b82f6;
-}
-
+/* Specific button styles with minimal interactive elements */
 .edit-button:hover {
   background-color: #eff6ff;
   border-color: #bfdbfe;
-}
-
-.delete-button {
-  padding: 4px 8px;
-  border-radius: 6px;
-  transition: all 0.2s ease;
-  border: 1px solid transparent;
+  color: #3b82f6;
 }
 
 .delete-button:hover {
   background-color: #fef2f2;
   border-color: #fecaca;
+  color: #dc2626;
+}
+
+.reply-button:hover {
+  background-color: #f0f9ff;
+  border-color: #bae6fd;
+  color: #0284c7;
+}
+
+.subcomments-button:hover {
+  background-color: #f8fafc;
+  border-color: #cbd5e1;
+  color: #475569;
+}
+
+/* Owner Actions Styles */
+.owner-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 /* Edit Mode Styles */
@@ -596,5 +591,66 @@
   
   .no-comments, .loading, .error {
     padding: 40px 20px;
+  }
+}
+
+/* Subcomment Form Animations and Interactivity */
+@keyframes subcommentFormSlideIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.95) translateY(-10px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes subcommentFormPulse {
+  0%, 100% {
+    box-shadow: 0 6px 16px -4px rgba(0, 0, 0, 0.08), 0 3px 6px -2px rgba(0, 0, 0, 0.04);
+  }
+  50% {
+    box-shadow: 0 8px 20px -4px rgba(30, 64, 175, 0.12), 0 4px 8px -2px rgba(30, 64, 175, 0.08);
+  }
+}
+
+.subcomment-form-card {
+  transition: all 0.3s ease;
+}
+
+.subcomment-form-card:hover {
+  animation: subcommentFormPulse 2s ease-in-out infinite;
+  transform: scale(1) !important;
+}
+
+.subcomment-form-card textarea:focus {
+  border-color: #3b82f6 !important;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1) !important;
+  background: rgba(255, 255, 255, 1) !important;
+}
+
+.subcomment-form-card button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(30, 64, 175, 0.35) !important;
+}
+
+.subcomment-form-card button:active {
+  transform: translateY(0);
+}
+
+/* Character counter animation */
+.subcomment-form-card .opacity-70 {
+  animation: fadeInUp 0.3s ease-out;
+}
+
+@keyframes fadeInUp {
+  0% {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+  100% {
+    opacity: 0.7;
+    transform: translateY(0);
   }
 }

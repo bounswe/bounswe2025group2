@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { Card } from '../../../components/ui/card';
 import { Button } from '../../../components/ui/button';
-import { User, MessageCircle, Save, X, ChevronDown, ChevronUp } from 'lucide-react';
+import { User, MessageCircle, Save, X, ChevronDown, ChevronUp, Reply } from 'lucide-react';
 import { useUpdateComment, useSubcomments } from '../../../lib/hooks/useData';
 import CommentActions from './CommentActions';
 import SubcommentItem from './SubcommentItem';
+import SubcommentForm from './SubcommentForm';
 import type { Comment } from '../../../lib/types/api';
 
 interface CommentItemProps {
@@ -15,6 +16,7 @@ const CommentItem: React.FC<CommentItemProps> = ({ comment }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState(comment.content);
   const [showSubcomments, setShowSubcomments] = useState(false);
+  const [showReplyForm, setShowReplyForm] = useState(false);
   const updateCommentMutation = useUpdateComment();
   
   // Fetch subcomments when they should be shown
@@ -62,6 +64,20 @@ const CommentItem: React.FC<CommentItemProps> = ({ comment }) => {
 
   const toggleSubcomments = () => {
     setShowSubcomments(!showSubcomments);
+  };
+
+  const handleReply = () => {
+    setShowReplyForm(true);
+  };
+
+  const handleReplyCancel = () => {
+    setShowReplyForm(false);
+  };
+
+  const handleSubcommentAdded = () => {
+    setShowReplyForm(false);
+    // Refresh subcomments by toggling and showing again
+    setShowSubcomments(true);
   };
 
   return (
@@ -115,46 +131,74 @@ const CommentItem: React.FC<CommentItemProps> = ({ comment }) => {
           )}
         </div>
         
-        <div className="comment-footer">
+        <div className="flex items-center justify-between mt-4 pt-3 border-t border-slate-100">
           <CommentActions comment={comment} onEdit={handleEdit} />
-          {comment.subcomment_count > 0 && (
+          
+          <div className="flex items-center gap-2">
             <Button
               variant="ghost"
               size="sm"
-              onClick={toggleSubcomments}
-              className="text-blue-600 hover:text-blue-800 hover:bg-blue-50 transition-colors"
+              onClick={handleReply}
+              className="vote-button reply-button"
+              title="Reply to comment"
             >
-              <MessageCircle className="w-4 h-4 mr-2" />
-              <span>{comment.subcomment_count} replies</span>
-              {showSubcomments ? (
-                <ChevronUp className="w-4 h-4 ml-2" />
-              ) : (
-                <ChevronDown className="w-4 h-4 ml-2" />
-              )}
+              <Reply className="w-4 h-4" />
             </Button>
-          )}
+            
+            {comment.subcomment_count > 0 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={toggleSubcomments}
+                className="vote-button subcomments-button"
+                title={`${showSubcomments ? 'Hide' : 'Show'} ${comment.subcomment_count} ${comment.subcomment_count === 1 ? 'reply' : 'replies'}`}
+              >
+                <MessageCircle className="w-4 h-4" />
+                <span className="ml-1 text-xs">{comment.subcomment_count}</span>
+                {showSubcomments ? (
+                  <ChevronUp className="w-3 h-3 ml-1" />
+                ) : (
+                  <ChevronDown className="w-3 h-3 ml-1" />
+                )}
+              </Button>
+            )}
+          </div>
         </div>
+        
+        {/* Reply Form */}
+        {showReplyForm && (
+          <div className="mt-4 p-4 bg-slate-50/50 rounded-lg border border-slate-200/60">
+            <SubcommentForm
+              commentId={comment.id}
+              onSubcommentAdded={handleSubcommentAdded}
+              onCancel={handleReplyCancel}
+            />
+          </div>
+        )}
         
         {/* Subcomments Section */}
         {showSubcomments && (
-          <div className="mt-4 border-t border-gray-200 pt-4">
+          <div className="mt-4 pt-4 border-t border-slate-100">
             {subcommentsLoading ? (
-              <div className="flex items-center justify-center py-4">
-                <p className="text-sm text-gray-500">Loading replies...</p>
+              <div className="flex items-center justify-center py-6">
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 border-2 border-slate-300 border-t-blue-500 rounded-full animate-spin"></div>
+                  <p className="text-sm text-slate-500">Loading replies...</p>
+                </div>
               </div>
             ) : subcommentsError ? (
-              <div className="flex items-center justify-center py-4">
-                <p className="text-sm text-red-500">Error loading replies. Please try again.</p>
+              <div className="flex items-center justify-center py-6">
+                <p className="text-sm text-red-500 bg-red-50 px-3 py-2 rounded-md">Error loading replies. Please try again.</p>
               </div>
             ) : subcomments && subcomments.length > 0 ? (
-              <div className="space-y-2">
+              <div className="space-y-3">
                 {subcomments.map((subcomment) => (
                   <SubcommentItem key={subcomment.id} subcomment={subcomment} />
                 ))}
               </div>
             ) : (
-              <div className="flex items-center justify-center py-4">
-                <p className="text-sm text-gray-500">No replies yet.</p>
+              <div className="flex items-center justify-center py-6">
+                <p className="text-sm text-slate-400 italic">No replies yet. Be the first to reply!</p>
               </div>
             )}
           </div>

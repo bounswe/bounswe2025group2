@@ -19,23 +19,26 @@ const SubcommentItem: React.FC<SubcommentItemProps> = ({ subcomment }) => {
   };
 
   return (
-    <Card className="ml-6 mt-2 bg-gray-50 border-l-4 border-l-gray-300">
-      <div className="p-3">
-        <div className="flex items-center justify-between mb-2">
-          <div className="flex items-center gap-2 text-sm">
-            <User className="w-3 h-3 text-gray-500" />
-            <span className="font-medium text-gray-700">{subcomment.author_username}</span>
+    <div className="relative ml-8 mt-3 p-3 bg-white border border-slate-200/60 rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200">
+      <div className="flex items-start justify-between mb-2.5">
+        <div className="flex items-center gap-2">
+          <div className="w-6 h-6 bg-slate-100 rounded-full flex items-center justify-center">
+            <User className="w-3 h-3 text-slate-500" />
           </div>
-          <div className="text-xs text-gray-500">
-            {formatDate(subcomment.created_at)}
+          <div className="flex flex-col">
+            <span className="text-sm font-medium text-slate-700">{subcomment.author_username}</span>
+            <span className="text-xs text-slate-500">{formatDate(subcomment.created_at)}</span>
           </div>
-        </div>
-        
-        <div className="text-sm text-gray-800">
-          <p>{subcomment.content}</p>
         </div>
       </div>
-    </Card>
+      
+      <div className="text-sm text-slate-800 leading-relaxed ml-8">
+        <p>{subcomment.content}</p>
+      </div>
+      
+      {/* Subtle visual indicator for subcomment */}
+      <div className="absolute left-0 top-0 bottom-0 w-0.5 bg-blue-200 rounded-full"></div>
+    </div>
   );
 };
 
