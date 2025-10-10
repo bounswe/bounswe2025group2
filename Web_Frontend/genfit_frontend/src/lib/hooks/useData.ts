@@ -168,6 +168,72 @@ export function useAddComment() {
 }
 
 /**
+ * Hook to update a subcomment
+ */
+export function useUpdateSubcomment() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: ({ subcommentId, content }: { subcommentId: number; content: string }) =>
+      GFapi.put<Subcomment>(`/api/subcomments/update/${subcommentId}/`, { content }),
+    onSuccess: (data, variables) => {
+      // Invalidate subcomments for the parent comment
+      queryClient.invalidateQueries({ 
+        predicate: (query) => {
+          const queryKey = query.queryKey as string[];
+          return queryKey.some(key => 
+            typeof key === 'string' && key.includes(`/api/subcomments/comment/${data.comment_id}`)
+          );
+        }
+      });
+      
+      // Invalidate all thread comments queries to refresh the comment list
+      queryClient.invalidateQueries({ 
+        predicate: (query) => {
+          const queryKey = query.queryKey as string[];
+          return queryKey.some(key => 
+            typeof key === 'string' && key.includes('/api/comments/thread/')
+          );
+        }
+      });
+    },
+  });
+}
+
+/**
+ * Hook to delete a subcomment
+ */
+export function useDeleteSubcomment() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: (subcommentId: number) =>
+      GFapi.delete(`/api/subcomments/delete/${subcommentId}/`),
+    onSuccess: (data, subcommentId) => {
+      // Invalidate all subcomments queries to refresh the lists
+      queryClient.invalidateQueries({ 
+        predicate: (query) => {
+          const queryKey = query.queryKey as string[];
+          return queryKey.some(key => 
+            typeof key === 'string' && key.includes('/api/subcomments/comment/')
+          );
+        }
+      });
+      
+      // Invalidate all thread comments queries to refresh comment counts
+      queryClient.invalidateQueries({ 
+        predicate: (query) => {
+          const queryKey = query.queryKey as string[];
+          return queryKey.some(key => 
+            typeof key === 'string' && key.includes('/api/comments/thread/')
+          );
+        }
+      });
+    },
+  });
+}
+
+/**
  * Hook to vote on a comment
  */
 export function useVoteComment() {
