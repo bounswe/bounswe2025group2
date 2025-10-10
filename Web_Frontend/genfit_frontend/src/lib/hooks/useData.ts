@@ -140,6 +140,34 @@ export function useCommentVoteStatus(commentId?: number) {
 }
 
 /**
+ * Hook to add a comment to a thread
+ */
+export function useAddComment() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: ({ threadId, content }: { threadId: number; content: string }) =>
+      GFapi.post<Comment>(`/api/comments/add/${threadId}/`, { content }),
+    onSuccess: (data, variables) => {
+      // Invalidate thread comments to show the new comment
+      queryClient.invalidateQueries({ 
+        predicate: (query) => {
+          const queryKey = query.queryKey as string[];
+          return queryKey.some(key => 
+            typeof key === 'string' && key.includes(`/api/comments/thread/${variables.threadId}`)
+          );
+        }
+      });
+      
+      // Invalidate thread data to update comment count
+      queryClient.invalidateQueries({ 
+        queryKey: createQueryKey(`/api/threads/${variables.threadId}/`) 
+      });
+    },
+  });
+}
+
+/**
  * Hook to vote on a comment
  */
 export function useVoteComment() {

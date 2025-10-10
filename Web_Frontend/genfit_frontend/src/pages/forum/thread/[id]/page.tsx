@@ -7,6 +7,7 @@ import { Card } from '../../../../components/ui/card';
 import { Button } from '../../../../components/ui/button';
 import CommentActions from '../../../../components/CommentActions';
 import ThreadActions from '../../../../components/ThreadActions';
+import CommentForm from '../../../../components/CommentForm';
 import { ArrowLeft, MessageCircle, Heart, Calendar, User } from 'lucide-react';
 import './thread.css';
 
@@ -107,6 +108,9 @@ const ThreadPage: React.FC = () => {
             <ThreadActions thread={thread} />
           </div>
         </Card>
+
+        {/* Comment Form */}
+        <CommentForm threadId={threadId!} />
 
         {/* Comments Section */}
         <div className="comments-section">
