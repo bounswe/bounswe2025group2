@@ -168,6 +168,119 @@ export function useAddComment() {
 }
 
 /**
+ * Hook to get user's vote status on a subcomment
+ */
+export function useSubcommentVoteStatus(subcommentId?: number) {
+  return useQuery({
+    queryKey: createQueryKey(`/api/forum/vote/subcomment/${subcommentId}/status/`),
+    queryFn: async () => {
+      try {
+        return await GFapi.get<Vote>(`/api/forum/vote/subcomment/${subcommentId}/status/`);
+      } catch (error: any) {
+        // If no vote exists (404), return null instead of throwing error
+        if (error?.response?.status === 404) {
+          return null;
+        }
+        throw error;
+      }
+    },
+    staleTime: 1 * 60 * 1000, // 1 minute
+    enabled: !!subcommentId,
+    retry: false, // Don't retry if no vote exists (404)
+  });
+}
+
+/**
+ * Hook to vote on a subcomment
+ */
+export function useVoteSubcomment() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: ({ subcommentId, voteType }: { subcommentId: number; voteType: 'UPVOTE' | 'DOWNVOTE' }) =>
+      GFapi.post<Vote>('/api/forum/vote/', {
+        content_type: 'SUBCOMMENT',
+        object_id: subcommentId,
+        vote_type: voteType,
+      }),
+    onSuccess: (data, variables) => {
+      // Invalidate vote status for this subcomment
+      queryClient.invalidateQueries({ 
+        queryKey: createQueryKey(`/api/forum/vote/subcomment/${variables.subcommentId}/status/`) 
+      });
+      
+      // Invalidate subcomment data to refresh like count
+      queryClient.invalidateQueries({ 
+        queryKey: createQueryKey(`/api/subcomments/${variables.subcommentId}/`) 
+      });
+      
+      // Invalidate all subcomments queries to refresh the list
+      queryClient.invalidateQueries({ 
+        predicate: (query) => {
+          const queryKey = query.queryKey as string[];
+          return queryKey.some(key => 
+            typeof key === 'string' && key.includes('/api/subcomments/comment/')
+          );
+        }
+      });
+      
+      // Invalidate all thread comments queries to refresh the comment list
+      queryClient.invalidateQueries({ 
+        predicate: (query) => {
+          const queryKey = query.queryKey as string[];
+          return queryKey.some(key => 
+            typeof key === 'string' && key.includes('/api/comments/thread/')
+          );
+        }
+      });
+    },
+  });
+}
+
+/**
+ * Hook to remove vote from a subcomment
+ */
+export function useRemoveVoteSubcomment() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: (subcommentId: number) =>
+      GFapi.delete(`/api/forum/vote/subcomment/${subcommentId}/`),
+    onSuccess: (data, subcommentId) => {
+      // Invalidate vote status for this subcomment
+      queryClient.invalidateQueries({ 
+        queryKey: createQueryKey(`/api/forum/vote/subcomment/${subcommentId}/status/`) 
+      });
+      
+      // Invalidate subcomment data to refresh like count
+      queryClient.invalidateQueries({ 
+        queryKey: createQueryKey(`/api/subcomments/${subcommentId}/`) 
+      });
+      
+      // Invalidate all subcomments queries to refresh the list
+      queryClient.invalidateQueries({ 
+        predicate: (query) => {
+          const queryKey = query.queryKey as string[];
+          return queryKey.some(key => 
+            typeof key === 'string' && key.includes('/api/subcomments/comment/')
+          );
+        }
+      });
+      
+      // Invalidate all thread comments queries to refresh the comment list
+      queryClient.invalidateQueries({ 
+        predicate: (query) => {
+          const queryKey = query.queryKey as string[];
+          return queryKey.some(key => 
+            typeof key === 'string' && key.includes('/api/comments/thread/')
+          );
+        }
+      });
+    },
+  });
+}
+
+/**
  * Hook to update a subcomment
  */
 export function useUpdateSubcomment() {

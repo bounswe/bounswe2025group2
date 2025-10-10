@@ -1,7 +1,7 @@
 import React from 'react';
 import { Button } from '../../../components/ui/button';
-import { Edit, Trash2 } from 'lucide-react';
-import { useDeleteSubcomment } from '../../../lib/hooks/useData';
+import { Heart, HeartOff, ChevronUp, ChevronDown, Edit, Trash2 } from 'lucide-react';
+import { useVoteSubcomment, useRemoveVoteSubcomment, useSubcommentVoteStatus, useDeleteSubcomment } from '../../../lib/hooks/useData';
 import { useIsAuthenticated } from '../../../lib/hooks/useAuth';
 import type { Subcomment } from '../../../lib/types/api';
 
@@ -11,11 +11,38 @@ interface SubcommentActionsProps {
 }
 
 const SubcommentActions: React.FC<SubcommentActionsProps> = ({ subcomment, onEdit }) => {
+  // Get current user and vote status
   const { user } = useIsAuthenticated();
+  const { data: voteStatus } = useSubcommentVoteStatus(subcomment.id);
+  
+  // Voting mutations
+  const voteSubcommentMutation = useVoteSubcomment();
+  const removeVoteMutation = useRemoveVoteSubcomment();
   const deleteSubcommentMutation = useDeleteSubcomment();
-
-  // Check if current user is the owner of the subcomment
+  
+  // Check current vote state (voteStatus can be null if no vote exists)
+  const hasUpvoted = voteStatus?.vote_type === 'UPVOTE';
+  const hasDownvoted = voteStatus?.vote_type === 'DOWNVOTE';
+  
+  // Check if current user owns this subcomment
   const isOwner = user?.id === subcomment.author_id;
+
+  const handleVote = async (voteType: 'UPVOTE' | 'DOWNVOTE') => {
+    try {
+      if ((voteType === 'UPVOTE' && hasUpvoted) || (voteType === 'DOWNVOTE' && hasDownvoted)) {
+        // Remove vote if clicking the same vote type
+        await removeVoteMutation.mutateAsync(subcomment.id);
+      } else {
+        // Add or change vote
+        await voteSubcommentMutation.mutateAsync({
+          subcommentId: subcomment.id,
+          voteType
+        });
+      }
+    } catch (error) {
+      console.error('Error voting on subcomment:', error);
+    }
+  };
 
   const handleDelete = async () => {
     if (window.confirm('Are you sure you want to delete this reply?')) {
@@ -27,11 +54,44 @@ const SubcommentActions: React.FC<SubcommentActionsProps> = ({ subcomment, onEdi
     }
   };
 
-  const isLoading = deleteSubcommentMutation.isPending;
+  const isLoading = voteSubcommentMutation.isPending || removeVoteMutation.isPending || deleteSubcommentMutation.isPending;
 
   return (
     <div className="comment-actions">
-      {/* No voting section for subcomments as requested */}
+      <div className="vote-buttons">
+        {/* Upvote Button */}
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => handleVote('UPVOTE')}
+          className={`vote-button upvote-button ${hasUpvoted ? 'voted' : ''}`}
+          disabled={isLoading}
+        >
+          {hasUpvoted ? (
+            <Heart className="w-4 h-4 fill-current text-red-500" />
+          ) : (
+            <ChevronUp className="w-4 h-4" />
+          )}
+        </Button>
+        
+        {/* Like Count */}
+        <span className="like-count">{subcomment.like_count}</span>
+        
+        {/* Downvote Button */}
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => handleVote('DOWNVOTE')}
+          className={`vote-button downvote-button ${hasDownvoted ? 'voted' : ''}`}
+          disabled={isLoading}
+        >
+          {hasDownvoted ? (
+            <HeartOff className="w-4 h-4 fill-current text-blue-500" />
+          ) : (
+            <ChevronDown className="w-4 h-4" />
+          )}
+        </Button>
+      </div>
       
       {/* Edit and Delete buttons for subcomment owner */}
       {isOwner && (
