@@ -162,6 +162,59 @@
   font-size: 14px;
 }
 
+/* Comment Actions Styles */
+.comment-actions {
+  margin-top: 8px;
+}
+
+.vote-buttons {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.vote-button {
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+  border: 1px solid transparent;
+}
+
+.vote-button:hover {
+  background-color: #f3f4f6;
+  border-color: #d1d5db;
+}
+
+.vote-button.voted {
+  background-color: #fef2f2;
+  border-color: #fecaca;
+}
+
+.upvote-button.voted {
+  background-color: #fef2f2;
+  border-color: #fecaca;
+  color: #dc2626;
+}
+
+.downvote-button.voted {
+  background-color: #eff6ff;
+  border-color: #bfdbfe;
+  color: #2563eb;
+}
+
+.like-count {
+  font-size: 14px;
+  font-weight: 500;
+  color: #374151;
+  min-width: 20px;
+  text-align: center;
+}
+
+.vote-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .no-comments {
   text-align: center;
   padding: 40px 20px;

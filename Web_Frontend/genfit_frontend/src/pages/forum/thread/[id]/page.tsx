@@ -5,6 +5,7 @@ import { useThread, useThreadComments } from '../../../../lib/hooks/useData';
 import Layout from '../../../../components/Layout';
 import { Card } from '../../../../components/ui/card';
 import { Button } from '../../../../components/ui/button';
+import CommentActions from '../../../../components/CommentActions';
 import { ArrowLeft, MessageCircle, Heart, Eye, Calendar, User } from 'lucide-react';
 import './thread.css';
 
@@ -142,18 +143,15 @@ const ThreadPage: React.FC = () => {
                     </div>
                     
                     <div className="comment-footer">
-                      <div className="comment-stats">
-                        <div className="stat-item">
-                          <Heart className="w-4 h-4" />
-                          <span>{comment.like_count}</span>
-                        </div>
-                        {comment.subcomment_count > 0 && (
+                      <CommentActions comment={comment} />
+                      {comment.subcomment_count > 0 && (
+                        <div className="comment-stats">
                           <div className="stat-item">
                             <MessageCircle className="w-4 h-4" />
                             <span>{comment.subcomment_count} replies</span>
                           </div>
-                        )}
-                      </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </Card>

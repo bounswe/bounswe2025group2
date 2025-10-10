@@ -127,6 +127,18 @@ export interface Comment {
   updated_at: string;
 }
 
+// Vote Types
+export interface Vote {
+  id: number;
+  user: number;
+  user_username: string;
+  content_type: string;
+  content_id: number;
+  vote_type: 'UPVOTE' | 'DOWNVOTE';
+  created_at: string;
+  updated_at: string;
+}
+
 // Quote Types
 export interface Quote {
   text: string;
