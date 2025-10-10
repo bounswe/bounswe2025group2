@@ -6,7 +6,8 @@ import Layout from '../../../../components/Layout';
 import { Card } from '../../../../components/ui/card';
 import { Button } from '../../../../components/ui/button';
 import CommentActions from '../../../../components/CommentActions';
-import { ArrowLeft, MessageCircle, Heart, Eye, Calendar, User } from 'lucide-react';
+import ThreadActions from '../../../../components/ThreadActions';
+import { ArrowLeft, MessageCircle, Heart, Calendar, User } from 'lucide-react';
 import './thread.css';
 
 const ThreadPage: React.FC = () => {
@@ -94,14 +95,6 @@ const ThreadPage: React.FC = () => {
                 <span>{formatDate(thread.created_at)}</span>
               </div>
               <div className="meta-item">
-                <Eye className="w-4 h-4" />
-                <span>{thread.view_count} views</span>
-              </div>
-              <div className="meta-item">
-                <Heart className="w-4 h-4" />
-                <span>{thread.like_count} likes</span>
-              </div>
-              <div className="meta-item">
                 <MessageCircle className="w-4 h-4" />
                 <span>{thread.comment_count} comments</span>
               </div>
@@ -110,6 +103,8 @@ const ThreadPage: React.FC = () => {
             <div className="thread-body">
               <p>{thread.content}</p>
             </div>
+            
+            <ThreadActions thread={thread} />
           </div>
         </Card>
 

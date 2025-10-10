@@ -177,6 +177,79 @@ export function useVoteComment() {
 }
 
 /**
+ * Hook to get user's vote status on a thread
+ */
+export function useThreadVoteStatus(threadId?: number) {
+  return useQuery({
+    queryKey: createQueryKey(`/api/forum/vote/thread/${threadId}/status/`),
+    queryFn: async () => {
+      try {
+        return await GFapi.get<Vote>(`/api/forum/vote/thread/${threadId}/status/`);
+      } catch (error: any) {
+        // If no vote exists (404), return null instead of throwing error
+        if (error?.response?.status === 404) {
+          return null;
+        }
+        throw error;
+      }
+    },
+    staleTime: 1 * 60 * 1000, // 1 minute
+    enabled: !!threadId,
+    retry: false, // Don't retry if no vote exists (404)
+  });
+}
+
+/**
+ * Hook to vote on a thread
+ */
+export function useVoteThread() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: ({ threadId, voteType }: { threadId: number; voteType: 'UPVOTE' | 'DOWNVOTE' }) =>
+      GFapi.post<Vote>('/api/forum/vote/', {
+        content_type: 'THREAD',
+        object_id: threadId,
+        vote_type: voteType,
+      }),
+    onSuccess: (data, variables) => {
+      // Invalidate vote status for this thread
+      queryClient.invalidateQueries({ 
+        queryKey: createQueryKey(`/api/forum/vote/thread/${variables.threadId}/status/`) 
+      });
+      
+      // Invalidate thread data to refresh like count
+      queryClient.invalidateQueries({ 
+        queryKey: createQueryKey(`/api/threads/${variables.threadId}/`) 
+      });
+    },
+  });
+}
+
+/**
+ * Hook to remove vote from a thread
+ */
+export function useRemoveVoteThread() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: (threadId: number) =>
+      GFapi.delete(`/api/forum/vote/thread/${threadId}/`),
+    onSuccess: (data, threadId) => {
+      // Invalidate vote status for this thread
+      queryClient.invalidateQueries({ 
+        queryKey: createQueryKey(`/api/forum/vote/thread/${threadId}/status/`) 
+      });
+      
+      // Invalidate thread data to refresh like count
+      queryClient.invalidateQueries({ 
+        queryKey: createQueryKey(`/api/threads/${threadId}/`) 
+      });
+    },
+  });
+}
+
+/**
  * Hook to remove vote from a comment
  */
 export function useRemoveVoteComment() {

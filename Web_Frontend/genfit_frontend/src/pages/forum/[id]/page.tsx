@@ -4,7 +4,7 @@ import { useIsAuthenticated, useForumThreads, useForums } from '../../../lib';
 import { Layout } from '../../../components';
 import { Button } from '../../../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui/card';
-import { MessageSquare, User, Clock, Pin, Lock, Eye, Heart, Plus, ArrowLeft } from 'lucide-react';
+import { MessageSquare, User, Clock, Pin, Lock, Heart, Plus, ArrowLeft } from 'lucide-react';
 import GFapi from '../../../lib/api/GFapi';
 import type { ForumThread } from '../../../lib/types/api';
 import ThreadCreateModal from './ThreadCreateModal';
@@ -214,10 +214,6 @@ function IndividualForumPage() {
                             <CardContent>
                                 <p className="thread-content">{thread.content}</p>
                                 <div className="thread-stats">
-                                    <div className="stat-item">
-                                        <Eye className="stat-icon" />
-                                        <span>{thread.view_count} views</span>
-                                    </div>
                                     <div className="stat-item">
                                         <Heart className="stat-icon" />
                                         <span>{thread.like_count} likes</span>

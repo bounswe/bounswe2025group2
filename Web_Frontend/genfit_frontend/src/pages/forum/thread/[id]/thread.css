@@ -90,6 +90,13 @@
   white-space: pre-wrap;
 }
 
+/* Thread Actions Styles */
+.thread-actions {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid #e5e7eb;
+}
+
 .comments-section {
   margin-top: 32px;
 }
