@@ -126,7 +126,7 @@
 
 .title-content {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     gap: 0.5rem;
     margin-bottom: 0.75rem;
 }
@@ -134,10 +134,12 @@
 .pin-icon {
     color: var(--warning);
     transform: rotate(45deg);
+    flex-shrink: 0;
 }
 
 .lock-icon {
     color: var(--destructive);
+    flex-shrink: 0;
 }
 
 .title-text {
@@ -145,6 +147,12 @@
     font-weight: 600;
     color: var(--foreground);
     line-height: 1.4;
+    flex: 1;
+    word-wrap: break-word;
+    word-break: break-word;
+    overflow-wrap: break-word;
+    hyphens: auto;
+    min-width: 0;
 }
 
 .thread-meta {

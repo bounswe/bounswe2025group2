@@ -5,9 +5,9 @@ import { useThread, useThreadComments } from '../../../../lib/hooks/useData';
 import Layout from '../../../../components/Layout';
 import { Card } from '../../../../components/ui/card';
 import { Button } from '../../../../components/ui/button';
-import CommentActions from '../../../../components/CommentActions';
-import ThreadActions from '../../../../components/ThreadActions';
-import CommentForm from '../../../../components/CommentForm';
+import CommentItem from '../../components/CommentItem';
+import ThreadActions from '../../components/ThreadActions';
+import CommentForm from '../../components/CommentForm';
 import { ArrowLeft, MessageCircle, Heart, Calendar, User } from 'lucide-react';
 import './thread.css';
 
@@ -125,35 +125,7 @@ const ThreadPage: React.FC = () => {
           ) : comments && comments.length > 0 ? (
             <div className="comments-list">
               {comments.map((comment) => (
-                <Card key={comment.id} className="comment-card">
-                  <div className="comment-content">
-                    <div className="comment-header">
-                      <div className="comment-author">
-                        <User className="w-4 h-4" />
-                        <span className="author-name">{comment.author_username}</span>
-                      </div>
-                      <div className="comment-date">
-                        {formatDate(comment.created_at)}
-                      </div>
-                    </div>
-                    
-                    <div className="comment-body">
-                      <p>{comment.content}</p>
-                    </div>
-                    
-                    <div className="comment-footer">
-                      <CommentActions comment={comment} />
-                      {comment.subcomment_count > 0 && (
-                        <div className="comment-stats">
-                          <div className="stat-item">
-                            <MessageCircle className="w-4 h-4" />
-                            <span>{comment.subcomment_count} replies</span>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </Card>
+                <CommentItem key={comment.id} comment={comment} />
               ))}
             </div>
           ) : (

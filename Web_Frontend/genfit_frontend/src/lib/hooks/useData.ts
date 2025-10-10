@@ -309,3 +309,64 @@ export function useRemoveVoteComment() {
     },
   });
 }
+
+/**
+ * Hook to update a comment
+ */
+export function useUpdateComment() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: ({ commentId, content }: { commentId: number; content: string }) =>
+      GFapi.put<Comment>(`/api/comments/update/${commentId}/`, { content }),
+    onSuccess: (data, variables) => {
+      // Invalidate the specific comment
+      queryClient.invalidateQueries({ 
+        queryKey: createQueryKey(`/api/comments/${variables.commentId}/`) 
+      });
+      
+      // Invalidate all thread comments queries to refresh the comment list
+      queryClient.invalidateQueries({ 
+        predicate: (query) => {
+          const queryKey = query.queryKey as string[];
+          return queryKey.some(key => 
+            typeof key === 'string' && key.includes('/api/comments/thread/')
+          );
+        }
+      });
+    },
+  });
+}
+
+/**
+ * Hook to delete a comment
+ */
+export function useDeleteComment() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: (commentId: number) =>
+      GFapi.delete(`/api/comments/delete/${commentId}/`),
+    onSuccess: (data, commentId) => {
+      // Invalidate all thread comments queries to refresh the comment list
+      queryClient.invalidateQueries({ 
+        predicate: (query) => {
+          const queryKey = query.queryKey as string[];
+          return queryKey.some(key => 
+            typeof key === 'string' && key.includes('/api/comments/thread/')
+          );
+        }
+      });
+      
+      // Invalidate thread data to update comment count
+      queryClient.invalidateQueries({ 
+        predicate: (query) => {
+          const queryKey = query.queryKey as string[];
+          return queryKey.some(key => 
+            typeof key === 'string' && key.includes('/api/threads/')
+          );
+        }
+      });
+    },
+  });
+}

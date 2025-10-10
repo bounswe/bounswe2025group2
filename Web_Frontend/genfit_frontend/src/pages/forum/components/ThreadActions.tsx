@@ -1,8 +1,8 @@
 import React from 'react';
-import { Button } from './ui/button';
+import { Button } from '../../../components/ui/button';
 import { Heart, HeartOff, ChevronUp, ChevronDown } from 'lucide-react';
-import { useThreadVoteStatus, useVoteThread, useRemoveVoteThread } from '../lib/hooks/useData';
-import type { ForumThread } from '../lib/types/api';
+import { useThreadVoteStatus, useVoteThread, useRemoveVoteThread } from '../../../lib/hooks/useData';
+import type { ForumThread } from '../../../lib/types/api';
 
 interface ThreadActionsProps {
   thread: ForumThread;

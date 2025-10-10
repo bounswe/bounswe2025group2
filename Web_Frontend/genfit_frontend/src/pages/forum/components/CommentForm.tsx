@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import { Button } from './ui/button';
-import { Textarea } from './ui/textarea';
-import { Card } from './ui/card';
+import { Button } from '../../../components/ui/button';
+import { Textarea } from '../../../components/ui/textarea';
+import { Card } from '../../../components/ui/card';
 import { MessageCircle, Send } from 'lucide-react';
-import { useAddComment } from '../lib/hooks/useData';
+import { useAddComment } from '../../../lib/hooks/useData';
 
 interface CommentFormProps {
   threadId: number;
@@ -45,29 +45,46 @@ const CommentForm: React.FC<CommentFormProps> = ({ threadId, onCommentAdded }) =
       marginBottom: '24px'
     }}>
       <div className="p-6">
-        <div className="flex items-center gap-3 mb-4" style={{
-          paddingBottom: '12px',
-          borderBottom: '2px solid #e2e8f0'
+        <div className="relative mb-6" style={{
+          background: 'transparent',
+          padding: '20px 0px',
+          position: 'relative'
         }}>
-          <div style={{
-            background: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
-            borderRadius: '10px',
-            padding: '8px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center'
-          }}>
-            <MessageCircle className="w-5 h-5 text-white" />
+          
+          <div className="flex items-center gap-4 relative z-10">
+            <div style={{
+              background: 'white',
+              borderRadius: '12px',
+              padding: '12px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1), 0 2px 4px rgba(0, 0, 0, 0.05)',
+              border: '1px solid #e2e8f0'
+            }}>
+              <MessageCircle className="w-6 h-6 text-gray-700" style={{
+                filter: 'drop-shadow(0 1px 2px rgba(255, 255, 255, 0.1))'
+              }} />
+            </div>
+            <div>
+              <h3 style={{
+                fontSize: '22px',
+                fontWeight: '700',
+                margin: '0',
+                background: 'linear-gradient(135deg, #800000 0%, #740000 20%, #8d0000 80%, #9a0000 100%)',
+                backgroundClip: 'text',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                letterSpacing: '0.5px'
+              }}>Add a Comment</h3>
+              <p style={{
+                fontSize: '14px',
+                margin: '4px 0 0 0',
+                color: '#666',
+                fontWeight: '400'
+              }}>Share your thoughts and join the discussion</p>
+            </div>
           </div>
-          <h3 style={{
-            fontSize: '20px',
-            fontWeight: '600',
-            margin: '0',
-            background: 'linear-gradient(135deg, #1e293b 0%, #475569 100%)',
-            backgroundClip: 'text',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent'
-          }}>Add a Comment</h3>
         </div>
         
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -83,11 +100,12 @@ const CommentForm: React.FC<CommentFormProps> = ({ threadId, onCommentAdded }) =
               background: 'rgba(255, 255, 255, 0.8)',
               fontSize: '16px',
               lineHeight: '1.6',
-              transition: 'all 0.2s ease'
+              transition: 'all 0.2s ease',
+              marginBottom: '16px'
             }}
           />
           
-          <div className="flex justify-end">
+          <div className="flex justify-end" style={{ marginTop: '20px' }}>
             <Button 
               type="submit" 
               disabled={!content.trim() || addCommentMutation.isPending}
@@ -95,13 +113,13 @@ const CommentForm: React.FC<CommentFormProps> = ({ threadId, onCommentAdded }) =
               style={{
                 background: addCommentMutation.isPending 
                   ? 'linear-gradient(135deg, #9ca3af 0%, #6b7280 100%)'
-                  : 'linear-gradient(135deg, #dc2626 0%, #b91c1c 100%)',
+                  : 'linear-gradient(135deg, #800000 0%, #740000 100%)',
                 border: 'none',
                 borderRadius: '10px',
                 padding: '12px 24px',
                 fontSize: '14px',
                 fontWeight: '600',
-                boxShadow: '0 4px 12px rgba(220, 38, 38, 0.3)',
+                boxShadow: '0 4px 12px rgba(128, 0, 0, 0.3)',
                 transition: 'all 0.2s ease',
                 cursor: addCommentMutation.isPending ? 'not-allowed' : 'pointer'
               }}
