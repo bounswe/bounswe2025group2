@@ -117,12 +117,14 @@ export interface ForumThread {
 //Comment types
 export interface Comment {
   id: number;
-  content: string;
-  author: string;
+  author_id: number;
+  author_username: string;
   thread_id: number;
-  created_at: string;
+  content: string;
   like_count: number;
   subcomment_count: number;
+  created_at: string;
+  updated_at: string;
 }
 
 // Quote Types

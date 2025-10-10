@@ -8,6 +8,7 @@ import AuthPage from "./pages/auth/AuthPage";
 import GoalPage from "./pages/goal/GoalPage";
 import ForumPage from "./pages/forum/forum_page";
 import IndividualForumPage from "./pages/forum/[id]/page";
+import ThreadPage from "./pages/forum/thread/[id]/page";
 import '../index.css';
 
 
@@ -22,6 +23,7 @@ function App() {
           <Route path="/goals" element={<GoalPage />} />
           <Route path="/forum" element={<ForumPage />} />
           <Route path="/forums/:id" element={<IndividualForumPage />} />
+          <Route path="/threads/:id" element={<ThreadPage />} />
         </Routes>
       </Router>
     </QueryClientProvider>

@@ -85,10 +85,21 @@ export function useForumThreads(forumId?: number) {
   });
 }
 
-export function useThreadComments(threadId: number, sortBy: 'date' | 'likes' = 'date') {
+export function useThread(threadId?: number) {
   return useQuery({
-    queryKey: createQueryKey(`/api/comments/thread/${threadId}/${sortBy}/`),
-    queryFn: () => GFapi.get<Comment[]>(`/api/comments/thread/${threadId}/${sortBy}/`),
+    queryKey: createQueryKey(`/api/threads/${threadId}/`),
+    queryFn: () => GFapi.get<ForumThread>(`/api/threads/${threadId}/`),
     staleTime: 5 * 60 * 1000,
+    enabled: !!threadId,
+  });
+}
+
+export function useThreadComments(threadId?: number, sortBy: 'date' | 'likes' = 'date') {
+  const endpoint = sortBy === 'likes' ? `/api/comments/thread/${threadId}/likes/` : `/api/comments/thread/${threadId}/`;
+  return useQuery({
+    queryKey: createQueryKey(endpoint),
+    queryFn: () => GFapi.get<Comment[]>(endpoint),
+    staleTime: 5 * 60 * 1000,
+    enabled: !!threadId,
   });
 }
