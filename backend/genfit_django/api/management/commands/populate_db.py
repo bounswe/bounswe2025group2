@@ -6,7 +6,8 @@ from django.contrib.auth import get_user_model
 from django.contrib.contenttypes.models import ContentType
 from api.models import (
     UserWithType, FitnessGoal, Notification, Profile, 
-    Forum, Thread, Comment, Subcomment, Vote
+    Forum, Thread, Comment, Subcomment, Vote,
+    Challenge, ChallengeParticipant
 )
 
 User = get_user_model()
@@ -23,12 +24,14 @@ class Command(BaseCommand):
         # Create fitness goals for users
         self.create_fitness_goals()
     
-        
         # Create forums and threads
         self.create_forums_and_threads()
         
         # Create comments, subcomments and votes
         self.create_comments_and_votes()
+        
+        # Create challenges and participants
+        self.create_challenges()
         
         self.stdout.write(self.style.SUCCESS('Database population completed successfully!'))
     
@@ -351,3 +354,191 @@ class Command(BaseCommand):
                     )
                 except Exception as e:
                     self.stdout.write(self.style.ERROR(f"Error creating vote: {e}"))
+
+    def create_challenges(self):
+        self.stdout.write('Creating challenges...')
+        
+        # Get coaches to create challenges
+        coaches = User.objects.filter(user_type='Coach', is_verified_coach=True)
+        users = User.objects.filter(user_type='User')
+        
+        if not coaches.exists():
+            self.stdout.write(self.style.WARNING('No verified coaches found. Skipping challenge creation.'))
+            return
+        
+        # Define challenge types and sample data
+        challenge_types = [
+            'WALKING_RUNNING', 'WORKOUT', 'CYCLING', 'SWIMMING', 'SPORTS'
+        ]
+        
+        challenge_data = [
+            {
+                'title': 'Summer Running Challenge',
+                'description': 'Join us for a month-long running challenge! Perfect for beginners and experienced runners alike.',
+                'challenge_type': 'WALKING_RUNNING',
+                'target_value': 50.0,
+                'unit': 'km',
+                'location': 'Central Park, New York',
+                'min_age': 18,
+                'max_age': 65
+            },
+            {
+                'title': '30-Day Workout Challenge',
+                'description': 'Complete 30 workouts in 30 days. Build strength and endurance with our structured program.',
+                'challenge_type': 'WORKOUT',
+                'target_value': 30.0,
+                'unit': 'sessions',
+                'location': 'Downtown Fitness Center',
+                'min_age': 16,
+                'max_age': None
+            },
+            {
+                'title': 'Cycling Adventure',
+                'description': 'Explore the city on two wheels! A fun cycling challenge for all skill levels.',
+                'challenge_type': 'CYCLING',
+                'target_value': 100.0,
+                'unit': 'km',
+                'location': 'Golden Gate Park, San Francisco',
+                'min_age': 14,
+                'max_age': 70
+            },
+            {
+                'title': 'Swimming Marathon',
+                'description': 'Dive into fitness with our swimming challenge. Perfect for improving cardiovascular health.',
+                'challenge_type': 'SWIMMING',
+                'target_value': 5000.0,
+                'unit': 'meters',
+                'location': 'Olympic Pool Complex',
+                'min_age': 12,
+                'max_age': None
+            },
+            {
+                'title': 'Basketball Skills Challenge',
+                'description': 'Improve your basketball skills while having fun with fellow players.',
+                'challenge_type': 'SPORTS',
+                'target_value': 20.0,
+                'unit': 'games',
+                'location': 'Community Sports Center',
+                'min_age': 16,
+                'max_age': 45
+            },
+            {
+                'title': 'Morning Walk Challenge',
+                'description': 'Start your day right with a gentle morning walk challenge for all ages.',
+                'challenge_type': 'WALKING_RUNNING',
+                'target_value': 10000.0,
+                'unit': 'steps',
+                'location': 'Riverside Park',
+                'min_age': None,
+                'max_age': None
+            },
+            {
+                'title': 'Strength Training Bootcamp',
+                'description': 'Build muscle and strength with our intensive training program.',
+                'challenge_type': 'WORKOUT',
+                'target_value': 24.0,
+                'unit': 'sessions',
+                'location': 'Iron Gym',
+                'min_age': 18,
+                'max_age': 60
+            },
+            {
+                'title': 'Weekend Cycling Club',
+                'description': 'Join our weekend cycling adventures and explore new routes every week.',
+                'challenge_type': 'CYCLING',
+                'target_value': 200.0,
+                'unit': 'km',
+                'location': 'Mountain Trail Network',
+                'min_age': 16,
+                'max_age': None
+            }
+        ]
+        
+        # Sample locations with coordinates (approximate)
+        location_coords = {
+            'Central Park, New York': (40.7829, -73.9654),
+            'Downtown Fitness Center': (40.7589, -73.9851),
+            'Golden Gate Park, San Francisco': (37.7694, -122.4862),
+            'Olympic Pool Complex': (34.0522, -118.2437),
+            'Community Sports Center': (41.8781, -87.6298),
+            'Riverside Park': (40.7956, -73.9722),
+            'Iron Gym': (40.7505, -73.9934),
+            'Mountain Trail Network': (39.7392, -104.9903)
+        }
+        
+        created_challenges = []
+        
+        # Create challenges
+        for i, challenge_info in enumerate(challenge_data):
+            try:
+                coach = coaches[i % len(coaches)]  # Rotate through available coaches
+                
+                # Set random start and end dates
+                start_date = timezone.now() + timedelta(days=random.randint(-10, 5))
+                end_date = start_date + timedelta(days=random.randint(30, 90))
+                
+                # Get coordinates for location
+                location = challenge_info['location']
+                coords = location_coords.get(location, (None, None))
+                
+                challenge = Challenge.objects.create(
+                    coach=coach,
+                    title=challenge_info['title'],
+                    description=challenge_info['description'],
+                    challenge_type=challenge_info['challenge_type'],
+                    target_value=challenge_info['target_value'],
+                    unit=challenge_info['unit'],
+                    location=location,
+                    longitude=coords[1],
+                    latitude=coords[0],
+                    start_date=start_date,
+                    end_date=end_date,
+                    min_age=challenge_info['min_age'],
+                    max_age=challenge_info['max_age']
+                )
+                
+                created_challenges.append(challenge)
+                self.stdout.write(f"Created challenge: {challenge.title} by {coach.username}")
+                
+            except Exception as e:
+                self.stdout.write(self.style.ERROR(f"Error creating challenge {challenge_info['title']}: {e}"))
+        
+        # Create challenge participants
+        self.stdout.write('Creating challenge participants...')
+        
+        for challenge in created_challenges:
+            # Randomly select 2-6 users to join each challenge
+            num_participants = random.randint(2, min(6, len(users)))
+            participants = random.sample(list(users), num_participants)
+            
+            for user in participants:
+                try:
+                    # Check age restrictions if they exist
+                    if hasattr(user, 'profile') and user.profile.birth_date:
+                        user_age = (timezone.now().date() - user.profile.birth_date).days // 365
+                        if challenge.min_age and user_age < challenge.min_age:
+                            continue
+                        if challenge.max_age and user_age > challenge.max_age:
+                            continue
+                    
+                    # Create participant with some progress
+                    current_value = random.randint(0, int(challenge.target_value * 0.8))
+                    
+                    # Determine if user has finished the challenge
+                    finish_date = None
+                    if current_value >= challenge.target_value:
+                        finish_date = timezone.now() - timedelta(days=random.randint(1, 10))
+                    
+                    participant = ChallengeParticipant.objects.create(
+                        challenge=challenge,
+                        user=user,
+                        current_value=current_value,
+                        finish_date=finish_date
+                    )
+                    
+                    self.stdout.write(f"Added {user.username} to challenge: {challenge.title}")
+                    
+                except Exception as e:
+                    self.stdout.write(self.style.ERROR(f"Error adding {user.username} to challenge {challenge.title}: {e}"))
+        
+        self.stdout.write(self.style.SUCCESS(f'Successfully created {len(created_challenges)} challenges with participants!'))

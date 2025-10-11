@@ -5,16 +5,22 @@ from rest_framework.response import Response
 from django.utils import timezone
 from django.db.models import Q
 
-from ..models import FitnessGoal, Notification
+from ..models import FitnessGoal, Notification, UserWithType
 from ..serializers import FitnessGoalSerializer, FitnessGoalUpdateSerializer
 
 @api_view(['GET', 'POST'])
 @permission_classes([IsAuthenticated])
 def fitness_goals(request):
     if request.method == 'GET':
-        goals = FitnessGoal.objects.filter(
-            Q(user=request.user)
-        )
+        username = request.query_params.get('username')
+        if username:
+            try:
+                target_user = UserWithType.objects.get(username=username)
+            except UserWithType.DoesNotExist:
+                return Response([], status=status.HTTP_200_OK)
+            goals = FitnessGoal.objects.filter(Q(user=target_user))
+        else:
+            goals = FitnessGoal.objects.filter(Q(user=request.user))
         serializer = FitnessGoalSerializer(goals, many=True)
         return Response(serializer.data)
 

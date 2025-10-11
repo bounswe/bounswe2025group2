@@ -8,6 +8,7 @@ import HomePage from "./pages/home/HomePage";
 import AuthPage from "./pages/auth/AuthPage";
 import GoalPage from "./pages/goal/GoalPage";
 import NotificationsPage from "./pages/notifications/notificationPage"; 
+import ProfilePage from "./pages/profile/ProfilePage";
 import '../index.css';
 
 import ChallengesPage from "./pages/challenges/ChallengesPage";
@@ -27,6 +28,8 @@ function App() {
           <Route path="/auth" element={<AuthPage />} />
           <Route path="/goals" element={<GoalPage />} />
           <Route path="/notifications" element={<NotificationsPage />} /> 
+          <Route path="/profile" element={<ProfilePage />} />
+          <Route path="/profile/other/:username" element={<ProfilePage />} />
           <Route path="/challenges" element={<ChallengesPage />} />
         </Routes>
       </Router>

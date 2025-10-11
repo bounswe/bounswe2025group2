@@ -11,10 +11,10 @@ import type { Goal, Challenge, ForumThread, Quote } from '../types/api';
 /**
  * Hook to fetch user's goals
  */
-export function useGoals() {
+export function useGoals(username?: string) {
   return useQuery({
-    queryKey: createQueryKey('/api/goals/'),
-    queryFn: () => GFapi.get<Goal[]>('/api/goals/'),
+    queryKey: createQueryKey('/api/goals/', username ? { username } : undefined),
+    queryFn: () => GFapi.get<Goal[]>('/api/goals/', username ? { username } : undefined),
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 }
