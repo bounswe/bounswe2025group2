@@ -113,7 +113,7 @@ const SideNavigation: React.FC<SideNavigationProps> = ({
   useEffect(() => {
     const itemsWithBadges = propNavigationItems.map(item => {
       if (item.id === 'notifications' && notifications) {
-        return { ...item, badge: notifications.length };
+        return { ...item, badge: notifications.filter(notification => !notification.is_read).length };
       }
       return item;
     });

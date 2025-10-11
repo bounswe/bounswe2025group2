@@ -34,6 +34,7 @@
 
 .mark-all-read-btn {
   white-space: nowrap;
+  padding: 12px 24px;
 }
 
 /* Statistics Grid */
@@ -79,10 +80,6 @@
   font-size: 2rem;
   font-weight: 700;
   color: var(--foreground);
-}
-
-.stat-value.text-warning {
-  color: var(--warning);
 }
 
 /* Notification Tabs */
@@ -175,15 +172,6 @@
   flex-shrink: 0;
 }
 
-.mark-read-btn {
-  background-color: var(--success);
-  color: var(--success-foreground);
-}
-
-.mark-read-btn:hover {
-  background-color: var(--success-hover);
-}
-
 /* Empty States */
 .empty-state {
   text-align: center;
@@ -204,7 +192,6 @@
 
 .notifications-page-error {
   color: var(--destructive);
-  background-color: var(--destructive-light);
   border: 1px solid var(--destructive);
   border-radius: 0.5rem;
 }

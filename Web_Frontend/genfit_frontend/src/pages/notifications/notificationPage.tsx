@@ -276,7 +276,7 @@ const NotificationsPage = () => {
                         className="mark-read-btn"
                       >
                         <Eye className="w-4 h-4" />
-                        Mark Read
+                        Mark as Read
                       </Button>
                     )}
                     <Button

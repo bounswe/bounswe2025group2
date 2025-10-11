@@ -183,7 +183,7 @@ function HomePage() {
 
           <div className="goals-content">
             {filteredGoals.length > 0 ? (
-              <div className="goals-grid">
+              <div className="home-goals-grid">
                 {filteredGoals.map(goal => (
                   <div key={goal.id} className="goal-card">
                     <div className="goal-card-header">
