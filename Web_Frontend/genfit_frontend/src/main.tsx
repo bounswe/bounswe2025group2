@@ -7,6 +7,9 @@ import GFapi from './lib/api/GFapi';
 import HomePage from "./pages/home/HomePage";
 import AuthPage from "./pages/auth/AuthPage";
 import GoalPage from "./pages/goal/GoalPage";
+import NotificationsPage from "./pages/notifications/notificationPage"; 
+import '../index.css';
+
 import ChallengesPage from "./pages/challenges/ChallengesPage";
 import '../index.css';
 
@@ -23,6 +26,7 @@ function App() {
           <Route path="/home" element={<HomePage />} />
           <Route path="/auth" element={<AuthPage />} />
           <Route path="/goals" element={<GoalPage />} />
+          <Route path="/notifications" element={<NotificationsPage />} /> 
           <Route path="/challenges" element={<ChallengesPage />} />
         </Routes>
       </Router>

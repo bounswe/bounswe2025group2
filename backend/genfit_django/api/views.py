@@ -192,6 +192,17 @@ def get_users(request):
     serializer = UserSerializer(users, many=True)
     return Response(serializer.data)
 
+@api_view(['DELETE'])
+@permission_classes([IsAuthenticated])
+def delete_notification(request, notification_id):
+    try:
+        notification = Notification.objects.get(id=notification_id, recipient=request.user)
+        notification.delete()
+        return Response({'message': 'Notification deleted successfully'})
+    except Notification.DoesNotExist:
+        return Response({'error': 'Notification not found'}, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        return Response({'error': f'Error deleting notification: {e}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 @api_view(['GET'])
 @permission_classes([AllowAny])
 @ensure_csrf_cookie
