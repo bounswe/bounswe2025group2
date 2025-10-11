@@ -9,6 +9,8 @@ from django.contrib.auth.tokens import default_token_generator
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.utils.encoding import force_bytes, force_str
 from django.contrib.sites.shortcuts import get_current_site
+from django.middleware.csrf import get_token
+from django.views.decorators.csrf import ensure_csrf_cookie
 from .serializers import UserRegistrationSerializer, UserLoginSerializer, NotificationSerializer, UserSerializer
 from .models import Notification
 
@@ -201,4 +203,14 @@ def delete_notification(request, notification_id):
         return Response({'error': 'Notification not found'}, status=status.HTTP_404_NOT_FOUND)
     except Exception as e:
         return Response({'error': f'Error deleting notification: {e}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+@api_view(['GET'])
+@permission_classes([AllowAny])
+@ensure_csrf_cookie
+def get_csrf_token(request):
+    """
+    Get CSRF token for frontend authentication
+    """
+    return Response({'csrfToken': get_token(request)})
+
+
 

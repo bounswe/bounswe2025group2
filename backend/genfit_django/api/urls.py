@@ -25,6 +25,7 @@ urlpatterns = [
     path('logout/', views.user_logout, name='logout'),
     path('user/', views.get_user, name='get_user'),
     path('users/', views.get_users, name='get_users'),
+    path('csrf-token/', views.get_csrf_token, name='get_csrf_token'),
     path('change-password/', views.change_password, name='change_password'),
     path('delete-account/', views.delete_account, name='delete_account'),
 
