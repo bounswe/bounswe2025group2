@@ -15,7 +15,6 @@ import {
   Trash2,
   Clock,
   Eye,
-  EyeOff
 } from 'lucide-react';
 import './notifications_page.css';
 
