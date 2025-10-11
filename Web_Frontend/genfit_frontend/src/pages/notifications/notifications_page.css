@@ -196,6 +196,118 @@
   border-radius: 0.5rem;
 }
 
+/* Notification Modal Styles */
+.notification-card.cursor-pointer {
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+}
+
+.notification-card.cursor-pointer:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  border-color: var(--primary);
+}
+
+.notification-card.cursor-pointer:active {
+  transform: translateY(0);
+}
+
+/* Modal specific styles */
+.notification-detail-modal {
+  max-height: 80vh;
+  overflow-y: auto;
+  z-index: 1000;
+}
+
+/* Ensure modal appears above navigation */
+[data-radix-dialog-content] {
+  z-index: 1001 !important;
+}
+
+[data-radix-dialog-overlay] {
+  z-index: 1000 !important;
+}
+
+.notification-detail-modal .notification-icon {
+  transition: transform 0.2s ease;
+}
+
+.notification-detail-modal .notification-icon:hover {
+  transform: scale(1.1);
+}
+
+/* Enhanced card hover effects for modal */
+.notification-detail-modal .card {
+  transition: all 0.2s ease;
+}
+
+.notification-detail-modal .card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Status indicators */
+.status-read {
+  color: var(--green-600);
+}
+
+.status-unread {
+  color: var(--orange-600);
+}
+
+/* Notification type specific colors */
+.notification-type-achievement {
+  color: var(--yellow-500);
+}
+
+.notification-type-badge {
+  color: var(--purple-500);
+}
+
+.notification-type-challenge {
+  color: var(--blue-500);
+}
+
+.notification-type-progress {
+  color: var(--green-500);
+}
+
+.notification-type-goal {
+  color: var(--orange-500);
+}
+
+.notification-type-feedback {
+  color: var(--indigo-500);
+}
+
+.notification-type-system {
+  color: var(--gray-500);
+}
+
+.notification-type-message {
+  color: var(--cyan-500);
+}
+
+.notification-type-like {
+  color: var(--red-500);
+}
+
+.notification-type-comment {
+  color: var(--blue-500);
+}
+
+.notification-type-reply {
+  color: var(--green-500);
+}
+
+.notification-type-tag {
+  color: var(--pink-500);
+}
+
+.notification-type-warning {
+  color: var(--red-500);
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
   .notifications-page-content {
@@ -232,6 +344,16 @@
 
   .notification-tab {
     justify-content: center;
+  }
+
+  /* Modal responsive adjustments */
+  .notification-detail-modal {
+    max-height: 95vh;
+    margin: 1rem;
+  }
+
+  .notification-detail-modal .grid {
+    grid-template-columns: 1fr;
   }
 }
 
