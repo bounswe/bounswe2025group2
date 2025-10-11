@@ -5,6 +5,7 @@ import { Layout } from '../../components';
 import { Button } from '../../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import GFapi from '../../lib/api/GFapi';
+import NotificationDetailModal from './NotificationDetailModal';
 //import type { Notification } from '../../lib/types/api';
 
 import {
@@ -51,6 +52,8 @@ const NotificationsPage = () => {
 
   const [activeNotificationTab, setActiveNotificationTab] = useState('ALL');
   const [isMarkingAll, setIsMarkingAll] = useState(false);
+  const [selectedNotification, setSelectedNotification] = useState<any>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   if (authLoading) {
     return <div className="notifications-page-loading">Loading...</div>;
@@ -68,6 +71,16 @@ const NotificationsPage = () => {
     } catch (error) {
       console.error('Failed to mark notification as read:', error);
       alert('Failed to mark notification as read. Please try again.');
+    }
+  };
+
+  const handleMarkAsUnread = async (notificationId: number) => {
+    try {
+      await GFapi.patch(`/api/notifications/${notificationId}/unread/`);
+      await invalidateQueries(['/api/notifications/']);
+    } catch (error) {
+      console.error('Failed to mark notification as unread:', error);
+      alert('Failed to mark notification as unread. Please try again.');
     }
   };
 
@@ -98,6 +111,21 @@ const NotificationsPage = () => {
       console.error('Failed to delete notification:', error);
       alert('Failed to delete notification. Please try again.');
     }
+  };
+
+  const handleNotificationClick = (notification: any) => {
+    setSelectedNotification(notification);
+    setIsModalOpen(true);
+    
+    // Mark as read if not already read
+    if (!notification.is_read) {
+      handleMarkAsRead(notification.id);
+    }
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setSelectedNotification(null);
   };
 
   // Filter notifications based on active tab
@@ -255,7 +283,8 @@ const NotificationsPage = () => {
             {filteredNotifications.map(notification => (
               <Card
                 key={notification.id}
-                className={`notification-card ${!notification.is_read ? 'unread' : ''}`}
+                className={`notification-card ${!notification.is_read ? 'unread' : ''} cursor-pointer`}
+                onClick={() => handleNotificationClick(notification)}
               >
                 <CardContent className="notification-card-content">
                   <div className="notification-message-section">
@@ -267,8 +296,8 @@ const NotificationsPage = () => {
                     </div>
                   </div>
 
-                  <div className="notification-actions">
-                    {!notification.is_read && (
+                  <div className="notification-actions" onClick={(e) => e.stopPropagation()}>
+                    {!notification.is_read ? (
                       <Button
                         variant="positive"
                         size="sm"
@@ -277,6 +306,16 @@ const NotificationsPage = () => {
                       >
                         <Eye className="w-4 h-4" />
                         Mark as Read
+                      </Button>
+                    ) : (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleMarkAsUnread(notification.id)}
+                        className="mark-unread-btn"
+                      >
+                        <Clock className="w-4 h-4" />
+                        Mark as Unread
                       </Button>
                     )}
                     <Button
@@ -293,6 +332,15 @@ const NotificationsPage = () => {
             ))}
           </div>
         )}
+
+        {/* Notification Detail Modal */}
+        <NotificationDetailModal
+          isOpen={isModalOpen}
+          onClose={handleCloseModal}
+          onMarkAsRead={handleMarkAsRead}
+          onMarkAsUnread={handleMarkAsUnread}
+          notification={selectedNotification}
+        />
       </div>
     </Layout>
   );
