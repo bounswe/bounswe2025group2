@@ -4,10 +4,8 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
 } from '../../components/ui/dialog';
 import { Button } from '../../components/ui/button';
-import { Card, CardContent } from '../../components/ui/card';
 import {
   Bell,
   Calendar,
@@ -24,9 +22,7 @@ import {
   Heart,
   Reply,
   Award,
-  BookOpen,
   MessageCircle,
-  Zap,
 } from 'lucide-react';
 
 interface NotificationDetailModalProps {
@@ -57,22 +53,6 @@ const NotificationDetailModal: React.FC<NotificationDetailModalProps> = ({
   notification,
 }) => {
   if (!notification) return null;
-
-  // Helper function to format dates
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    if (isNaN(date.getTime())) {
-      return 'Invalid date';
-    }
-    return new Intl.DateTimeFormat('en-US', {
-      month: 'long',
-      day: 'numeric',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit',
-    }).format(date);
-  };
 
   // Get icon and color based on notification type
   const getNotificationIcon = (type: string) => {
@@ -108,44 +88,7 @@ const NotificationDetailModal: React.FC<NotificationDetailModalProps> = ({
     }
   };
 
-  // Get notification type display name
-  const getNotificationTypeDisplay = (type: string) => {
-    switch (type) {
-      case 'ACHIEVEMENT':
-        return 'Achievement';
-      case 'BADGE':
-        return 'Badge Earned';
-      case 'CHALLENGE':
-        return 'Challenge Invitation';
-      case 'PROGRESS':
-        return 'Progress Update';
-      case 'GOAL':
-        return 'Goal Assignment';
-      case 'FEEDBACK':
-        return 'Coach Feedback';
-      case 'SYSTEM':
-        return 'System Notification';
-      case 'NEW_MESSAGE':
-        return 'New Message';
-      case 'LIKE':
-        return 'Like';
-      case 'COMMENT':
-        return 'Comment';
-      case 'REPLY':
-        return 'Reply';
-      case 'TAG':
-        return 'Tag';
-      case 'GOAL_INACTIVE':
-        return 'Goal Warning';
-      default:
-        return type;
-    }
-  };
 
-  // Get status color
-  const getStatusColor = (isRead: boolean) => {
-    return isRead ? 'text-green-600' : 'text-orange-600';
-  };
 
   // Get status text
   const getStatusText = (isRead: boolean) => {
