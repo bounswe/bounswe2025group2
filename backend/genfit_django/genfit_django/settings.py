@@ -43,6 +43,7 @@ CORS_ALLOW_CREDENTIALS = True
 CSRF_TRUSTED_ORIGINS = [
     'http://localhost:3000',
     'http://localhost:5173',
+    'http://localhost:5174',
     'http://localhost:5000',
     'http://10.0.2.2:8000',
     'http://10.0.2.2:5000',
@@ -128,6 +129,7 @@ DATABASES = {
         'PORT': os.environ.get('POSTGRES_PORT', '5432'),
     }
 }
+
 
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5000",

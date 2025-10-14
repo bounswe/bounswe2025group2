@@ -11,18 +11,19 @@ import type { Goal, Challenge, ForumThread, Quote, Forum, Comment, Subcomment, V
 /**
  * Hook to fetch user's goals
  */
-export function useGoals() {
+export function useGoals(username?: string) {
   return useQuery({
-    queryKey: createQueryKey('/api/goals/'),
-    queryFn: () => GFapi.get<Goal[]>('/api/goals/'),
+    queryKey: createQueryKey('/api/goals/', username ? { username } : undefined),
+    queryFn: () => GFapi.get<Goal[]>('/api/goals/', username ? { username } : undefined),
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 }
 
 /**
- * Hook to fetch challenges
+ * Hook to fetch challenges (deprecated - use useChallenges from useChallenges.ts instead)
+ * Keeping for backward compatibility
  */
-export function useChallenges() {
+export function useChallengesLegacy() {
   return useQuery({
     queryKey: createQueryKey('/api/challenges/search/'),
     queryFn: () => GFapi.get<Challenge[]>('/api/challenges/search/'),
@@ -58,13 +59,13 @@ export function useNotifications() {
  */
 export function useUserStats() {
   const { data: goals = [] } = useGoals();
-  const { data: challenges = [] } = useChallenges();
+  const { data: challenges = [] } = useChallengesLegacy();
 
   console.log(goals)
 
   return {
     activeGoals: goals.filter(goal => goal.status === 'ACTIVE').length,
-    completedChallenges: challenges.filter(challenge => challenge.status === 'COMPLETED').length,
+    completedChallenges: challenges.filter(challenge => challenge.is_active === false).length,
   };
 }
 

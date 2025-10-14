@@ -245,7 +245,7 @@ const GoalPage = () => {
                         )}
                     </div>
                 ) : (
-                    <div className="goals-grid">
+                    <div className="goals-page-goals-grid">
                         {filteredGoals.map(goal => {
                             
                             return (

@@ -117,7 +117,32 @@ Marks all notifications as read for the currently authenticated user.
 }
 ```
 
+### Delete a Notification
+Deletes a single notification for the currently authenticated user.
 
+- **URL**: /notifications/{notification_id}/delete/
+- **Method**: `DELETE`
+- **Auth Required**: Yes
+- **Permissions**: IsAuthenticated
+
+**Request Body**: None
+
+**Response**:
+
+
+- **Success (200 OK)**
+ ```json
+{
+ "message": "Notification deleted successfully"
+}
+```
+
+- **Error (404 Not Found)**
+ ```json
+{
+ "error": "Notification not found"
+}
+```
 
 
 ## Authentication Notes
