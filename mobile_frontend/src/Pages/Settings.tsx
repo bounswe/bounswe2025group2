@@ -36,15 +36,11 @@ const Settings = () => {
   }, [fadeInAnim]);
 
   const handleEditProfile = () => {
-    navigation.navigate('Profile' as never);
+    navigation.push('Profile' as never);
   };
 
   const handleNotifications = () => {
-    navigation.navigate('Notifications' as never);
-  };
-
-  const handlePrivacy = () => {
-    navigation.navigate('PrivacySettings' as never);
+    navigation.push('Notifications' as never);
   };
 
   const handleLogout = async () => {
@@ -78,11 +74,6 @@ const Settings = () => {
         onPress: handleNotifications,
       },
       {
-        label: 'Privacy & Security',
-        subtitle: 'Control data and security settings',
-        onPress: handlePrivacy,
-      },
-      {
         label: 'Log Out',
         subtitle: 'Sign out from this device',
         onPress: handleLogout,
@@ -97,7 +88,7 @@ const Settings = () => {
         style={[
           styles.card,
           {
-            backgroundColor: colors.card,
+            backgroundColor: colors.backgroundSecondary,
             borderColor: colors.border,
             opacity: fadeInAnim,
             transform: [
@@ -188,7 +179,7 @@ const AnimatedSettingRow: React.FC<AnimatedSettingRowProps> = ({
       style={[
         styles.card,
         {
-          backgroundColor: colors.card,
+          backgroundColor: colors.backgroundSecondary,
           borderColor: colors.border,
           opacity: appear,
           transform: [
