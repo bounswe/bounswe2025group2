@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useEffect } from 'react';
+import React, { useMemo, useRef, useEffect, useCallback } from 'react';
 import {
   View,
   StyleSheet,
@@ -35,19 +35,15 @@ const Settings = () => {
     }).start();
   }, [fadeInAnim]);
 
-  const handleEditProfile = () => {
+  const handleEditProfile = useCallback(() => {
     navigation.navigate('Profile' as never);
-  };
+  }, [navigation]);
 
-  const handleNotifications = () => {
-    navigation.navigate('Notifications' as never);
-  };
+  const handleNotifications = useCallback(() => {
+    navigation.navigate('NotificationPreferences' as never);
+  }, [navigation]);
 
-  const handlePrivacy = () => {
-    navigation.navigate('PrivacySettings' as never);
-  };
-
-  const handleLogout = async () => {
+  const handleLogout = useCallback(async () => {
     try {
       await fetch('http://10.0.2.2:8000/api/logout/', {
         method: 'POST',
@@ -63,10 +59,10 @@ const Settings = () => {
         routes: [{ name: 'Login' as never }],
       });
     }
-  };
+  }, [logout, navigation]);
 
-  const actions = useMemo<SettingAction[]>(
-    () => [
+  const actions = useMemo<SettingAction[]>(() => {
+    return [
       {
         label: 'Edit Profile',
         subtitle: 'Update your personal details',
@@ -78,18 +74,12 @@ const Settings = () => {
         onPress: handleNotifications,
       },
       {
-        label: 'Privacy & Security',
-        subtitle: 'Control data and security settings',
-        onPress: handlePrivacy,
-      },
-      {
         label: 'Log Out',
         subtitle: 'Sign out from this device',
         onPress: handleLogout,
       },
-    ],
-    [],
-  );
+    ];
+  }, [handleEditProfile, handleNotifications, handleLogout]);
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -97,7 +87,7 @@ const Settings = () => {
         style={[
           styles.card,
           {
-            backgroundColor: colors.card,
+            backgroundColor: colors.navBar,
             borderColor: colors.border,
             opacity: fadeInAnim,
             transform: [
@@ -188,7 +178,7 @@ const AnimatedSettingRow: React.FC<AnimatedSettingRowProps> = ({
       style={[
         styles.card,
         {
-          backgroundColor: colors.card,
+          backgroundColor: colors.navBar,
           borderColor: colors.border,
           opacity: appear,
           transform: [
