@@ -1,10 +1,10 @@
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useIsAuthenticated, useForums } from '../../lib';
 import { Layout } from '../../components';
 import { Button } from '../../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
-import { MessageSquare, Users, Clock, Sparkles } from 'lucide-react';
+import { MessageSquare, Clock, Sparkles } from 'lucide-react';
 import './forum.css';
 
 function ForumPage() {

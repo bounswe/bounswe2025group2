@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useIsAuthenticated, useForumThreads, useForums } from '../../../lib';
 import { Layout } from '../../../components';
@@ -6,7 +6,6 @@ import { Button } from '../../../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui/card';
 import { MessageSquare, User, Clock, Pin, Lock, Heart, Plus, ArrowLeft } from 'lucide-react';
 import GFapi from '../../../lib/api/GFapi';
-import type { ForumThread } from '../../../lib/types/api';
 import ThreadCreateModal from './ThreadCreateModal';
 import './individual-forum.css';
 

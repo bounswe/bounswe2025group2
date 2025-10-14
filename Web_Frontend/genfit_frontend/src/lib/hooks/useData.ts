@@ -149,7 +149,7 @@ export function useAddComment() {
   return useMutation({
     mutationFn: ({ threadId, content }: { threadId: number; content: string }) =>
       GFapi.post<Comment>(`/api/comments/add/${threadId}/`, { content }),
-    onSuccess: (data, variables) => {
+    onSuccess: (_data, variables) => {
       // Invalidate thread comments to show the new comment
       queryClient.invalidateQueries({ 
         predicate: (query) => {
@@ -204,7 +204,7 @@ export function useVoteSubcomment() {
         object_id: subcommentId,
         vote_type: voteType,
       }),
-    onSuccess: (data, variables) => {
+    onSuccess: (_data, variables) => {
       // Invalidate vote status for this subcomment
       queryClient.invalidateQueries({ 
         queryKey: createQueryKey(`/api/forum/vote/subcomment/${variables.subcommentId}/status/`) 
@@ -247,7 +247,7 @@ export function useRemoveVoteSubcomment() {
   return useMutation({
     mutationFn: (subcommentId: number) =>
       GFapi.delete(`/api/forum/vote/subcomment/${subcommentId}/`),
-    onSuccess: (data, subcommentId) => {
+    onSuccess: (_data, subcommentId) => {
       // Invalidate vote status for this subcomment
       queryClient.invalidateQueries({ 
         queryKey: createQueryKey(`/api/forum/vote/subcomment/${subcommentId}/status/`) 
@@ -290,7 +290,7 @@ export function useUpdateSubcomment() {
   return useMutation({
     mutationFn: ({ subcommentId, content }: { subcommentId: number; content: string }) =>
       GFapi.put<Subcomment>(`/api/subcomments/update/${subcommentId}/`, { content }),
-    onSuccess: (data, variables) => {
+    onSuccess: (data, _variables) => {
       // Invalidate subcomments for the parent comment
       queryClient.invalidateQueries({ 
         predicate: (query) => {
@@ -323,7 +323,7 @@ export function useDeleteSubcomment() {
   return useMutation({
     mutationFn: (subcommentId: number) =>
       GFapi.delete(`/api/subcomments/delete/${subcommentId}/`),
-    onSuccess: (data, subcommentId) => {
+    onSuccess: (_data, _subcommentId) => {
       // Invalidate all subcomments queries to refresh the lists
       queryClient.invalidateQueries({ 
         predicate: (query) => {
@@ -360,7 +360,7 @@ export function useVoteComment() {
         object_id: commentId,
         vote_type: voteType,
       }),
-    onSuccess: (data, variables) => {
+    onSuccess: (_data, variables) => {
       // Invalidate vote status for this comment
       queryClient.invalidateQueries({ 
         queryKey: createQueryKey(`/api/forum/vote/comment/${variables.commentId}/status/`) 
@@ -420,7 +420,7 @@ export function useVoteThread() {
         object_id: threadId,
         vote_type: voteType,
       }),
-    onSuccess: (data, variables) => {
+    onSuccess: (_data, variables) => {
       // Invalidate vote status for this thread
       queryClient.invalidateQueries({ 
         queryKey: createQueryKey(`/api/forum/vote/thread/${variables.threadId}/status/`) 
@@ -443,7 +443,7 @@ export function useRemoveVoteThread() {
   return useMutation({
     mutationFn: (threadId: number) =>
       GFapi.delete(`/api/forum/vote/thread/${threadId}/`),
-    onSuccess: (data, threadId) => {
+    onSuccess: (_data, threadId) => {
       // Invalidate vote status for this thread
       queryClient.invalidateQueries({ 
         queryKey: createQueryKey(`/api/forum/vote/thread/${threadId}/status/`) 
@@ -466,7 +466,7 @@ export function useRemoveVoteComment() {
   return useMutation({
     mutationFn: (commentId: number) =>
       GFapi.delete(`/api/forum/vote/comment/${commentId}/`),
-    onSuccess: (data, commentId) => {
+    onSuccess: (_data, commentId) => {
       // Invalidate vote status for this comment
       queryClient.invalidateQueries({ 
         queryKey: createQueryKey(`/api/forum/vote/comment/${commentId}/status/`) 
@@ -499,7 +499,7 @@ export function useUpdateComment() {
   return useMutation({
     mutationFn: ({ commentId, content }: { commentId: number; content: string }) =>
       GFapi.put<Comment>(`/api/comments/update/${commentId}/`, { content }),
-    onSuccess: (data, variables) => {
+    onSuccess: (_data, variables) => {
       // Invalidate the specific comment
       queryClient.invalidateQueries({ 
         queryKey: createQueryKey(`/api/comments/${variables.commentId}/`) 
@@ -527,7 +527,7 @@ export function useDeleteComment() {
   return useMutation({
     mutationFn: (commentId: number) =>
       GFapi.delete(`/api/comments/delete/${commentId}/`),
-    onSuccess: (data, commentId) => {
+    onSuccess: (_data, _commentId) => {
       // Invalidate all thread comments queries to refresh the comment list
       queryClient.invalidateQueries({ 
         predicate: (query) => {
@@ -574,7 +574,7 @@ export function useAddSubcomment() {
   return useMutation({
     mutationFn: ({ commentId, content }: { commentId: number; content: string }) =>
       GFapi.post<Subcomment>(`/api/subcomments/add/${commentId}/`, { content }),
-    onSuccess: (data, variables) => {
+    onSuccess: (_data, variables) => {
       // Invalidate subcomments for this comment
       queryClient.invalidateQueries({ 
         predicate: (query) => {

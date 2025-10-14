@@ -8,7 +8,7 @@ import { Button } from '../../../../components/ui/button';
 import CommentItem from '../../components/CommentItem';
 import ThreadActions from '../../components/ThreadActions';
 import CommentForm from '../../components/CommentForm';
-import { ArrowLeft, MessageCircle, Heart, Calendar, User } from 'lucide-react';
+import { ArrowLeft, MessageCircle, Calendar, User } from 'lucide-react';
 import './thread.css';
 
 const ThreadPage: React.FC = () => {
