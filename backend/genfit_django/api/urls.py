@@ -58,6 +58,7 @@ urlpatterns = [
     path('goals/', fitness_goals.fitness_goals, name='fitness_goals'),
     path('goals/<int:goal_id>/', fitness_goals.fitness_goal_detail, name='fitness_goal_detail'),
     path('goals/<int:goal_id>/progress/', fitness_goals.update_goal_progress, name='update_goal_progress'),
+    path('goals/<int:goal_id>/restart/', fitness_goals.restart_goal, name='restart_goal'),
     path('goals/check-inactive/', fitness_goals.check_inactive_goals, name='check_inactive_goals'),
 
     # Profile URLs
