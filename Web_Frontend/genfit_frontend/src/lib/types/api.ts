@@ -138,17 +138,70 @@ export interface ChallengeHistory {
   joined_date: string;
   completion_date?: string;
 }
+// Forum Types
+export interface Forum {
+  id: number;
+  title: string;
+  description: string;
+  created_at: string;
+  updated_at: string;
+  created_by: string;
+  is_active: boolean;
+  order: number;
+  thread_count: number;
+}
 
-// Forum Thread Types
+//Thread types
 export interface ForumThread {
   id: number;
   title: string;
+  content: string;
   author: string;
-  comment_count: number;
-  created_at: string;
   forum: string;
-  like_count: number;
+  created_at: string;
+  updated_at: string;
+  is_pinned: boolean;
+  is_locked: boolean;
   view_count: number;
+  like_count: number;
+  comment_count: number;
+  last_activity: string;
+}
+
+//Comment types
+export interface Comment {
+  id: number;
+  author_id: number;
+  author_username: string;
+  thread_id: number;
+  content: string;
+  like_count: number;
+  subcomment_count: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Subcomment {
+  id: number;
+  author_id: number;
+  author_username: string;
+  comment_id: number;
+  content: string;
+  like_count: number;
+  created_at: string;
+  updated_at: string;
+}
+
+// Vote Types
+export interface Vote {
+  id: number;
+  user: number;
+  user_username: string;
+  content_type: string;
+  content_id: number;
+  vote_type: 'UPVOTE' | 'DOWNVOTE';
+  created_at: string;
+  updated_at: string;
 }
 
 // Quote Types

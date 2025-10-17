@@ -183,7 +183,7 @@ function HomePage() {
 
           <div className="goals-content">
             {filteredGoals.length > 0 ? (
-              <div className="goals-grid">
+              <div className="home-goals-grid">
                 {filteredGoals.map(goal => (
                   <div key={goal.id} className="goal-card">
                     <div className="goal-card-header">
@@ -280,29 +280,28 @@ function HomePage() {
             <h2>Recent Community Discussions</h2>
             <Button className="action-btn" onClick={() => navigate('/forum')}>View Forum</Button>
           </div>
-          <div className="forum-grid">
-            {threads.length > 0 ? (
-              threads.slice(0, 4).map(thread => (
-                <div key={thread.id} className="thread-card">
-                  <h3>{thread.title}</h3>
-                  <div className="thread-meta">
-                    <span>By {thread.author}</span>
-                    <span>👁 {thread.view_count} views</span>
-                    <span>💬 {thread.comment_count} comments</span>
-                    <span>👍 {thread.like_count} likes</span>
-                  </div>
-                  <div className="thread-date">
-                    {new Date(thread.created_at).toLocaleDateString()}
-                  </div>
+          {threads.length > 0 && (
+            threads.slice(0, 4).map(thread => (
+              <div key={thread.id} className="thread-card">
+                <h3>{thread.title}</h3>
+                <div className="thread-meta">
+                  <span>By {thread.author}</span>
+                  <span>👁 {thread.view_count} views</span>
+                  <span>💬 {thread.comment_count} comments</span>
+                  <span>👍 {thread.like_count} likes</span>
                 </div>
-              ))
-            ) : (
-              <div className="empty-state">
-                <p>No forum discussions yet. Start a conversation!</p>
-                <Button className="action-btn" onClick={() => navigate('/forum')}>Start Discussion</Button>
+                <div className="thread-date">
+                  {new Date(thread.created_at).toLocaleDateString()}
+                </div>
               </div>
-            )}
-          </div>
+            ))
+          )}
+          {threads.length <= 0 && (
+            <div className="empty-state">
+              <p>No forum discussions yet. Start a conversation!</p>
+              <Button className="action-btn" onClick={() => navigate('/forum')}>Start Discussion</Button>
+            </div>
+          )}
         </section>
       </div>
     </Layout>

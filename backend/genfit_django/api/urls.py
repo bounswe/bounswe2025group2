@@ -33,6 +33,8 @@ urlpatterns = [
     path('notifications/', views.get_user_notifications, name='get_notifications'),
     path('notifications/<int:notification_id>/', views.get_single_notification, name='get_single_notification'),
     path('notifications/<int:notification_id>/read/', views.mark_notification_read, name='mark_notification_read'),
+    path('notifications/<int:notification_id>/unread/', views.mark_notification_unread, name='mark_notification_unread'),
+    path('notifications/<int:notification_id>/delete/', views.delete_notification, name='delete_notification'),
     path('notifications/read-all/', views.mark_all_notifications_read, name='mark_all_notifications_read'),
 
     # Quote endpoints
@@ -56,6 +58,7 @@ urlpatterns = [
     path('goals/', fitness_goals.fitness_goals, name='fitness_goals'),
     path('goals/<int:goal_id>/', fitness_goals.fitness_goal_detail, name='fitness_goal_detail'),
     path('goals/<int:goal_id>/progress/', fitness_goals.update_goal_progress, name='update_goal_progress'),
+    path('goals/<int:goal_id>/restart/', fitness_goals.restart_goal, name='restart_goal'),
     path('goals/check-inactive/', fitness_goals.check_inactive_goals, name='check_inactive_goals'),
 
     # Profile URLs
