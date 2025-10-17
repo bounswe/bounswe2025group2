@@ -1,4 +1,6 @@
 .env
+.kiro
+.vscode
 .venv
 __pycache__/
 *.pyc
@@ -13,3 +15,4 @@ __pycache__/
 !/backend/genfit_django/media/profile_pictures/default.png
 
 node_modules/
+.DS_Store

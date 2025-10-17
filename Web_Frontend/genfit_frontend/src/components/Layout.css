@@ -1,0 +1,36 @@
+.app-layout {
+  min-height: 100vh;
+  background: rgb(240, 240, 240);
+}
+
+.layout-content {
+  padding: 2rem;
+  transition: margin-left 0.3s ease;
+  min-height: calc(100vh - 70px); /* Subtract header height */
+}
+
+.layout-content.sidebar-expanded {
+  margin-left: 250px; /* Width of expanded sidebar */
+}
+
+.layout-content.sidebar-collapsed {
+  margin-left: 70px; /* Width of collapsed sidebar */
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .layout-content.sidebar-expanded,
+  .layout-content.sidebar-collapsed {
+    margin-left: 70px; /* Always collapsed on mobile */
+    padding: 1rem;
+    min-height: calc(100vh - 60px); /* Adjusted header height for mobile */
+  }
+}
+
+@media (max-width: 480px) {
+  .layout-content.sidebar-expanded,
+  .layout-content.sidebar-collapsed {
+    margin-left: 60px; /* Mobile sidebar width */
+    padding: 0.5rem;
+  }
+}

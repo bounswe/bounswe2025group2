@@ -1,0 +1,53 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15
+    container_name: genfit_db
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - genfit-network
+
+  backend:
+    image: ${DOCKERHUB_USERNAME}/genfit-backend:latest
+    container_name: genfit_backend
+    command: sh -c "python manage.py migrate && python manage.py runserver 0.0.0.0:8000"
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_HOST=db
+      - POSTGRES_PORT=5432
+      - SECRET_KEY=${SECRET_KEY}
+      - DEBUG=False
+      - GROQ_API_KEY=${GROQ_API_KEY}
+    depends_on:
+      - db
+    ports:
+      - "8000:8000"
+    networks:
+      - genfit-network
+
+  frontend:
+    image: ${DOCKERHUB_USERNAME}/genfit-frontend:latest
+    container_name: genfit_frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    networks:
+      - genfit-network
+
+volumes:
+  postgres_data:
+
+networks:
+  genfit-network:
+    driver: bridge
