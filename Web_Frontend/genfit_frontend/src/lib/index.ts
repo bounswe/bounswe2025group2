@@ -22,3 +22,4 @@ export { queryClient, createQueryKey, invalidateQueries, prefetchQuery } from '.
 export * from './hooks/useAuth';
 export * from './hooks/useData';
 export * from './hooks/useChallenges';
+export * from './hooks/useChat';

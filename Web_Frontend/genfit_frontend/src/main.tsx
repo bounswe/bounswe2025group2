@@ -15,6 +15,7 @@ import ProfilePage from "./pages/profile/ProfilePage";
 import '../index.css';
 
 import ChallengesPage from "./pages/challenges/ChallengesPage";
+import ChatPage from "./pages/chat/ChatPage";
 import '../index.css';
 
 // Initialize CSRF token on app startup
@@ -37,6 +38,7 @@ function App() {
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/profile/other/:username" element={<ProfilePage />} />
           <Route path="/challenges" element={<ChallengesPage />} />
+          <Route path="/chat" element={<ChatPage />} />
         </Routes>
       </Router>
     </QueryClientProvider>
