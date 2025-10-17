@@ -107,11 +107,11 @@ const Home = () => {
       setError(null);
 
       // Get CSRF token from cookies for Django backend security
-      const cookies = await Cookies.get('http://10.0.2.2:8000');
+      const cookies = await Cookies.get('http://164.90.166.81:8000');
       const csrfToken = cookies.csrftoken?.value;
 
       // Make authenticated request to threads API
-      const response = await fetch('http://10.0.2.2:8000/api/threads/', {
+      const response = await fetch('http://164.90.166.81:8000/api/threads/', {
         headers: {
           ...getAuthHeader(), // Include authentication headers
           'Content-Type': 'application/json',
@@ -175,7 +175,7 @@ const Home = () => {
       profilePicRequests.current.add(username);
 
       try {
-        const response = await fetch(`http://10.0.2.2:8000/api/profile/other/picture/${username}/`, {
+        const response = await fetch(`http://164.90.166.81:8000/api/profile/other/picture/${username}/`, {
           headers: {
             ...getAuthHeader(),
           },
