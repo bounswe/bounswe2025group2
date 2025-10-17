@@ -210,6 +210,48 @@ export interface Quote {
   author: string;
 }
 
+// Chat Types
+export interface ChatUser {
+  id: number;
+  username: string;
+}
+
+export interface Message {
+  id: number;
+  sender: string;
+  body: string;
+  created: string;
+  is_read: boolean;
+}
+
+export interface Chat {
+  id: number;
+  participants: ChatUser[];
+  other_user: ChatUser;
+  created: string;
+  last_message: {
+    body: string;
+    created: string;
+    sender: string;
+  } | null;
+  unread_count: number;
+}
+
+// AI Tutor Types
+export interface AiTutorChat {
+  id: number;
+  chat_id: string;
+  created_at: string;
+  is_ai: boolean;
+}
+
+export interface AiMessage {
+  id: number;
+  message: string;
+  created_at: string;
+  sender: string;
+}
+
 // Configuration
 export interface ApiConfig {
   baseUrl: string;
