@@ -130,7 +130,6 @@ DATABASES = {
     }
 }
 
-
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5000",
     "http://localhost:8000",
