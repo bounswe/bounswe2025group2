@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Dialog,
   DialogContent,
@@ -23,6 +24,7 @@ import {
   Reply,
   Award,
   MessageCircle,
+  ArrowRight,
 } from 'lucide-react';
 
 interface NotificationDetailModalProps {
@@ -52,7 +54,33 @@ const NotificationDetailModal: React.FC<NotificationDetailModalProps> = ({
   onMarkAsUnread,
   notification,
 }) => {
+  const navigate = useNavigate();
+
   if (!notification) return null;
+
+  // Check if this is a forum-related notification
+  const isForumNotification = ['LIKE', 'COMMENT', 'REPLY'].includes(notification.notification_type) && 
+    ['Thread', 'Comment', 'Subcomment'].includes(notification.related_object_type || '');
+
+  // Handle navigation to forum content
+  const handleGoToForum = () => {
+    if (!notification.related_object_id || !notification.related_object_type) return;
+
+    const { related_object_id, related_object_type } = notification;
+
+    if (related_object_type === 'Thread') {
+      // Navigate to the thread page
+      navigate(`/threads/${related_object_id}`);
+    } else if (related_object_type === 'Comment') {
+      // Navigate to the thread that contains this comment
+      navigate(`/threads/${related_object_id}`);
+    } else if (related_object_type === 'Subcomment') {
+      // Navigate to the thread that contains this subcomment
+      navigate(`/threads/${related_object_id}`);
+    }
+    
+    onClose();
+  };
 
   // Get icon and color based on notification type
   const getNotificationIcon = (type: string) => {
@@ -171,35 +199,49 @@ const NotificationDetailModal: React.FC<NotificationDetailModalProps> = ({
         </div>
 
         {/* Footer Actions */}
-        <div className="flex justify-end gap-2 pt-4 border-t">
-          <Button variant="outline" size="sm" onClick={onClose}>
-            Close
-          </Button>
-          {notification.is_read ? (
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={() => {
-                onMarkAsUnread?.(notification.id);
-                onClose();
-              }}
-            >
-              <Clock className="w-3 h-3 mr-1" />
-              Mark as Unread
+        <div className="flex justify-between items-center pt-4 border-t">
+          <div>
+            {isForumNotification && (
+              <Button 
+                variant="default" 
+                size="sm" 
+                onClick={handleGoToForum}
+              >
+                <ArrowRight className="w-3 h-3 mr-1" />
+                Go to Forum
+              </Button>
+            )}
+          </div>
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" onClick={onClose}>
+              Close
             </Button>
-          ) : (
-            <Button 
-              variant="default" 
-              size="sm" 
-              onClick={() => {
-                onMarkAsRead?.(notification.id);
-                onClose();
-              }}
-            >
-              <CheckCircle className="w-3 h-3 mr-1" />
-              Mark as Read
-            </Button>
-          )}
+            {notification.is_read ? (
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => {
+                  onMarkAsUnread?.(notification.id);
+                  onClose();
+                }}
+              >
+                <Clock className="w-3 h-3 mr-1" />
+                Mark as Unread
+              </Button>
+            ) : (
+              <Button 
+                variant="default" 
+                size="sm" 
+                onClick={() => {
+                  onMarkAsRead?.(notification.id);
+                  onClose();
+                }}
+              >
+                <CheckCircle className="w-3 h-3 mr-1" />
+                Mark as Read
+              </Button>
+            )}
+          </div>
         </div>
       </DialogContent>
     </Dialog>

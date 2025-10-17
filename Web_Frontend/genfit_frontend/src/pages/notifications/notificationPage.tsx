@@ -123,6 +123,7 @@ const NotificationsPage = () => {
     }
   };
 
+
   const handleCloseModal = () => {
     setIsModalOpen(false);
     setSelectedNotification(null);
