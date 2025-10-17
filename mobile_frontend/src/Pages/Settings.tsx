@@ -40,7 +40,7 @@ const Settings = () => {
   };
 
   const handleNotifications = () => {
-    navigation.push('Notifications' as never);
+    navigation.push('NotificationPreferences' as never);
   };
 
   const handleLogout = async () => {
@@ -88,7 +88,7 @@ const Settings = () => {
         style={[
           styles.card,
           {
-            backgroundColor: colors.backgroundSecondary,
+            backgroundColor: colors.navBar,
             borderColor: colors.border,
             opacity: fadeInAnim,
             transform: [
@@ -179,7 +179,7 @@ const AnimatedSettingRow: React.FC<AnimatedSettingRowProps> = ({
       style={[
         styles.card,
         {
-          backgroundColor: colors.backgroundSecondary,
+          backgroundColor: colors.navBar,
           borderColor: colors.border,
           opacity: appear,
           transform: [
