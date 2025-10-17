@@ -43,7 +43,7 @@ const Profile = () => {
     setLoading(true);
     try {
       // Fetch profile picture
-      const picRes = await fetch('http://10.0.2.2:8000/api/profile/picture/', {
+      const picRes = await fetch('http://164.90.166.81:8000/api/profile/picture/', {
         headers: {
           ...getAuthHeader(),
           'Content-Type': 'application/json',
@@ -56,11 +56,11 @@ const Profile = () => {
           const picData = await picRes.json();
           image = picData.image || null;
         } else if (contentType && contentType.includes('image/')) {
-          image = 'http://10.0.2.2:8000/api/profile/picture/?t=' + Date.now();
+          image = 'http://164.90.166.81:8000/api/profile/picture/?t=' + Date.now();
         }
       }
       // Fetch user info (username, email)
-      const userRes = await fetch('http://10.0.2.2:8000/api/user/', {
+      const userRes = await fetch('http://164.90.166.81:8000/api/user/', {
         headers: {
           ...getAuthHeader(),
           'Content-Type': 'application/json',
@@ -72,7 +72,7 @@ const Profile = () => {
         setEmail(userData.email || '');
       }
       // Fetch profile info (name, surname, bio)
-      const profileRes = await fetch('http://10.0.2.2:8000/api/profile/', {
+      const profileRes = await fetch('http://164.90.166.81:8000/api/profile/', {
         headers: {
           ...getAuthHeader(),
           'Content-Type': 'application/json',
@@ -103,7 +103,7 @@ const Profile = () => {
     const fetchGoals = async () => {
       setGoalsLoading(true);
       try {
-        const response = await fetch('http://10.0.2.2:8000/api/goals/', {
+        const response = await fetch('http://164.90.166.81:8000/api/goals/', {
           headers: {
             ...getAuthHeader(),
             'Content-Type': 'application/json',
@@ -148,7 +148,7 @@ const Profile = () => {
     });
 
     // Get CSRF token from cookies
-    const cookies = await Cookies.get('http://10.0.2.2:8000');
+    const cookies = await Cookies.get('http://164.90.166.81:8000');
     const csrfToken = cookies.csrftoken?.value;
     if (!csrfToken) {
       Alert.alert('Error', 'CSRF token not found. Please try logging in again.');
@@ -156,7 +156,7 @@ const Profile = () => {
     }
 
     try {
-      const response = await fetch('http://10.0.2.2:8000/api/profile/picture/upload/', {
+      const response = await fetch('http://164.90.166.81:8000/api/profile/picture/upload/', {
         method: 'POST',
         headers: {
           ...getAuthHeader(),

@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, Image, Pressable, ImageSourcePropType, Alert, TextInput, Button, ActivityIndicator } from 'react-native';
+import { View, StyleSheet, Image, Pressable, ImageSourcePropType, Alert, TextInput, Button, ActivityIndicator, TouchableOpacity } from 'react-native';
 import CustomText from './CustomText';
 import { useTheme } from '../context/ThemeContext';
 import Cookies from '@react-native-cookies/cookies';
 import { useAuth } from '../context/AuthContext';
+import { useNavigation } from '@react-navigation/native';
 
 type ThreadProps = {
   forumName: string;
@@ -19,6 +20,7 @@ type ThreadProps = {
 const Thread = ({ forumName, content, imageUrl, profilePic, username, threadId, likeCount = 0, commentCount = 0 }: ThreadProps) => {
   const { colors, isDark } = useTheme();
   const { getAuthHeader } = useAuth();
+  const navigation = useNavigation();
   const [vote, setVote] = useState<null | 'UPVOTE' | 'DOWNVOTE'>(null);
   const [likes, setLikes] = useState(likeCount);
   const [loadingVote, setLoadingVote] = useState(false);
@@ -215,6 +217,11 @@ const Thread = ({ forumName, content, imageUrl, profilePic, username, threadId, 
     });
   };
 
+  const handleUsernamePress = () => {
+    // @ts-ignore - Navigation typing can be complex in React Native
+    navigation.navigate('Profile', { username });
+  };
+
   return (
     <View style={[styles.container, { borderColor: colors.border }]}>
       <View style={styles.header}>
@@ -230,9 +237,11 @@ const Thread = ({ forumName, content, imageUrl, profilePic, username, threadId, 
           source={profilePic} 
           style={[styles.profilePic, { borderColor: colors.border }]} 
         />
-        <CustomText style={[styles.username, { color: colors.subText }]}>
-          @{username}
-        </CustomText>
+        <TouchableOpacity onPress={handleUsernamePress} activeOpacity={0.7}>
+          <CustomText style={[styles.username, { color: colors.subText }]}>
+            @{username}
+          </CustomText>
+        </TouchableOpacity>
       </View>
 
       {imageUrl && (
