@@ -56,15 +56,15 @@ const Register = ({ navigation }: any) => {
     }
 
     try {
-      await fetch('http://10.0.2.2:8000/api/quotes/random/', { 
+      await fetch('http://164.90.166.81:8000/api/quotes/random/', { 
         method: 'GET',
         credentials: 'include',
       });
 
-      const cookies = await Cookies.get('http://10.0.2.2:8000');
+      const cookies = await Cookies.get('http://164.90.166.81:8000');
       const csrfToken = cookies.csrftoken?.value;
       
-      const response = await fetch('http://10.0.2.2:8000/api/register/', {
+      const response = await fetch('http://164.90.166.81:8000/api/register/', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
