@@ -175,7 +175,7 @@ const Home = () => {
       profilePicRequests.current.add(username);
 
       try {
-        const response = await fetch(`http://10.0.2.2:8000/api/profile/other/picture/${username}/`, {
+        const response = await fetch(`http://164.90.166.81:8000/api/profile/other/picture/${username}/`, {
           headers: {
             ...getAuthHeader(),
           },
