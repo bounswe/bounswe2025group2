@@ -246,17 +246,50 @@ const Thread = ({ forumName, content, imageUrl, profilePic, username, threadId, 
         {renderContent(content)}
       </View>
 
-      <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8, gap: 16 }}>
-        <Pressable onPress={() => handleVote('UPVOTE')} style={{ flexDirection: 'row', alignItems: 'center', opacity: vote === 'UPVOTE' ? 1 : 0.6 }}>
-          <CustomText style={{ fontSize: 20, color: vote === 'UPVOTE' ? colors.mentionText : colors.subText }}>↑</CustomText>
+      <View style={styles.votingContainer}>
+        {/* Upvote Button */}
+        <Pressable 
+          onPress={() => handleVote('UPVOTE')} 
+          style={[
+            styles.voteButton,
+            vote === 'UPVOTE' && styles.voteButtonActive,
+            { borderColor: vote === 'UPVOTE' ? colors.mentionText : colors.border }
+          ]}
+        >
+          <CustomText style={[
+            styles.voteIcon,
+            { color: vote === 'UPVOTE' ? colors.mentionText : colors.subText }
+          ]}>
+            👍
+          </CustomText>
         </Pressable>
-        <CustomText style={{ color: colors.text, fontWeight: 'bold', fontSize: 16 }}>{likes}</CustomText>
-        <Pressable onPress={() => handleVote('DOWNVOTE')} style={{ flexDirection: 'row', alignItems: 'center', opacity: vote === 'DOWNVOTE' ? 1 : 0.6 }}>
-          <CustomText style={{ fontSize: 20, color: vote === 'DOWNVOTE' ? colors.mentionText : colors.subText }}>↓</CustomText>
-      </Pressable>
-        <View style={{ flexDirection: 'row', alignItems: 'center', marginLeft: 16 }}>
-          <CustomText style={{ fontSize: 18, color: colors.subText }}>💬</CustomText>
-          <CustomText style={{ color: colors.text, marginLeft: 4 }}>{comments}</CustomText>
+        
+        {/* Vote Count */}
+        <View style={[styles.voteCountContainer, { backgroundColor: colors.navBar }]}>
+          <CustomText style={[styles.voteCount, { color: colors.text }]}>{likes}</CustomText>
+        </View>
+        
+        {/* Downvote Button */}
+        <Pressable 
+          onPress={() => handleVote('DOWNVOTE')} 
+          style={[
+            styles.voteButton,
+            vote === 'DOWNVOTE' && styles.voteButtonActive,
+            { borderColor: vote === 'DOWNVOTE' ? colors.mentionText : colors.border }
+          ]}
+        >
+          <CustomText style={[
+            styles.voteIcon,
+            { color: vote === 'DOWNVOTE' ? colors.mentionText : colors.subText }
+          ]}>
+            👎
+          </CustomText>
+        </Pressable>
+        
+        {/* Comments Section */}
+        <View style={styles.commentsSection}>
+          <CustomText style={[styles.commentIcon, { color: colors.subText }]}>💬</CustomText>
+          <CustomText style={[styles.commentCount, { color: colors.text }]}>{comments}</CustomText>
         </View>
       </View>
       {/* Comments list */}
@@ -344,6 +377,53 @@ const styles = StyleSheet.create({
   },
   mention: {
     fontWeight: 'bold',
+  },
+  votingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+    gap: 12,
+  },
+  voteButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    borderWidth: 2,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'transparent',
+  },
+  voteButtonActive: {
+    backgroundColor: 'rgba(0, 0, 0, 0.1)',
+  },
+  voteIcon: {
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  voteCountContainer: {
+    minWidth: 40,
+    height: 32,
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+  },
+  voteCount: {
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  commentsSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginLeft: 16,
+    gap: 6,
+  },
+  commentIcon: {
+    fontSize: 18,
+  },
+  commentCount: {
+    fontSize: 16,
+    fontWeight: '500',
   },
 });
 
