@@ -6,7 +6,7 @@ import { Button } from '../../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import GFapi from '../../lib/api/GFapi';
 import type { Goal } from '../../lib/types/api';
-import { Plus, Edit, Save, Target, TrendingUp, Trash2, Calendar } from 'lucide-react';
+import { Plus, Edit, Save, Target, TrendingUp, Trash2, Calendar, RefreshCw } from 'lucide-react';
 import GoalFormDialog from './GoalFormDialog';
 import ProgressUpdateDialog from './ProgressUpdateDialog';
 import './goal_page.css';
@@ -26,6 +26,7 @@ const formatDate = (dateString: string) => {
 
 // Helper function to calculate progress percentage
 const calculateProgress = (current: number, target: number) => {
+    if (target === 0) return 0;
     return Math.min(Math.round((current / target) * 100), 100);
 };
 
@@ -90,6 +91,20 @@ const GoalPage = () => {
         }
     };
 
+    const handleRestartGoal = async (goalId: number) => {
+        if (!confirm('Are you sure you want to restart this goal?')) {
+            return;
+        }
+
+        try {
+            await GFapi.post(`/api/goals/${goalId}/restart/`);
+            await invalidateQueries(['/api/goals/']);
+        } catch (error) {
+            console.error('Failed to restart goal:', error);
+            alert('Failed to restart goal. Please try again.');
+        }
+    };
+
     const openProgressDialog = (goal: Goal) => {
         setSelectedGoal(goal);
         setIsProgressDialogOpen(true);
@@ -140,7 +155,7 @@ const GoalPage = () => {
                             <p className="page-subtitle">Track your fitness journey and achieve your targets</p>
                         </div>
                         <Button onClick={handleAddNew} className="add-goal-btn" size={"xl"}>
-                            <Plus className="w-4 h-4" />
+                            <Plus className="w-4 h-4 mr-2" />
                             Add New Goal
                         </Button>
                     </div>
@@ -221,7 +236,7 @@ const GoalPage = () => {
                         <h3 className="text-lg font-semibold mb-2">No goals yet</h3>
                         <p className="text-muted-foreground mb-4">Start your fitness journey by creating your first goal!</p>
                         <Button onClick={handleAddNew}>
-                            <Plus className="w-4 h-4" />
+                            <Plus className="w-4 h-4 mr-2" />
                             Create Your First Goal
                         </Button>
                     </div>
@@ -239,7 +254,7 @@ const GoalPage = () => {
                         </p>
                         {activeGoalTab === 'ALL' && (
                             <Button onClick={handleAddNew}>
-                                <Plus className="w-4 h-4" />
+                                <Plus className="w-4 h-4 mr-2" />
                                 Create Your First Goal
                             </Button>
                         )}
@@ -293,20 +308,31 @@ const GoalPage = () => {
                                         </div>
                                         
                                         <div className="goal-card-actions">
-                                            <Button 
-                                                variant="positive"
-                                                size="sm" 
-                                                onClick={() => openProgressDialog(goal)}
-                                            >
-                                                <TrendingUp className="w-4 h-4" />
-                                                Update Progress
-                                            </Button>
+                                            {goal.status === 'INACTIVE' ? (
+                                                <Button
+                                                    variant="secondary"
+                                                    size="sm"
+                                                    onClick={() => handleRestartGoal(goal.id)}
+                                                >
+                                                    <RefreshCw className="w-4 h-4 mr-2" />
+                                                    Restart Goal
+                                                </Button>
+                                            ) : (
+                                                <Button 
+                                                    variant="positive"
+                                                    size="sm" 
+                                                    onClick={() => openProgressDialog(goal)}
+                                                >
+                                                    <TrendingUp className="w-4 h-4 mr-2" />
+                                                    Update Progress
+                                                </Button>
+                                            )}
                                             <Button 
                                                 variant="outline" 
                                                 size="sm" 
                                                 onClick={() => handleEdit(goal)}
                                             >
-                                                <Edit className="w-4 h-4" />
+                                                <Edit className="w-4 h-4 mr-2" />
                                                 Edit
                                             </Button>
                                             <Button 
@@ -314,7 +340,7 @@ const GoalPage = () => {
                                                 size="sm" 
                                                 onClick={() => handleDeleteGoal(goal.id)}
                                             >
-                                                <Trash2 className="w-4 h-4" />
+                                                <Trash2 className="w-4 h-4 mr-2" />
                                                 Delete
                                             </Button>
                                         </div>

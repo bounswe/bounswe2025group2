@@ -201,24 +201,24 @@
   animation: fadeInUp 0.8s ease-out;
 }
 
-.section-header {
+.forum-content .section-header {
   margin-bottom: 2rem;
   width: 100%;
   animation: slideInFromLeft 0.6s ease-out;
 }
 
-.header-content {
+.forum-content .header-content {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
   gap: 2rem;
 }
 
-.header-text {
+.forum-content .header-text {
   flex: 1;
 }
 
-.page-title {
+.forum-content .page-title {
   font-size: 2.5rem;
   font-weight: 700;
   color: #800000;
@@ -229,20 +229,20 @@
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
-.page-title:hover {
+.forum-content .page-title:hover {
   color: #a00000;
   transform: scale(1.02);
   text-shadow: 0 2px 4px rgba(128, 0, 0, 0.3);
 }
 
-.page-subtitle {
+.forum-content .page-subtitle {
   font-size: 1.1rem;
   color: #6b7280;
   margin: 0;
   transition: color 0.3s ease;
 }
 
-.page-subtitle:hover {
+.forum-content .page-subtitle:hover {
   color: #374151;
 }
 
@@ -439,7 +439,7 @@
     .forum-card,
     .action-btn,
     .stat-item,
-    .page-title,
+    .forum-content .page-title,
     .forum-loading,
     .empty-state {
         animation: none !important;
@@ -453,7 +453,7 @@
 
 /* Responsive adjustments */
 @media (max-width: 768px) {
-    .header-content {
+    .forum-content .header-content {
         flex-direction: column;
     }
     
@@ -467,7 +467,7 @@
         animation-duration: 0.6s;
     }
     
-    .page-title {
+    .forum-content .page-title {
         font-size: 2rem;
     }
     
@@ -481,11 +481,11 @@
 }
 
 @media (max-width: 480px) {
-    .page-title {
+    .forum-content .page-title {
         font-size: 1.75rem;
     }
     
-    .page-subtitle {
+    .forum-content .page-subtitle {
         font-size: 1rem;
     }
     

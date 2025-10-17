@@ -3,6 +3,8 @@ import { useIsAuthenticated, useLogout } from '../lib';
 import { useNavigate } from 'react-router-dom';
 import { Button } from './ui/button';
 import './Header.css';
+import { useQuery } from '@tanstack/react-query';
+import { createQueryKey } from '../lib/query/queryClient';
 
 interface HeaderProps {
   onSearch?: (searchTerm: string) => void;
@@ -14,6 +16,25 @@ const Header: React.FC<HeaderProps> = ({ onSearch }) => {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
+
+  const { data: profilePicture } = useQuery<string | { image: string }>({
+    queryKey: createQueryKey('/api/profile/picture/'),
+    queryFn: async () => {
+      const base = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
+      const endpoint = '/api/profile/picture/'
+      const response = await fetch(new URL(endpoint, base).toString(), {
+        credentials: 'include',
+      })
+      if (!response.ok) throw new Error('Failed to fetch profile picture')
+      const contentType = response.headers.get('Content-Type') || ''
+      if (contentType.startsWith('image/')) {
+        const blob = await response.blob()
+        return URL.createObjectURL(blob)
+      }
+      return response.json()
+    },
+    enabled: !!user,
+  });
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -88,8 +109,12 @@ const Header: React.FC<HeaderProps> = ({ onSearch }) => {
             className="profile-trigger"
             onClick={handleProfileClick}
           >
-            <div className="profile-avatar">
-              {user?.username?.charAt(0).toUpperCase() || 'U'}
+            <div className="profile-avatar" style={{ overflow: 'hidden' }}>
+              {typeof profilePicture === 'string' ? (
+                  <img src={profilePicture} alt="Profile" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                ) : (
+                  user?.username?.charAt(0).toUpperCase() || 'U'
+                )}
             </div>
             <span className="profile-name">{user?.username || 'User'}</span>
             <svg 

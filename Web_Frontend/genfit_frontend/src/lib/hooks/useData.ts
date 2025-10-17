@@ -14,7 +14,17 @@ import type { Goal, Challenge, ForumThread, Quote, Forum, Comment, Subcomment, V
 export function useGoals(username?: string) {
   return useQuery({
     queryKey: createQueryKey('/api/goals/', username ? { username } : undefined),
-    queryFn: () => GFapi.get<Goal[]>('/api/goals/', username ? { username } : undefined),
+    queryFn: async () => {
+      if (!username) {
+        try {
+          await GFapi.get('/api/goals/check-inactive/');
+        } catch (error) {
+          console.error("Failed to check inactive goals:", error);
+        }
+      }
+      const goals = await GFapi.get<Goal[]>('/api/goals/', username ? { username } : undefined);
+      return goals;
+    },
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 }
