@@ -56,24 +56,6 @@ In the second terminal (also in `mobile_frontend`), run:
 # From mobile_frontend directory
 npx react-native run-android
 ```
-2. **Install dependencies**
-```bash
-      npm install
-```
-3. **Running the Application
-⚠️ Important: You need to run the following commands in two separate terminal windows, both opened in Administrator mode.
-Step 1: Start Metro Bundler
-Open your first terminal (as Administrator) and run:**
-```bash
-      npx react-native start
-```
-**Keep this terminal running. Metro Bundler must remain active while the app is running.
-Step 2: Launch the App
-Open a second terminal (as Administrator) and run:**
-```bash
-      npx react-native run-android
-```
-## Troubleshooting
 
 This builds the app and installs it on the connected device or running emulator. If the build succeeds, the app should launch automatically.
 
