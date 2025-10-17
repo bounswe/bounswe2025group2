@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useEffect, useCallback } from 'react';
+import React, { useMemo, useRef, useEffect } from 'react';
 import {
   View,
   StyleSheet,
@@ -35,15 +35,15 @@ const Settings = () => {
     }).start();
   }, [fadeInAnim]);
 
-  const handleEditProfile = useCallback(() => {
-    navigation.navigate('Profile' as never);
-  }, [navigation]);
+  const handleEditProfile = () => {
+    navigation.push('Profile' as never);
+  };
 
-  const handleNotifications = useCallback(() => {
-    navigation.navigate('NotificationPreferences' as never);
-  }, [navigation]);
+  const handleNotifications = () => {
+    navigation.push('NotificationPreferences' as never);
+  };
 
-  const handleLogout = useCallback(async () => {
+  const handleLogout = async () => {
     try {
       await fetch('http://10.0.2.2:8000/api/logout/', {
         method: 'POST',
@@ -59,10 +59,10 @@ const Settings = () => {
         routes: [{ name: 'Login' as never }],
       });
     }
-  }, [logout, navigation]);
+  };
 
-  const actions = useMemo<SettingAction[]>(() => {
-    return [
+  const actions = useMemo<SettingAction[]>(
+    () => [
       {
         label: 'Edit Profile',
         subtitle: 'Update your personal details',
@@ -78,8 +78,9 @@ const Settings = () => {
         subtitle: 'Sign out from this device',
         onPress: handleLogout,
       },
-    ];
-  }, [handleEditProfile, handleNotifications, handleLogout]);
+    ],
+    [],
+  );
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
