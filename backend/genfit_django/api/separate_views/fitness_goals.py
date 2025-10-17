@@ -116,6 +116,27 @@ def update_goal_progress(request, goal_id):
         return Response(serializer.data)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def restart_goal(request, goal_id):
+    try:
+        goal = FitnessGoal.objects.get(user=request.user, id=goal_id)
+    except FitnessGoal.DoesNotExist:
+        return Response(status=status.HTTP_404_NOT_FOUND)
+
+    if goal.status != 'INACTIVE':
+        return Response({'detail': 'Only inactive goals can be restarted.'}, status=status.HTTP_400_BAD_REQUEST)
+
+    duration = goal.target_date - goal.start_date
+    goal.status = 'RESTARTED'
+    goal.current_value = 0.0
+    goal.start_date = timezone.now()
+    goal.target_date = goal.start_date + duration
+    goal.save()
+
+    serializer = FitnessGoalSerializer(goal)
+    return Response(serializer.data)
+
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def check_inactive_goals(request):
