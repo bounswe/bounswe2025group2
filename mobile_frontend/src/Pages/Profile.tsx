@@ -87,7 +87,11 @@ const Profile = () => {
         },
         credentials: 'include',
       });
-      if (!response.ok) throw new Error('Failed to fetch profile');
+      
+      if (!response.ok) {
+        throw new Error(`Failed to fetch profile: ${response.status}`);
+      }
+      
       return response.json();
     },
   });
@@ -99,6 +103,7 @@ const Profile = () => {
       const endpoint = otherUsername 
         ? `/api/profile/other/picture/${otherUsername}/` 
         : '/api/profile/picture/';
+      
       const response = await fetch(`${API_BASE}${endpoint}`, {
         headers: {
           ...getAuthHeader(),
@@ -110,29 +115,30 @@ const Profile = () => {
       
       const contentType = response.headers.get('Content-Type') || '';
       if (contentType.startsWith('image/')) {
-        // For React Native, we need to return the URL directly, not create a blob
-        // Add a cache-busting timestamp to force refresh
-        return `${API_BASE}${endpoint}?t=${Date.now()}`;
-      } else if (contentType.includes('application/json')) {
+        return `${API_BASE}${endpoint}`;
+      } 
+      
+      if (contentType.includes('application/json')) {
         const data = await response.json();
         return data.image || '';
       }
+      
       return '';
     },
+    staleTime: 0,
   });
 
-  // Fetch goals
+  // Fetch goals - only for own profile
   const { data: goals = [], isLoading: isLoadingGoals } = useQuery<Goal[]>({
     queryKey: ['goals', otherUsername || 'me'],
     queryFn: async () => {
-      // The backend doesn't have /api/goals/user/{username}/ endpoint
-      // So we can only fetch goals for our own profile
+      // Only fetch goals for own profile
+      // Goals are private and only visible to user and their mentor
+      // Since we can't determine mentor relationship from frontend, don't show goals for other users
       if (otherUsername) {
-        // Goals are not available for other users
         return [];
       }
       
-      // For own profile
       const response = await fetch(`${API_BASE}/api/goals/`, {
         headers: {
           ...getAuthHeader(),
@@ -145,6 +151,7 @@ const Profile = () => {
       const data = await response.json();
       return Array.isArray(data) ? data : [];
     },
+    enabled: !otherUsername, // Only run query for own profile
   });
 
   // Update profile mutation
@@ -389,8 +396,11 @@ const Profile = () => {
               {profilePictureUri ? (
                 <Avatar.Image
                   size={120}
-                  source={{ uri: profilePictureUri }}
-                  key={profilePictureUri}
+                  source={{ 
+                    uri: profilePictureUri,
+                    headers: getAuthHeader(),
+                  }}
+                  key={`${profilePictureUri}-${otherUsername || 'me'}`}
                 />
               ) : (
                 <Avatar.Text size={120} label={avatarInitial} />
@@ -485,34 +495,36 @@ const Profile = () => {
           </Card.Content>
         </Card>
 
-        {/* Goals Section */}
-        <Card style={styles.sectionCard}>
-          <Card.Title
-            title="Goals"
-            right={(props) => !otherUsername && goals.length > 0 ? (
-              <Button {...props} icon="plus" onPress={() => navigation.navigate('Goals' as never)}>New</Button>
-            ) : null}
-          />
-          <Card.Content>
-            {isLoadingGoals ? <ActivityIndicator/> : goals.length > 0 ? (
-                goals.map((goal: Goal, index: number) => (
-                  <React.Fragment key={goal.id}>
-                    <GoalCard goal={goal} onPress={() => openGoalDetails(goal)} />
-                    {index < goals.length - 1 && <Divider style={styles.goalDivider} />}
-                  </React.Fragment>
-                ))
-            ) : (
-              <View style={styles.emptyStateContainer}>
-                <Avatar.Icon icon="flag-checkered" size={48} style={{backgroundColor: theme.colors.surfaceVariant}}/>
-                <Text variant="titleMedium" style={styles.emptyStateText}>No Goals Set</Text>
-                <Text variant="bodyMedium" style={styles.emptyStateText}>
-                    {otherUsername ? 'This user has not set any goals yet.' : "You haven't set any goals yet."}
-                </Text>
-                {!otherUsername && <Button mode="contained" style={styles.emptyStateButton} onPress={() => navigation.navigate('Goals' as never)}>Set Your First Goal</Button>}
-              </View>
-            )}
-          </Card.Content>
-        </Card>
+        {/* Goals Section - Only show for own profile */}
+        {!otherUsername && (
+          <Card style={styles.sectionCard}>
+            <Card.Title
+              title="Goals"
+              right={(props) => goals.length > 0 ? (
+                <Button {...props} icon="plus" onPress={() => navigation.navigate('Goals' as never)}>New</Button>
+              ) : null}
+            />
+            <Card.Content>
+              {isLoadingGoals ? <ActivityIndicator/> : goals.length > 0 ? (
+                  goals.map((goal: Goal, index: number) => (
+                    <React.Fragment key={goal.id}>
+                      <GoalCard goal={goal} onPress={() => openGoalDetails(goal)} />
+                      {index < goals.length - 1 && <Divider style={styles.goalDivider} />}
+                    </React.Fragment>
+                  ))
+              ) : (
+                <View style={styles.emptyStateContainer}>
+                  <Avatar.Icon icon="flag-checkered" size={48} style={{backgroundColor: theme.colors.surfaceVariant}}/>
+                  <Text variant="titleMedium" style={styles.emptyStateText}>No Goals Set</Text>
+                  <Text variant="bodyMedium" style={styles.emptyStateText}>
+                    You haven't set any goals yet.
+                  </Text>
+                  <Button mode="contained" style={styles.emptyStateButton} onPress={() => navigation.navigate('Goals' as never)}>Set Your First Goal</Button>
+                </View>
+              )}
+            </Card.Content>
+          </Card>
+        )}
       </ScrollView>
 
       {/* Goal Detail Modal */}
@@ -526,7 +538,15 @@ const Profile = () => {
               <InfoRow label="Target Date" value={selectedGoal?.target_date ? new Date(selectedGoal.target_date).toLocaleDateString() : '—'} isLast />
            </Dialog.Content>
            <Dialog.Actions>
-             {!otherUsername && <Button textColor={MD3Colors.error50} onPress={handleDeleteSelectedGoal} loading={deleteGoalMutation.isPending}>Delete</Button>}
+             <Button 
+               mode="contained" 
+               onPress={() => {
+                 closeGoalDetails();
+                 navigation.navigate('Goals' as never);
+               }}
+             >
+               View in Goals
+             </Button>
              <Button onPress={closeGoalDetails}>Close</Button>
            </Dialog.Actions>
         </Modal>
