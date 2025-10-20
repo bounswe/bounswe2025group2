@@ -69,7 +69,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const logout = async () => {
     try {
       if (token) {
-        await fetch('http://10.0.2.2:8000/api/logout/', {
+        // Call logout endpoint if it exists
+        await fetch('http://164.90.166.81:8000/api/logout/', {
           method: 'POST',
           headers: {
             ...getAuthHeader(),
