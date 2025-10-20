@@ -44,6 +44,7 @@ interface NotificationDetailModalProps {
     is_read: boolean;
     is_email_sent: boolean;
     created_at: string;
+    target_thread_id?: number;
   } | null;
 }
 
@@ -64,18 +65,20 @@ const NotificationDetailModal: React.FC<NotificationDetailModalProps> = ({
 
   // Handle navigation to forum content
   const handleGoToForum = () => {
+    // Use the backend-computed target_thread_id for correct routing
+    if (notification.target_thread_id) {
+      navigate(`/threads/${notification.target_thread_id}`);
+      onClose();
+      return;
+    }
+
+    // Fallback to old logic if target_thread_id is not available
     if (!notification.related_object_id || !notification.related_object_type) return;
 
     const { related_object_id, related_object_type } = notification;
 
     if (related_object_type === 'Thread') {
       // Navigate to the thread page
-      navigate(`/threads/${related_object_id}`);
-    } else if (related_object_type === 'Comment') {
-      // Navigate to the thread that contains this comment
-      navigate(`/threads/${related_object_id}`);
-    } else if (related_object_type === 'Subcomment') {
-      // Navigate to the thread that contains this subcomment
       navigate(`/threads/${related_object_id}`);
     }
     
