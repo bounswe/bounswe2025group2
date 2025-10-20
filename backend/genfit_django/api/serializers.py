@@ -80,6 +80,7 @@ class UserSerializer(serializers.ModelSerializer):
 class NotificationSerializer(serializers.ModelSerializer):
     sender_username = serializers.CharField(source='sender.username', read_only=True, allow_null=True)
     recipient_username = serializers.CharField(source='recipient.username', read_only=True)
+    target_thread_id = serializers.SerializerMethodField()
 
     class Meta:
         model = Notification
@@ -94,7 +95,8 @@ class NotificationSerializer(serializers.ModelSerializer):
             'related_object_type',
             'is_read',
             'is_email_sent',
-            'created_at'
+            'created_at',
+            'target_thread_id',
         ]
         read_only_fields = ['id', 'created_at', 'is_email_sent']
 
@@ -106,6 +108,24 @@ class NotificationSerializer(serializers.ModelSerializer):
         instance.is_read = validated_data.get('is_read', instance.is_read)
         instance.save()
         return instance
+
+    def get_target_thread_id(self, obj):
+        # Determine the thread id that the notification should navigate to
+        try:
+            if obj.related_object_type == 'Thread' and obj.related_object_id:
+                return obj.related_object_id
+            if obj.related_object_type == 'Comment' and obj.related_object_id:
+                comment = Comment.objects.filter(id=obj.related_object_id).only('thread_id').first()
+                return comment.thread_id if comment else None
+            if obj.related_object_type == 'Subcomment' and obj.related_object_id:
+                sub = Subcomment.objects.filter(id=obj.related_object_id).only('comment_id').first()
+                if not sub:
+                    return None
+                comment = Comment.objects.filter(id=sub.comment_id).only('thread_id').first()
+                return comment.thread_id if comment else None
+        except Exception:
+            return None
+        return None
 
 class FitnessGoalSerializer(serializers.ModelSerializer):
     progress_percentage = serializers.FloatField(read_only=True)
