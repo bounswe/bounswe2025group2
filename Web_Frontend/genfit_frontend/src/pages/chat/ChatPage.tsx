@@ -10,10 +10,10 @@ import {
   useAiChatHistory,
   useSendAiMessage
 } from '../../lib';
-import { Layout } from '../../components';
+import { Layout, UserAvatar } from '../../components';
 import { Button } from '../../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
-import type { Chat, ChatUser, Message, AiTutorChat, AiMessage } from '../../lib/types/api';
+import type { Chat, Message, AiTutorChat, AiMessage } from '../../lib/types/api';
 import { Plus, Send, MessageSquare, Bot, Users, X } from 'lucide-react';
 import './chat_page.css';
 
@@ -29,11 +29,6 @@ const formatDate = (dateString: string) => {
   return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 };
 
-// Helper function to get user initials
-const getInitial = (user?: ChatUser) => {
-  if (!user || !user.username) return '?';
-  return user.username.charAt(0).toUpperCase();
-};
 
 const ChatPage = () => {
   const { isAuthenticated, isLoading: authLoading, user } = useIsAuthenticated();
@@ -326,9 +321,7 @@ const ChatPage = () => {
                                 onClick={() => handleCreateChat(user.id)}
                                 className="user-item"
                               >
-                                <div className="user-avatar">
-                                  {getInitial(user)}
-                                </div>
+                                <UserAvatar user={user} className="user-avatar" size="md" />
                                 <span className="user-name">{user.username}</span>
                               </div>
                             ))
@@ -364,9 +357,7 @@ const ChatPage = () => {
                               onClick={() => setSelectedChat(chat)}
                               className={`chat-item ${selectedChat?.id === chat.id ? 'active' : ''}`}
                             >
-                              <div className="chat-item-avatar">
-                                {getInitial(chat.other_user)}
-                              </div>
+                              <UserAvatar user={chat.other_user} className="chat-item-avatar" size="md" />
                               <div className="chat-item-content">
                                 <div className="chat-item-header">
                                   <h3 className="chat-item-name">
@@ -406,9 +397,7 @@ const ChatPage = () => {
                       {/* Chat header */}
                       <CardHeader className="chat-header">
                         <div className="chat-header-content">
-                          <div className="chat-header-avatar">
-                            {getInitial(selectedChat.other_user)}
-                          </div>
+                          <UserAvatar user={selectedChat.other_user} className="chat-header-avatar" size="lg" />
                           <div className="chat-header-info">
                             <h2 className="chat-header-name">
                               {selectedChat.other_user?.username || 'Unknown User'}
