@@ -66,10 +66,10 @@ export const ChatProvider = ({ children }: ChatProviderProps) => {
 
   const fetchContacts = async () => {
     try {
-      const cookies = await Cookies.get('http://10.0.2.2:8000');
+      const cookies = await Cookies.get('http://164.90.166.81:8000');
       const csrfToken = cookies.csrftoken?.value;
       
-      const res = await axios.get('http://10.0.2.2:8000/api/users/', {
+      const res = await axios.get('http://164.90.166.81:8000/api/users/', {
         headers: {
           ...getAuthHeader(),
           'Content-Type': 'application/json',
@@ -103,10 +103,10 @@ export const ChatProvider = ({ children }: ChatProviderProps) => {
 
   const fetchChats = async () => {
     try {
-      const cookies = await Cookies.get('http://10.0.2.2:8000');
+      const cookies = await Cookies.get('http://164.90.166.81:8000');
       const csrfToken = cookies.csrftoken?.value;
       
-      const res = await axios.get('http://10.0.2.2:8000/chat/get-chats/', {
+      const res = await axios.get('http://164.90.166.81:8000/chat/get-chats/', {
         headers: {
           ...getAuthHeader(),
           'Content-Type': 'application/json',
@@ -123,11 +123,11 @@ export const ChatProvider = ({ children }: ChatProviderProps) => {
 
   const createChat = async (userId: number) => {
     try {
-      const cookies = await Cookies.get('http://10.0.2.2:8000');
+      const cookies = await Cookies.get('http://164.90.166.81:8000');
       const csrfToken = cookies.csrftoken?.value;
       
       const res = await axios.post(
-        'http://10.0.2.2:8000/chat/create-chat/',
+        'http://164.90.166.81:8000/chat/create-chat/',
         { user_id: userId },
         { 
           headers: {

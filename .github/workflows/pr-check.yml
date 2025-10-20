@@ -1,0 +1,85 @@
+name: PR Build Check
+
+on:
+  pull_request:
+    branches:
+      - main
+    types: [opened, synchronize, reopened]
+
+jobs:
+  build-validation:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build backend (validation only)
+        run: |
+          echo "Building backend for validation..."
+          docker build -t genfit-backend-test ./backend/genfit_django
+
+      - name: Build frontend (validation only)
+        run: |
+          echo "Building frontend for validation..."
+          docker build -t genfit-frontend-test ./Web_Frontend/genfit_frontend \
+            --build-arg VITE_API_BASE_URL=http://localhost:8000
+
+      - name: Run backend tests (if available)
+        run: |
+          echo "Running backend tests..."
+          # Uncomment and modify the following lines when we have tests set up
+          # docker run --rm genfit-backend-test python manage.py test
+          echo "Backend tests would run here"
+
+      - name: Run frontend tests (if available)
+        run: |
+          echo "Running frontend tests..."
+          # Uncomment and modify the following lines when we have tests set up
+          # docker run --rm genfit-frontend-test npm test
+          echo "Frontend tests would run here"
+
+      - name: Cleanup test images
+        if: always()
+        run: |
+          docker rmi genfit-backend-test genfit-frontend-test || true
+
+  lint-check:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install Python dependencies
+        run: |
+          cd backend/genfit_django
+          pip install -r requirements.txt
+
+      - name: Install Node.js dependencies
+        run: |
+          cd Web_Frontend/genfit_frontend
+          npm ci
+
+      - name: Run frontend linting
+        run: |
+          cd Web_Frontend/genfit_frontend
+          npm run lint || echo "Linting completed with warnings"
+
+      - name: Check TypeScript compilation
+        run: |
+          cd Web_Frontend/genfit_frontend
+          npm run build

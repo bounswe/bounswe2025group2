@@ -5,16 +5,22 @@ from rest_framework.response import Response
 from django.utils import timezone
 from django.db.models import Q
 
-from ..models import FitnessGoal, Notification
+from ..models import FitnessGoal, Notification, UserWithType
 from ..serializers import FitnessGoalSerializer, FitnessGoalUpdateSerializer
 
 @api_view(['GET', 'POST'])
 @permission_classes([IsAuthenticated])
 def fitness_goals(request):
     if request.method == 'GET':
-        goals = FitnessGoal.objects.filter(
-            Q(user=request.user)
-        )
+        username = request.query_params.get('username')
+        if username:
+            try:
+                target_user = UserWithType.objects.get(username=username)
+            except UserWithType.DoesNotExist:
+                return Response([], status=status.HTTP_200_OK)
+            goals = FitnessGoal.objects.filter(Q(user=target_user))
+        else:
+            goals = FitnessGoal.objects.filter(Q(user=request.user))
         serializer = FitnessGoalSerializer(goals, many=True)
         return Response(serializer.data)
 
@@ -109,6 +115,27 @@ def update_goal_progress(request, goal_id):
 
         return Response(serializer.data)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def restart_goal(request, goal_id):
+    try:
+        goal = FitnessGoal.objects.get(user=request.user, id=goal_id)
+    except FitnessGoal.DoesNotExist:
+        return Response(status=status.HTTP_404_NOT_FOUND)
+
+    if goal.status != 'INACTIVE':
+        return Response({'detail': 'Only inactive goals can be restarted.'}, status=status.HTTP_400_BAD_REQUEST)
+
+    duration = goal.target_date - goal.start_date
+    goal.status = 'RESTARTED'
+    goal.current_value = 0.0
+    goal.start_date = timezone.now()
+    goal.target_date = goal.start_date + duration
+    goal.save()
+
+    serializer = FitnessGoalSerializer(goal)
+    return Response(serializer.data)
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])

@@ -33,7 +33,7 @@ const TopBar = () => {
       setLoading(true);
       try {
         // Fetch profile picture
-        const picRes = await fetch('http://10.0.2.2:8000/api/profile/picture/', {
+        const picRes = await fetch('http://164.90.166.81:8000/api/profile/picture/', {
           headers: {
             ...getAuthHeader(),
             'Content-Type': 'application/json',
@@ -46,11 +46,11 @@ const TopBar = () => {
             const picData = await picRes.json();
             image = picData.image || null;
           } else if (contentType && contentType.includes('image/')) {
-            image = 'http://10.0.2.2:8000/api/profile/picture/?t=' + Date.now();
+            image = 'http://164.90.166.81:8000/api/profile/picture/?t=' + Date.now();
           }
         }
         // Fetch username
-        const userRes = await fetch('http://10.0.2.2:8000/api/profile/', {
+        const userRes = await fetch('http://164.90.166.81:8000/api/profile/', {
           headers: {
             ...getAuthHeader(),
             'Content-Type': 'application/json',

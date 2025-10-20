@@ -28,17 +28,17 @@ const Login = ({ navigation }: any) => {
 
     try {
       // First, get CSRF token by making a GET request to quotes endpoint
-      await fetch('http://10.0.2.2:8000/api/quotes/random/', { 
+      await fetch('http://164.90.166.81:8000/api/quotes/random/', { 
         method: 'GET',
         credentials: 'include',
       });
       
       // Get the CSRF token from cookies
-      const cookies = await Cookies.get('http://10.0.2.2:8000');
+      const cookies = await Cookies.get('http://164.90.166.81:8000');
       const csrfToken = cookies.csrftoken?.value;
 
       // Now make the login request with the CSRF token
-      const response = await fetch('http://10.0.2.2:8000/api/login/', {
+      const response = await fetch('http://164.90.166.81:8000/api/login/', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

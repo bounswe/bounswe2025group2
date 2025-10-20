@@ -23,15 +23,16 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-p6p*^^1$rp!n(^wo$dqu72al_wq^+5v#kw=8lw#)1i9h5qgq42'
+SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-p6p*^^1$rp!n(^wo$dqu72al_wq^+5v#kw=8lw#)1i9h5qgq42')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.environ.get('DEBUG', 'True').lower() == 'true'
 
 ALLOWED_HOSTS = ['localhost',
                  '127.0.0.1',
                  '10.0.2.2',
                  '165.232.79.200',
+                 '164.90.166.81',
                 ]
 
 # For now, we are allowing all hosts. In production, we should specify your domain.
@@ -41,6 +42,8 @@ CORS_ALLOW_CREDENTIALS = True
 
 CSRF_TRUSTED_ORIGINS = [
     'http://localhost:3000',
+    'http://localhost:5173',
+    'http://localhost:5174',
     'http://localhost:5000',
     'http://10.0.2.2:8000',
     'http://10.0.2.2:5000',
@@ -48,6 +51,9 @@ CSRF_TRUSTED_ORIGINS = [
     'http://165.232.79.200:8000',
     'http://165.232.79.200:3000',
     'http://165.232.79.200:5000',
+    'http://164.90.166.81:8000',
+    'http://164.90.166.81:3000',
+    'http://164.90.166.81:5000',
 ]
 
 
@@ -62,6 +68,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
+    'django_extensions',
     'corsheaders',
     'api',
     'channels',
@@ -123,16 +130,19 @@ DATABASES = {
     }
 }
 
-CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOWED_ORIGINS = [
-    "http://localhost:5000", 
+    "http://localhost:5000",
     "http://localhost:8000",
+    "http://localhost:5173",
     "http://10.0.2.2:8000",
     "http://10.0.2.2:5000",
     "http://10.0.2.2:3000",
     'http://165.232.79.200:8000',
     'http://165.232.79.200:3000',
     'http://165.232.79.200:5000',
+    'http://164.90.166.81:8000',
+    'http://164.90.166.81:3000',
+    'http://164.90.166.81:5000',
 ]
 
 

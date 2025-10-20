@@ -17,6 +17,7 @@ import Goals from '../Pages/Goals';
 import Profile from '../Pages/Profile';
 import { useAuth } from '../context/AuthContext';
 import Notifications from '../Pages/Notifications';
+import NotificationPreferences from '../Pages/NotificationPreferences';
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -33,7 +34,7 @@ const MainTabs = () => {
   return (
     <Tab.Navigator
       initialRouteName="Home"
-      tabBar={props => <BottomBar {...props as any} />}
+      tabBar={(props: any) => <BottomBar {...props as any} />}
       screenOptions={{
         headerShown: false,
       }}
@@ -66,6 +67,11 @@ const AppNavigator = () => {
       {/* Main app screens */}
       <Stack.Screen name="Main" component={MainTabs} />
       <Stack.Screen name="Profile" component={Profile} />
+      <Stack.Screen 
+        name="NotificationPreferences" 
+        component={NotificationPreferences}
+        options={{ title: 'Notification Preferences' }}
+      />
     </Stack.Navigator>
   );
 };
