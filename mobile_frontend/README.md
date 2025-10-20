@@ -1,40 +1,116 @@
 # Mobile Frontend
 
-This is the mobile frontend of our project, built with React Native.
+This is the mobile frontend of our project, built with **React Native**.
+
+---
 
 ## Prerequisites
 
-Before you begin, ensure you have the following installed:
-- [Node.js](https://nodejs.org/) (LTS version recommended)
-- [React Native CLI](https://reactnative.dev/docs/environment-setup)
-- [Android Studio](https://developer.android.com/studio) with Android SDK
-- An Android emulator configured in Android Studio, or a physical Android device
+Before you begin, ensure you have the following installed on your system:
 
-## Setup Instructions
+* [Node.js](https://nodejs.org/) (LTS version is recommended)
+* [React Native CLI](https://reactnative.dev/docs/environment-setup)
+* [Android Studio](https://developer.android.com/studio) with the Android SDK
+* An Android emulator configured in Android Studio, **or** a physical Android device
 
-1. **Navigate to the mobile frontend directory:**
+---
+
+## Setup & Running Instructions
+
+Follow these steps to get the application running on your Android emulator or device.
+
+### 1. Navigate and install dependencies
+
+Open a terminal, navigate to the project's mobile frontend directory, and install dependencies:
+
 ```bash
-   cd mobile-frontend
+# Navigate to the correct folder
+cd mobile_frontend
+
+# Install all required packages
+npm install
 ```
-2. **Install dependencies**
+
+---
+
+### 2. Run the application
+
+You will need two separate terminals, both pointed at the `mobile_frontend` directory.
+
+#### Terminal 1 — Start the Metro bundler
+
+This terminal watches for file changes and serves the JavaScript bundle:
+
 ```bash
-      npm install
+# From mobile_frontend directory
+npx react-native start
 ```
-3. **Running the Application
-⚠️ Important: You need to run the following commands in two separate terminal windows, both opened in Administrator mode.
-Step 1: Start Metro Bundler
-Open your first terminal (as Administrator) and run:**
+
+Leave this terminal running.
+
+#### Terminal 2 — Build and launch on Android
+
+In the second terminal (also in `mobile_frontend`), run:
+
 ```bash
-      npx react-native start
-```
-**Keep this terminal running. Metro Bundler must remain active while the app is running.
-Step 2: Launch the App
-Open a second terminal (as Administrator) and run:**
-```bash
-      npx react-native run-android
+# From mobile_frontend directory
+npx react-native run-android
 ```
 ## Troubleshooting
 
-**Metro Bundler not starting: Ensure port 8081 is not in use by another application
-Build failures: Try cleaning the build with cd android && ./gradlew clean && cd ..
-Emulator not detected: Verify your emulator is running before executing run-android**
+This builds the app and installs it on the connected device or running emulator. If the build succeeds, the app should launch automatically.
+
+---
+
+## Troubleshooting
+
+### Metro bundler not starting
+
+Ensure port `8081` is not already in use.
+
+* **Windows**
+
+```bash
+netstat -ano | findstr :8081
+```
+
+* **macOS / Linux**
+
+```bash
+lsof -i :8081
+```
+
+If another process is using the port, stop that process or restart your machine.
+
+---
+
+### Build failures
+
+Try cleaning the Android build cache:
+
+```bash
+cd android && ./gradlew clean && cd ..
+```
+
+Then re-run `npx react-native run-android`.
+
+---
+
+### Emulator not detected
+
+Make sure the emulator is fully booted before running the build. Check connected devices:
+
+```bash
+adb devices
+```
+
+If no device is listed, start or reboot the emulator (or connect a physical device with USB debugging enabled).
+
+---
+
+## Additional tips
+
+* Use `nvm` (or `nvm-windows`) to manage Node versions and avoid permission issues.
+* If you use Android Studio, ensure the Android SDK platform versions required by the project are installed.
+* If you run into Gradle or Java version issues, confirm your `JAVA_HOME` and Android SDK paths are set correctly.
+* If you fail to run it in user mode, you may try to run the terminals in administrator mode, but it is generally not needed.
