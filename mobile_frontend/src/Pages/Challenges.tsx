@@ -27,8 +27,8 @@ type BoolParam = '' | 'true' | 'false';
 const API = 'http://164.90.166.81:8000/api';
 
 const Challenges: React.FC = () => {
-  const { user, getAuthHeader } = useAuth();
-  const isAuthed = !!user?.id;
+  const { user, isAuthenticated, getAuthHeader } = useAuth();
+  const isAuthed = isAuthenticated; // works for token or cookie session
 
   const [items, setItems] = useState<ChallengeListItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -622,8 +622,8 @@ const ChallengeDetailContent: React.FC<{
   onMembershipChange?: (challengeId: number, joined: boolean) => void;
   onClose: () => void;
 }> = ({ id, api, onMembershipChange, onClose }) => {
-  const { user, getAuthHeader } = useAuth();
-  const isAuthed = !!user?.id;
+  const { user, isAuthenticated, getAuthHeader } = useAuth();
+  const isAuthed = isAuthenticated; // works for token or cookie session
 
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
