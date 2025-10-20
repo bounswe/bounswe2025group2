@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, ReactNode, useEffect } from
 import axios from 'axios';
 import { useAuth } from './AuthContext';
 import Cookies from '@react-native-cookies/cookies';
+import { webSocketService } from '../services/WebSocketService';
 
 // Types for our chat system
 export type Message = {
@@ -40,6 +41,12 @@ type ChatContextType = {
   fetchContacts: () => Promise<void>;
   fetchChats: () => Promise<void>;
   createChat: (userId: number) => Promise<Chat | null>;
+  // WebSocket related
+  messages: Message[];
+  isConnected: boolean;
+  sendMessage: (messageBody: string) => void;
+  connectToChat: (chatId: number) => void;
+  disconnectFromChat: () => void;
 };
 
 const ChatContext = createContext<ChatContextType>({
@@ -50,6 +57,11 @@ const ChatContext = createContext<ChatContextType>({
   fetchContacts: async () => {},
   fetchChats: async () => {},
   createChat: async () => null,
+  messages: [],
+  isConnected: false,
+  sendMessage: () => {},
+  connectToChat: () => {},
+  disconnectFromChat: () => {},
 });
 
 export const useChat = () => useContext(ChatContext);
@@ -63,6 +75,8 @@ export const ChatProvider = ({ children }: ChatProviderProps) => {
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [chats, setChats] = useState<Chat[]>([]);
   const [activeChatId, setActiveChatId] = useState<number | null>(null);
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [isConnected, setIsConnected] = useState<boolean>(false);
 
   const fetchContacts = async () => {
     try {
@@ -78,8 +92,6 @@ export const ChatProvider = ({ children }: ChatProviderProps) => {
         withCredentials: true,
       });
       
-      // Log response for debugging
-      console.log('User API Response:', res.data);
       
       // Ensure we transform the data to match our Contact type if needed
       const mappedContacts: Contact[] = Array.isArray(res.data) 
@@ -146,6 +158,52 @@ export const ChatProvider = ({ children }: ChatProviderProps) => {
     }
   };
 
+  // WebSocket methods
+  const connectToChat = async (chatId: number) => {
+    setActiveChatId(chatId);
+    setMessages([]); // Clear previous messages
+    
+    try {
+      await webSocketService.connect(
+        chatId,
+        (message: Message) => {
+          setMessages(prev => {
+            // Check if message already exists to prevent duplicates
+            const exists = prev.some(msg => msg.id === message.id);
+            if (exists) {
+              return prev;
+            }
+            return [...prev, message];
+          });
+        },
+        (error: string) => {
+          console.error('WebSocket error:', error);
+        },
+        () => {
+          setIsConnected(true);
+        },
+        () => {
+          setIsConnected(false);
+        }
+      );
+    } catch (error) {
+      console.error('Failed to connect to chat:', error);
+    }
+  };
+
+  const disconnectFromChat = () => {
+    webSocketService.disconnect();
+    setActiveChatId(null);
+    setMessages([]);
+    setIsConnected(false);
+  };
+
+  const sendMessage = (messageBody: string) => {
+    if (messageBody.trim()) {
+      webSocketService.sendMessage(messageBody.trim());
+    }
+  };
+
   useEffect(() => {
     if (token) {
       fetchContacts();
@@ -163,6 +221,11 @@ export const ChatProvider = ({ children }: ChatProviderProps) => {
         fetchContacts,
         fetchChats,
         createChat,
+        messages,
+        isConnected,
+        sendMessage,
+        connectToChat,
+        disconnectFromChat,
       }}
     >
       {children}

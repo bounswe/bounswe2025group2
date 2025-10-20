@@ -1,10 +1,18 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+type User = {
+  id: number;
+  username: string;
+  email?: string;
+};
+
 type AuthContextType = {
   token: string | null;
   setToken: (token: string | null) => Promise<void>;
   isAuthenticated: boolean;
+  currentUser: User | null;
+  setCurrentUser: (user: User | null) => void;
   logout: () => Promise<void>;
   getAuthHeader: () => { Authorization: string } | {};
 };
@@ -13,6 +21,8 @@ const AuthContext = createContext<AuthContextType>({
   token: null,
   setToken: async () => {},
   isAuthenticated: false,
+  currentUser: null,
+  setCurrentUser: () => {},
   logout: async () => {},
   getAuthHeader: () => ({}),
 });
@@ -25,6 +35,7 @@ type AuthProviderProps = {
 
 export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [token, setTokenState] = useState<string | null>(null);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
 
   const setToken = async (newToken: string | null) => {
     if (newToken) {
@@ -59,6 +70,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       console.error('Logout error:', error);
     } finally {
       await setToken(null);
+      setCurrentUser(null);
     }
   };
 
@@ -88,6 +100,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         token,
         setToken,
         isAuthenticated: !!token,
+        currentUser,
+        setCurrentUser,
         logout,
         getAuthHeader,
       }}>
