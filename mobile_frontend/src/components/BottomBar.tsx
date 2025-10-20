@@ -42,22 +42,22 @@ const BottomBar = ({ state, navigation }: BottomTabBarProps) => {
           Home
         </CustomText>
       </Pressable>
-      <Pressable style={styles.tab} onPress={() => navigateToScreen('AddNew')}>
-        <NewIcon 
+      <Pressable style={styles.tab} onPress={() => navigateToScreen('Forum')}>
+        <CommunitiesIcon 
           width={32} 
           height={32} 
-          fill={isActiveRoute('AddNew') ? colors.active : colors.passive} 
+          fill={isActiveRoute('Forum') ? colors.active : colors.passive} 
         />
         <CustomText 
           style={[
             styles.label, 
             { 
-              color: isActiveRoute('AddNew') ? colors.active : colors.passive,
-              fontWeight: isActiveRoute('AddNew') ? 'bold' : 'normal'
+              color: isActiveRoute('Forum') ? colors.active : colors.passive,
+              fontWeight: isActiveRoute('Forum') ? 'bold' : 'normal'
             }
           ]}
         >
-          New
+          Forum
         </CustomText>
       </Pressable>
       <Pressable style={styles.tab} onPress={() => navigateToScreen('Chats')}>

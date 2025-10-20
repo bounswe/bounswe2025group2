@@ -46,12 +46,11 @@ const MainTabs = () => {
       }}
     >
       <Tab.Screen name="Home" component={withLayout(Home)} />
-      <Tab.Screen name="AddNew" component={withLayout(AddNew)} />
+      <Tab.Screen name="Forum" component={withLayout(Forum)} />
       <Tab.Screen name="Chats" component={withLayout(Chats)} />
       <Tab.Screen name="Settings" component={withLayout(Settings)} />
       <Tab.Screen name="Goals" component={withLayout(Goals)} />
-  <Tab.Screen name="Notifications" component={withLayout(Notifications)} />
-  <Tab.Screen name="Forum" component={withLayout(Forum)} />
+      <Tab.Screen name="Notifications" component={withLayout(Notifications)} />
     </Tab.Navigator>
   );
 };

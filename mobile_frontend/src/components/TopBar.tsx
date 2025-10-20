@@ -16,11 +16,7 @@ import SettingsIcon from '../assets/images/settings.svg';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
-type TopBarProps = {
-  onMenuPress?: () => void;
-};
-
-const TopBar = ({ onMenuPress }: TopBarProps) => {
+const TopBar = () => {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const navigation = useNavigation() as NavigationProp;
@@ -98,9 +94,7 @@ const TopBar = ({ onMenuPress }: TopBarProps) => {
       ]}
     >
       <View style={styles.leftSection}>
-        <Pressable onPress={onMenuPress} hitSlop={10} style={{marginRight: 4}}>
-          <MenuIcon width={42} height={42} fill={colors.border} />
-        </Pressable>
+        <MenuIcon width={42} height={42} fill={colors.border} />
         <CustomText style={[styles.appTitle, { color: colors.border }]}>GenFit</CustomText>
       </View>
       <View style={styles.rightSection}>

@@ -128,7 +128,9 @@ const Forum = () => {
   };
 
   const handleForumPress = (forumId: number) => {
-    navigation.navigate('ForumDetail', { forumId });
+    // TODO: Implement ForumDetail page and add route to navigation
+    console.log('Forum pressed:', forumId);
+    // navigation.navigate('ForumDetail', { forumId });
   };
 
   if (isLoading) {
