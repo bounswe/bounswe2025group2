@@ -56,6 +56,7 @@ In the second terminal (also in `mobile_frontend`), run:
 # From mobile_frontend directory
 npx react-native run-android
 ```
+## Troubleshooting
 
 This builds the app and installs it on the connected device or running emulator. If the build succeeds, the app should launch automatically.
 

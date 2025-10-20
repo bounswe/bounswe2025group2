@@ -61,7 +61,7 @@ const Header: React.FC<HeaderProps> = ({ onSearch }) => {
     switch (action) {
       case 'profile':
         // Navigate to profile page
-        console.log('Navigate to profile');
+        navigate('/profile');
         break;
       case 'settings':
         // Navigate to settings page
