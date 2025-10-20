@@ -12,37 +12,11 @@ import Toast from 'react-native-toast-message';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 
-const API = 'http://164.90.166.81:8000/api';
-
-const fetchMe = async () => {
-  // make sure session + csrftoken cookie exist
-  await fetch(`${API}/quotes/random/`, { method: 'GET', credentials: 'include' });
-
-  const cookies = await Cookies.get('http://164.90.166.81:8000');
-  const csrf = cookies.csrftoken?.value;
-
-  // IMPORTANT: use the trailing slash `/user/` to avoid 301
-  const res = await fetch(`${API}/user/`, {
-    method: 'GET',
-    headers: {
-      'Content-Type': 'application/json',
-      ...(csrf ? { 'X-CSRFToken': csrf } : {}),
-    },
-    credentials: 'include',
-  });
-
-  if (!res.ok) {
-    const txt = await res.text().catch(() => '');
-    throw new Error(`GET /api/user/ failed: ${res.status} ${txt}`);
-  }
-  return res.json();
-};
-
 const Login = ({ navigation }: any) => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const { colors, isDark } = useTheme();
-  const { setUser } = useAuth();
+  const { setCurrentUser } = useAuth();
 
   const handleLogin = async () => {
     if (!username || !password) {
@@ -83,26 +57,16 @@ const Login = ({ navigation }: any) => {
       console.log('Login response:', data);
 
       if (response.ok) {
-        // fetch current user with CSRF + session
-        let me: any = null;
-        try {
-          me = await fetchMe();
-        } catch (e) {
-          // If this throws, it’s almost always missing CSRF or missing credentials: 'include'
-          console.warn('fetchMe error:', e);
-        }
-
-        // Persist minimal user info
-        await setUser({
-          id: me?.id ?? null,
-          user_type: me?.user_type ?? (me?.is_verified_coach ? 'Coach' : 'User'),
-          is_verified_coach: !!me?.is_verified_coach,
-          username: me?.username ?? username, // fallback to typed username
+        // Set current user information
+        setCurrentUser({
+          id: data.user_id || 0,
+          username: username,
+          email: data.email
         });
-
+        
         Toast.show({
           type: 'success',
-          text1: `Success`,
+          text1: 'Success',
           text2: data.message || 'Login successful',
         });
         navigation.replace('Main');

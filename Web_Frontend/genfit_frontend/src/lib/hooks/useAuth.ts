@@ -104,3 +104,40 @@ export function useLogout() {
   });
 }
 
+/**
+ * Hook to fetch profile picture for other users by username
+ */
+export function useOtherUserProfilePicture(username: string | undefined) {
+  return useQuery<string | null>({
+    queryKey: createQueryKey(`/api/profile/other/picture/${username}/`),
+    queryFn: async () => {
+      if (!username) return null;
+      
+      const base = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+      const endpoint = `/api/profile/other/picture/${username}/`;
+      const response = await fetch(new URL(endpoint, base).toString(), {
+        credentials: 'include',
+      });
+      
+      if (!response.ok) {
+        // If user doesn't have a profile picture, return null instead of throwing
+        if (response.status === 404) return null;
+        throw new Error('Failed to fetch profile picture');
+      }
+      
+      const contentType = response.headers.get('Content-Type') || '';
+      if (contentType.startsWith('image/')) {
+        const blob = await response.blob();
+        return URL.createObjectURL(blob);
+      }
+      
+      // If response is JSON, it might contain an image URL
+      const data = await response.json();
+      return data.image || null;
+    },
+    enabled: !!username,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    retry: false, // Don't retry on failures (user might not have profile picture)
+  });
+}
+

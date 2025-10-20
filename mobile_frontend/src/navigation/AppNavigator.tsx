@@ -19,6 +19,7 @@ import { useAuth } from '../context/AuthContext';
 import Challenges from '../Pages/Challenges';
 import Notifications from '../Pages/Notifications';
 import NotificationPreferences from '../Pages/NotificationPreferences';
+import ChatDetail from '../Pages/ChatDetail';
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -72,6 +73,11 @@ const AppNavigator = () => {
         name="NotificationPreferences" 
         component={NotificationPreferences}
         options={{ title: 'Notification Preferences' }}
+      />
+      <Stack.Screen 
+        name="ChatDetail" 
+        component={ChatDetail}
+        options={{ title: 'Chat' }}
       />
     </Stack.Navigator>
   );
