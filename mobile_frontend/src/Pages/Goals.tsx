@@ -836,7 +836,7 @@ const ProgressModal: React.FC<ProgressModalProps> = ({
 
 const Goals: React.FC = () => {
   const { colors } = useTheme();
-  const { getAuthHeader } = useAuth();
+  const { getAuthHeader, isAuthenticated } = useAuth();
 
   // State management
   const [goals, setGoals] = useState<Goal[]>([]);
@@ -854,6 +854,13 @@ const Goals: React.FC = () => {
    * Fetches all goals from the API
    */
   const fetchGoals = useCallback(async () => {
+    // Don't fetch goals if user is not authenticated
+    if (!isAuthenticated) {
+      setGoals([]);
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
       const response = await fetch(GOALS_ENDPOINT, {
@@ -876,12 +883,18 @@ const Goals: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [getAuthHeader]);
+  }, [getAuthHeader, isAuthenticated]);
 
   /**
    * Creates a new goal
    */
   const createGoal = async (formData: CreateGoalForm) => {
+    // Don't create goal if user is not authenticated
+    if (!isAuthenticated) {
+      Alert.alert('Error', 'You must be logged in to create goals.');
+      return;
+    }
+
     try {
       setActionLoading(true);
       const csrfToken = await getCSRFToken();
@@ -922,6 +935,12 @@ const Goals: React.FC = () => {
    * Updates an existing goal
    */
   const updateGoal = async (goalId: number, formData: EditGoalForm) => {
+    // Don't update goal if user is not authenticated
+    if (!isAuthenticated) {
+      Alert.alert('Error', 'You must be logged in to update goals.');
+      return;
+    }
+
     try {
       setActionLoading(true);
       const csrfToken = await getCSRFToken();
@@ -963,6 +982,12 @@ const Goals: React.FC = () => {
    * Updates goal progress
    */
   const updateProgress = async (goalId: number, currentValue: number, originalProgression?: number) => {
+    // Don't update progress if user is not authenticated
+    if (!isAuthenticated) {
+      Alert.alert('Error', 'You must be logged in to update progress.');
+      return;
+    }
+
     try {
       setActionLoading(true);
       const csrfToken = await getCSRFToken();
@@ -1113,6 +1138,22 @@ const Goals: React.FC = () => {
   // ──────────────────────────────────────────────────────────────────────────────
   // 🎨 MAIN RENDER
   // ──────────────────────────────────────────────────────────────────────────────
+
+  // Don't render the component if user is not authenticated
+  if (!isAuthenticated) {
+    return (
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
+        <View style={styles.emptyState}>
+          <CustomText style={[styles.emptyStateTitle, { color: colors.text }]}>
+            Please Log In
+          </CustomText>
+          <CustomText style={[styles.emptyStateDescription, { color: colors.subText }]}>
+            You need to be logged in to view your fitness goals.
+          </CustomText>
+        </View>
+      </View>
+    );
+  }
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
