@@ -29,7 +29,7 @@ interface Goal {
   description: string;
   user: number;
   mentor: number | null;
-  goal_type: 'WALKING_RUNNING' | 'WORKOUT' | 'CYCLING' | 'SPORTS' | 'SWIMMING' | 'CARDIO' | 'STRENGTH' | 'FLEXIBILITY' | 'BALANCE' | 'OTHER';
+  goal_type: 'WALKING_RUNNING' | 'WORKOUT' | 'CYCLING' | 'SPORTS' | 'SWIMMING';
   target_value: number;
   current_value: number;
   unit: string;
@@ -105,11 +105,6 @@ const GOAL_TYPES: { label: string; value: Goal['goal_type'] }[] = [
   { label: 'Cycling', value: 'CYCLING' },
   { label: 'Sports', value: 'SPORTS' },
   { label: 'Swimming', value: 'SWIMMING' },
-  { label: 'Cardio', value: 'CARDIO' },
-  { label: 'Strength', value: 'STRENGTH' },
-  { label: 'Flexibility', value: 'FLEXIBILITY' },
-  { label: 'Balance', value: 'BALANCE' },
-  { label: 'Other', value: 'OTHER' },
 ];
 
 // ──────────────────────────────────────────────────────────────────────────────
