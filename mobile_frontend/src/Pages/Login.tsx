@@ -10,11 +10,13 @@ import {
 import Cookies from '@react-native-cookies/cookies';
 import Toast from 'react-native-toast-message';
 import { useTheme } from '../context/ThemeContext';
+import { useAuth } from '../context/AuthContext';
 
 const Login = ({ navigation }: any) => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const { colors, isDark } = useTheme();
+  const { setCurrentUser } = useAuth();
 
   const handleLogin = async () => {
     if (!username || !password) {
@@ -55,6 +57,13 @@ const Login = ({ navigation }: any) => {
       console.log('Login response:', data);
 
       if (response.ok) {
+        // Set current user information
+        setCurrentUser({
+          id: data.user_id || 0,
+          username: username,
+          email: data.email
+        });
+        
         Toast.show({
           type: 'success',
           text1: 'Success',
