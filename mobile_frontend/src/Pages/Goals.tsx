@@ -15,6 +15,7 @@ import CustomText from '@components/CustomText';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import CookieManager from '@react-native-cookies/cookies';
+import { useRoute, useFocusEffect } from '@react-navigation/native';
 
 // ──────────────────────────────────────────────────────────────────────────────
 // 📋 TYPE DEFINITIONS
@@ -837,6 +838,7 @@ const ProgressModal: React.FC<ProgressModalProps> = ({
 const Goals: React.FC = () => {
   const { colors } = useTheme();
   const { getAuthHeader, isAuthenticated } = useAuth();
+  const route = useRoute();
 
   // State management
   const [goals, setGoals] = useState<Goal[]>([]);
@@ -1076,6 +1078,23 @@ const Goals: React.FC = () => {
   useEffect(() => {
     fetchGoals();
   }, [fetchGoals]);
+
+  // Open create modal when navigating from Profile with 'new' param
+  useFocusEffect(
+    React.useCallback(() => {
+      // @ts-ignore
+      const shouldOpenModal = route.params?.openCreate;
+      if (shouldOpenModal && modalType === null) {
+        setModalType('create');
+        // Clear the param to prevent reopening on subsequent visits
+        // @ts-ignore
+        if (route.params?.openCreate) {
+          // @ts-ignore
+          delete route.params.openCreate;
+        }
+      }
+    }, [route.params, modalType])
+  );
 
   // ──────────────────────────────────────────────────────────────────────────────
   // 🎨 RENDER HELPERS
@@ -1505,4 +1524,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default Goals; 
+export default Goals;

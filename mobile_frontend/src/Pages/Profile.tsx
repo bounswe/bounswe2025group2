@@ -74,6 +74,7 @@ const Profile = () => {
   const [isGoalDetailOpen, setIsGoalDetailOpen] = useState(false);
   const [selectedGoal, setSelectedGoal] = useState<Goal | null>(null);
   const [showDatePicker, setShowDatePicker] = useState(false);
+  const [pictureRefreshKey, setPictureRefreshKey] = useState(Date.now());
 
   // Fetch profile details
   const { data: profileDetails, isLoading: isLoadingProfile } = useQuery<ProfileDetailsResponse>({
@@ -98,13 +99,16 @@ const Profile = () => {
 
   // Fetch profile picture
   const { data: profilePictureUri } = useQuery<string>({
-    queryKey: ['profilePicture', otherUsername || 'me'],
+    queryKey: ['profilePicture', otherUsername || 'me', pictureRefreshKey],
     queryFn: async () => {
       const endpoint = otherUsername 
         ? `/api/profile/other/picture/${otherUsername}/` 
         : '/api/profile/picture/';
       
-      const response = await fetch(`${API_BASE}${endpoint}`, {
+      // Add cache-busting timestamp to the URL
+      const cacheBuster = `?t=${Date.now()}`;
+      
+      const response = await fetch(`${API_BASE}${endpoint}${cacheBuster}`, {
         headers: {
           ...getAuthHeader(),
         },
@@ -115,7 +119,7 @@ const Profile = () => {
       
       const contentType = response.headers.get('Content-Type') || '';
       if (contentType.startsWith('image/')) {
-        return `${API_BASE}${endpoint}`;
+        return `${API_BASE}${endpoint}${cacheBuster}`;
       } 
       
       if (contentType.includes('application/json')) {
@@ -126,6 +130,7 @@ const Profile = () => {
       return '';
     },
     staleTime: 0,
+    gcTime: 0,
   });
 
   // Fetch goals - only for own profile
@@ -211,11 +216,8 @@ const Profile = () => {
       return response.json();
     },
     onSuccess: () => {
-      // Force refetch by invalidating and adding a small delay
-      queryClient.invalidateQueries({ queryKey: ['profilePicture', 'me'] });
-      setTimeout(() => {
-        queryClient.refetchQueries({ queryKey: ['profilePicture', 'me'] });
-      }, 500);
+      // Update the refresh key to force re-fetch
+      setPictureRefreshKey(Date.now());
       Alert.alert('Success', 'Profile picture updated');
     },
     onError: () => {
@@ -242,11 +244,8 @@ const Profile = () => {
       return response.json();
     },
     onSuccess: () => {
-      // Force refetch after deletion
-      queryClient.invalidateQueries({ queryKey: ['profilePicture', 'me'] });
-      setTimeout(() => {
-        queryClient.refetchQueries({ queryKey: ['profilePicture', 'me'] });
-      }, 500);
+      // Update the refresh key to force re-fetch
+      setPictureRefreshKey(Date.now());
       Alert.alert('Success', 'Profile picture deleted');
     },
     onError: () => {
@@ -400,7 +399,7 @@ const Profile = () => {
                     uri: profilePictureUri,
                     headers: getAuthHeader(),
                   }}
-                  key={`${profilePictureUri}-${otherUsername || 'me'}`}
+                  key={pictureRefreshKey}
                 />
               ) : (
                 <Avatar.Text size={120} label={avatarInitial} />
@@ -414,13 +413,15 @@ const Profile = () => {
                     mode="contained-tonal"
                     disabled={uploadPictureMutation.isPending}
                   />
-                  <IconButton 
-                    icon="delete" 
-                    size={20} 
-                    onPress={handleDeletePhoto}
-                    mode="contained-tonal"
-                    disabled={deletePictureMutation.isPending}
-                  />
+                  {profilePictureUri && (
+                    <IconButton 
+                      icon="delete" 
+                      size={20} 
+                      onPress={handleDeletePhoto}
+                      mode="contained-tonal"
+                      disabled={deletePictureMutation.isPending}
+                    />
+                  )}
                 </View>
               )}
             </View>
@@ -501,7 +502,13 @@ const Profile = () => {
             <Card.Title
               title="Goals"
               right={(props) => goals.length > 0 ? (
-                <Button {...props} icon="plus" onPress={() => navigation.navigate('Goals' as never)}>New</Button>
+                <Button {...props} icon="plus" onPress={() => {
+                  // @ts-ignore
+                  navigation.navigate('Main', { 
+                    screen: 'Goals',
+                    params: { openCreate: true }
+                  })
+                }}>New</Button>
               ) : null}
             />
             <Card.Content>
@@ -519,7 +526,13 @@ const Profile = () => {
                   <Text variant="bodyMedium" style={styles.emptyStateText}>
                     You haven't set any goals yet.
                   </Text>
-                  <Button mode="contained" style={styles.emptyStateButton} onPress={() => navigation.navigate('Goals' as never)}>Set Your First Goal</Button>
+                  <Button mode="contained" style={styles.emptyStateButton} onPress={() => {
+                    // @ts-ignore
+                    navigation.navigate('Main', { 
+                      screen: 'Goals',
+                      params: { openCreate: true }
+                    })
+                  }}>Set Your First Goal</Button>
                 </View>
               )}
             </Card.Content>
@@ -542,7 +555,8 @@ const Profile = () => {
                mode="contained" 
                onPress={() => {
                  closeGoalDetails();
-                 navigation.navigate('Goals' as never);
+                 // @ts-ignore
+                 navigation.navigate('Main', { screen: 'Goals' });
                }}
              >
                View in Goals
