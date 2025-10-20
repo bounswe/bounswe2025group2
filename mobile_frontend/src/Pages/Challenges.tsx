@@ -91,7 +91,7 @@ const Challenges: React.FC = () => {
 
   const fetchChallenges = async () => {
     try {
-      const cookies = await Cookies.get('http://10.0.2.2:8000');
+      const cookies = await Cookies.get('http://164.90.166.81:8000');
       const csrf = cookies.csrftoken?.value;
 
       const res = await fetch(buildUrl(), {
@@ -251,7 +251,7 @@ const Challenges: React.FC = () => {
 
     setCreating(true);
     try {
-      const cookies = await Cookies.get('http://10.0.2.2:8000');
+      const cookies = await Cookies.get('http://164.90.166.81:8000');
       const csrf = cookies.csrftoken?.value;
 
       const body: any = {

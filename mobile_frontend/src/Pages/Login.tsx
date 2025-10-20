@@ -12,13 +12,13 @@ import Toast from 'react-native-toast-message';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 
-const API = 'http://10.0.2.2:8000/api';
+const API = 'http://164.90.166.81:8000/api';
 
 const fetchMe = async () => {
   // make sure session + csrftoken cookie exist
   await fetch(`${API}/quotes/random/`, { method: 'GET', credentials: 'include' });
 
-  const cookies = await Cookies.get('http://10.0.2.2:8000');
+  const cookies = await Cookies.get('http://164.90.166.81:8000');
   const csrf = cookies.csrftoken?.value;
 
   // IMPORTANT: use the trailing slash `/user/` to avoid 301
