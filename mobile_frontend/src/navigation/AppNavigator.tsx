@@ -4,6 +4,7 @@ import React from 'react';
 import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 
+
 // Import pages
 import Home from '../Pages/Home';
 import AddNew from '../Pages/Add New';         // ✅ filename düzeltilmiş
@@ -16,11 +17,14 @@ import BottomBar from '../components/BottomBar';
 import Goals from '../Pages/Goals';
 import Profile from '../Pages/Profile';
 import { useAuth } from '../context/AuthContext';
+
 import Notifications from '../Pages/Notifications';
 import NotificationPreferences from '../Pages/NotificationPreferences';
+import Forum from '../Pages/Forum';
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
+
 
 const withLayout = (Component: React.ComponentType<any>) => {
   return (props: any) => (
@@ -44,8 +48,8 @@ const MainTabs = () => {
       <Tab.Screen name="Chats" component={withLayout(Chats)} />
       <Tab.Screen name="Settings" component={withLayout(Settings)} />
       <Tab.Screen name="Goals" component={withLayout(Goals)} />
-      <Tab.Screen name="Notifications" component={withLayout(Notifications)} />
-
+  <Tab.Screen name="Notifications" component={withLayout(Notifications)} />
+  <Tab.Screen name="Forum" component={withLayout(Forum)} />
     </Tab.Navigator>
   );
 };
@@ -65,7 +69,7 @@ const AppNavigator = () => {
       <Stack.Screen name="Register" component={Register} />
 
       {/* Main app screens */}
-      <Stack.Screen name="Main" component={MainTabs} />
+  <Stack.Screen name="Main" component={MainTabs} />
       <Stack.Screen name="Profile" component={Profile} />
       <Stack.Screen 
         name="NotificationPreferences" 

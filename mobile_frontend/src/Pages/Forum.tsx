@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   StyleSheet,
@@ -10,8 +10,10 @@ import {
 import CustomText from '@components/CustomText';
 import { useTheme } from '../context/ThemeContext';
 import { useNavigation } from '@react-navigation/native';
-import { DrawerNavigationProp } from '@react-navigation/drawer';
 import { RootStackParamList } from '../types/navigation';
+import { useAuth } from '../context/AuthContext';
+
+const API_BASE_URL = 'http://164.90.166.81:8000/api';
 
 type Forum = {
   id: number;
@@ -19,24 +21,10 @@ type Forum = {
   description: string;
   thread_count: number;
   updated_at: string;
+  created_by?: string;
+  is_active?: boolean;
+  order?: number;
 };
-
-const mockForums: Forum[] = [
-  {
-    id: 1,
-    title: 'Getting Started',
-    description: 'New to fitness? Start here for tips and introductions!',
-    thread_count: 15,
-    updated_at: new Date().toISOString(),
-  },
-  {
-    id: 2,
-    title: 'Workout Plans',
-    description: 'Share and discuss different workout routines and plans.',
-    thread_count: 28,
-    updated_at: new Date().toISOString(),
-  },
-];
 
 const ForumCard = ({
   forum,
@@ -103,8 +91,41 @@ const ForumCard = ({
 const Forum = () => {
   const { colors } = useTheme();
   const navigation = useNavigation();
-  const [isLoading] = useState(false);
-  const [error] = useState<string | null>(null);
+  const { getAuthHeader } = useAuth();
+  const [forums, setForums] = useState<Forum[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetchForums();
+  }, []);
+
+  const fetchForums = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      
+      const response = await fetch(`${API_BASE_URL}/forums/`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          ...getAuthHeader(),
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch forums: ${response.statusText}`);
+      }
+
+      const data: Forum[] = await response.json();
+      setForums(data);
+    } catch (err) {
+      console.error('Error fetching forums:', err);
+      setError(err instanceof Error ? err.message : 'Failed to load forums');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleForumPress = (forumId: number) => {
     navigation.navigate('ForumDetail', { forumId });
@@ -112,71 +133,37 @@ const Forum = () => {
 
   if (isLoading) {
     return (
-      <View
-        style={[
-          styles.container,
-          styles.centerContent,
-          { backgroundColor: colors.background },
-        ]}
-      >
+      <View style={[styles.container, styles.centerContent, { backgroundColor: colors.background }]}> 
         <ActivityIndicator size="large" color={colors.active} />
-        <CustomText style={[styles.loadingText, { color: colors.subText }]}>
-          Loading forums...
-        </CustomText>
+        <CustomText style={[styles.loadingText, { color: colors.subText }]}>Loading forums...</CustomText>
       </View>
     );
   }
 
   if (error) {
     return (
-      <View
-        style={[
-          styles.container,
-          styles.centerContent,
-          { backgroundColor: colors.background },
-        ]}
-      >
-        <CustomText style={[styles.errorText, { color: colors.text }]}>
-          Unable to load forums
-        </CustomText>
-        <TouchableOpacity
-          style={[styles.retryButton, { backgroundColor: colors.active }]}
-          onPress={() => {
-            /* TODO: Implement refresh */
-          }}
-        >
-          <CustomText style={[styles.buttonText, { color: colors.background }]}>
-            Retry
-          </CustomText>
+      <View style={[styles.container, styles.centerContent, { backgroundColor: colors.background }]}> 
+        <CustomText style={[styles.errorText, { color: colors.text }]}>Unable to load forums</CustomText>
+        <CustomText style={[styles.loadingText, { color: colors.subText, marginTop: 8 }]}>{error}</CustomText>
+        <TouchableOpacity style={[styles.retryButton, { backgroundColor: colors.active, marginTop: 16 }]} onPress={fetchForums}>
+          <CustomText style={[styles.buttonText, { color: colors.background }]}>Retry</CustomText>
         </TouchableOpacity>
       </View>
     );
   }
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}> 
       <View style={styles.header}>
-        <TouchableOpacity
-          style={[styles.menuButton, { backgroundColor: colors.active }]}
-          onPress={() => navigation.openDrawer()}
-        >
-          <CustomText style={[styles.menuButtonText, { color: colors.background }]}>
-            ☰
-          </CustomText>
-        </TouchableOpacity>
         <View style={styles.headerText}>
-          <CustomText style={[styles.title, { color: colors.text }]}>
-            Forums
-          </CustomText>
-          <CustomText style={[styles.subtitle, { color: colors.subText }]}>
-            Join discussions, share experiences
-          </CustomText>
+          <CustomText style={[styles.title, { color: colors.text }]}>Forums</CustomText>
+          <CustomText style={[styles.subtitle, { color: colors.subText }]}>Join discussions, share experiences</CustomText>
         </View>
       </View>
 
       <ScrollView style={styles.content}>
         <View style={styles.forumList}>
-          {mockForums.map(forum => (
+          {forums.map((forum: Forum) => (
             <ForumCard
               key={forum.id}
               forum={forum}
@@ -184,6 +171,13 @@ const Forum = () => {
               onPress={() => handleForumPress(forum.id)}
             />
           ))}
+          {forums.length === 0 && !isLoading && (
+            <View style={styles.emptyState}>
+              <CustomText style={{ color: colors.text, fontSize: 16, textAlign: 'center' }}>
+                No forums available
+              </CustomText>
+            </View>
+          )}
         </View>
       </ScrollView>
     </View>
@@ -248,6 +242,11 @@ const styles = StyleSheet.create({
   },
   statText: {
     fontSize: 12,
+  },
+  emptyState: {
+    paddingVertical: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   loadingText: {
     marginTop: 12,

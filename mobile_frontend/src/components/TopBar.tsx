@@ -3,9 +3,9 @@ import { View, StyleSheet, Image, Pressable, Text, ActivityIndicator } from 'rea
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../context/ThemeContext';
 import CustomText from './CustomText';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useNavigation } from '@react-navigation/native';
 import { RootStackParamList } from '../types/navigation';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useAuth } from '../context/AuthContext';
 import Toast from 'react-native-toast-message';
 
@@ -16,10 +16,14 @@ import SettingsIcon from '../assets/images/settings.svg';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
-const TopBar = () => {
+type TopBarProps = {
+  onMenuPress?: () => void;
+};
+
+const TopBar = ({ onMenuPress }: TopBarProps) => {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
-  const navigation = useNavigation<NavigationProp>();
+  const navigation = useNavigation() as NavigationProp;
   const { getAuthHeader } = useAuth();
   const CONTENT_HEIGHT = 49; // Height of the actual content area
 
@@ -94,7 +98,9 @@ const TopBar = () => {
       ]}
     >
       <View style={styles.leftSection}>
-        <MenuIcon width={42} height={42} fill={colors.border} />
+        <Pressable onPress={onMenuPress} hitSlop={10} style={{marginRight: 4}}>
+          <MenuIcon width={42} height={42} fill={colors.border} />
+        </Pressable>
         <CustomText style={[styles.appTitle, { color: colors.border }]}>GenFit</CustomText>
       </View>
       <View style={styles.rightSection}>
