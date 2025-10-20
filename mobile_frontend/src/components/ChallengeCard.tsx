@@ -37,7 +37,7 @@ const ChallengeCard: React.FC<Props> = ({
   onMembershipChange,
 }) => {
   const { getAuthHeader } = useAuth();
-  const API = baseUrl ?? 'http://10.0.2.2:8000/api';
+  const API = baseUrl ?? 'http://164.90.166.81:8000/api';
   const cookieOrigin = API.replace(/\/api\/?$/, '');
 
   const [loading, setLoading] = useState(true);

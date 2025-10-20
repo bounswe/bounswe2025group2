@@ -23,10 +23,10 @@ import CustomText from '@components/CustomText';
 
 type ChallengeListItem = { id: number; is_joined?: boolean };
 
-const API = 'http://10.0.2.2:8000/api';
+const API = 'http://164.90.166.81:8000/api';
 
 const Challenges: React.FC = () => {
-  const { getAuthHeader } = useAuth();
+  const { user, getAuthHeader } = useAuth();
 
   const [items, setItems] = useState<ChallengeListItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -57,6 +57,9 @@ const Challenges: React.FC = () => {
     location: '',
     radius_km: '10',
   });
+
+  const isCoach = Boolean(user?.user_type === 'Coach' || user?.is_verified_coach);
+  
 
   const handleMembershipChange = (challengeId: number, joined: boolean) => {
     setItems(prev =>
@@ -353,9 +356,9 @@ const Challenges: React.FC = () => {
       />
 
       {/* Floating plus button */}
-      <Pressable style={styles.fab} onPress={() => setShowCreate(true)}>
+      { isCoach && (<Pressable style={styles.fab} onPress={() => setShowCreate(true)}>
         <Text style={styles.fabText}>＋</Text>
-      </Pressable>
+      </Pressable>)}
 
       {/* Create modal */}
       <Modal animationType="slide" visible={showCreate} onRequestClose={() => setShowCreate(false)}>
