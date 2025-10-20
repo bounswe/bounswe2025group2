@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -22,11 +22,13 @@ import ChallengeCard from '../components/ChallengeCard';
 import CustomText from '@components/CustomText';
 
 type ChallengeListItem = { id: number; is_joined?: boolean };
+type BoolParam = '' | 'true' | 'false';
 
 const API = 'http://164.90.166.81:8000/api';
 
 const Challenges: React.FC = () => {
   const { user, getAuthHeader } = useAuth();
+  const isAuthed = !!user?.id;
 
   const [items, setItems] = useState<ChallengeListItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -41,7 +43,6 @@ const Challenges: React.FC = () => {
 
   // Filters UI
   const [filterOpen, setFilterOpen] = useState(false);
-  type BoolParam = '' | 'true' | 'false';
   const [filters, setFilters] = useState<{
     is_active: BoolParam;
     user_participating: BoolParam;
@@ -59,15 +60,37 @@ const Challenges: React.FC = () => {
   });
 
   const isCoach = Boolean(user?.user_type === 'Coach' || user?.is_verified_coach);
-  
+  const COOKIE_ORIGIN = useMemo(() => API.replace(/\/api\/?$/, ''), []);
+
+  // mounted guard
+  const mountedRef = useRef(true);
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => { mountedRef.current = false; };
+  }, []);
+
+  // Abort controller ref for list fetches; ensures any in-flight is aborted on unmount/logout
+  const listAbortRef = useRef<AbortController | null>(null);
+  const abortListFetch = () => {
+    try { listAbortRef.current?.abort(); } catch {}
+    listAbortRef.current = null;
+  };
+
+  // When user logs out, clear UI and abort all in-flight
+  useEffect(() => {
+    if (!isAuthed) {
+      abortListFetch();
+      setShowCreate(false);
+      setDetailId(null);
+      setItems([]);
+      setRefreshing(false);
+      setLoading(false);
+    }
+  }, [isAuthed]);
 
   const handleMembershipChange = (challengeId: number, joined: boolean) => {
     setItems(prev =>
-      prev.map(c =>
-        c.id === challengeId
-          ? { ...c, is_joined: joined /* and maybe user_progress reset to 0 on leave */ }
-          : c
-      )
+      prev.map(c => (c.id === challengeId ? { ...c, is_joined: joined } : c))
     );
   };
 
@@ -89,9 +112,14 @@ const Challenges: React.FC = () => {
     return `${API}/challenges/search/${qs ? `?${qs}` : ''}`;
   };
 
-  const fetchChallenges = async () => {
+  const fetchChallenges = useCallback(async () => {
+    if (!isAuthed) return;
+    abortListFetch();
+    const ac = new AbortController();
+    listAbortRef.current = ac;
+
     try {
-      const cookies = await Cookies.get('http://164.90.166.81:8000');
+      const cookies = await Cookies.get(COOKIE_ORIGIN);
       const csrf = cookies.csrftoken?.value;
 
       const res = await fetch(buildUrl(), {
@@ -102,32 +130,41 @@ const Challenges: React.FC = () => {
           ...(csrf ? { 'X-CSRFToken': csrf } : {}),
         },
         credentials: 'include',
+        signal: ac.signal,
       });
 
       if (!res.ok) throw new Error('search failed');
 
       const json = await res.json();
       const list: ChallengeListItem[] = Array.isArray(json) ? json : (json.results ?? []);
+      if (!mountedRef.current) return;
       setItems(list);
-    } catch {
+    } catch (e: any) {
+      if (e?.name === 'AbortError') return;
+      if (!mountedRef.current) return;
       Alert.alert('Error', 'Could not load challenges.');
     } finally {
+      if (!mountedRef.current) return;
       setLoading(false);
       setRefreshing(false);
     }
-  };
+  }, [COOKIE_ORIGIN, getAuthHeader, isAuthed, filters]);
 
+  // initial + on filters change (only when authed)
   useEffect(() => {
+    if (!isAuthed) return;
+    setLoading(true);
     fetchChallenges();
-  }, []);
+    return abortListFetch;
+  }, [isAuthed, fetchChallenges]);
 
   const onRefresh = () => {
+    if (!isAuthed) return;
     setRefreshing(true);
     fetchChallenges();
   };
 
-  // Create Challenge 
-  
+  // Create Challenge
   const [title, setTitle] = useState('');
   const [challengeType, setChallengeType] = useState('');
   const [targetValue, setTargetValue] = useState('');
@@ -149,6 +186,10 @@ const Challenges: React.FC = () => {
   const [pickerMode, setPickerMode] = useState<'date' | 'time' | 'datetime'>('date');
   const [tempDate, setTempDate] = useState<Date | null>(null);
 
+  useEffect(() => {
+    return () => { setPickerVisible(false); };
+  }, []);
+
   const openDateTimePicker = (which: 'start' | 'end') => {
     setPickerTarget(which);
     if (Platform.OS === 'ios') {
@@ -161,6 +202,8 @@ const Challenges: React.FC = () => {
   };
 
   const onPickerChange = (event: DateTimePickerEvent, selected?: Date) => {
+    if (!mountedRef.current) return;
+
     if (Platform.OS === 'android') {
       if (event.type === 'dismissed') {
         setPickerVisible(false);
@@ -172,6 +215,7 @@ const Challenges: React.FC = () => {
         setTempDate(base);
         setPickerVisible(false);
         setTimeout(() => {
+          if (!mountedRef.current) return;
           setPickerMode('time');
           setPickerVisible(true);
         }, 0);
@@ -251,7 +295,7 @@ const Challenges: React.FC = () => {
 
     setCreating(true);
     try {
-      const cookies = await Cookies.get('http://164.90.166.81:8000');
+      const cookies = await Cookies.get(COOKIE_ORIGIN);
       const csrf = cookies.csrftoken?.value;
 
       const body: any = {
@@ -259,11 +303,11 @@ const Challenges: React.FC = () => {
         challenge_type: challengeType.trim(),
         target_value: Number(targetValue),
         unit: unit.trim(),
-        start_date: startDate!.toISOString(), // ISO 8601
-        end_date: endDate!.toISOString(),     // ISO 8601
+        start_date: startDate!.toISOString(),
+        end_date: endDate!.toISOString(),
       };
       if (description.trim()) body.description = description.trim();
-      if (location.trim()) body.location = location.trim(); // backend geocodes and fills lat/lon
+      if (location.trim()) body.location = location.trim();
       if (minAge.trim()) body.min_age = Number(minAge);
       if (maxAge.trim()) body.max_age = Number(maxAge);
 
@@ -275,7 +319,7 @@ const Challenges: React.FC = () => {
           ...(csrf ? { 'X-CSRFToken': csrf } : {}),
         },
         credentials: 'include',
-        body: JSON.stringify(body),
+      body: JSON.stringify(body),
       });
 
       if (res.status === 201) {
@@ -299,6 +343,11 @@ const Challenges: React.FC = () => {
       setCreating(false);
     }
   };
+
+  // If not authed, render nothing so the screen becomes a no-op behind auth gate
+  if (!isAuthed) {
+    return null;
+  }
 
   if (loading) {
     return (
@@ -330,8 +379,7 @@ const Challenges: React.FC = () => {
               location: '',
               radius_km: '10',
             });
-            setRefreshing(true);
-            fetchChallenges();
+            onRefresh();
           }}
           style={[styles.toolbarBtn, { backgroundColor: '#eee', borderColor: '#ccc' }]}
         >
@@ -353,12 +401,15 @@ const Challenges: React.FC = () => {
             onViewDetails={(id: number) => setDetailId(id)}
           />
         )}
+        removeClippedSubviews
       />
 
-      {/* Floating plus button */}
-      { isCoach && (<Pressable style={styles.fab} onPress={() => setShowCreate(true)}>
-        <Text style={styles.fabText}>＋</Text>
-      </Pressable>)}
+      {/* Floating plus button (coach only) */}
+      {isCoach && (
+        <Pressable style={styles.fab} onPress={() => setShowCreate(true)}>
+          <Text style={styles.fabText}>＋</Text>
+        </Pressable>
+      )}
 
       {/* Create modal */}
       <Modal animationType="slide" visible={showCreate} onRequestClose={() => setShowCreate(false)}>
@@ -456,7 +507,7 @@ const Challenges: React.FC = () => {
           />
         )}
       </Modal>
-      
+
       {/* Filters modal */}
       <Modal visible={filterOpen} animationType="slide" onRequestClose={() => setFilterOpen(false)}>
         <View style={styles.modalWrap}>
@@ -529,8 +580,7 @@ const Challenges: React.FC = () => {
               <Pressable
                 onPress={() => {
                   setFilterOpen(false);
-                  setRefreshing(true);
-                  fetchChallenges();
+                  onRefresh();
                 }}
                 style={[styles.btn, styles.btnPrimary]}
               >
@@ -557,21 +607,36 @@ const Challenges: React.FC = () => {
   );
 };
 
-// Minimal detail content for the popup
-const ChallengeDetailContent: React.FC<{ id: number; api: string; onMembershipChange?: (challengeId: number, joined: boolean) => void; onClose: () => void }> = ({ id, api, onMembershipChange, onClose }) => {
+// ---------- Detail Modal ----------
+type LeaderboardRow = {
+  id?: number;
+  user?: number;
+  username?: string;
+  current_value?: number;
+  finish_date?: string;
+};
+
+const ChallengeDetailContent: React.FC<{
+  id: number;
+  api: string;
+  onMembershipChange?: (challengeId: number, joined: boolean) => void;
+  onClose: () => void;
+}> = ({ id, api, onMembershipChange, onClose }) => {
   const { user, getAuthHeader } = useAuth();
+  const isAuthed = !!user?.id;
+
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
   const [joined, setJoined] = useState<boolean>(false);
   const [challenge, setChallenge] = useState<any>(null);
   const [participant, setParticipant] = useState<any>(null);
   const [participantsCount, setParticipantsCount] = useState<number | null>(null);
-  
+
   const [showParticipants, setShowParticipants] = useState(false);
   const [leaderboard, setLeaderboard] = useState<LeaderboardRow[]>([]);
   const [leaderboardLoading, setLeaderboardLoading] = useState(false);
   const [leaderboardLoaded, setLeaderboardLoaded] = useState(false);
-  
+
   type SortKey = 'progress' | 'finish_date' | 'joined_at' | 'username';
   const [sortKey, setSortKey] = useState<SortKey>('progress');
   const [sortReverse, setSortReverse] = useState(false);
@@ -606,7 +671,6 @@ const ChallengeDetailContent: React.FC<{ id: number; api: string; onMembershipCh
   // If we don't know our id yet (no chats), fall back to coach-only.
   const canEditDelete = isCoach && (user?.id == null ? true : coachIdFromChallenge === user.id);
 
-
   // date values for the edit form
   const [editStart, setEditStart] = useState<Date | null>(null);
   const [editEnd, setEditEnd] = useState<Date | null>(null);
@@ -617,14 +681,18 @@ const ChallengeDetailContent: React.FC<{ id: number; api: string; onMembershipCh
   const [editPickerMode, setEditPickerMode] = useState<'date' | 'time' | 'datetime'>('date');
   const [editTempDate, setEditTempDate] = useState<Date | null>(null);
 
-  const visibleRef = React.useRef(true);
-  React.useEffect(() => {
+  useEffect(() => {
+    return () => { setEditPickerVisible(false); };
+  }, []);
+
+  const visibleRef = useRef(true);
+  useEffect(() => {
     visibleRef.current = true;
     return () => { visibleRef.current = false; };
   }, []);
 
   const showToast = (t: 'success' | 'error', text1: string, text2?: string) => {
-    if (!visibleRef.current) return; // don't toast after modal closes
+    if (!visibleRef.current) return;
     Toast.show({ type: t, text1, ...(text2 ? { text2 } : {}) });
   };
 
@@ -633,14 +701,6 @@ const ChallengeDetailContent: React.FC<{ id: number; api: string; onMembershipCh
       ? d.toLocaleString(undefined, { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
       : 'Pick date & time';
 
-  type LeaderboardRow = {
-    id?: number;
-    user?: number;
-    username?: string;
-    current_value?: number;
-    finish_date?: string;
-  };
-
   // Leaderboard
   const cookieOrigin = api.replace(/\/api\/?$/, '');
 
@@ -648,7 +708,7 @@ const ChallengeDetailContent: React.FC<{ id: number; api: string; onMembershipCh
     if (leaderboardLoading || (leaderboardLoaded && !force)) return;
     setLeaderboardLoading(true);
     try {
-      const cookies = await Cookies.get(api.replace(/\/api\/?$/, ''));
+      const cookies = await Cookies.get(cookieOrigin);
       const csrf = cookies.csrftoken?.value;
 
       const qs = `${sortKey}=${sortReverse ? '-' : ''}`;
@@ -713,8 +773,7 @@ const ChallengeDetailContent: React.FC<{ id: number; api: string; onMembershipCh
         const msg = await res.text();
         showToast('error', 'Join failed', msg || 'Please try again.');
       }
-    } catch (e) {
-      // Verify actual server state before rollback
+    } catch {
       try {
         const res2 = await fetch(`${api}/challenges/${id}/`, {
           method: 'GET',
@@ -726,16 +785,9 @@ const ChallengeDetailContent: React.FC<{ id: number; api: string; onMembershipCh
           const reallyJoined = !!data2.joined;
           setJoined(reallyJoined);
           onMembershipChange?.(id, reallyJoined);
-          if (reallyJoined) {
-            // Server shows we *did* join; suppress the error.
-            return;
-          }
+          if (reallyJoined) return;
         }
-      } catch {
-        // ignore; fallback to rollback
-      }
-
-      // Only if verification says we're not joined (or verify failed), rollback + error
+      } catch {}
       setJoined(false);
       onMembershipChange?.(id, false);
       showToast('error', 'Network error');
@@ -772,8 +824,7 @@ const ChallengeDetailContent: React.FC<{ id: number; api: string; onMembershipCh
         const msg = await res.text();
         showToast('error', 'Leave failed', msg || 'Please try again.');
       }
-    } catch (e: any) {
-      // Before rolling back, verify with a quick GET whether we actually left.
+    } catch {
       try {
         const res2 = await fetch(`${api}/challenges/${id}/`, {
           method: 'GET',
@@ -785,16 +836,9 @@ const ChallengeDetailContent: React.FC<{ id: number; api: string; onMembershipCh
           const reallyJoined = !!data2.joined;
           setJoined(reallyJoined);
           onMembershipChange?.(id, reallyJoined);
-          if (!reallyJoined) {
-            // Server shows we *did* leave; don’t show an error or rollback.
-            return;
-          }
+          if (!reallyJoined) return;
         }
-      } catch {
-        // ignore verification errors; we’ll rollback below
-      }
-
-      // Only if verification says we're still joined (or verify failed), rollback + error
+      } catch {}
       setJoined(true);
       onMembershipChange?.(id, true);
       showToast('error', 'Network error');
@@ -816,7 +860,6 @@ const ChallengeDetailContent: React.FC<{ id: number; api: string; onMembershipCh
   };
 
   const medal = (rank: number) => (rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : '');
-
   const pct = (value?: number) => {
     const t = Number(challenge?.target_value || 0);
     if (!t) return 0;
@@ -835,8 +878,7 @@ const ChallengeDetailContent: React.FC<{ id: number; api: string; onMembershipCh
       const cookies = await Cookies.get(cookieOrigin);
       const csrf = cookies.csrftoken?.value;
 
-      const body =
-        progressMode === 'add' ? { added_value: v } : { current_value: v };
+      const body = progressMode === 'add' ? { added_value: v } : { current_value: v };
 
       const res = await fetch(`${api}/challenges/${id}/update-progress/`, {
         method: 'POST',
@@ -851,9 +893,8 @@ const ChallengeDetailContent: React.FC<{ id: number; api: string; onMembershipCh
         return;
       }
 
-      
       const nowIso = new Date().toISOString();
-      setParticipant((prev: { current_value: any; finish_date: any; }) => {
+      setParticipant((prev: any) => {
         if (!prev) return prev;
         const newVal = progressMode === 'add' ? (prev.current_value ?? 0) + v : v;
         const finished = (challenge?.target_value ?? Infinity) <= newVal;
@@ -865,9 +906,8 @@ const ChallengeDetailContent: React.FC<{ id: number; api: string; onMembershipCh
         };
       });
 
-      // If panel open, refresh leaderboard to reflect new order
       if (showParticipants) await loadLeaderboard(true);
-      
+
       setShowProgress(false);
       setProgressVal('');
       Toast.show({ type: 'success', text1: 'Progress updated' });
@@ -904,13 +944,11 @@ const ChallengeDetailContent: React.FC<{ id: number; api: string; onMembershipCh
       const cookies = await Cookies.get(cookieOrigin);
       const csrf = cookies.csrftoken?.value;
 
-      // Only send fields that actually changed (backend keeps others as-is)
       const body: any = {};
-      const num = (v: string) => (v.trim() === '' ? undefined : Number(v));
       const maybe = (k: keyof typeof edit, conv?: (s: string)=>any) => {
         const oldVal = (challenge as any)[k];
         const newVal = edit[k];
-        if (newVal === '') return; // skip empty optional fields
+        if (newVal === '') return;
         const out = conv ? conv(newVal) : newVal.trim();
         if (out !== oldVal) body[k] = out;
       };
@@ -939,7 +977,7 @@ const ChallengeDetailContent: React.FC<{ id: number; api: string; onMembershipCh
       }
 
       const updated = await res.json();
-      setChallenge(updated);     // refresh local detail
+      setChallenge(updated);
       setIsEditing(false);
       Toast.show({ type: 'success', text1: 'Challenge updated' });
     } catch {
@@ -966,7 +1004,7 @@ const ChallengeDetailContent: React.FC<{ id: number; api: string; onMembershipCh
             });
             if (res.status === 204 || res.ok) {
               Toast.show({ type: 'success', text1: 'Challenge deleted' });
-              onClose(); // close the modal; parent can refresh list
+              onClose();
             } else {
               const t = await res.text();
               Alert.alert('Delete failed', t || 'Could not delete.');
@@ -1002,6 +1040,7 @@ const ChallengeDetailContent: React.FC<{ id: number; api: string; onMembershipCh
         setEditTempDate(base);
         setEditPickerVisible(false);
         setTimeout(() => {
+          if (!visibleRef.current) return;
           setEditPickerMode('time');
           setEditPickerVisible(true);
         }, 0);
@@ -1027,8 +1066,14 @@ const ChallengeDetailContent: React.FC<{ id: number; api: string; onMembershipCh
       setEditPickerVisible(false);
     }
   };
+
+  // Load detail with AbortController; ignore after unmount/close
   useEffect(() => {
+    if (!isAuthed) return;
+
     let alive = true;
+    const ac = new AbortController();
+
     const load = async () => {
       setLoading(true);
       setErr(null);
@@ -1036,7 +1081,6 @@ const ChallengeDetailContent: React.FC<{ id: number; api: string; onMembershipCh
         const cookies = await Cookies.get(api.replace(/\/api\/?$/, ''));
         const csrf = cookies.csrftoken?.value;
 
-        // detail
         const res = await fetch(`${api}/challenges/${id}/`, {
           headers: {
             ...getAuthHeader(),
@@ -1044,15 +1088,15 @@ const ChallengeDetailContent: React.FC<{ id: number; api: string; onMembershipCh
             ...(csrf ? { 'X-CSRFToken': csrf } : {}),
           },
           credentials: 'include',
+          signal: ac.signal,
         });
         if (!res.ok) throw new Error('detail failed');
         const data = await res.json();
-        if (!alive) return;
+        if (!(alive && visibleRef.current)) return;
         setJoined(!!data.joined);
         setChallenge(data.challenge);
         setParticipant(data.participant ?? null);
 
-        // participants count via leaderboard
         const r2 = await fetch(`${api}/challenges/${id}/leaderboard/`, {
           headers: {
             ...getAuthHeader(),
@@ -1060,24 +1104,29 @@ const ChallengeDetailContent: React.FC<{ id: number; api: string; onMembershipCh
             ...(csrf ? { 'X-CSRFToken': csrf } : {}),
           },
           credentials: 'include',
+          signal: ac.signal,
         });
-        if (r2.ok) {
+        if (r2.ok && alive && visibleRef.current) {
           const list = await r2.json();
           setLeaderboard(Array.isArray(list) ? list : []);
-          if (alive) setParticipantsCount(Array.isArray(list) ? list.length : null);
+          setParticipantsCount(Array.isArray(list) ? list.length : null);
         }
       } catch (e: any) {
-        if (alive) setErr('Could not load challenge details.');
+        if (e?.name === 'AbortError') return;
+        if (alive && visibleRef.current) setErr('Could not load challenge details.');
       } finally {
-        if (alive) setLoading(false);
+        if (alive && visibleRef.current) setLoading(false);
       }
     };
     load();
-    return () => { alive = false; };
-  }, [id, api, getAuthHeader]);
+    return () => { alive = false; ac.abort(); };
+  }, [id, api, getAuthHeader, isAuthed]);
 
   const fmt = (d?: string) =>
     d ? new Date(d).toLocaleString(undefined, { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—';
+
+  // If not authed anymore (during logout), close quietly
+  if (!isAuthed) return null;
 
   if (loading) return <View style={{ padding: 16 }}><ActivityIndicator /></View>;
   if (err || !challenge) return (
@@ -1210,6 +1259,7 @@ const ChallengeDetailContent: React.FC<{ id: number; api: string; onMembershipCh
           </Pressable>
         )}
       </View>
+
       {/* Update Progress (visible only if joined) */}
       {joined && (
         <View style={{ marginTop: 12 }}>
@@ -1265,6 +1315,7 @@ const ChallengeDetailContent: React.FC<{ id: number; api: string; onMembershipCh
           )}
         </View>
       )}
+
       <View style={{ marginTop: 12 }}>
         <Pressable
           onPress={onToggleParticipants}
@@ -1279,7 +1330,7 @@ const ChallengeDetailContent: React.FC<{ id: number; api: string; onMembershipCh
           <View style={{ marginTop: 10 }}>
             {/* Sort controls */}
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 10, marginBottom: 6 }}>
-              {(['progress', 'finish_date', 'joined_at', 'username'] as SortKey[]).map((k) => (
+              {(['progress', 'finish_date', 'joined_at', 'username'] as const).map((k) => (
                 <Pressable
                   key={k}
                   onPress={() => changeSortKey(k)}
@@ -1314,7 +1365,7 @@ const ChallengeDetailContent: React.FC<{ id: number; api: string; onMembershipCh
               <CustomText>No participants yet.</CustomText>
             ) : (
               leaderboard.map((p, idx) => {
-                const rank = idx + 1;                   // respects server sort
+                const rank = idx + 1;
                 const percent = pct(p.current_value);
                 return (
                   <View
@@ -1332,7 +1383,6 @@ const ChallengeDetailContent: React.FC<{ id: number; api: string; onMembershipCh
                       {(p.current_value ?? 0)} / {challenge.target_value} {challenge.unit || ''} ({percent}%)
                     </CustomText>
 
-                    {/* tiny progress bar */}
                     <View style={{ height: 8, backgroundColor: '#eee', borderRadius: 999, overflow: 'hidden', marginTop: 6 }}>
                       <View style={{ width: `${percent}%`, height: '100%', backgroundColor: '#8a2e2e' }} />
                     </View>
@@ -1349,6 +1399,7 @@ const ChallengeDetailContent: React.FC<{ id: number; api: string; onMembershipCh
           </View>
         )}
       </View>
+
       {/* Time window */}
       <Text style={{ marginTop: 12, fontWeight: '600' }}>Schedule</Text>
       <Text>Starts: {fmt(challenge.start_date)}</Text>
