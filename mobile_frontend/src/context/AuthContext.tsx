@@ -50,7 +50,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   };
 
   const getAuthHeader = () => {
-    if (!token) return {};
+    if (!token) return { Authorization: '' };
     return { Authorization: token };
   };
 
@@ -99,7 +99,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       value={{
         token,
         setToken,
-        isAuthenticated: !!token,
+        isAuthenticated: !!currentUser,
         currentUser,
         setCurrentUser,
         logout,
