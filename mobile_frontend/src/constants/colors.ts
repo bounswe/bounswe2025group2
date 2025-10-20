@@ -8,7 +8,10 @@ const lightColors = {
     navBar: '#f0f0f0',
     border: '#800000',
     active: '#740000',
-    passive: '#9a0000'
+    passive: '#9a0000',
+    userMessageText: '#ffffff',
+    connected: '#4CAF50',
+    disconnected: '#F44336'
   };
   
   const darkColors = {
@@ -21,7 +24,10 @@ const lightColors = {
     navBar: '#333333',
     border: '#f0f0f0',
     active: '#777777',
-    passive: '#555555'
+    passive: '#555555',
+    userMessageText: '#000000',
+    connected: '#4CAF50',
+    disconnected: '#F44336'
   };
   
   export default {

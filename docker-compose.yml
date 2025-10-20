@@ -27,7 +27,7 @@ services:
       context: ./backend/genfit_django
       dockerfile: Dockerfile
     container_name: genfit_backend
-    command: sh -c "python manage.py migrate && python manage.py populate_db && python manage.py runserver 0.0.0.0:8000"
+    command: sh -c "python manage.py migrate && python manage.py populate_db && python manage.py add_inclusive_forums && python manage.py runserver 0.0.0.0:8000"
     volumes:
       - ./backend/genfit_django:/app
     ports:
