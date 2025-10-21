@@ -11,7 +11,7 @@ import NewIcon from '../assets/images/new.svg';
 import MentorsIcon from '../assets/images/mentors.svg';
 import ChatsIcon from '../assets/images/chats.svg';
 import GoalsIcon from '../assets/images/target.svg';
-import NotificationsIcon from '../assets/images/notifications.svg'; // Dartboard/target icon for Goals tab
+import ChallengesIcon from '../assets/images/challenge.svg';
 
 const BottomBar = ({ state, navigation }: BottomTabBarProps) => {
   const { colors } = useTheme();
@@ -96,22 +96,22 @@ const BottomBar = ({ state, navigation }: BottomTabBarProps) => {
           Goals
         </CustomText>
       </Pressable>
-      <Pressable style={styles.tab} onPress={() => navigateToScreen('Notifications')}>
-        <NotificationsIcon 
-          width={32} 
-          height={32} 
-          color={isActiveRoute('Notifications') ? colors.active : colors.passive} 
+      <Pressable style={styles.tab} onPress={() => navigateToScreen('Challenges')}>
+        <ChallengesIcon 
+          width={36} 
+          height={40} 
+          fill={isActiveRoute('Challenges') ? colors.active : colors.passive} 
         />
         <CustomText 
           style={[
             styles.label, 
             { 
-              color: isActiveRoute('Notifications') ? colors.active : colors.passive,
-              fontWeight: isActiveRoute('Notifications') ? 'bold' : 'normal'
+              color: isActiveRoute('Challenges') ? colors.active : colors.passive,
+              fontWeight: isActiveRoute('Challenges') ? 'bold' : 'normal'
             }
           ]}
         >
-          Notifications
+          Challenges
         </CustomText>
       </Pressable>
     </View>
