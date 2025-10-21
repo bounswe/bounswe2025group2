@@ -27,7 +27,7 @@ jobs:
       - name: Build and push frontend
         run: |
           docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/genfit-frontend ./Web_Frontend/genfit_frontend \
-            --build-arg VITE_API_BASE_URL=https://${{ secrets.DROPLET_IP }}
+            --build-arg VITE_API_BASE_URL=http://${{ secrets.DROPLET_IP }}:8000
           docker push ${{ secrets.DOCKERHUB_USERNAME }}/genfit-frontend
 
       - name: Deploy on DigitalOcean Droplet
@@ -47,13 +47,6 @@ jobs:
             echo "SECRET_KEY=${{ secrets.SECRET_KEY }}" >> .env
             echo "GROQ_API_KEY=${{ secrets.GROQ_API_KEY }}" >> .env
             echo "DEBUG=False" >> .env
-            # Generate SSL certificates if they don't exist
-            if [ ! -f ssl/nginx.crt ] || [ ! -f ssl/nginx.key ]; then
-              echo "🔒 Generating SSL certificates..."
-              ./generate-ssl.sh
-            else
-              echo "✅ SSL certificates already exist"
-            fi
             # Stop and remove existing containers
             docker-compose -f docker-compose.prod.yml down --remove-orphans
             # Clean up any dangling containers and images
