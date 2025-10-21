@@ -62,3 +62,12 @@ jobs:
             docker-compose -f docker-compose.prod.yml pull
             # Start services with fresh containers
             docker-compose -f docker-compose.prod.yml up -d --force-recreate
+            # Wait a moment for services to start
+            sleep 10
+            # Debug deployment
+            echo "🔍 Deployment Debug Info:"
+            docker-compose -f docker-compose.prod.yml ps
+            echo "📋 Nginx logs:"
+            docker-compose -f docker-compose.prod.yml logs --tail=10 nginx
+            echo "🌐 Port check:"
+            netstat -tlnp | grep -E ':80|:443' || echo "No processes on 80/443"
