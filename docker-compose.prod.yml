@@ -38,23 +38,9 @@ services:
   frontend:
     image: ${DOCKERHUB_USERNAME}/genfit-frontend:latest
     container_name: genfit_frontend
-    # Remove external port mapping - Nginx will handle this
-    depends_on:
-      - backend
-    networks:
-      - genfit-network
-
-  nginx:
-    image: nginx:alpine
-    container_name: genfit_nginx
     ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf
-      - ./ssl:/etc/nginx/ssl
+      - "3000:80"
     depends_on:
-      - frontend
       - backend
     networks:
       - genfit-network
