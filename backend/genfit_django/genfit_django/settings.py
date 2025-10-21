@@ -57,6 +57,7 @@ CSRF_TRUSTED_ORIGINS = [
     # HTTPS origins for production
     'https://164.90.166.81',
     'https://165.232.79.200',
+    'https://178.243.211.99', # güney emulator IP
 ]
 
 
