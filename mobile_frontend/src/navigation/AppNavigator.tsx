@@ -70,6 +70,11 @@ const AppNavigator = () => {
       <Stack.Screen name="Main" component={MainTabs} />
       <Stack.Screen name="Profile" component={Profile} />
       <Stack.Screen 
+        name="Notifications" 
+        component={Notifications}
+        options={{ title: 'Notifications' }}
+      />
+      <Stack.Screen 
         name="NotificationPreferences" 
         component={NotificationPreferences}
         options={{ title: 'Notification Preferences' }}
