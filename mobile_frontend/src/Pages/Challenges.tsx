@@ -1,3 +1,4 @@
+
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   View,
@@ -27,8 +28,8 @@ type BoolParam = '' | 'true' | 'false';
 const API = 'http://164.90.166.81:8000/api';
 
 const Challenges: React.FC = () => {
-  const { user, isAuthenticated, getAuthHeader } = useAuth();
-  const isAuthed = isAuthenticated; // works for token or cookie session
+  const { currentUser, getAuthHeader } = useAuth();
+  const isAuthed = currentUser?.id !== undefined && currentUser?.id !== null;
 
   const [items, setItems] = useState<ChallengeListItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -59,8 +60,48 @@ const Challenges: React.FC = () => {
     radius_km: '10',
   });
 
-  const isCoach = Boolean(user?.user_type === 'Coach' || user?.is_verified_coach);
+  const [isCoach, setIsCoach] = useState<boolean>(false);
   const COOKIE_ORIGIN = useMemo(() => API.replace(/\/api\/?$/, ''), []);
+
+  // Function to fetch user data and determine if user is coach
+  const fetchUserAndCheckCoach = useCallback(async () => {
+    if (!isAuthed || !currentUser?.username) return;
+    
+    try {
+      const cookies = await Cookies.get(COOKIE_ORIGIN);
+      const csrf = cookies.csrftoken?.value;
+
+      const response = await fetch(`${API}/user`, {
+        method: 'GET',
+        headers: {
+          ...getAuthHeader(),
+          'Content-Type': 'application/json',
+          ...(csrf ? { 'X-CSRFToken': csrf } : {}),
+        },
+        credentials: 'include',
+      });
+
+      if (response.ok) {
+        const userData = await response.json();
+        const isUserCoach = userData.user_type === 'Coach';
+        if (mountedRef.current) {
+          setIsCoach(isUserCoach);
+        }
+      } else {
+        // Fallback to current user data if API call fails
+        const fallbackIsCoach = Boolean((currentUser as any)?.user_type === 'Coach' || (currentUser as any)?.is_verified_coach);
+        if (mountedRef.current) {
+          setIsCoach(fallbackIsCoach);
+        }
+      }
+    } catch (error) {
+      // Fallback to current user data if API call fails
+      const fallbackIsCoach = Boolean((currentUser as any)?.user_type === 'Coach' || (currentUser as any)?.is_verified_coach);
+      if (mountedRef.current) {
+        setIsCoach(fallbackIsCoach);
+      }
+    }
+  }, [isAuthed, currentUser, getAuthHeader, COOKIE_ORIGIN]);
 
   // mounted guard
   const mountedRef = useRef(true);
@@ -85,8 +126,16 @@ const Challenges: React.FC = () => {
       setItems([]);
       setRefreshing(false);
       setLoading(false);
+      setIsCoach(false);
     }
   }, [isAuthed]);
+
+  // Fetch user data and check if user is coach
+  useEffect(() => {
+    if (isAuthed && currentUser?.username) {
+      fetchUserAndCheckCoach();
+    }
+  }, [isAuthed, currentUser?.username, fetchUserAndCheckCoach]);
 
   const handleMembershipChange = (challengeId: number, joined: boolean) => {
     setItems(prev =>
@@ -622,8 +671,8 @@ const ChallengeDetailContent: React.FC<{
   onMembershipChange?: (challengeId: number, joined: boolean) => void;
   onClose: () => void;
 }> = ({ id, api, onMembershipChange, onClose }) => {
-  const { user, isAuthenticated, getAuthHeader } = useAuth();
-  const isAuthed = isAuthenticated; // works for token or cookie session
+  const { currentUser, getAuthHeader } = useAuth();
+  const isAuthed = currentUser?.id !== undefined && currentUser?.id !== null;
 
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
@@ -664,12 +713,52 @@ const ChallengeDetailContent: React.FC<{
 
   const busy = joining || leaving;
 
-  const isCoach = Boolean(user?.user_type === 'Coach' || user?.is_verified_coach);
+  const [isCoach, setIsCoach] = useState<boolean>(false);
   const coachIdFromChallenge =
     challenge?.coach?.id ?? challenge?.coach_id ?? challenge?.coach;
 
+  // Function to fetch user data and determine if user is coach
+  const fetchUserAndCheckCoach = useCallback(async () => {
+    if (!isAuthed || !currentUser?.username) return;
+    
+    try {
+      const cookies = await Cookies.get(api.replace(/\/api\/?$/, ''));
+      const csrf = cookies.csrftoken?.value;
+
+      const response = await fetch(`${api}/user`, {
+        method: 'GET',
+        headers: {
+          ...getAuthHeader(),
+          'Content-Type': 'application/json',
+          ...(csrf ? { 'X-CSRFToken': csrf } : {}),
+        },
+        credentials: 'include',
+      });
+
+      if (response.ok) {
+        const userData = await response.json();
+        const isUserCoach = userData.user_type === 'Coach';
+        if (visibleRef.current) {
+          setIsCoach(isUserCoach);
+        }
+      } else {
+        // Fallback to current user data if API call fails
+        const fallbackIsCoach = Boolean((currentUser as any)?.user_type === 'Coach' || (currentUser as any)?.is_verified_coach);
+        if (visibleRef.current) {
+          setIsCoach(fallbackIsCoach);
+        }
+      }
+    } catch (error) {
+      // Fallback to current user data if API call fails
+      const fallbackIsCoach = Boolean((currentUser as any)?.user_type === 'Coach' || (currentUser as any)?.is_verified_coach);
+      if (visibleRef.current) {
+        setIsCoach(fallbackIsCoach);
+      }
+    }
+  }, [isAuthed, currentUser, getAuthHeader, api]);
+
   // If we don't know our id yet (no chats), fall back to coach-only.
-  const canEditDelete = isCoach && (user?.id == null ? true : coachIdFromChallenge === user.id);
+  const canEditDelete = isCoach && (currentUser?.id == null ? true : coachIdFromChallenge === currentUser.id);
 
   // date values for the edit form
   const [editStart, setEditStart] = useState<Date | null>(null);
@@ -1066,6 +1155,13 @@ const ChallengeDetailContent: React.FC<{
       setEditPickerVisible(false);
     }
   };
+
+  // Fetch user data and check if user is coach
+  useEffect(() => {
+    if (isAuthed && currentUser?.username) {
+      fetchUserAndCheckCoach();
+    }
+  }, [isAuthed, currentUser?.username, fetchUserAndCheckCoach]);
 
   // Load detail with AbortController; ignore after unmount/close
   useEffect(() => {
