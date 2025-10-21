@@ -13,6 +13,7 @@ import Toast from 'react-native-toast-message';
 import MenuIcon from '../assets/images/menu.svg';
 import SearchIcon from '../assets/images/search.svg';
 import SettingsIcon from '../assets/images/settings.svg';
+import NotificationsIcon from '../assets/images/notifications.svg';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -99,6 +100,9 @@ const TopBar = () => {
       </View>
       <View style={styles.rightSection}>
         <SearchIcon width={36} height={36} fill={colors.border} />
+        <Pressable onPress={() => navigation.navigate('Notifications')}>
+          <NotificationsIcon width={36} height={36} color={colors.border} />
+        </Pressable>
         <Pressable onPress={() => navigation.navigate('Settings')}>
           <SettingsIcon width={36} height={36} fill={colors.border} />
         </Pressable>
