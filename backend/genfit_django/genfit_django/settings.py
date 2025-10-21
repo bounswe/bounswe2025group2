@@ -54,6 +54,9 @@ CSRF_TRUSTED_ORIGINS = [
     'http://164.90.166.81:8000',
     'http://164.90.166.81:3000',
     'http://164.90.166.81:5000',
+    # HTTPS origins for production
+    'https://164.90.166.81',
+    'https://165.232.79.200',
 ]
 
 
@@ -196,9 +199,12 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # Session Settings
 SESSION_ENGINE = 'django.contrib.sessions.backends.db'
 SESSION_COOKIE_AGE = 1209600  # 2 weeks in seconds
-SESSION_COOKIE_SECURE = False  # Only send cookie over HTTPS
+# Set secure cookies based on DEBUG mode - secure in production, not secure in development
+SESSION_COOKIE_SECURE = not DEBUG  # Only send cookie over HTTPS in production
+CSRF_COOKIE_SECURE = not DEBUG  # Only send CSRF cookie over HTTPS in production
 SESSION_COOKIE_HTTPONLY = False  # Allow JavaScript access to session cookie for mobile app
 SESSION_COOKIE_SAMESITE = 'Lax'  # CSRF protection
+CSRF_COOKIE_SAMESITE = 'Lax'  # CSRF protection
 
 # Email Configuration
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
