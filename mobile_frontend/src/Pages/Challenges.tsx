@@ -27,8 +27,8 @@ type BoolParam = '' | 'true' | 'false';
 const API = 'http://164.90.166.81:8000/api';
 
 const Challenges: React.FC = () => {
-  const { currentUser, getAuthHeader } = useAuth();
-  const isAuthed = currentUser?.id !== undefined && currentUser?.id !== null;
+  const { user, isAuthenticated, getAuthHeader } = useAuth();
+  const isAuthed = isAuthenticated; // works for token or cookie session
 
   const [items, setItems] = useState<ChallengeListItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -59,7 +59,7 @@ const Challenges: React.FC = () => {
     radius_km: '10',
   });
 
-  const isCoach = Boolean((currentUser as any)?.user_type === 'Coach' || (currentUser as any)?.is_verified_coach);
+  const isCoach = Boolean(user?.user_type === 'Coach' || user?.is_verified_coach);
   const COOKIE_ORIGIN = useMemo(() => API.replace(/\/api\/?$/, ''), []);
 
   // mounted guard
@@ -622,8 +622,8 @@ const ChallengeDetailContent: React.FC<{
   onMembershipChange?: (challengeId: number, joined: boolean) => void;
   onClose: () => void;
 }> = ({ id, api, onMembershipChange, onClose }) => {
-  const { currentUser, getAuthHeader } = useAuth();
-  const isAuthed = currentUser?.id !== undefined && currentUser?.id !== null;
+  const { user, isAuthenticated, getAuthHeader } = useAuth();
+  const isAuthed = isAuthenticated; // works for token or cookie session
 
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
@@ -664,12 +664,12 @@ const ChallengeDetailContent: React.FC<{
 
   const busy = joining || leaving;
 
-  const isCoach = Boolean((currentUser as any)?.user_type === 'Coach' || (currentUser as any)?.is_verified_coach);
+  const isCoach = Boolean(user?.user_type === 'Coach' || user?.is_verified_coach);
   const coachIdFromChallenge =
     challenge?.coach?.id ?? challenge?.coach_id ?? challenge?.coach;
 
   // If we don't know our id yet (no chats), fall back to coach-only.
-  const canEditDelete = isCoach && (currentUser?.id == null ? true : coachIdFromChallenge === currentUser.id);
+  const canEditDelete = isCoach && (user?.id == null ? true : coachIdFromChallenge === user.id);
 
   // date values for the edit form
   const [editStart, setEditStart] = useState<Date | null>(null);
