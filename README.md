@@ -26,12 +26,10 @@ Our brief project description is:
 ## Our individual profiles
 
   - [Ahmet Burak Çiçek](https://github.com/bounswe/bounswe2025group2/wiki/Ahmet-Burak-%C3%87i%C3%A7ek)
-  - [Ahmet Salih Turkel](https://github.com/bounswe/bounswe2025group2/wiki/Ahmet-Salih-Turkel-%E2%80%90-Introduction)
   - [Alperen Akyol](https://github.com/bounswe/bounswe2025group2/wiki/Alperen-Akyol)
   - [Ali Ayhan Günder](https://github.com/bounswe/bounswe2025group2/wiki/Ali-Ayhan-Gunder)
   - [Berkay Buğra Gök](https://github.com/bounswe/bounswe2025group2/wiki/Berkay-Bu%C4%9Fra-G%C3%B6k)
   - [Doran Pamukçu](https://github.com/bounswe/bounswe2025group2/wiki/Doran-%E2%80%90-Introduction)
-  - [Ekin Menken](https://github.com/bounswe/bounswe2025group2/wiki/Ekin-Menken)
   - [Güney Yüksel](https://github.com/bounswe/bounswe2025group2/wiki/G%C3%BCney-Y%C3%BCksel)
   - [Talha Başıbüyük](https://github.com/bounswe/bounswe2025group2/wiki/Talha-Ba%C5%9F%C4%B1b%C3%BCy%C3%BCk)
   - [Volkan Bora Seki](https://github.com/bounswe/bounswe2025group2/wiki/Volkan-Bora-Seki)
@@ -57,7 +55,7 @@ Our deployed app can be found in this address: [http://164.90.166.81:3000/](http
      - To run the Postgres to be able to work on the Django Backend, we use `backend/genfit_django/postgres-db.yml`
      - To run the Postgres + Django to be able to work on the React frontend, we use `backend/docker-compose.yml`
      - To deploy the app by pulling images, we use `docker-compose.prod.yml`
-         - Our Github Actions workflow builds images and pushes the containers to Dockerhub, and then uses this to pull and run the latest images on our server 
+         - Our Github Actions workflow builds images [`.github/workflows/deploy.yml`] and pushes the containers to Dockerhub, and then uses this to pull and run the latest images on our server. We also have a build-check to ensure everyone makes sure their changes will be compiled and pushed correctly [`.github/workflows/pr-check.yml`] 
 
 - Our mobile app can be run on the emulator by following the instructions [here](https://github.com/bounswe/bounswe2025group2/tree/main/mobile_frontend)
 
