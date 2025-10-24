@@ -59,4 +59,4 @@ Our deployed app can be found in this address: [http://164.90.166.81:3000/](http
 
 - Our mobile app can be run on the emulator by following the instructions [here](https://github.com/bounswe/bounswe2025group2/tree/main/mobile_frontend)
 
-- Our mobile app can be run with the `.apk`
+- Our mobile app can be run with the `.apk`. You can download it from [here](https://github.com/bounswe/bounswe2025group2/blob/main/mobile_frontend/android/apk/app-debug.zip)
