@@ -30,6 +30,6 @@ dd/mm/yyyy - hh.mm
 ## Reviewer Assignment
 
 Reviewer: @username <!-- Always assign someone --> <br />
-Review Deadline: dd/mm/yyyy - hh/mm <!-- Specify the review deadline -->
+Review Deadline: dd/mm/yyyy - hh.mm <!-- Specify the review deadline -->
 
 <!-- DON'T FORGET TO LINK YOUR ISSUE TO THE CORRESPONDING PART IN THE MEETING NOTES -->
