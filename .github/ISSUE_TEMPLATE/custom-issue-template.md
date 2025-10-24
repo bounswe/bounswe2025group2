@@ -25,7 +25,7 @@ Provide a description
 Provide an estimation for time 
 
 ## Deadline
-dd/mm/yyyy - hh/mm
+dd/mm/yyyy - hh.mm
 
 ## Reviewer Assignment
 
