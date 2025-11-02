@@ -105,6 +105,19 @@ android {
             proguardFiles getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro"
         }
     }
+    
+    // Bundle JS and assets for all builds
+    project.ext.react = [
+        bundleInDebug: true,
+        bundleInRelease: true,
+        devDisabledInDebug: true,
+        devDisabledInRelease: true,
+        bundleCommand: "bundle",
+        bundleAssetName: "index.android.bundle",
+        bundleInDebug: true,
+        bundleInRelease: true,
+        entryFile: "index.js"
+    ]
 }
 
 dependencies {
@@ -117,3 +130,5 @@ dependencies {
         implementation jscFlavor
     }
 }
+
+apply from: "../../node_modules/react-native-vector-icons/fonts.gradle"

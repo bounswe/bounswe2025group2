@@ -16,6 +16,7 @@ import BottomBar from '../components/BottomBar';
 import Goals from '../Pages/Goals';
 import Profile from '../Pages/Profile';
 import { useAuth } from '../context/AuthContext';
+import Challenges from '../Pages/Challenges';
 import Notifications from '../Pages/Notifications';
 import NotificationPreferences from '../Pages/NotificationPreferences';
 import ChatDetail from '../Pages/ChatDetail';
@@ -48,7 +49,7 @@ const MainTabs = () => {
       <Tab.Screen name="Chats" component={withLayout(Chats)} />
       <Tab.Screen name="Settings" component={withLayout(Settings)} />
       <Tab.Screen name="Goals" component={withLayout(Goals)} />
-      <Tab.Screen name="Notifications" component={withLayout(Notifications)} />
+      <Tab.Screen name="Challenges" component={withLayout(Challenges)} />
 
     </Tab.Navigator>
   );
@@ -71,6 +72,11 @@ const AppNavigator = () => {
       {/* Main app screens */}
       <Stack.Screen name="Main" component={MainTabs} />
       <Stack.Screen name="Profile" component={Profile} />
+      <Stack.Screen 
+        name="Notifications" 
+        component={Notifications}
+        options={{ title: 'Notifications' }}
+      />
       <Stack.Screen 
         name="NotificationPreferences" 
         component={NotificationPreferences}
