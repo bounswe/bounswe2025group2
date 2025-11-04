@@ -168,6 +168,7 @@ class ProfileSerializer(serializers.ModelSerializer):
             'age',
             'created_at',
             'updated_at',
+            'preferred_sports',
         ]
         read_only_fields = ['username', 'created_at', 'updated_at']
 

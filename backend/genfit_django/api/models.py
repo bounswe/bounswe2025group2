@@ -150,6 +150,7 @@ class Profile(models.Model):
     bio = models.TextField(max_length=500, blank=True)
     location = models.CharField(max_length=50, blank=True)
     birth_date = models.DateField(null=True, blank=True)
+    preferred_sports = models.TextField(blank=True, null=True, default='')
     profile_picture = models.ImageField(
         upload_to='profile_pictures/',
         null=True,
