@@ -248,21 +248,6 @@ const ChatPage = () => {
   return (
     <Layout>
       <div className="chat-page-content">
-        <div className="section-header">
-          <div className="header-content">
-            <div className="header-text">
-              <p className="page-subtitle">Connect with other users or chat with our AI fitness tutor</p>
-            </div>
-            {/* Add Report Button for the entire chat page */}
-            <ReportButton
-              contentType="CHAT"
-              objectId={0}
-              contentTitle="Chat System"
-              className="chat-report-button"
-            />
-          </div>
-        </div>
-
         {/* Chat Type Toggle */}
         <div className="chat-toggle">
           <Button
