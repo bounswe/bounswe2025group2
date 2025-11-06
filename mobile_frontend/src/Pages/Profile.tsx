@@ -16,6 +16,7 @@ import {
   TextInput,
   useTheme,
   MD3Colors,
+  Menu,
 } from 'react-native-paper';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -23,8 +24,10 @@ import { useAuth } from '../context/AuthContext';
 import Cookies from '@react-native-cookies/cookies';
 import { launchImageLibrary } from 'react-native-image-picker';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import { sendMentorshipRequest } from '../services/MentorService';
 
 interface ProfileDetailsResponse {
+  id: number;
   username: string;
   name: string;
   surname: string;
@@ -75,6 +78,7 @@ const Profile = () => {
   const [selectedGoal, setSelectedGoal] = useState<Goal | null>(null);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [pictureRefreshKey, setPictureRefreshKey] = useState(Date.now());
+  const [mentorMenuVisible, setMentorMenuVisible] = useState(false);
 
   // Fetch profile details
   const { data: profileDetails, isLoading: isLoadingProfile } = useQuery<ProfileDetailsResponse>({
@@ -361,6 +365,31 @@ const Profile = () => {
     const parsed = new Date(dateString);
     return isNaN(parsed.getTime()) ? new Date() : parsed;
   };
+
+  // Mentor request handlers
+  const handleSendMentorRequest = async (requestType: 'MENTOR_REQUEST' | 'MENTEE_REQUEST') => {
+    if (!profileDetails || !otherUsername) return;
+
+    const message = requestType === 'MENTOR_REQUEST'
+      ? `I would like you to be my mentor.`
+      : `I would like to be your mentor.`;
+
+    try {
+      await sendMentorshipRequest(
+        {
+          to_user_id: profileDetails.id,
+          request_type: requestType,
+          message,
+        },
+        getAuthHeader()
+      );
+      setMentorMenuVisible(false);
+      Alert.alert('Success', 'Mentorship request sent successfully!');
+    } catch (error: any) {
+      console.error('Failed to send mentorship request:', error);
+      Alert.alert('Error', error.message || 'Failed to send mentorship request.');
+    }
+  };
   
   // Update local state when profile data is fetched
   useEffect(() => {
@@ -435,6 +464,36 @@ const Profile = () => {
                 @{profileDetails?.username}
               </Text>
             </View>
+            {/* Mentorship Request Button - Only show on other users' profiles */}
+            {otherUsername && (
+              <View style={styles.mentorshipActions}>
+                <Menu
+                  visible={mentorMenuVisible}
+                  onDismiss={() => setMentorMenuVisible(false)}
+                  anchor={
+                    <Button
+                      mode="contained"
+                      icon="account-supervisor"
+                      onPress={() => setMentorMenuVisible(true)}
+                      style={styles.mentorshipButton}
+                    >
+                      Request Mentorship
+                    </Button>
+                  }
+                >
+                  <Menu.Item 
+                    onPress={() => handleSendMentorRequest('MENTOR_REQUEST')} 
+                    title="Request as My Mentor"
+                    leadingIcon="school"
+                  />
+                  <Menu.Item 
+                    onPress={() => handleSendMentorRequest('MENTEE_REQUEST')} 
+                    title="Offer to be Mentor"
+                    leadingIcon="teach"
+                  />
+                </Menu>
+              </View>
+            )}
           </Card.Content>
         </Card>
 
@@ -733,6 +792,14 @@ const styles = StyleSheet.create({
   dateButtonContent: {
     justifyContent: 'flex-start',
     paddingVertical: 8,
+  },
+  mentorshipActions: {
+    marginTop: 16,
+    width: '100%',
+    alignItems: 'center',
+  },
+  mentorshipButton: {
+    minWidth: 200,
   },
 });
 

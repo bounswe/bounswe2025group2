@@ -23,6 +23,12 @@ import ChatDetail from '../Pages/ChatDetail';
 import Forum from '../Pages/Forum.tsx';
 import ForumDetail from '../Pages/ForumDetail.tsx';
 import ThreadDetail from '../Pages/ThreadDetail.tsx';
+// Mentor-related pages
+import MentorSearch from '../Pages/MentorSearch';
+import MentorshipRequests from '../Pages/MentorshipRequests';
+import MyMentors from '../Pages/MyMentors';
+import MyMentees from '../Pages/MyMentees';
+import MenteeGoalManagement from '../Pages/MenteeGoalManagement';
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -96,6 +102,32 @@ const AppNavigator = () => {
         name="ThreadDetail"
         component={ThreadDetail}
         options={{ title: 'Thread' }}
+      />
+      {/* Mentor-related screens */}
+      <Stack.Screen
+        name="MentorSearch"
+        component={MentorSearch}
+        options={{ title: 'Find Mentors' }}
+      />
+      <Stack.Screen
+        name="MentorshipRequests"
+        component={MentorshipRequests}
+        options={{ title: 'Mentorship Requests' }}
+      />
+      <Stack.Screen
+        name="MyMentors"
+        component={MyMentors}
+        options={{ title: 'My Mentors' }}
+      />
+      <Stack.Screen
+        name="MyMentees"
+        component={MyMentees}
+        options={{ title: 'My Mentees' }}
+      />
+      <Stack.Screen
+        name="MenteeGoalManagement"
+        component={MenteeGoalManagement}
+        options={{ title: 'Goal Management' }}
       />
     </Stack.Navigator>
   );
