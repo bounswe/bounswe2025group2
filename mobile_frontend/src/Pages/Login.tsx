@@ -119,8 +119,8 @@ const Login = ({ navigation }: any) => {
   };
 
   const gradientColors = isDark 
-    ? ['#1a0000', '#330000', '#4d0000']
-    : ['#f5e6d3', '#e8d4b8', '#d4a574'];
+    ? ['#4d0000', '#4d0000']
+    : ['#f5e6d3', '#f5e6d3'];
 
   return (
     <SafeAreaView style={styles.container}>
@@ -207,7 +207,7 @@ const Login = ({ navigation }: any) => {
                   activeOpacity={0.8}
                 >
                   <LinearGradient
-                    colors={isDark ? ['#800000', '#600000'] : ['#d4a574', '#c49563']}
+                    colors={['#cc0000', '#990000']}
                     style={styles.buttonGradient}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 0 }}
