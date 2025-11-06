@@ -6,7 +6,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import GFapi from '../api/GFapi';
 import { createQueryKey } from '../query/queryClient';
-import type { Goal, Challenge, ForumThread, Quote, Forum, Comment, Subcomment, Vote } from '../types/api';
+import type { Goal, Challenge, ForumThread, Quote, Forum, Comment, Subcomment, Vote, DailyAdvice, UserSettings } from '../types/api';
 
 /**
  * Hook to fetch user's goals
@@ -53,6 +53,36 @@ export function useDailyQuote() {
 }
 
 /**
+ * Hook to fetch daily AI-generated advice
+ */
+export function useDailyAdvice() {
+  return useQuery({
+    queryKey: createQueryKey('/api/daily-advice/'),
+    queryFn: () => GFapi.get<DailyAdvice>('/api/daily-advice/'),
+    staleTime: 24 * 60 * 60 * 1000, // 24 hours - advice is generated once per day
+    retry: 1, // Retry once if it fails
+  });
+}
+
+/**
+ * Hook to regenerate daily advice
+ */
+export function useRegenerateDailyAdvice() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: () => GFapi.post<DailyAdvice>('/api/daily-advice/regenerate/', {}),
+    onSuccess: () => {
+      // Invalidate daily advice query to refetch new advice
+      queryClient.invalidateQueries({ queryKey: createQueryKey('/api/daily-advice/') });
+    },
+    onError: (error) => {
+      console.error('Failed to regenerate daily advice:', error);
+    },
+  });
+}
+
+/**
  * Hook to fetch notifications
  */
 export function useNotifications() {
@@ -60,6 +90,40 @@ export function useNotifications() {
     queryKey: createQueryKey('/api/notifications/'),
     queryFn: () => GFapi.get<any[]>('/api/notifications/'),
     staleTime: 60 * 1000, // 1 minute
+  });
+}
+
+/**
+ * Hook to fetch user settings
+ */
+export function useUserSettings() {
+  return useQuery({
+    queryKey: createQueryKey('/api/user/settings/'),
+    queryFn: () => GFapi.get<UserSettings>('/api/user/settings/'),
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+}
+
+/**
+ * Hook to update user settings
+ */
+export function useUpdateUserSettings() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: (settings: Partial<UserSettings>) => 
+      GFapi.patch<UserSettings>('/api/user/settings/', settings),
+    onSuccess: () => {
+      // Invalidate settings query to refetch
+      queryClient.invalidateQueries({ queryKey: createQueryKey('/api/user/settings/') });
+      // Invalidate user query to update user data
+      queryClient.invalidateQueries({ queryKey: createQueryKey('/api/user/') });
+      // Invalidate daily advice to reflect changes
+      queryClient.invalidateQueries({ queryKey: createQueryKey('/api/daily-advice/') });
+    },
+    onError: (error) => {
+      console.error('Failed to update settings:', error);
+    },
   });
 }
 
