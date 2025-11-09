@@ -12,6 +12,7 @@ import IndividualForumPage from "./pages/forum/[id]/page";
 import ThreadPage from "./pages/forum/thread/[id]/page";
 import NotificationsPage from "./pages/notifications/notificationPage"; 
 import ProfilePage from "./pages/profile/ProfilePage";
+import ContactPage from './pages/contact/ContactPage';
 import '../index.css';
 
 import ChallengesPage from "./pages/challenges/ChallengesPage";
@@ -39,6 +40,7 @@ function App() {
           <Route path="/profile/other/:username" element={<ProfilePage />} />
           <Route path="/challenges" element={<ChallengesPage />} />
           <Route path="/chat" element={<ChatPage />} />
+          <Route path="/contact" element={<ContactPage />} />
         </Routes>
       </Router>
     </QueryClientProvider>
