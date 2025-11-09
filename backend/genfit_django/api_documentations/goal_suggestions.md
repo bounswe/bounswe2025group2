@@ -1,14 +1,14 @@
 # Goal Suggestions API Documentation
 
 ## Overview
-The Goal Suggestions API provides AI-powered recommendations for fitness goals based on user profile, existing goals, and the new goal's title and description. This endpoint uses the Groq AI API to analyze user context and generate personalized suggestions.
+The Goal Suggestions API provides AI-powered, SAFE, and REALISTIC recommendations for fitness goals based on user profile, existing goals, and the new goal's title and description. This endpoint uses the Groq AI API to analyze user context and generate personalized suggestions while validating goal safety.
 
 ## Endpoint
 
 ### Get Goal Suggestions
 `POST /api/goals/suggestions/`
 
-Get AI-powered suggestions for a new fitness goal including target value, target date, goal type, exercise tips, and personalized advice.
+Get AI-powered suggestions for a new fitness goal including target value, target date, goal type, and a concise actionable tip. The AI automatically validates if the goal is realistic and safe, providing warnings and safer alternatives for dangerous or impossible goals.
 
 **Authentication Required:** Yes
 
@@ -24,42 +24,63 @@ Get AI-powered suggestions for a new fitness goal including target value, target
 - `title` (string, required): The title of the fitness goal
 - `description` (string, optional): Detailed description of what the user wants to achieve
 
-**Response (200 OK):**
+**Response (200 OK - Realistic Goal):**
 ```json
 {
-  "suggested_target_value": 5.0,
-  "suggested_unit": "km",
-  "suggested_target_date_days": 45,
+  "is_realistic": true,
+  "warning_message": null,
+  "target_value": 5.0,
+  "unit": "km",
+  "days_to_complete": 45,
   "goal_type": "WALKING_RUNNING",
-  "exercise_tips": "Start with a walk-run program: alternate 2 minutes of running with 2 minutes of walking for 20-30 minutes, 3 times per week. Gradually increase running intervals as your endurance improves. Always warm up with 5 minutes of brisk walking and cool down with stretching. Focus on maintaining a conversational pace - you should be able to talk while running.",
-  "personalized_advice": "Based on your age (25 years old) and current fitness level, this goal is achievable within 6-8 weeks with consistent training. Since you're already working on a cycling goal, try to schedule your runs on alternate days to allow proper recovery. Your location in San Francisco offers great running trails - consider varying your routes to keep motivation high.",
-  "reasoning": "Given that this is your first 5K goal and you have an active cycling routine, I've suggested a 45-day timeline. This allows adequate time to build running-specific endurance without overtraining, especially since you're balancing multiple fitness activities."
+  "tips": [
+    "Start with walk-run intervals, 3x per week for 20-30 minutes.",
+    "Increase running time by 10% each week to avoid injury.",
+    "Stay hydrated and stretch after each session."
+  ]
+}
+```
+
+**Response (200 OK - Unrealistic Goal with Warning):**
+```json
+{
+  "is_realistic": false,
+  "warning_message": "Losing 30kg in 1 week is medically dangerous and impossible. A safe target is 0.5-1kg per week. Consider a 30-60 week timeline for sustainable weight loss.",
+  "target_value": 0.5,
+  "unit": "kg",
+  "days_to_complete": 7,
+  "goal_type": "WORKOUT",
+  "tips": [
+    "Focus on sustainable calorie deficit with regular exercise.",
+    "Combine cardio with strength training 4-5 times weekly.",
+    "Prioritize protein intake and adequate sleep for recovery."
+  ]
 }
 ```
 
 **Response Fields:**
-- `suggested_target_value` (number): Recommended target value for the goal (e.g., 5.0 for 5 kilometers)
-- `suggested_unit` (string): Unit of measurement (e.g., "km", "minutes", "reps", "meters")
-- `suggested_target_date_days` (number): Recommended number of days from today to achieve the goal (7-90 days)
+- `is_realistic` (boolean): `true` if the goal is safe and achievable, `false` if dangerous or impossible
+- `warning_message` (string or null): If `is_realistic` is `false`, contains explanation of why the goal is unrealistic and suggests a safer alternative. Otherwise `null`.
+- `target_value` (number): Recommended target value (realistic even if user's request was unrealistic)
+- `unit` (string): Unit of measurement (e.g., "km", "minutes", "reps", "meters", "kg")
+- `days_to_complete` (number): Recommended days from today to achieve the goal (1-6000 days)
 - `goal_type` (string): One of: `WALKING_RUNNING`, `WORKOUT`, `CYCLING`, `SWIMMING`, `SPORTS`
-- `exercise_tips` (string): Specific, actionable advice on how to perform the exercise and achieve the goal
-- `personalized_advice` (string): Customized advice based on the user's profile, age, current goals, and fitness level
-- `reasoning` (string): Brief explanation of why these specific values and timeline were suggested
+- `tips` (array of strings): Exactly 3 actionable tips (each max 150 characters), covering different aspects like technique, progression, and recovery
 
 **Error Responses:**
 
-400 Bad Request:
+400 Bad Request - Missing title:
 ```json
 {
   "error": "Title is required"
 }
 ```
 
-500 Internal Server Error:
+500 Internal Server Error - AI service failure:
 ```json
 {
   "error": "Failed to generate suggestions",
-  "detail": "Error message"
+  "detail": "AI suggestion service error: Connection error"
 }
 ```
 
@@ -72,16 +93,25 @@ The AI analyzes the following user information:
 3. **Completed Goals**: Recently finished goals
 4. **Challenge Participation**: Active challenges and progress
 
-### Suggestion Generation
+### Suggestion Generation & Safety Validation
 The AI considers:
 - User's current fitness level based on existing goals
 - Age and profile information for realistic recommendations
 - Potential conflicts with existing activities to avoid overtraining
 - Goal-specific best practices and training methodologies
 - Personalization based on user's location, bio, and fitness history
+- **Safety validation**: Detects dangerous or impossible goals (e.g., extreme weight loss, superhuman distances)
+- **Automatic corrections**: Provides safer alternatives for unrealistic goals
+
+### Retry Logic
+The system includes automatic retry logic:
+- If AI returns invalid JSON, it retries up to 3 times
+- Each retry includes stronger instructions to return valid JSON
+- Temperature set to 0.5 for more consistent responses
+- After 4 failed attempts, returns 500 error
 
 ### Error Handling
-If the AI service is unavailable or fails, the endpoint returns a 500 error. The frontend should display an appropriate message to the user (e.g., "Suggestions feature is currently unavailable. Please try again later or create your goal manually.").
+If the AI service is unavailable or fails after retries, the endpoint returns a 500 error. The frontend should display: "Suggestions feature is currently unavailable. Please create your goal manually."
 
 ## Usage Example
 
@@ -101,10 +131,24 @@ async function getGoalSuggestions(title: string, description: string) {
   });
   
   if (!response.ok) {
-    throw new Error('Failed to get suggestions');
+    throw new Error('Suggestions feature is currently unavailable');
   }
   
-  return await response.json();
+  const data = await response.json();
+  
+  // Check if goal is unrealistic
+  if (!data.is_realistic) {
+    showWarning({
+      title: "⚠️ Unrealistic Goal Detected",
+      message: data.warning_message,
+      suggestion: `We suggest: ${data.target_value} ${data.unit} in ${data.days_to_complete} days`,
+      tips: data.tips
+    });
+  } else {
+    showSuggestions(data);
+  }
+  
+  return data;
 }
 
 // Usage
@@ -113,9 +157,11 @@ const suggestions = await getGoalSuggestions(
   "I want to be able to run 5 kilometers without stopping"
 );
 
-console.log(`Suggested target: ${suggestions.suggested_target_value} ${suggestions.suggested_unit}`);
-console.log(`Timeline: ${suggestions.suggested_target_date_days} days`);
-console.log(`Goal type: ${suggestions.goal_type}`);
+console.log(`Realistic: ${suggestions.is_realistic}`);
+console.log(`Target: ${suggestions.target_value} ${suggestions.unit}`);
+console.log(`Timeline: ${suggestions.days_to_complete} days`);
+console.log(`Tips:`);
+suggestions.tips.forEach((tip, i) => console.log(`  ${i + 1}. ${tip}`));
 ```
 
 ### Python (Backend Testing)
@@ -134,7 +180,102 @@ def test_goal_suggestions():
     }
     
     response = requests.post(url, json=data, headers=headers)
-    print(response.json())
+    result = response.json()
+    
+    if result.get('is_realistic'):
+        print(f"✅ Realistic goal: {result['target_value']} {result['unit']} in {result['days_to_complete']} days")
+        print("Tips:")
+        for i, tip in enumerate(result['tips'], 1):
+            print(f"  {i}. {tip}")
+    else:
+        print(f"⚠️ Unrealistic goal!")
+        print(f"Warning: {result['warning_message']}")
+        print(f"Safe alternative: {result['target_value']} {result['unit']} in {result['days_to_complete']} days")
+        print("Tips:")
+        for i, tip in enumerate(result['tips'], 1):
+            print(f"  {i}. {tip}")
+    
+    print(f"Tip: {result['tip']}")
+```
+
+## Example Scenarios
+
+### Realistic Goal Example
+**Request:**
+```json
+{
+  "title": "Start running regularly",
+  "description": "I want to run 5K"
+}
+```
+
+**Response:**
+```json
+{
+  "is_realistic": true,
+  "warning_message": null,
+  "target_value": 5.0,
+  "unit": "km",
+  "days_to_complete": 45,
+  "goal_type": "WALKING_RUNNING",
+  "tips": [
+    "Start with walk-run intervals, 3x per week for 20-30 minutes.",
+    "Increase running time by 10% each week to avoid injury.",
+    "Stay hydrated and stretch after each session."
+  ]
+}
+```
+
+### Unrealistic Goal Example (Dangerous Weight Loss)
+**Request:**
+```json
+{
+  "title": "Rapid weight loss",
+  "description": "I want to lose 30kg in one week"
+}
+```
+
+**Response:**
+```json
+{
+  "is_realistic": false,
+  "warning_message": "Losing 30kg in 1 week is medically dangerous and impossible. A safe target is 0.5-1kg per week. Consider a 30-60 week timeline for sustainable weight loss.",
+  "target_value": 0.5,
+  "unit": "kg",
+  "days_to_complete": 7,
+  "goal_type": "WORKOUT",
+  "tips": [
+    "Focus on sustainable calorie deficit with regular exercise.",
+    "Combine cardio with strength training 4-5 times weekly.",
+    "Prioritize protein intake and adequate sleep for recovery."
+  ]
+}
+```
+
+### Unrealistic Goal Example (Impossible Distance)
+**Request:**
+```json
+{
+  "title": "Ultra run today",
+  "description": "Run 200km today"
+}
+```
+
+**Response:**
+```json
+{
+  "is_realistic": false,
+  "warning_message": "Running 200km in one day exceeds human physical limits. World-class ultramarathoners take 20+ hours for 100km. Start with a 10K goal.",
+  "target_value": 10.0,
+  "unit": "km",
+  "days_to_complete": 60,
+  "goal_type": "WALKING_RUNNING",
+  "tips": [
+    "Build distance gradually with long runs once per week.",
+    "Run at conversational pace to build aerobic base.",
+    "Include rest days for muscle recovery and injury prevention."
+  ]
+}
 ```
 
 ## Goal Types Reference
@@ -142,36 +283,45 @@ def test_goal_suggestions():
 | Goal Type | Description | Common Units | Example Activities |
 |-----------|-------------|--------------|-------------------|
 | WALKING_RUNNING | Walking or running activities | km, miles, steps | Running, jogging, walking |
-| WORKOUT | General workout/training | minutes, hours, reps | Gym workouts, strength training |
+| WORKOUT | General workout/training | minutes, hours, reps, kg | Gym workouts, strength training, weight loss |
 | CYCLING | Cycling activities | km, miles | Road cycling, mountain biking |
 | SWIMMING | Swimming activities | meters, km, laps | Pool swimming, open water |
-| SPORTS | Sport-specific activities | minutes, hours, games | Basketball, tennis, soccer |
+| SPORTS | Sport-specific activities | minutes, hours, games, events | Basketball, tennis, soccer, competitions |
 
 ## Best Practices
 
 1. **Provide Clear Descriptions**: The more detailed the description, the better the AI can tailor suggestions
 2. **Update Profile**: Keep your profile information current for more personalized advice
 3. **Review Suggestions**: AI suggestions are recommendations - adjust based on your personal knowledge and comfort level
-4. **Consult Professionals**: For medical conditions or concerns, consult healthcare providers before starting new fitness programs
-5. **Progressive Loading**: Follow the suggested timeline to avoid injury and ensure sustainable progress
+4. **Heed Warnings**: If `is_realistic` is `false`, seriously consider the warning message
+5. **Consult Professionals**: For medical conditions or concerns, consult healthcare providers before starting new fitness programs
+6. **Progressive Loading**: Follow the suggested timeline to avoid injury and ensure sustainable progress
 
 ## Integration Notes
 
 ### For Frontend Developers
 - Display suggestions in a popup/modal when users create new goals
-- Allow users to accept, modify, or ignore suggestions
+- **Check `is_realistic` flag**: Show warning UI if `false`
+- For unrealistic goals:
+  - Display warning message prominently
+  - Show the safer alternative suggestion
+  - Give options: "Use Safe Alternative" or "Modify My Goal"
+- For realistic goals:
+  - Show target, timeline, goal type, and tip
+  - Allow users to accept (auto-fill form) or modify
 - Pre-fill goal creation form with suggested values
-- Show exercise tips and personalized advice prominently
-- Use the `goal_type` to set the correct goal category
-- **Handle 500 errors gracefully**: Show message like "Suggestions feature is currently unavailable. Please create your goal manually."
-- Consider showing a fallback UI that allows manual goal creation without suggestions
+- Use the `goal_type` to set the correct goal category dropdown
+- Keep UI simple: Display ONE tip, not multiple fields
+- **Handle 500 errors gracefully**: Show "Suggestions feature is currently unavailable. Please create your goal manually."
 
 ### For Backend Developers
 - Endpoint requires authentication via DRF authentication
 - Uses Groq API - ensure `GROQ_API_KEY` is set in environment
-- Returns 500 error if AI service fails (no fallback suggestions)
-- Response time: typically 2-5 seconds depending on AI service
-- Consider caching suggestions for same title/description pairs
+- Temperature set to 0.5 for consistent responses
+- Automatic retry logic (up to 3 retries) for invalid JSON
+- Response time: typically 2-5 seconds (up to 10 seconds with retries)
+- Returns 500 error if all retries fail
+- Always returns 200 for successful AI responses (check `is_realistic` in response)
 
 ## Environment Variables
 
