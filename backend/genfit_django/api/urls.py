@@ -14,8 +14,7 @@ from .separate_views import parse_food
 from .separate_views import cat_info
 from .separate_views import fitness_gif
 from .separate_views import ip_location
-from .separate_views import fitness_gif
-from .separate_views import ip_location
+from .separate_views import daily_advice_views
 
 
 urlpatterns = [
@@ -24,6 +23,8 @@ urlpatterns = [
     path('login/', views.user_login, name='login'),
     path('logout/', views.user_logout, name='logout'),
     path('user/', views.get_user, name='get_user'),
+    path('user/login-stats/', views.get_login_stats, name='get_login_stats'),
+    path('user/settings/', views.user_settings, name='user_settings'),
     path('users/', views.get_users, name='get_users'),
     path('csrf-token/', views.get_csrf_token, name='get_csrf_token'),
     path('change-password/', views.change_password, name='change_password'),
@@ -40,6 +41,10 @@ urlpatterns = [
     # Quote endpoints
     path('quotes/random/', quote_views.get_random_quote, name='get_random_quote'),
     path('quotes/daily/', quote_views.get_daily_quote, name='get_daily_quote'),
+
+    # Daily Advice endpoints
+    path('daily-advice/', daily_advice_views.get_daily_advice, name='get_daily_advice'),
+    path('daily-advice/regenerate/', daily_advice_views.regenerate_daily_advice, name='regenerate_daily_advice'),
 
     # Nutrition endpoints
     path('parse_food/', parse_food.parse_food, name='parse_food'),

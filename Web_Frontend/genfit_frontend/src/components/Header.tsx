@@ -65,7 +65,7 @@ const Header: React.FC<HeaderProps> = ({ onSearch }) => {
         break;
       case 'settings':
         // Navigate to settings page
-        console.log('Navigate to settings');
+        navigate('/settings');
         break;
       case 'logout':
         handleLogout();
