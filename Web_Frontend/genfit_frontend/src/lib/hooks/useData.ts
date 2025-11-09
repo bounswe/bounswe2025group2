@@ -135,8 +135,6 @@ export function useUserStats() {
   const { data: goals = [] } = useGoals();
   const { data: challenges = [] } = useChallengesLegacy();
 
-  console.log(goals)
-
   return {
     activeGoals: goals.filter(goal => goal.status === 'ACTIVE').length,
     completedChallenges: challenges.filter(challenge => challenge.is_active === false).length,

@@ -51,7 +51,7 @@ interface ActivityDashboardProps {
   goals: Goal[];
   challenges: Challenge[];
   activeGoals: number;
-  completedChallenges: number;
+  joinedChallenges: number;
 }
 
 interface CalendarDay {
@@ -66,7 +66,7 @@ interface CalendarDay {
   }>;
 }
 
-export function ActivityDashboard({ goals, challenges, activeGoals, completedChallenges }: ActivityDashboardProps) {
+export function ActivityDashboard({ goals, challenges, activeGoals, joinedChallenges }: ActivityDashboardProps) {
   const navigate = useNavigate();
   const { data: loginStats, isLoading: statsLoading } = useLoginStats();
 
@@ -242,8 +242,8 @@ export function ActivityDashboard({ goals, challenges, activeGoals, completedCha
               <div className="stat-label">Active Goals</div>
             </div>
             <div className="stat-card">
-              <div className="stat-number">{completedChallenges}</div>
-              <div className="stat-label">Completed</div>
+              <div className="stat-number">{joinedChallenges}</div>
+              <div className="stat-label">Joined Challenges</div>
             </div>
           </div>
 

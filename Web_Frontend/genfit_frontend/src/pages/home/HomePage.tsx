@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';
-import { useIsAuthenticated, useGoals, useChallenges, useUserStats, useDailyQuote } from '../../lib';
+import { useIsAuthenticated, useGoals, useChallenges, useUserStats, useDailyQuote, useUserChallenges } from '../../lib';
 import { GFapi } from '../../lib/api/GFapi';
 import type { FoodItem } from '../../lib/types/api';
 
@@ -17,6 +17,7 @@ function HomePage() {
   const { data: challenges = [], isLoading: challengesLoading, error: challengesError } = useChallenges();
   const { data: dailyQuote, error: quoteError } = useDailyQuote();
   const stats = useUserStats();
+  const userChallenges = useUserChallenges();
 
   // Nutrition analyzer state
   const [query, setQuery] = useState('');
@@ -109,7 +110,7 @@ function HomePage() {
             goals={goals} 
             challenges={challenges}
             activeGoals={stats.activeGoals}
-            completedChallenges={stats.completedChallenges}
+            joinedChallenges={userChallenges.data?.length || 0}
           />
         </section>
 
