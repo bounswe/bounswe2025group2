@@ -1,19 +1,18 @@
 import React from 'react';
 import { View, StyleSheet, Pressable } from 'react-native';
-import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
+// import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import CustomText from '../components/CustomText';
 import { useTheme } from '../context/ThemeContext';
 
 // Import SVG icons
 import HomeIcon from '../assets/images/home.svg';
 import CommunitiesIcon from '../assets/images/communities.svg';
-import NewIcon from '../assets/images/new.svg';
 import MentorsIcon from '../assets/images/mentors.svg';
 import ChatsIcon from '../assets/images/chats.svg';
 import GoalsIcon from '../assets/images/target.svg';
 import ChallengesIcon from '../assets/images/challenge.svg';
 
-const BottomBar = ({ state, navigation }: BottomTabBarProps) => {
+const BottomBar = ({ state, navigation }: any) => {
   const { colors } = useTheme();
 
   const navigateToScreen = (name: string) => {
@@ -42,22 +41,22 @@ const BottomBar = ({ state, navigation }: BottomTabBarProps) => {
           Home
         </CustomText>
       </Pressable>
-      <Pressable style={styles.tab} onPress={() => navigateToScreen('AddNew')}>
-        <NewIcon 
-          width={32} 
-          height={32} 
-          fill={isActiveRoute('AddNew') ? colors.active : colors.passive} 
+      <Pressable style={styles.tab} onPress={() => navigateToScreen('Forum')}>
+        <CommunitiesIcon
+          width={32}
+          height={32}
+          fill={isActiveRoute('Forum') ? colors.active : colors.passive}
         />
-        <CustomText 
+        <CustomText
           style={[
-            styles.label, 
-            { 
-              color: isActiveRoute('AddNew') ? colors.active : colors.passive,
-              fontWeight: isActiveRoute('AddNew') ? 'bold' : 'normal'
+            styles.label,
+            {
+              color: isActiveRoute('Forum') ? colors.active : colors.passive,
+              fontWeight: isActiveRoute('Forum') ? 'bold' : 'normal'
             }
           ]}
         >
-          New
+          Forum
         </CustomText>
       </Pressable>
       <Pressable style={styles.tab} onPress={() => navigateToScreen('Chats')}>

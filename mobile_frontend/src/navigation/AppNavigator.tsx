@@ -6,7 +6,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 
 // Import pages
 import Home from '../Pages/Home';
-import AddNew from '../Pages/Add New';         // ✅ filename düzeltilmiş
+// import AddNew from '../Pages/Add New';  // Removed Add New page
 import Chats from '../Pages/Chats';
 import Settings from '../Pages/Settings';
 import Login from '../Pages/Login';
@@ -20,6 +20,9 @@ import Challenges from '../Pages/Challenges';
 import Notifications from '../Pages/Notifications';
 import NotificationPreferences from '../Pages/NotificationPreferences';
 import ChatDetail from '../Pages/ChatDetail';
+import Forum from '../Pages/Forum.tsx';
+import ForumDetail from '../Pages/ForumDetail.tsx';
+import ThreadDetail from '../Pages/ThreadDetail.tsx';
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -41,8 +44,8 @@ const MainTabs = () => {
         headerShown: false,
       }}
     >
-      <Tab.Screen name="Home" component={withLayout(Home)} />
-      <Tab.Screen name="AddNew" component={withLayout(AddNew)} />
+  <Tab.Screen name="Home" component={withLayout(Home)} />
+  <Tab.Screen name="Forum" component={withLayout(Forum)} />
       <Tab.Screen name="Chats" component={withLayout(Chats)} />
       <Tab.Screen name="Settings" component={withLayout(Settings)} />
       <Tab.Screen name="Goals" component={withLayout(Goals)} />
@@ -83,6 +86,16 @@ const AppNavigator = () => {
         name="ChatDetail" 
         component={ChatDetail}
         options={{ title: 'Chat' }}
+      />
+      <Stack.Screen
+        name="ForumDetail"
+        component={ForumDetail}
+        options={{ title: 'Threads' }}
+      />
+      <Stack.Screen
+        name="ThreadDetail"
+        component={ThreadDetail}
+        options={{ title: 'Thread' }}
       />
     </Stack.Navigator>
   );
