@@ -50,6 +50,25 @@ export interface User {
   email: string;
   user_type: string;
   is_verified_coach: boolean;
+  current_streak?: number;
+  longest_streak?: number;
+  last_login_date?: string;
+  total_login_days?: number;
+  daily_advice_enabled?: boolean;
+}
+
+export interface LoginStats {
+  current_streak: number;
+  longest_streak: number;
+  total_login_days: number;
+  last_login_date: string | null;
+  streak_active: boolean;
+  days_until_break: number | null;
+  login_calendar: Array<{
+    date: string;
+    logged_in: boolean;
+  }>;
+  logged_in_today: boolean;
 }
 
 // Goal Types
@@ -210,6 +229,22 @@ export interface Quote {
   author: string;
 }
 
+// Daily Advice Types
+export interface DailyAdvice {
+  id?: number;
+  user?: number;
+  advice_text?: string;
+  date?: string;
+  created_at?: string;
+  enabled: boolean;
+  message?: string;
+}
+
+// User Settings Types
+export interface UserSettings {
+  daily_advice_enabled: boolean;
+}
+
 // Chat Types
 export interface ChatUser {
   id: number;
@@ -250,6 +285,22 @@ export interface AiMessage {
   message: string;
   created_at: string;
   sender: string;
+}
+
+// Nutrition Types
+export interface FoodItem {
+  food_name: string;
+  nf_calories: number;
+  nf_protein: number;
+  nf_total_carbohydrate: number;
+  nf_total_fat: number;
+  serving_qty: number;
+  serving_unit: string;
+  serving_weight_grams: number;
+}
+
+export interface NutritionResponse {
+  foods: FoodItem[];
 }
 
 // Configuration

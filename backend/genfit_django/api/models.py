@@ -17,6 +17,50 @@ class UserWithType(AbstractUser):
     )
     user_type = models.CharField(choices=[('Coach', 'Coach'), ('User', 'User')], max_length=10)
     is_verified_coach = models.BooleanField(default=False)
+    
+    # Daily login tracking fields
+    current_streak = models.IntegerField(default=0, help_text='Current consecutive days logged in')
+    longest_streak = models.IntegerField(default=0, help_text='Longest consecutive days logged in')
+    last_login_date = models.DateField(null=True, blank=True, help_text='Last date user logged in')
+    total_login_days = models.IntegerField(default=0, help_text='Total number of unique days logged in')
+    
+    # User preferences
+    daily_advice_enabled = models.BooleanField(default=True, help_text='Enable AI-generated daily advice')
+    
+    def update_login_streak(self):
+        """Update login streak when user logs in"""
+        from datetime import date, timedelta
+        today = date.today()
+        
+        # First time login
+        if self.last_login_date is None:
+            self.current_streak = 1
+            self.longest_streak = 1
+            self.total_login_days = 1
+            self.last_login_date = today
+            self.save()
+            return
+        
+        # Already logged in today
+        if self.last_login_date == today:
+            return
+        
+        # Logged in yesterday - continue streak
+        yesterday = today - timedelta(days=1)
+        if self.last_login_date == yesterday:
+            self.current_streak += 1
+            self.total_login_days += 1
+        # Streak broken - start new streak
+        else:
+            self.current_streak = 1
+            self.total_login_days += 1
+        
+        # Update longest streak if current is longer
+        if self.current_streak > self.longest_streak:
+            self.longest_streak = self.current_streak
+        
+        self.last_login_date = today
+        self.save()
 
 
 class FitnessGoal(models.Model):
@@ -373,3 +417,20 @@ class Quote(models.Model):
     
     def __str__(self):
         return f'"{self.text}" - {self.author}'
+
+
+class DailyAdvice(models.Model):
+    user = models.ForeignKey(UserWithType, on_delete=models.CASCADE, related_name='daily_advices')
+    advice_text = models.TextField(help_text='AI-generated daily advice')
+    date = models.DateField(help_text='Date this advice was generated for')
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        ordering = ['-date']
+        unique_together = ('user', 'date')
+        indexes = [
+            models.Index(fields=['user', 'date']),
+        ]
+    
+    def __str__(self):
+        return f"Daily advice for {self.user.username} on {self.date}"

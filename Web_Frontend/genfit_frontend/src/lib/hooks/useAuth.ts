@@ -6,7 +6,8 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import AuthService from '../auth/authService';
 import { createQueryKey } from '../query/queryClient';
-import type { LoginCredentials, RegisterData } from '../types/api';
+import GFapi from '../api/GFapi';
+import type { LoginCredentials, RegisterData, LoginStats } from '../types/api';
 
 /**
  * Hook to get current user data
@@ -138,6 +139,18 @@ export function useOtherUserProfilePicture(username: string | undefined) {
     enabled: !!username,
     staleTime: 5 * 60 * 1000, // 5 minutes
     retry: false, // Don't retry on failures (user might not have profile picture)
+  });
+}
+
+/**
+ * Hook to fetch login statistics for the current user
+ */
+export function useLoginStats() {
+  return useQuery<LoginStats>({
+    queryKey: createQueryKey('/api/user/login-stats/'),
+    queryFn: () => GFapi.get<LoginStats>('/api/user/login-stats/'),
+    staleTime: 1 * 60 * 1000, // 1 minute - refresh more frequently for accurate streak info
+    retry: false,
   });
 }
 
