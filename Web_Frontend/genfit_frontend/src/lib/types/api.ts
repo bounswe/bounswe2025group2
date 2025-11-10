@@ -96,6 +96,7 @@ export interface Challenge {
   end_date: string;
   target_value: number;
   challenge_type: string;
+  difficulty_level: 'Beginner' | 'Intermediate' | 'Advanced';
   unit: string;
   location?: string;
   longitude?: number;
@@ -133,6 +134,7 @@ export interface CreateChallengeData {
   title: string;
   description: string;
   challenge_type: string;
+  difficulty_level: 'Beginner' | 'Intermediate' | 'Advanced';
   target_value: number;
   unit: string;
   start_date: string;
