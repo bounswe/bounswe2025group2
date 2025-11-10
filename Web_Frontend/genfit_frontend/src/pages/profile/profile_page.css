@@ -126,3 +126,17 @@
 .empty-goals .empty-desc { font-size: 13px; color: #6b7280; margin-bottom: 12px; }
 
 
+.info-item.half {
+  grid-column: span 1;
+}
+
+.info-item.full {
+  grid-column: span 2;
+}
+
+/* Ensure the info-grid has 2 columns */
+.info-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px 24px;
+}
