@@ -216,6 +216,7 @@ const Challenges: React.FC = () => {
   // Create Challenge
   const [title, setTitle] = useState('');
   const [challengeType, setChallengeType] = useState('');
+  const [difficultyLevel, setDifficultyLevel] = useState<'Beginner' | 'Intermediate' | 'Advanced'>('Beginner');
   const [targetValue, setTargetValue] = useState('');
   const [unit, setUnit] = useState('');
 
@@ -305,6 +306,7 @@ const Challenges: React.FC = () => {
   const resetForm = () => {
     setTitle('');
     setChallengeType('');
+    setDifficultyLevel('Beginner');
     setTargetValue('');
     setUnit('');
     setStartDate(null);
@@ -350,6 +352,7 @@ const Challenges: React.FC = () => {
       const body: any = {
         title: title.trim(),
         challenge_type: challengeType.trim(),
+        difficulty_level: difficultyLevel,
         target_value: Number(targetValue),
         unit: unit.trim(),
         start_date: startDate!.toISOString(),
@@ -472,6 +475,34 @@ const Challenges: React.FC = () => {
               onChangeText={setChallengeType}
               style={styles.input}
             />
+            
+            {/* Difficulty Level Selector */}
+            <View style={styles.difficultyContainer}>
+              <Text style={styles.difficultyLabel}>Difficulty Level *</Text>
+              <View style={styles.difficultyButtons}>
+                {(['Beginner', 'Intermediate', 'Advanced'] as const).map((level) => (
+                  <Pressable
+                    key={level}
+                    onPress={() => setDifficultyLevel(level)}
+                    style={[
+                      styles.difficultyButton,
+                      difficultyLevel === level && styles.difficultyButtonActive,
+                      level === 'Beginner' && difficultyLevel === level && styles.difficultyBeginner,
+                      level === 'Intermediate' && difficultyLevel === level && styles.difficultyIntermediate,
+                      level === 'Advanced' && difficultyLevel === level && styles.difficultyAdvanced,
+                    ]}
+                  >
+                    <Text style={[
+                      styles.difficultyButtonText,
+                      difficultyLevel === level && styles.difficultyButtonTextActive
+                    ]}>
+                      {level}
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
+            </View>
+
             <TextInput
               placeholder="Target value *  (number)"
               value={targetValue}
@@ -1596,6 +1627,53 @@ const styles = StyleSheet.create({
   filterLabel: {
     fontSize: 16,
     color: '#8a2e2e',
+  },
+  difficultyContainer: {
+    marginBottom: 10,
+  },
+  difficultyLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#8a2e2e',
+    marginBottom: 8,
+  },
+  difficultyButtons: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  difficultyButton: {
+    flex: 1,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#b46d6d',
+    backgroundColor: '#fff',
+    alignItems: 'center',
+  },
+  difficultyButtonActive: {
+    borderWidth: 2,
+  },
+  difficultyBeginner: {
+    backgroundColor: '#d1fae5',
+    borderColor: '#10b981',
+  },
+  difficultyIntermediate: {
+    backgroundColor: '#fef3c7',
+    borderColor: '#f59e0b',
+  },
+  difficultyAdvanced: {
+    backgroundColor: '#fee2e2',
+    borderColor: '#ef4444',
+  },
+  difficultyButtonText: {
+    fontSize: 13,
+    color: '#8a2e2e',
+    fontWeight: '500',
+  },
+  difficultyButtonTextActive: {
+    fontWeight: '700',
+    color: '#1f2937',
   },
 });
 
