@@ -4,7 +4,7 @@ from django.core.validators import RegexValidator
 from django.contrib.auth import get_user_model
 from django.utils import timezone
 from .utils import geocode_location
-from .models import Notification, UserWithType, FitnessGoal, Profile, Forum, Thread, Comment, Subcomment, Vote, Challenge, ChallengeParticipant, AiTutorChat, AiTutorResponse, UserAiMessage, DailyAdvice
+from .models import Notification, UserWithType, FitnessGoal, Profile, Forum, Thread, Comment, Subcomment, Vote, Challenge, ChallengeParticipant, AiTutorChat, AiTutorResponse, UserAiMessage, DailyAdvice, MentorMenteeRelationship
 from django.utils import timezone
 
 
@@ -460,4 +460,92 @@ class DailyAdviceSerializer(serializers.ModelSerializer):
         model = DailyAdvice
         fields = ['id', 'user', 'advice_text', 'date', 'created_at']
         read_only_fields = ['created_at']
+
+
+class MentorMenteeRelationshipSerializer(serializers.ModelSerializer):
+    sender_username = serializers.CharField(source='sender.username', read_only=True)
+    receiver_username = serializers.CharField(source='receiver.username', read_only=True)
+    mentor_username = serializers.CharField(source='mentor.username', read_only=True)
+    mentee_username = serializers.CharField(source='mentee.username', read_only=True)
+
+    class Meta:
+        model = MentorMenteeRelationship
+        fields = [
+            'id', 'sender', 'receiver', 'mentor', 'mentee', 'status',
+            'sender_username', 'receiver_username', 'mentor_username', 'mentee_username',
+            'created_at', 'updated_at'
+        ]
+        read_only_fields = ['id', 'sender', 'receiver', 'created_at', 'updated_at']
+
+    def validate(self, data):
+        """Validate the mentor-mentee relationship data"""
+        request = self.context.get('request')
+        if not request or not request.user.is_authenticated:
+            raise serializers.ValidationError("Authentication required")
+        
+        mentor = data.get('mentor')
+        mentee = data.get('mentee')
+        
+        if mentor.id == mentee.id:
+            raise serializers.ValidationError("Mentor and mentee cannot be the same user")
+        
+        # Check if mentor is actually a coach
+        if mentor.user_type != 'Coach':
+            raise serializers.ValidationError("Mentor must be a coach")
+        
+        # Check if mentee is a regular user
+        if mentee.user_type != 'User':
+            raise serializers.ValidationError("Mentee must be a regular user")
+        
+        # Check if relationship already exists
+        existing = MentorMenteeRelationship.objects.filter(
+            mentor=mentor, mentee=mentee
+        ).exclude(status='REJECTED').exists()
+        
+        if existing:
+            raise serializers.ValidationError("A relationship between this mentor and mentee already exists")
+        
+        return data
+
+    def create(self, validated_data):
+        """Create a new mentor-mentee relationship request"""
+        request = self.context.get('request')
+        user = request.user
+        
+        mentor = validated_data['mentor']
+        mentee = validated_data['mentee']
+        
+        # Determine sender and receiver based on who is making the request
+        if user == mentor:
+            # Coach is sending the request to be a mentor
+            sender = mentor
+            receiver = mentee
+        elif user == mentee:
+            # User is sending the request to have a mentor
+            sender = mentee
+            receiver = mentor
+        else:
+            raise serializers.ValidationError("You can only create relationships for yourself")
+        
+        # Create the relationship
+        relationship = MentorMenteeRelationship.objects.create(
+            sender=sender,
+            receiver=receiver,
+            mentor=mentor,
+            mentee=mentee,
+            status='PENDING'
+        )
+        
+        # Create notification for the receiver
+        Notification.objects.create(
+            recipient=receiver,
+            sender=sender,
+            notification_type='MENTOR_REQUEST',
+            title='New Mentor Request',
+            message=f'{sender.username} wants to establish a mentor-mentee relationship with you.',
+            related_object_id=relationship.id,
+            related_object_type='MentorMenteeRelationship'
+        )
+        
+        return relationship
 

@@ -15,6 +15,7 @@ from .separate_views import cat_info
 from .separate_views import fitness_gif
 from .separate_views import ip_location
 from .separate_views import daily_advice_views
+from .separate_views import mentor_relationships
 
 
 urlpatterns = [
@@ -122,6 +123,13 @@ urlpatterns = [
 
     # Challenge search
     path('challenges/search/', challenges.search_challenges, name='search-challenges'),
+
+    # Mentor-Mentee Relationship endpoints
+    path('mentor-relationships/', mentor_relationships.create_mentor_relationship, name='create_mentor_relationship'),
+    path('mentor-relationships/user/', mentor_relationships.get_user_mentor_relationships, name='get_user_mentor_relationships'),
+    path('mentor-relationships/<int:relationship_id>/', mentor_relationships.get_mentor_relationship_detail, name='get_mentor_relationship_detail'),
+    path('mentor-relationships/<int:relationship_id>/respond/', mentor_relationships.respond_to_mentor_relationship, name='respond_to_mentor_relationship'),
+    path('mentor-relationships/<int:relationship_id>/terminate/', mentor_relationships.terminate_mentor_relationship, name='terminate_mentor_relationship'),
 ]
 
 # Routers
