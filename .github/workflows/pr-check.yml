@@ -36,7 +36,7 @@ jobs:
             -e POSTGRES_DB=group2db \
             -e POSTGRES_USER=group2 \
             -e POSTGRES_PASSWORD=group2 \
-            -e POSTGRES_HOST=localhost \
+            -e POSTGRES_HOST=127.0.0.1 \
             -e POSTGRES_PORT=5432 \
             -e SECRET_KEY=django-insecure-test-key \
             -e DEBUG=True \
