@@ -281,6 +281,62 @@ def get_csrf_token(request):
     return Response({'csrfToken': get_token(request)})
 
 
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def contact_form_submission(request):
+    """
+    Handle contact form submissions
+    """
+    # Extract form data
+    name = request.data.get('name', '').strip()
+    email = request.data.get('email', '').strip()
+    subject = request.data.get('subject', '').strip()
+    message = request.data.get('message', '').strip()
+
+    # Basic validation
+    if not all([name, email, subject, message]):
+        return Response(
+            {'error': 'All fields are required'}, 
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    # Email validation
+    if '@' not in email or '.' not in email:
+        return Response(
+            {'error': 'Please provide a valid email address'}, 
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    try:
+
+        send_mail(
+             subject=f'Contact Form: {subject}',
+             message=f'''
+             Name: {name}
+             Email: {email}
+             Subject: {subject}
+             
+             Message:
+             {message}
+             ''',
+             from_email=settings.DEFAULT_FROM_EMAIL,
+             recipient_list=['support@genfit.com'],  # Your support email
+             fail_silently=False,
+         )
+
+
+        return Response({
+            'message': 'Thank you for your message! We will get back to you soon.'
+        }, status=status.HTTP_200_OK)
+
+    except Exception as e:
+        print(f"Error processing contact form: {str(e)}")
+        return Response(
+            {'error': 'There was an error submitting your message. Please try again.'},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+
 @api_view(['GET', 'PATCH'])
 @permission_classes([IsAuthenticated])
 def user_settings(request):

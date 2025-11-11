@@ -122,6 +122,8 @@ urlpatterns = [
 
     # Challenge search
     path('challenges/search/', challenges.search_challenges, name='search-challenges'),
+
+    path('contact/', views.contact_form_submission, name='contact_form_submission'),
 ]
 
 # Routers
