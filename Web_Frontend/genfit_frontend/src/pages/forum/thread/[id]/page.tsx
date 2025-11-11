@@ -70,10 +70,7 @@ const ThreadPage: React.FC = () => {
     try {
       await updateThreadMutation.mutateAsync({
         threadId,
-        data: {
-          ...thread,
-          ...threadData,
-        }
+        data: threadData
       });
       setIsEditModalOpen(false);
     } catch (error) {
