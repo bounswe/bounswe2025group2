@@ -701,7 +701,7 @@ export function useUpdateThread() {
   return useMutation({
     mutationFn: ({ threadId, data }: { threadId: number; data: Partial<ForumThread> }) =>
       GFapi.put<ForumThread>(`/api/threads/${threadId}/`, data),
-    onSuccess: (data, variables) => {
+    onSuccess: (_data, variables) => {
       // Invalidate the specific thread
       queryClient.invalidateQueries({ 
         queryKey: createQueryKey(`/api/threads/${variables.threadId}/`) 
