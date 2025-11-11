@@ -9,6 +9,21 @@ on:
 jobs:
   build-validation:
     runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_DB: group2db
+          POSTGRES_USER: group2
+          POSTGRES_PASSWORD: group2
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U group2 -d group2db"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     
     steps:
       - name: Checkout code
@@ -28,12 +43,20 @@ jobs:
           docker build -t genfit-frontend-test ./Web_Frontend/genfit_frontend \
             --build-arg VITE_API_BASE_URL=http://localhost:8000
 
-      - name: Run backend tests (if available)
+      - name: Run backend tests
         run: |
-          echo "Running backend tests..."
-          # Uncomment and modify the following lines when we have tests set up
-          # docker run --rm genfit-backend-test python manage.py test
-          echo "Backend tests would run here"
+          docker run --rm \
+            --network host \
+            -w /app \
+            -e POSTGRES_DB=group2db \
+            -e POSTGRES_USER=group2 \
+            -e POSTGRES_PASSWORD=group2 \
+            -e POSTGRES_HOST=127.0.0.1 \
+            -e POSTGRES_PORT=5432 \
+            -e SECRET_KEY=django-insecure-test-key \
+            -e DEBUG=True \
+            genfit-backend-test \
+            python manage.py test api.tests
 
       - name: Run frontend tests (if available)
         run: |
