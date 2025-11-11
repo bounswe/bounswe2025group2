@@ -16,6 +16,7 @@ import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import CookieManager from '@react-native-cookies/cookies';
 import { useRoute, useFocusEffect } from '@react-navigation/native';
+import { evaluateGoalForSafety } from '../services/goalEvaluation';
 
 // ──────────────────────────────────────────────────────────────────────────────
 // 📋 TYPE DEFINITIONS
@@ -847,6 +848,9 @@ const Goals: React.FC = () => {
   const [modalType, setModalType] = useState<ModalType>(null);
   const [selectedGoal, setSelectedGoal] = useState<Goal | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
+  const [evaluationVisible, setEvaluationVisible] = useState(false);
+  const [evaluationJSON, setEvaluationJSON] = useState<any>(null);
+  const [pendingCreateForm, setPendingCreateForm] = useState<CreateGoalForm | null>(null);
 
   // ──────────────────────────────────────────────────────────────────────────────
   // 🌐 API FUNCTIONS
@@ -888,7 +892,27 @@ const Goals: React.FC = () => {
   }, [getAuthHeader, isAuthenticated]);
 
   /**
-   * Creates a new goal
+   * Begin create flow with evaluation
+   */
+  const startCreateWithEvaluation = async (formData: CreateGoalForm) => {
+    if (!isAuthenticated) {
+      Alert.alert('Error', 'You must be logged in to create goals.');
+      return;
+    }
+    const evalResult = evaluateGoalForSafety({
+      title: formData.title,
+      description: formData.description,
+      targetValue: Number(formData.target_value),
+      unit: formData.unit.trim() || 'unit',
+      deadlineISO: formData.target_date ? formData.target_date.toISOString() : null,
+    });
+    setPendingCreateForm(formData);
+    setEvaluationJSON(evalResult);
+    setEvaluationVisible(true);
+  };
+
+  /**
+   * Actually creates a new goal (POST)
    */
   const createGoal = async (formData: CreateGoalForm) => {
     // Don't create goal if user is not authenticated
@@ -1226,7 +1250,7 @@ const Goals: React.FC = () => {
       <CreateGoalModal
         visible={modalType === 'create'}
         onClose={handleModalClose}
-        onSubmit={createGoal}
+        onSubmit={startCreateWithEvaluation}
         colors={colors}
         loading={actionLoading}
       />
@@ -1248,6 +1272,94 @@ const Goals: React.FC = () => {
         colors={colors}
         loading={actionLoading}
       />
+
+      {/* Evaluation Modal */}
+      <Modal visible={evaluationVisible} animationType="slide" presentationStyle="pageSheet">
+        <View style={[styles.modalContainer, { backgroundColor: colors.background }]}>
+          <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
+            <TouchableOpacity
+              onPress={() => {
+                setEvaluationVisible(false);
+              }}
+            >
+              <CustomText style={[styles.modalButton, { color: colors.active }]}>
+                Close
+              </CustomText>
+            </TouchableOpacity>
+            <CustomText style={[styles.modalTitle, { color: colors.text }]}>
+              Goal Safety Evaluation
+            </CustomText>
+            <View style={{ width: 60 }} />
+          </View>
+
+          <ScrollView style={styles.modalContent}>
+            {evaluationJSON && (
+              <View style={{ gap: 12 }}>
+                <CustomText style={{ color: colors.text, fontWeight: 'bold' }}>
+                  Result
+                </CustomText>
+                <View style={[{ padding: 12, borderRadius: 8, borderWidth: 1 }, { borderColor: colors.border, backgroundColor: colors.navBar }]}>
+                  <CustomText style={{ color: colors.text }}>
+                    {JSON.stringify(evaluationJSON, null, 2)}
+                  </CustomText>
+                </View>
+
+                {evaluationJSON.warning_message && (
+                  <View style={styles.progressWarning}>
+                    <CustomText style={[styles.warningText, { color: colors.subText }]}>
+                      {evaluationJSON.warning_message}
+                    </CustomText>
+                  </View>
+                )}
+
+                <View style={{ flexDirection: 'row', gap: 12 }}>
+                  <TouchableOpacity
+                    style={[styles.createButton, { backgroundColor: colors.active, flex: 1 }]}
+                    onPress={async () => {
+                      if (!pendingCreateForm || !evaluationJSON) return;
+                      // Apply suggested adjustments
+                      const now = new Date();
+                      const adjustedDate = new Date(now.getTime() + evaluationJSON.days_to_complete * 24 * 60 * 60 * 1000);
+                      const adjustedForm: CreateGoalForm = {
+                        ...pendingCreateForm,
+                        goal_type: evaluationJSON.goal_type,
+                        target_value: String(evaluationJSON.target_value),
+                        unit: evaluationJSON.unit,
+                        target_date: adjustedDate,
+                      };
+                      setEvaluationVisible(false);
+                      setModalType(null);
+                      await createGoal(adjustedForm);
+                      setPendingCreateForm(null);
+                      setEvaluationJSON(null);
+                    }}
+                  >
+                    <CustomText style={[styles.createButtonText, { color: colors.background, textAlign: 'center' }]}>
+                      Accept Suggestion
+                    </CustomText>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={[styles.createButton, { backgroundColor: colors.navBar, flex: 1, borderWidth: 1, borderColor: colors.border }]}
+                    onPress={async () => {
+                      if (!pendingCreateForm) return;
+                      setEvaluationVisible(false);
+                      setModalType(null);
+                      await createGoal(pendingCreateForm);
+                      setPendingCreateForm(null);
+                      setEvaluationJSON(null);
+                    }}
+                  >
+                    <CustomText style={[styles.createButtonText, { color: colors.text, textAlign: 'center' }]}>
+                      Create Anyway
+                    </CustomText>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            )}
+          </ScrollView>
+        </View>
+      </Modal>
     </View>
   );
 };
