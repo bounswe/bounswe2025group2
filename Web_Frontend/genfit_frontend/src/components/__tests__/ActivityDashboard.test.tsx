@@ -37,7 +37,7 @@ describe('ActivityDashboard', () => {
       data: mockLoginStats,
       isLoading: false,
       error: null,
-    } as any);
+    });
   });
 
   it('renders loading state when stats are loading', () => {
@@ -45,7 +45,7 @@ describe('ActivityDashboard', () => {
       data: undefined,
       isLoading: true,
       error: null,
-    } as any);
+    });
 
     renderWithProviders(
       <ActivityDashboard
@@ -104,7 +104,7 @@ describe('ActivityDashboard', () => {
       data: { ...mockLoginStats, logged_in_today: false },
       isLoading: false,
       error: null,
-    } as any);
+    });
 
     renderWithProviders(
       <ActivityDashboard

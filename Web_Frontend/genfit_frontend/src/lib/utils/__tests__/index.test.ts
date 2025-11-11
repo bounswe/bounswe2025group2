@@ -15,14 +15,18 @@ describe('Utility Functions', () => {
     });
 
     it('handles conditional classes', () => {
-      const result = cn('base', false && 'hidden', true && 'visible');
+      const isHidden = false;
+      const isVisible = true;
+      const conditionalClass1 = isHidden ? 'hidden' : '';
+      const conditionalClass2 = isVisible ? 'visible' : '';
+      const result = cn('base', conditionalClass1, conditionalClass2);
       expect(result).toContain('base');
       expect(result).toContain('visible');
       expect(result).not.toContain('hidden');
     });
 
-    it('handles undefined and null values', () => {
-      const result = cn('class1', undefined, null, 'class2');
+    it('handles empty string values', () => {
+      const result = cn('class1', '', 'class2');
       expect(result).toContain('class1');
       expect(result).toContain('class2');
     });

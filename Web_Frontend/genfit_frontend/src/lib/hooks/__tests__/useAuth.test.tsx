@@ -6,7 +6,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { ReactNode } from 'react';
+import { type ReactNode } from 'react';
 import { useUser, useIsAuthenticated, useLogin, useLogout } from '../useAuth';
 import { mockUser } from '../../../test/mocks/handlers';
 import AuthService from '../../auth/authService';
@@ -139,7 +139,7 @@ describe('useAuth Hooks', () => {
 
   describe('useLogout', () => {
     it('logs out successfully and clears cache', async () => {
-      vi.mocked(AuthService.logout).mockResolvedValue({ message: 'Logout successful' });
+      vi.mocked(AuthService.logout).mockResolvedValue(undefined);
 
       const { result } = renderHook(() => useLogout(), { wrapper });
 

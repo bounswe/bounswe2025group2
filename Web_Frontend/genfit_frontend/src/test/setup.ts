@@ -31,7 +31,7 @@ Object.defineProperty(window, 'matchMedia', {
 });
 
 // Mock IntersectionObserver
-global.IntersectionObserver = class IntersectionObserver {
+globalThis.IntersectionObserver = class IntersectionObserver {
   constructor() {}
   disconnect() {}
   observe() {}
@@ -39,19 +39,21 @@ global.IntersectionObserver = class IntersectionObserver {
     return [];
   }
   unobserve() {}
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
 } as any;
 
 // Mock ResizeObserver
-global.ResizeObserver = class ResizeObserver {
+globalThis.ResizeObserver = class ResizeObserver {
   constructor() {}
   disconnect() {}
   observe() {}
   unobserve() {}
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
 } as any;
 
 // Mock scrollTo
-window.scrollTo = vi.fn();
+globalThis.scrollTo = vi.fn();
 
 // Mock fetch globally (can be overridden in individual tests)
-global.fetch = vi.fn();
+globalThis.fetch = vi.fn();
 

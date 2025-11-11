@@ -35,7 +35,7 @@ vi.mock('../../../lib', async () => {
 
 // Mock Layout and other components
 vi.mock('../../../components', () => ({
-  Layout: ({ children, onSearch }: any) => (
+  Layout: ({ children, onSearch }: { children: React.ReactNode; onSearch: (value: string) => void }) => (
     <div data-testid="layout">
       <input
         data-testid="search-input"
@@ -45,7 +45,7 @@ vi.mock('../../../components', () => ({
       {children}
     </div>
   ),
-  ActivityDashboard: ({ goals, challenges, activeGoals, joinedChallenges }: any) => (
+  ActivityDashboard: ({ activeGoals, joinedChallenges }: { activeGoals: number; joinedChallenges: number }) => (
     <div data-testid="activity-dashboard">
       <div>Active Goals: {activeGoals}</div>
       <div>Joined Challenges: {joinedChallenges}</div>
@@ -86,33 +86,41 @@ describe('HomePage', () => {
       data: mockGoals,
       isLoading: false,
       error: null,
-    } as any);
+      refetch: vi.fn(),
+    });
 
     vi.mocked(libHooks.useChallenges).mockReturnValue({
       data: mockChallenges,
       isLoading: false,
       error: null,
-    } as any);
+      refetch: vi.fn(),
+    });
 
     vi.mocked(libHooks.useUserStats).mockReturnValue({
       activeGoals: 2,
       completedGoals: 5,
-    } as any);
+    });
 
     vi.mocked(libHooks.useDailyQuote).mockReturnValue({
       data: mockDailyQuote,
       error: null,
-    } as any);
+      isLoading: false,
+      refetch: vi.fn(),
+    });
 
     vi.mocked(libHooks.useUserChallenges).mockReturnValue({
       data: [mockChallenges[0]],
-    } as any);
+      isLoading: false,
+      error: null,
+      refetch: vi.fn(),
+    });
 
     vi.mocked(libHooks.useLoginStats).mockReturnValue({
       data: mockLoginStats,
       isLoading: false,
       error: null,
-    } as any);
+      refetch: vi.fn(),
+    });
   });
 
   it('shows loading state while checking authentication', () => {
@@ -142,7 +150,8 @@ describe('HomePage', () => {
       data: undefined,
       isLoading: true,
       error: null,
-    } as any);
+      refetch: vi.fn(),
+    });
 
     renderWithProviders(<HomePage />);
     expect(screen.getByText('Loading your dashboard...')).toBeInTheDocument();
@@ -153,7 +162,8 @@ describe('HomePage', () => {
       data: undefined,
       isLoading: false,
       error: new Error('Failed to fetch'),
-    } as any);
+      refetch: vi.fn(),
+    });
 
     renderWithProviders(<HomePage />);
 
@@ -315,7 +325,9 @@ describe('HomePage', () => {
     vi.mocked(libHooks.useDailyQuote).mockReturnValue({
       data: undefined,
       error: new Error('Failed to fetch quote'),
-    } as any);
+      isLoading: false,
+      refetch: vi.fn(),
+    });
 
     renderWithProviders(<HomePage />);
 
@@ -329,7 +341,8 @@ describe('HomePage', () => {
       data: undefined,
       isLoading: false,
       error: new Error('Failed to fetch'),
-    } as any);
+      refetch: vi.fn(),
+    });
 
     const reloadSpy = vi.fn();
     Object.defineProperty(window, 'location', {

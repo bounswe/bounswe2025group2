@@ -3,10 +3,24 @@ import NotificationDetailModal from './NotificationDetailModal';
 import { Button } from '../../components/ui/button';
 import { Card, CardContent } from '../../components/ui/card';
 
+interface NotificationData {
+  id: number;
+  notification_type: string;
+  title: string;
+  message: string;
+  sender_username: string | null;
+  recipient_username: string;
+  related_object_id: number | null;
+  related_object_type: string | null;
+  is_read: boolean;
+  is_email_sent: boolean;
+  created_at: string;
+}
+
 // Demo component to test the notification modal functionality
 const NotificationModalDemo: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedNotification, setSelectedNotification] = useState<any>(null);
+  const [selectedNotification, setSelectedNotification] = useState<NotificationData | null>(null);
 
   // Sample notification data for testing
   const sampleNotifications = [
@@ -64,7 +78,7 @@ const NotificationModalDemo: React.FC = () => {
     }
   ];
 
-  const handleNotificationClick = (notification: any) => {
+  const handleNotificationClick = (notification: NotificationData) => {
     setSelectedNotification(notification);
     setIsModalOpen(true);
   };
