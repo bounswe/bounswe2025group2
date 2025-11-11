@@ -34,7 +34,7 @@ jobs:
             -w /app \
             -e DJANGO_SETTINGS_MODULE=genfit_django.settings \
             genfit-backend-test \
-            python manage.py api.tests
+            python manage.py test api
 
       - name: Run frontend tests (if available)
         run: |
