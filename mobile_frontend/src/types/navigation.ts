@@ -9,6 +9,8 @@ export type RootStackParamList = {
   Goals: undefined;
   ForumDetail: { forumId: number };
   ThreadDetail: { threadId: number };
+  ChatDetail: { chatId: number };
+  AiChatDetail: { chatId: number };
 };
 
 // export type RootTabScreenProps<T extends keyof RootStackParamList> = BottomTabScreenProps<RootStackParamList, T>;
