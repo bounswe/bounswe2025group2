@@ -31,17 +31,8 @@ jobs:
       - name: Run backend tests
         run: |
           docker run --rm \
-            --network host \
-            -w /app \
-            -e POSTGRES_DB=group2db \
-            -e POSTGRES_USER=group2 \
-            -e POSTGRES_PASSWORD=group2 \
-            -e POSTGRES_HOST=localhost \
-            -e POSTGRES_PORT=5432 \
-            -e SECRET_KEY=django-insecure-test-key \
-            -e DEBUG=True \
             genfit-backend-test \
-            python manage.py test api
+            python manage.py test
 
       - name: Run frontend tests (if available)
         run: |
