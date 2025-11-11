@@ -31,9 +31,10 @@ jobs:
       - name: Run backend tests
         run: |
           docker run --rm \
+            -w /app \
             -e DJANGO_SETTINGS_MODULE=genfit_django.settings \
             genfit-backend-test \
-            python manage.py test
+            python manage.py api.tests
 
       - name: Run frontend tests (if available)
         run: |
