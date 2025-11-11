@@ -4,6 +4,7 @@ import { Heart, HeartOff, ChevronUp, ChevronDown, Edit, Trash2 } from 'lucide-re
 import { useVoteComment, useRemoveVoteComment, useCommentVoteStatus, useDeleteComment } from '../../../lib/hooks/useData';
 import { useIsAuthenticated } from '../../../lib/hooks/useAuth';
 import type { Comment } from '../../../lib/types/api';
+import ReportButton from '../../../components/ReportButton';
 
 interface CommentActionsProps {
   comment: Comment;
@@ -14,19 +15,19 @@ const CommentActions: React.FC<CommentActionsProps> = ({ comment, onEdit }) => {
   // Get current user and vote status
   const { user } = useIsAuthenticated();
   const { data: voteStatus } = useCommentVoteStatus(comment.id);
-  
+
   // Voting mutations
   const voteCommentMutation = useVoteComment();
   const removeVoteMutation = useRemoveVoteComment();
   const deleteCommentMutation = useDeleteComment();
-  
+
   // Check current vote state (voteStatus can be null if no vote exists)
   const hasUpvoted = voteStatus?.vote_type === 'UPVOTE';
   const hasDownvoted = voteStatus?.vote_type === 'DOWNVOTE';
-  
+
   // Check if current user owns this comment
   const isOwner = user?.id === comment.author_id;
-  
+
   const handleVote = async (voteType: 'UPVOTE' | 'DOWNVOTE') => {
     try {
       if ((voteType === 'UPVOTE' && hasUpvoted) || (voteType === 'DOWNVOTE' && hasDownvoted)) {
@@ -73,10 +74,10 @@ const CommentActions: React.FC<CommentActionsProps> = ({ comment, onEdit }) => {
             <ChevronUp className="w-4 h-4" />
           )}
         </Button>
-        
+
         {/* Like Count */}
         <span className="like-count">{comment.like_count}</span>
-        
+
         {/* Downvote Button */}
         <Button
           variant="ghost"
@@ -92,7 +93,7 @@ const CommentActions: React.FC<CommentActionsProps> = ({ comment, onEdit }) => {
           )}
         </Button>
       </div>
-      
+
       {/* Edit and Delete buttons for comment owner */}
       {isOwner && (
         <div className="owner-actions">
@@ -106,7 +107,7 @@ const CommentActions: React.FC<CommentActionsProps> = ({ comment, onEdit }) => {
           >
             <Edit className="w-4 h-4" />
           </Button>
-          
+
           <Button
             variant="ghost"
             size="sm"
@@ -119,6 +120,13 @@ const CommentActions: React.FC<CommentActionsProps> = ({ comment, onEdit }) => {
           </Button>
         </div>
       )}
+
+      {/* Report Button for ALL users (moved outside isOwner condition) */}
+      <ReportButton
+        contentType="COMMENT"
+        objectId={comment.id}
+        contentTitle={`Comment by ${comment.author_username}`}
+      />
     </div>
   );
 };

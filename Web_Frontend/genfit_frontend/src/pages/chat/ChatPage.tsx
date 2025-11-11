@@ -10,7 +10,7 @@ import {
   useAiChatHistory,
   useSendAiMessage
 } from '../../lib';
-import { Layout, UserAvatar } from '../../components';
+import { Layout, UserAvatar, ReportButton } from '../../components';
 import { Button } from '../../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import type { Chat, Message, AiTutorChat, AiMessage } from '../../lib/types/api';
@@ -248,14 +248,6 @@ const ChatPage = () => {
   return (
     <Layout>
       <div className="chat-page-content">
-        <div className="section-header">
-          <div className="header-content">
-            <div className="header-text">
-              <p className="page-subtitle">Connect with other users or chat with our AI fitness tutor</p>
-            </div>
-          </div>
-        </div>
-
         {/* Chat Type Toggle */}
         <div className="chat-toggle">
           <Button
@@ -407,6 +399,13 @@ const ChatPage = () => {
                               {connected ? 'Online' : 'Offline'}
                             </div>
                           </div>
+                          {/* Add Report Button for specific chat */}
+                          <ReportButton
+                            contentType="CHAT"
+                            objectId={selectedChat.id}
+                            contentTitle={`Chat with ${selectedChat.other_user?.username}`}
+                            className="chat-header-report-button"
+                          />
                         </div>
                       </CardHeader>
 
@@ -560,6 +559,13 @@ const ChatPage = () => {
                               Always Online
                             </div>
                           </div>
+                          {/* Add Report Button for AI chat */}
+                          <ReportButton
+                            contentType="CHAT"
+                            objectId={selectedAiChat.id}
+                            contentTitle="AI Fitness Tutor Chat"
+                            className="chat-header-report-button"
+                          />
                         </div>
                       </CardHeader>
 

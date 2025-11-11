@@ -781,3 +781,67 @@
     margin: 0.25rem;
   }
 }
+
+/* Chat Report Button Styles */
+.chat-report-button {
+  background-color: var(--sidebar-bg-color, #1e293b);
+  color: white;
+  border: 1px solid var(--sidebar-border-color, #334155);
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 0.9em;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.chat-report-button:hover {
+  background-color: var(--sidebar-hover-color, #374151);
+  color: #d32f2f;
+  transform: translateY(-1px);
+}
+
+.chat-header-report-button {
+  margin-left: auto;
+  background-color: var(--sidebar-bg-color, #1e293b);
+  color: white;
+  border: 1px solid var(--sidebar-border-color, #334155);
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-size: 0.8em;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.chat-header-report-button:hover {
+  background-color: var(--sidebar-hover-color, #374151);
+  color: #d32f2f;
+}
+
+/* Header content layout adjustment */
+.header-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+.header-text {
+  flex: 1;
+}
+
+/* Chat Header Layout */
+.chat-header-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+}
+
+.chat-header-info {
+  flex: 1;
+}
+
+/* Section Header Layout */
+.section-header {
+  margin-bottom: 20px;
+}
