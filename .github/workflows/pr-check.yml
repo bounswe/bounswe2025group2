@@ -28,12 +28,12 @@ jobs:
           docker build -t genfit-frontend-test ./Web_Frontend/genfit_frontend \
             --build-arg VITE_API_BASE_URL=http://localhost:8000
 
-      - name: Run backend tests (if available)
+      - name: Run backend tests
         run: |
-          echo "Running backend tests..."
-          # Uncomment and modify the following lines when we have tests set up
-          # docker run --rm genfit-backend-test python manage.py test
-          echo "Backend tests would run here"
+          docker run --rm \
+            -e DJANGO_SETTINGS_MODULE=genfit_django.settings \
+            genfit-backend-test \
+            python manage.py test
 
       - name: Run frontend tests (if available)
         run: |
