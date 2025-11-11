@@ -5,7 +5,7 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { screen, waitFor } from '@testing-library/react';
-import { renderWithProviders, userEvent } from '../../test/test-utils';
+import { renderWithProviders, userEvent, createMockQueryResult } from '../../test/test-utils';
 import { ActivityDashboard } from '../ActivityDashboard';
 import { mockGoals, mockChallenges, mockLoginStats } from '../../test/mocks/handlers';
 import * as libHooks from '../../lib';
@@ -33,19 +33,25 @@ describe('ActivityDashboard', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     // Setup default mock for useLoginStats
-    vi.mocked(libHooks.useLoginStats).mockReturnValue({
-      data: mockLoginStats,
-      isLoading: false,
-      error: null,
-    });
+    vi.mocked(libHooks.useLoginStats).mockReturnValue(
+      createMockQueryResult({
+        data: mockLoginStats,
+        isLoading: false,
+        error: null,
+      })
+    );
   });
 
   it('renders loading state when stats are loading', () => {
-    vi.mocked(libHooks.useLoginStats).mockReturnValue({
-      data: undefined,
-      isLoading: true,
-      error: null,
-    });
+    vi.mocked(libHooks.useLoginStats).mockReturnValue(
+      createMockQueryResult({
+        data: undefined,
+        isLoading: true,
+        error: null,
+        isSuccess: false,
+        status: 'pending',
+      })
+    );
 
     renderWithProviders(
       <ActivityDashboard
@@ -100,11 +106,13 @@ describe('ActivityDashboard', () => {
   });
 
   it('shows warning when user has not logged in today', async () => {
-    vi.mocked(libHooks.useLoginStats).mockReturnValue({
-      data: { ...mockLoginStats, logged_in_today: false },
-      isLoading: false,
-      error: null,
-    });
+    vi.mocked(libHooks.useLoginStats).mockReturnValue(
+      createMockQueryResult({
+        data: { ...mockLoginStats, logged_in_today: false },
+        isLoading: false,
+        error: null,
+      })
+    );
 
     renderWithProviders(
       <ActivityDashboard

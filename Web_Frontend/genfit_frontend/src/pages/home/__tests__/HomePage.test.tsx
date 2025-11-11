@@ -5,7 +5,7 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { screen, waitFor } from '@testing-library/react';
-import { renderWithProviders, userEvent } from '../../../test/test-utils';
+import { renderWithProviders, userEvent, createMockQueryResult } from '../../../test/test-utils';
 import HomePage from '../HomePage';
 import {
   mockUser,
@@ -82,45 +82,55 @@ describe('HomePage', () => {
       user: mockUser,
     });
 
-    vi.mocked(libHooks.useGoals).mockReturnValue({
-      data: mockGoals,
-      isLoading: false,
-      error: null,
-      refetch: vi.fn(),
-    });
+    vi.mocked(libHooks.useGoals).mockReturnValue(
+      createMockQueryResult({
+        data: mockGoals,
+        isLoading: false,
+        error: null,
+        refetch: vi.fn(),
+      })
+    );
 
-    vi.mocked(libHooks.useChallenges).mockReturnValue({
-      data: mockChallenges,
-      isLoading: false,
-      error: null,
-      refetch: vi.fn(),
-    });
+    vi.mocked(libHooks.useChallenges).mockReturnValue(
+      createMockQueryResult({
+        data: mockChallenges,
+        isLoading: false,
+        error: null,
+        refetch: vi.fn(),
+      })
+    );
 
     vi.mocked(libHooks.useUserStats).mockReturnValue({
       activeGoals: 2,
-      completedGoals: 5,
+      completedChallenges: 5,
     });
 
-    vi.mocked(libHooks.useDailyQuote).mockReturnValue({
-      data: mockDailyQuote,
-      error: null,
-      isLoading: false,
-      refetch: vi.fn(),
-    });
+    vi.mocked(libHooks.useDailyQuote).mockReturnValue(
+      createMockQueryResult({
+        data: mockDailyQuote,
+        error: null,
+        isLoading: false,
+        refetch: vi.fn(),
+      })
+    );
 
-    vi.mocked(libHooks.useUserChallenges).mockReturnValue({
-      data: [mockChallenges[0]],
-      isLoading: false,
-      error: null,
-      refetch: vi.fn(),
-    });
+    vi.mocked(libHooks.useUserChallenges).mockReturnValue(
+      createMockQueryResult({
+        data: [mockChallenges[0]],
+        isLoading: false,
+        error: null,
+        refetch: vi.fn(),
+      })
+    );
 
-    vi.mocked(libHooks.useLoginStats).mockReturnValue({
-      data: mockLoginStats,
-      isLoading: false,
-      error: null,
-      refetch: vi.fn(),
-    });
+    vi.mocked(libHooks.useLoginStats).mockReturnValue(
+      createMockQueryResult({
+        data: mockLoginStats,
+        isLoading: false,
+        error: null,
+        refetch: vi.fn(),
+      })
+    );
   });
 
   it('shows loading state while checking authentication', () => {
@@ -146,24 +156,33 @@ describe('HomePage', () => {
   });
 
   it('shows loading state while fetching data', () => {
-    vi.mocked(libHooks.useGoals).mockReturnValue({
-      data: undefined,
-      isLoading: true,
-      error: null,
-      refetch: vi.fn(),
-    });
+    vi.mocked(libHooks.useGoals).mockReturnValue(
+      createMockQueryResult({
+        data: undefined,
+        isLoading: true,
+        error: null,
+        isSuccess: false,
+        status: 'pending',
+        refetch: vi.fn(),
+      })
+    );
 
     renderWithProviders(<HomePage />);
     expect(screen.getByText('Loading your dashboard...')).toBeInTheDocument();
   });
 
   it('shows error state when data fetching fails', async () => {
-    vi.mocked(libHooks.useGoals).mockReturnValue({
-      data: undefined,
-      isLoading: false,
-      error: new Error('Failed to fetch'),
-      refetch: vi.fn(),
-    });
+    vi.mocked(libHooks.useGoals).mockReturnValue(
+      createMockQueryResult({
+        data: undefined,
+        isLoading: false,
+        error: new Error('Failed to fetch'),
+        isError: true,
+        isSuccess: false,
+        status: 'error',
+        refetch: vi.fn(),
+      })
+    );
 
     renderWithProviders(<HomePage />);
 
@@ -322,12 +341,17 @@ describe('HomePage', () => {
   });
 
   it('does not render daily quote when there is an error', async () => {
-    vi.mocked(libHooks.useDailyQuote).mockReturnValue({
-      data: undefined,
-      error: new Error('Failed to fetch quote'),
-      isLoading: false,
-      refetch: vi.fn(),
-    });
+    vi.mocked(libHooks.useDailyQuote).mockReturnValue(
+      createMockQueryResult({
+        data: undefined,
+        error: new Error('Failed to fetch quote'),
+        isLoading: false,
+        isError: true,
+        isSuccess: false,
+        status: 'error',
+        refetch: vi.fn(),
+      })
+    );
 
     renderWithProviders(<HomePage />);
 
@@ -337,12 +361,17 @@ describe('HomePage', () => {
   });
 
   it('handles refresh button click on error state', async () => {
-    vi.mocked(libHooks.useGoals).mockReturnValue({
-      data: undefined,
-      isLoading: false,
-      error: new Error('Failed to fetch'),
-      refetch: vi.fn(),
-    });
+    vi.mocked(libHooks.useGoals).mockReturnValue(
+      createMockQueryResult({
+        data: undefined,
+        isLoading: false,
+        error: new Error('Failed to fetch'),
+        isError: true,
+        isSuccess: false,
+        status: 'error',
+        refetch: vi.fn(),
+      })
+    );
 
     const reloadSpy = vi.fn();
     Object.defineProperty(window, 'location', {

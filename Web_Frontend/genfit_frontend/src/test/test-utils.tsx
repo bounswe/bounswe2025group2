@@ -65,6 +65,53 @@ export function renderWithProviders(
 }
 
 /**
+ * Helper to create a properly typed UseQueryResult mock
+ */
+export function createMockQueryResult<TData>(
+  overrides: Partial<{
+    data: TData;
+    error: Error | null;
+    isLoading: boolean;
+    isError: boolean;
+    isSuccess: boolean;
+    status: 'pending' | 'error' | 'success';
+    refetch: () => void;
+  }> = {}
+) {
+  const defaults = {
+    data: overrides.data,
+    error: overrides.error ?? null,
+    isLoading: overrides.isLoading ?? false,
+    isError: overrides.isError ?? false,
+    isSuccess: overrides.isSuccess ?? true,
+    isFetching: false,
+    isPending: false,
+    isLoadingError: false,
+    isRefetchError: false,
+    isStale: false,
+    status: overrides.status ?? ('success' as const),
+    fetchStatus: 'idle' as const,
+    refetch: overrides.refetch ?? (() => Promise.resolve({} as any)),
+    dataUpdatedAt: Date.now(),
+    errorUpdatedAt: 0,
+    failureCount: 0,
+    failureReason: null,
+    errorUpdateCount: 0,
+    isFetched: true,
+    isFetchedAfterMount: true,
+    isPlaceholderData: false,
+    isRefetching: false,
+    isInitialLoading: overrides.isLoading ?? false,
+    isPaused: false,
+    isEnabled: true,
+    promise: Promise.resolve({} as any),
+  };
+
+  // Cast to any to avoid strict type checking issues in tests
+  return defaults as any;
+}
+
+/**
  * Re-export everything from React Testing Library
  */
 export * from '@testing-library/react';
