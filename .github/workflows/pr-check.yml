@@ -58,12 +58,10 @@ jobs:
             genfit-backend-test \
             python manage.py test api.tests
 
-      - name: Run frontend tests (if available)
+      - name: Run frontend tests
         run: |
           echo "Running frontend tests..."
-          # Uncomment and modify the following lines when we have tests set up
-          # docker run --rm genfit-frontend-test npm test
-          echo "Frontend tests would run here"
+          docker run --rm genfit-frontend-test npm run test -- --run
 
       - name: Cleanup test images
         if: always()
