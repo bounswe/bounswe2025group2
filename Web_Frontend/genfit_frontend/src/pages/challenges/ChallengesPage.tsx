@@ -107,15 +107,16 @@ const ChallengesPage = () => {
 
         try {
             await joinChallengeMutation.mutateAsync(challengeId);
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error('Failed to join challenge:', error);
             // Extract more detailed error message from the API response
+            const err = error as { response?: { data?: { detail?: string } }; message?: string };
             let errorMessage = 'Failed to join challenge. Please try again.';
 
-            if (error?.response?.data?.detail) {
-                errorMessage = error.response.data.detail;
-            } else if (error?.message) {
-                errorMessage = error.message;
+            if (err?.response?.data?.detail) {
+                errorMessage = err.response.data.detail;
+            } else if (err?.message) {
+                errorMessage = err.message;
             }
 
             alert(errorMessage);
@@ -129,15 +130,16 @@ const ChallengesPage = () => {
 
         try {
             await leaveChallengeMutation.mutateAsync(challengeId);
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error('Failed to leave challenge:', error);
             // Extract more detailed error message from the API response
+            const err = error as { response?: { data?: { detail?: string } }; message?: string };
             let errorMessage = 'Failed to leave challenge. Please try again.';
 
-            if (error?.response?.data?.detail) {
-                errorMessage = error.response.data.detail;
-            } else if (error?.message) {
-                errorMessage = error.message;
+            if (err?.response?.data?.detail) {
+                errorMessage = err.response.data.detail;
+            } else if (err?.message) {
+                errorMessage = err.message;
             }
 
             alert(errorMessage);

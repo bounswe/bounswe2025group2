@@ -6,7 +6,20 @@ import { Button } from '../../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import GFapi from '../../lib/api/GFapi';
 import NotificationDetailModal from './NotificationDetailModal';
-//import type { Notification } from '../../lib/types/api';
+
+interface NotificationData {
+  id: number;
+  notification_type: string;
+  title?: string;
+  message: string;
+  sender_username?: string;
+  recipient_username: string;
+  related_object_id?: number;
+  related_object_type?: string;
+  is_read: boolean;
+  is_email_sent: boolean;
+  created_at: string;
+}
 
 import {
   Bell,
@@ -52,7 +65,7 @@ const NotificationsPage = () => {
 
   const [activeNotificationTab, setActiveNotificationTab] = useState('ALL');
   const [isMarkingAll, setIsMarkingAll] = useState(false);
-  const [selectedNotification, setSelectedNotification] = useState<any>(null);
+  const [selectedNotification, setSelectedNotification] = useState<NotificationData | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   if (authLoading) {
@@ -113,7 +126,7 @@ const NotificationsPage = () => {
     }
   };
 
-  const handleNotificationClick = (notification: any) => {
+  const handleNotificationClick = (notification: NotificationData) => {
     setSelectedNotification(notification);
     setIsModalOpen(true);
     

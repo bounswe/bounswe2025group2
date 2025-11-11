@@ -23,9 +23,8 @@ import '../index.css';
 // Initialize CSRF token on app startup
 GFapi.initializeCSRF();
 
-
-function App() {
-  return (
+createRoot(document.getElementById('root')!).render(
+  <StrictMode>
     <QueryClientProvider client={queryClient}>
       <Router>
         <Routes>
@@ -46,11 +45,5 @@ function App() {
         </Routes>
       </Router>
     </QueryClientProvider>
-  );
-}
-
-createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    <App />
   </StrictMode>,
 )

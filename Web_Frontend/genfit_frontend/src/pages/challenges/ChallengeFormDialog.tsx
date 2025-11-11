@@ -130,17 +130,18 @@ const ChallengeFormDialog = ({ isOpen, onClose, editingChallenge }: ChallengeFor
             }
 
             onClose();
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error('Failed to save challenge:', error);
             
             // Show more detailed error message
+            const err = error as { response?: { data?: { detail?: string } }; message?: string };
             let errorMessage = 'Failed to save challenge. Please try again.';
-            if (error?.response?.data?.detail) {
-                errorMessage = error.response.data.detail;
-            } else if (error?.response?.data) {
-                errorMessage = JSON.stringify(error.response.data);
-            } else if (error?.message) {
-                errorMessage = error.message;
+            if (err?.response?.data?.detail) {
+                errorMessage = err.response.data.detail;
+            } else if (err?.response?.data) {
+                errorMessage = JSON.stringify(err.response.data);
+            } else if (err?.message) {
+                errorMessage = err.message;
             }
             
             alert(errorMessage);
@@ -157,14 +158,15 @@ const ChallengeFormDialog = ({ isOpen, onClose, editingChallenge }: ChallengeFor
         try {
             await deleteChallengeMutation.mutateAsync(editingChallenge.id);
             onClose();
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error('Failed to delete challenge:', error);
             
+            const err = error as { response?: { data?: { detail?: string } }; message?: string };
             let errorMessage = 'Failed to delete challenge. Please try again.';
-            if (error?.response?.data?.detail) {
-                errorMessage = error.response.data.detail;
-            } else if (error?.message) {
-                errorMessage = error.message;
+            if (err?.response?.data?.detail) {
+                errorMessage = err.response.data.detail;
+            } else if (err?.message) {
+                errorMessage = err.message;
             }
             
             alert(errorMessage);

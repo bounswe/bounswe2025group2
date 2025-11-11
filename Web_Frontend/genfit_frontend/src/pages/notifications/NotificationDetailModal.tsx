@@ -35,12 +35,12 @@ interface NotificationDetailModalProps {
   notification: {
     id: number;
     notification_type: string;
-    title: string;
+    title?: string;
     message: string;
-    sender_username?: string;
+    sender_username?: string | null;
     recipient_username: string;
-    related_object_id?: number;
-    related_object_type?: string;
+    related_object_id?: number | null;
+    related_object_type?: string | null;
     is_read: boolean;
     is_email_sent: boolean;
     created_at: string;
@@ -132,7 +132,7 @@ const NotificationDetailModal: React.FC<NotificationDetailModalProps> = ({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-3 text-xl">
             {getNotificationIcon(notification.notification_type)}
-            <span>{notification.title}</span>
+            <span>{notification.title || 'Notification'}</span>
           </DialogTitle>
         </DialogHeader>
 

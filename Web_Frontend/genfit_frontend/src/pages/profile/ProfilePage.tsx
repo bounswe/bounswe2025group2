@@ -40,7 +40,18 @@ export default function ProfilePage() {
   })
 
   const [isGoalDetailOpen, setIsGoalDetailOpen] = useState(false)
-  const [selectedGoal, setSelectedGoal] = useState<any | null>(null)
+  const [selectedGoal, setSelectedGoal] = useState<{
+    id: number;
+    title: string;
+    description?: string;
+    goal_type: string;
+    status: string;
+    current_value: number;
+    target_value: number;
+    unit: string;
+    start_date: string;
+    target_date: string;
+  } | null>(null)
 
   const handleDeleteSelectedGoal = async () => {
     if (!selectedGoal) return
@@ -139,7 +150,7 @@ export default function ProfilePage() {
       location: editedProfile.location,
       birth_date: editedProfile.birth_date,
       preferred_sports: editedProfile.preferred_sports,
-    } as any)
+    })
   }
 
   const { data: goals = [] } = useGoals(otherUsername || undefined)
@@ -281,7 +292,7 @@ export default function ProfilePage() {
             <CardContent className="profile-card-content">
               {goals.length > 0 ? (
                 <div className="goals-grid">
-                  {goals.map((goal: any) => (
+                  {goals.map((goal) => (
                     <div
                       key={goal.id}
                       className="goal-card"
