@@ -18,7 +18,7 @@ services:
   backend:
     image: ${DOCKERHUB_USERNAME}/genfit-backend:latest
     container_name: genfit_backend
-    command: sh -c "python manage.py migrate && python manage.py add_inclusive_forums && python manage.py runserver 0.0.0.0:8000"
+    command: sh -c "python manage.py migrate && python manage.py runserver 0.0.0.0:8000"
     environment:
       - POSTGRES_DB=${POSTGRES_DB}
       - POSTGRES_USER=${POSTGRES_USER}
