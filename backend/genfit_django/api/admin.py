@@ -112,8 +112,8 @@ class VoteAdmin(admin.ModelAdmin):
 # Admin for Challenge model
 @admin.register(Challenge)
 class ChallengeAdmin(admin.ModelAdmin):
-    list_display = ('title', 'coach', 'start_date', 'end_date', 'target_value', 'unit', 'is_active')
-    list_filter = ('challenge_type', 'coach', 'start_date', 'end_date', 'created_at')
+    list_display = ('title', 'coach', 'difficulty_level', 'start_date', 'end_date', 'target_value', 'unit', 'is_active')
+    list_filter = ('difficulty_level', 'challenge_type', 'coach', 'start_date', 'end_date', 'created_at')
     search_fields = ('title', 'description', 'coach__username')
     ordering = ('-start_date',)
     readonly_fields = ('created_at',)
