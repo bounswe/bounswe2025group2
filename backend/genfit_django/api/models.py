@@ -110,10 +110,17 @@ class FitnessGoal(models.Model):
 
 
 class Challenge(models.Model):
+    DIFFICULTY_CHOICES = [
+        ('Beginner', 'Beginner'),
+        ('Intermediate', 'Intermediate'),
+        ('Advanced', 'Advanced'),
+    ]
+    
     coach = models.ForeignKey(UserWithType, on_delete=models.CASCADE, related_name='created_challenges')
     title = models.CharField(max_length=255)
     description = models.TextField(blank=True)
     challenge_type = models.CharField(max_length=50)
+    difficulty_level = models.CharField(max_length=20, choices=DIFFICULTY_CHOICES, default='Beginner')
     target_value = models.FloatField()
     unit = models.CharField(max_length=20)
     location = models.CharField(max_length=255, blank=True, null=True)

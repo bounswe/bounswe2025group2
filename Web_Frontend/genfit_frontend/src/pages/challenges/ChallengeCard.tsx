@@ -69,6 +69,9 @@ const ChallengeCard: React.FC<ChallengeCardProps> = ({
                 {/* Challenge-specific meta information */}
                 <div className="challenge-meta">
                     <span className="coach-badge">By: {challenge.coach_username || 'Coach'}</span>
+                    <span className={`difficulty-badge difficulty-${challenge.difficulty_level?.toLowerCase()}`}>
+                        {challenge.difficulty_level || 'Beginner'}
+                    </span>
                     <span className="participant-count">
                         <Users className="w-3 h-3" />
                         {challenge.participant_count || 0} participants
