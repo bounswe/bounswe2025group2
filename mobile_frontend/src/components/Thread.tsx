@@ -217,9 +217,9 @@ const Thread = ({ forumName, content, imageUrl, profilePic, username, threadId, 
     });
   };
 
-  const handleUsernamePress = () => {
-    // @ts-ignore - Navigation typing can be complex in React Native
-    navigation.navigate('Profile', { username });
+  const handleUsernamePress = (usernameToNavigate: string) => {
+    // @ts-ignore
+    navigation.navigate('Profile', { username: usernameToNavigate });
   };
 
   return (
@@ -233,11 +233,13 @@ const Thread = ({ forumName, content, imageUrl, profilePic, username, threadId, 
       </View>
 
       <View style={styles.profileSection}>
-        <Image 
-          source={profilePic} 
-          style={[styles.profilePic, { borderColor: colors.border }]} 
-        />
-        <TouchableOpacity onPress={handleUsernamePress} activeOpacity={0.7}>
+        <TouchableOpacity onPress={() => handleUsernamePress(username)} activeOpacity={0.7}>
+          <Image 
+            source={profilePic} 
+            style={[styles.profilePic, { borderColor: colors.border }]} 
+          />
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => handleUsernamePress(username)} activeOpacity={0.7}>
           <CustomText style={[styles.username, { color: colors.subText }]}>
             @{username}
           </CustomText>
@@ -310,7 +312,11 @@ const Thread = ({ forumName, content, imageUrl, profilePic, username, threadId, 
         ) : (
           commentList.map((c, idx) => (
             <View key={c.id || idx} style={{ marginBottom: 4, padding: 6, backgroundColor: isDark ? '#555555' : '#f7f7f7', borderRadius: 6 }}>
-              <CustomText style={{ fontWeight: 'bold', color: colors.mentionText }}>@{c.author_username || c.author || 'user'}</CustomText>
+              <TouchableOpacity onPress={() => handleUsernamePress(c.author_username || c.author || 'user')} activeOpacity={0.7}>
+                <CustomText style={{ fontWeight: 'bold', color: colors.mentionText }}>
+                  @{c.author_username || c.author || 'user'}
+                </CustomText>
+              </TouchableOpacity>
               <CustomText style={{ color: colors.text }}>{c.content}</CustomText>
             </View>
           ))
@@ -433,6 +439,33 @@ const styles = StyleSheet.create({
   commentCount: {
     fontSize: 16,
     fontWeight: '500',
+  },
+  commentsTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginBottom: 4,
+  },
+  commentItem: {
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderTopWidth: 1,
+  },
+  commentHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  commentAuthor: {
+    fontSize: 14,
+    fontWeight: 'bold',
+  },
+  commentTime: {
+    fontSize: 12,
+    color: '#888',
+  },
+  commentContent: {
+    fontSize: 14,
   },
 });
 
