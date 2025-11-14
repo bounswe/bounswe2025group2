@@ -15,9 +15,9 @@ const ThreadPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const isAuthenticated = useIsAuthenticated();
-  
+
   const threadId = id ? parseInt(id) : undefined;
-  
+
   const { data: thread, isLoading: threadLoading, error: threadError } = useThread(threadId);
   const { data: comments, isLoading: commentsLoading, error: commentsError } = useThreadComments(threadId);
 
@@ -61,12 +61,16 @@ const ThreadPage: React.FC = () => {
     });
   };
 
+  const handleUsernameClick = (username: string) => {
+    navigate(`/profile/other/${username}`);
+  };
+
   return (
     <Layout>
       <div className="thread-page">
         <div className="thread-header">
-          <Button 
-            variant="ghost" 
+          <Button
+            variant="ghost"
             onClick={() => navigate(-1)}
             className="back-button"
           >
@@ -85,11 +89,16 @@ const ThreadPage: React.FC = () => {
                 {thread.is_locked && <span className="badge locked">Locked</span>}
               </div>
             </div>
-            
+
             <div className="thread-meta">
               <div className="meta-item">
                 <User className="w-4 h-4" />
-                <span>{thread.author}</span>
+                <span
+                  onClick={() => handleUsernameClick(thread.author)}
+                  className="clickable-username"
+                >
+                  {thread.author}
+                </span>
               </div>
               <div className="meta-item">
                 <Calendar className="w-4 h-4" />
@@ -104,7 +113,7 @@ const ThreadPage: React.FC = () => {
             <div className="thread-body">
               <p>{thread.content}</p>
             </div>
-            
+
             <ThreadActions thread={thread} />
           </div>
         </Card>
@@ -117,7 +126,7 @@ const ThreadPage: React.FC = () => {
           <h2 className="comments-title">
             Comments ({thread.comment_count})
           </h2>
-          
+
           {commentsLoading ? (
             <div className="loading">Loading comments...</div>
           ) : commentsError ? (
