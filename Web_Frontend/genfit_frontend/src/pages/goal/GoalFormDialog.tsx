@@ -11,7 +11,6 @@ import type { Goal } from '../../lib/types/api';
 import { Save, X, Sparkles, Loader2 } from 'lucide-react';
 import { GoalAISuggestions } from '../../components/goals/GoalAISuggestions';
 import { getGoalSuggestions, calculateTargetDate, type GoalSuggestion } from '../../lib/api/goalSuggestionsApi';
-import { useNavigate } from 'react-router-dom';
 
 // Define suggested units for each goal type
 const GOAL_TYPE_UNITS: Record<string, string[]> = {
@@ -29,7 +28,6 @@ interface GoalFormDialogProps {
 }
 
 const GoalFormDialog = ({ isOpen, onClose, editingGoal }: GoalFormDialogProps) => {
-    const navigate = useNavigate();
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [formData, setFormData] = useState({
         title: '',
@@ -124,7 +122,7 @@ const GoalFormDialog = ({ isOpen, onClose, editingGoal }: GoalFormDialogProps) =
     };
 
     const handleChatClick = () => {
-        navigate('/chat');
+        window.open('/chat', '_blank');
     };
 
     // Check if AI suggestions button should be enabled
