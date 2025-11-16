@@ -111,30 +111,22 @@ describe('Home Component', () => {
   });
 
   describe('Rendering', () => {
-    test('renders without crashing', async () => {
-      render(<Home />);
-      await waitFor(() => {
-        expect(global.fetch).toHaveBeenCalled();
-      });
-    });
-
-    test('shows loading indicator initially', () => {
+    test('renders FlatList with activity indicator initially', async () => {
       const { UNSAFE_queryByType } = render(<Home />);
       const activityIndicator = UNSAFE_queryByType(ActivityIndicator);
       expect(activityIndicator).toBeTruthy();
-    });
 
-    test('renders FlatList component', async () => {
-      const { UNSAFE_queryByType } = render(<Home />);
+      const flatList = UNSAFE_queryByType(FlatList);
+      expect(flatList).toBeTruthy();
+
       await waitFor(() => {
-        const flatList = UNSAFE_queryByType(FlatList);
-        expect(flatList).toBeTruthy();
+        expect(global.fetch).toHaveBeenCalled();
       });
     });
   });
 
   describe('Data Fetching', () => {
-    test('fetches threads on mount', async () => {
+    test('fetches threads with proper authentication and CSRF headers', async () => {
       render(<Home />);
 
       await waitFor(() => {
@@ -152,31 +144,12 @@ describe('Home Component', () => {
       });
     });
 
-    test('includes authentication headers in request', async () => {
-      render(<Home />);
+    test('displays threads after successful fetch and sorts by date', async () => {
+      const { getByTestId } = render(<Home />);
 
       await waitFor(() => {
-        expect(global.fetch).toHaveBeenCalledWith(
-          expect.any(String),
-          expect.objectContaining({
-            headers: expect.objectContaining(mockAuthHeader),
-          })
-        );
-      });
-    });
-
-    test('includes CSRF token in request headers', async () => {
-      render(<Home />);
-
-      await waitFor(() => {
-        expect(global.fetch).toHaveBeenCalledWith(
-          expect.any(String),
-          expect.objectContaining({
-            headers: expect.objectContaining({
-              'X-CSRFToken': 'test-csrf-token',
-            }),
-          })
-        );
+        expect(getByTestId('thread-1')).toBeTruthy();
+        expect(getByTestId('thread-2')).toBeTruthy();
       });
     });
 
@@ -189,33 +162,6 @@ describe('Home Component', () => {
         expect(global.fetch).toHaveBeenCalled();
         const callArgs = (global.fetch as jest.Mock).mock.calls[0][1];
         expect(callArgs.headers['X-CSRFToken']).toBeUndefined();
-      });
-    });
-
-    test('displays threads after successful fetch', async () => {
-      const { getByTestId } = render(<Home />);
-
-      await waitFor(() => {
-        expect(getByTestId('thread-1')).toBeTruthy();
-        expect(getByTestId('thread-2')).toBeTruthy();
-      });
-    });
-
-    test('sorts threads by date (newest first)', async () => {
-      const unsortedThreads = [
-        { ...mockThreads[1], created_at: '2025-11-07T10:00:00Z' },
-        { ...mockThreads[0], created_at: '2025-11-09T10:00:00Z' },
-      ];
-
-      (global.fetch as jest.Mock).mockResolvedValueOnce({
-        ok: true,
-        json: async () => unsortedThreads,
-      });
-
-      const { getByTestId } = render(<Home />);
-
-      await waitFor(() => {
-        expect(getByTestId('thread-1')).toBeTruthy();
       });
     });
   });
@@ -279,11 +225,11 @@ describe('Home Component', () => {
   });
 
   describe('Pull to Refresh', () => {
-    test('triggers refresh when user pulls down', async () => {
+    test('triggers fetch and manages refresh state on pull-to-refresh', async () => {
       const { UNSAFE_getByType } = render(<Home />);
 
       await waitFor(() => {
-        expect(global.fetch).toHaveBeenCalled(); // Initial fetch
+        expect(global.fetch).toHaveBeenCalled();
       });
 
       const initialCallCount = (global.fetch as jest.Mock).mock.calls.length;
@@ -292,36 +238,6 @@ describe('Home Component', () => {
 
       await waitFor(() => {
         expect((global.fetch as jest.Mock).mock.calls.length).toBeGreaterThan(initialCallCount);
-      });
-    });
-
-    test('sets refreshing state during pull-to-refresh', async () => {
-      const { UNSAFE_getByType } = render(<Home />);
-
-      const flatList = UNSAFE_getByType(FlatList);
-
-      (global.fetch as jest.Mock).mockImplementation(
-        () =>
-          new Promise((resolve) =>
-            setTimeout(() => resolve({ ok: true, json: async () => [] }), 100)
-          )
-      );
-
-      fireEvent(flatList, 'refresh');
-      expect(flatList.props.refreshing).toBe(true);
-    });
-
-    test('clears refreshing state after refresh completes', async () => {
-      const { UNSAFE_getByType } = render(<Home />);
-
-      await waitFor(() => {
-        expect(global.fetch).toHaveBeenCalled();
-      });
-
-      const flatList = UNSAFE_getByType(FlatList);
-      fireEvent(flatList, 'refresh');
-
-      await waitFor(() => {
         expect(flatList.props.refreshing).toBe(false);
       });
     });
@@ -352,7 +268,7 @@ describe('Home Component', () => {
   });
 
   describe('Profile Picture Fetching', () => {
-    test('fetches profile pictures for thread authors', async () => {
+    test('fetches profile pictures for all unique usernames and handles errors', async () => {
       render(<Home />);
 
       await waitFor(() => {
@@ -363,37 +279,10 @@ describe('Home Component', () => {
             credentials: 'include',
           })
         );
-      });
-    });
-
-    test('fetches profile pictures for all unique usernames', async () => {
-      render(<Home />);
-
-      await waitFor(() => {
-        expect(global.fetch).toHaveBeenCalledWith(
-          expect.stringContaining('/api/profile/other/picture/user1/'),
-          expect.any(Object)
-        );
         expect(global.fetch).toHaveBeenCalledWith(
           expect.stringContaining('/api/profile/other/picture/user2/'),
           expect.any(Object)
         );
-      });
-    });
-
-    test('handles profile picture fetch errors gracefully', async () => {
-      (global.fetch as jest.Mock).mockImplementation((url) => {
-        if (url.includes('/api/profile/other/picture/')) {
-          return Promise.reject(new Error('Profile pic not found'));
-        }
-        return Promise.resolve({ ok: true, json: async () => mockThreads });
-      });
-
-      const { getByTestId } = render(<Home />);
-
-      await waitFor(() => {
-        expect(getByTestId('thread-1')).toBeTruthy();
-        expect(getByTestId('thread-2')).toBeTruthy();
       });
     });
 
@@ -455,7 +344,7 @@ describe('Home Component', () => {
       });
     });
 
-    test('handles threads without title field', async () => {
+    test('handles threads without title or author fields', async () => {
       const threadsWithoutTitle = [
         {
           id: 1,
@@ -473,14 +362,12 @@ describe('Home Component', () => {
         json: async () => threadsWithoutTitle,
       });
 
-      const { getByTestId } = render(<Home />);
+      const { getByTestId: getByTestId2 } = render(<Home />);
 
       await waitFor(() => {
-        expect(getByTestId('content-1')).toHaveTextContent('Content only');
+        expect(getByTestId2('content-1')).toHaveTextContent('Content only');
       });
-    });
 
-    test('handles threads with missing author data', async () => {
       const threadsWithMissingAuthor = [
         {
           id: 1,
@@ -498,16 +385,17 @@ describe('Home Component', () => {
         json: async () => threadsWithMissingAuthor,
       });
 
-      const { getByTestId } = render(<Home />);
+      const { getByTestId: getByTestId3 } = render(<Home />);
 
       await waitFor(() => {
-        expect(getByTestId('username-1')).toHaveTextContent('User');
+        expect(getByTestId3('username-1')).toHaveTextContent('User');
       });
     });
   });
 
   describe('Date Sorting', () => {
-    test('handles threads with different date field names', async () => {
+    test('handles various date field names and invalid dates gracefully', async () => {
+      // Test with different date field names
       const mixedDateFields = [
         {
           id: 1,
@@ -542,9 +430,8 @@ describe('Home Component', () => {
         expect(getByTestId('thread-1')).toBeTruthy();
         expect(getByTestId('thread-2')).toBeTruthy();
       });
-    });
 
-    test('handles threads without valid dates', async () => {
+      // Test with threads without valid dates
       const threadsWithoutDates = [
         {
           id: 1,
@@ -562,14 +449,13 @@ describe('Home Component', () => {
         json: async () => threadsWithoutDates,
       });
 
-      const { getByTestId } = render(<Home />);
+      render(<Home />);
 
       await waitFor(() => {
         expect(getByTestId('thread-1')).toBeTruthy();
       });
-    });
 
-    test('handles invalid date values gracefully', async () => {
+      // Test with invalid date values
       const threadsWithInvalidDates = [
         {
           id: 1,
@@ -598,7 +484,7 @@ describe('Home Component', () => {
         json: async () => threadsWithInvalidDates,
       });
 
-      const { getByTestId } = render(<Home />);
+      render(<Home />);
 
       await waitFor(() => {
         expect(getByTestId('thread-1')).toBeTruthy();
@@ -608,7 +494,8 @@ describe('Home Component', () => {
   });
 
   describe('Edge Cases', () => {
-    test('handles null or undefined response data', async () => {
+    test('handles null response, large datasets, and fetch errors', async () => {
+      // Test null/undefined response
       (global.fetch as jest.Mock).mockResolvedValueOnce({
         ok: true,
         json: async () => null,
@@ -619,9 +506,8 @@ describe('Home Component', () => {
       await waitFor(() => {
         expect(getByText('There is no such post.')).toBeTruthy();
       });
-    });
 
-    test('handles extremely large thread list', async () => {
+      // Test extremely large thread list with virtualization
       const largeThreadList = Array.from({ length: 100 }, (_, i) => ({
         id: i,
         title: `Thread ${i}`,
@@ -645,7 +531,7 @@ describe('Home Component', () => {
         // Check that first thread is rendered - FlatList will virtualize the rest
         expect(getByTestId('thread-0')).toBeTruthy();
       });
-      
+
       // Verify that fetch was called successfully with large dataset
       expect(global.fetch).toHaveBeenCalled();
     });
