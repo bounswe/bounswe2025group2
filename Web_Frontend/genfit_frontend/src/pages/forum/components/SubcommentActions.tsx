@@ -4,6 +4,7 @@ import { Heart, HeartOff, ChevronUp, ChevronDown, Edit, Trash2 } from 'lucide-re
 import { useVoteSubcomment, useRemoveVoteSubcomment, useSubcommentVoteStatus, useDeleteSubcomment } from '../../../lib/hooks/useData';
 import { useIsAuthenticated } from '../../../lib/hooks/useAuth';
 import type { Subcomment } from '../../../lib/types/api';
+import ReportButton from '../../../components/ReportButton';
 
 interface SubcommentActionsProps {
   subcomment: Subcomment;
@@ -14,16 +15,16 @@ const SubcommentActions: React.FC<SubcommentActionsProps> = ({ subcomment, onEdi
   // Get current user and vote status
   const { user } = useIsAuthenticated();
   const { data: voteStatus } = useSubcommentVoteStatus(subcomment.id);
-  
+
   // Voting mutations
   const voteSubcommentMutation = useVoteSubcomment();
   const removeVoteMutation = useRemoveVoteSubcomment();
   const deleteSubcommentMutation = useDeleteSubcomment();
-  
+
   // Check current vote state (voteStatus can be null if no vote exists)
   const hasUpvoted = voteStatus?.vote_type === 'UPVOTE';
   const hasDownvoted = voteStatus?.vote_type === 'DOWNVOTE';
-  
+
   // Check if current user owns this subcomment
   const isOwner = user?.id === subcomment.author_id;
 
@@ -73,10 +74,10 @@ const SubcommentActions: React.FC<SubcommentActionsProps> = ({ subcomment, onEdi
             <ChevronUp className="w-4 h-4" />
           )}
         </Button>
-        
+
         {/* Like Count */}
         <span className="like-count">{subcomment.like_count}</span>
-        
+
         {/* Downvote Button */}
         <Button
           variant="ghost"
@@ -92,7 +93,7 @@ const SubcommentActions: React.FC<SubcommentActionsProps> = ({ subcomment, onEdi
           )}
         </Button>
       </div>
-      
+
       {/* Edit and Delete buttons for subcomment owner */}
       {isOwner && (
         <div className="owner-actions">
@@ -106,7 +107,7 @@ const SubcommentActions: React.FC<SubcommentActionsProps> = ({ subcomment, onEdi
           >
             <Edit className="w-4 h-4" />
           </Button>
-          
+
           <Button
             variant="ghost"
             size="sm"
@@ -119,6 +120,13 @@ const SubcommentActions: React.FC<SubcommentActionsProps> = ({ subcomment, onEdi
           </Button>
         </div>
       )}
+
+      {/* Report Button for ALL users (moved outside isOwner condition) */}
+      <ReportButton
+        contentType="SUBCOMMENT"
+        objectId={subcomment.id}
+        contentTitle={`Reply by ${subcomment.author_username}`}
+      />
     </div>
   );
 };

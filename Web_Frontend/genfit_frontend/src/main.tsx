@@ -12,6 +12,7 @@ import IndividualForumPage from "./pages/forum/[id]/page";
 import ThreadPage from "./pages/forum/thread/[id]/page";
 import NotificationsPage from "./pages/notifications/notificationPage"; 
 import ProfilePage from "./pages/profile/ProfilePage";
+import SettingsPage from "./pages/settings/SettingsPage";
 import ContactPage from './pages/contact/ContactPage';
 import '../index.css';
 
@@ -22,9 +23,8 @@ import '../index.css';
 // Initialize CSRF token on app startup
 GFapi.initializeCSRF();
 
-
-function App() {
-  return (
+createRoot(document.getElementById('root')!).render(
+  <StrictMode>
     <QueryClientProvider client={queryClient}>
       <Router>
         <Routes>
@@ -38,17 +38,12 @@ function App() {
           <Route path="/notifications" element={<NotificationsPage />} /> 
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/profile/other/:username" element={<ProfilePage />} />
+          <Route path="/settings" element={<SettingsPage />} />
           <Route path="/challenges" element={<ChallengesPage />} />
           <Route path="/chat" element={<ChatPage />} />
           <Route path="/contact" element={<ContactPage />} />
         </Routes>
       </Router>
     </QueryClientProvider>
-  );
-}
-
-createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    <App />
   </StrictMode>,
 )

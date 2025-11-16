@@ -23,6 +23,7 @@ interface ProfileDetailsResponse {
   age: number | string
   created_at: string
   updated_at: string
+  preferred_sports: string
 }
 
 export default function ProfilePage() {
@@ -35,10 +36,22 @@ export default function ProfilePage() {
     bio: '',
     location: '',
     birth_date: '',
+    preferred_sports: '',
   })
 
   const [isGoalDetailOpen, setIsGoalDetailOpen] = useState(false)
-  const [selectedGoal, setSelectedGoal] = useState<any | null>(null)
+  const [selectedGoal, setSelectedGoal] = useState<{
+    id: number;
+    title: string;
+    description?: string;
+    goal_type: string;
+    status: string;
+    current_value: number;
+    target_value: number;
+    unit: string;
+    start_date: string;
+    target_date: string;
+  } | null>(null)
 
   const handleDeleteSelectedGoal = async () => {
     if (!selectedGoal) return
@@ -84,6 +97,7 @@ export default function ProfilePage() {
         bio: profileDetails.bio || '',
         location: profileDetails.location || '',
         birth_date: profileDetails.birth_date || '',
+        preferred_sports: profileDetails.preferred_sports || '',
       })
     }
   }, [profileDetails])
@@ -135,7 +149,8 @@ export default function ProfilePage() {
       bio: editedProfile.bio,
       location: editedProfile.location,
       birth_date: editedProfile.birth_date,
-    } as any)
+      preferred_sports: editedProfile.preferred_sports,
+    })
   }
 
   const { data: goals = [] } = useGoals(otherUsername || undefined)
@@ -209,9 +224,13 @@ export default function ProfilePage() {
                     <div className="label">Age</div>
                     <div className="value">{profileDetails?.age || 'Not specified'}</div>
                   </div>
-                  <div className="info-item full">
+                  <div className="info-item half">
                     <div className="label">Bio</div>
                     <div className="value">{profileDetails?.bio || 'No bio provided.'}</div>
+                  </div>
+                  <div className="info-item half">
+                    <div className="label">Preferred Sports</div>
+                    <div className="value">{profileDetails?.preferred_sports || 'Not specified'}</div>
                   </div>
                   {!otherUsername && (
                     <div className="info-actions">
@@ -225,7 +244,7 @@ export default function ProfilePage() {
                     <Label htmlFor="name">Name</Label>
                     <Input id="name" value={editedProfile.name} onChange={(e) => setEditedProfile({ ...editedProfile, name: e.target.value })} />
                   </div>
-                  <div className="field">
+                  <div className="field full">
                     <Label htmlFor="surname">Surname</Label>
                     <Input id="surname" value={editedProfile.surname} onChange={(e) => setEditedProfile({ ...editedProfile, surname: e.target.value })} />
                   </div>
@@ -237,9 +256,18 @@ export default function ProfilePage() {
                     <Label htmlFor="bio">Bio</Label>
                     <Textarea id="bio" value={editedProfile.bio} onChange={(e) => setEditedProfile({ ...editedProfile, bio: e.target.value })} />
                   </div>
-                  <div className="field">
-                    <Label htmlFor="birth_date">Birth Date</Label>
-                    <Input id="birth_date" type="date" value={editedProfile.birth_date} onChange={(e) => setEditedProfile({ ...editedProfile, birth_date: e.target.value })} />
+                  <div className="field full">
+                    <Label htmlFor="preferred_sports">Preferred Sports</Label>
+                    <Textarea
+                      id="preferred_sports"
+                      placeholder="e.g., Running, Swimming, Weightlifting"
+                      value={editedProfile.preferred_sports}
+                      onChange={(e) => setEditedProfile({ ...editedProfile, preferred_sports: e.target.value })}
+                    />
+                    <div className="field">
+                      <Label htmlFor="birth_date">Birth Date</Label>
+                      <Input id="birth_date" type="date" value={editedProfile.birth_date} onChange={(e) => setEditedProfile({ ...editedProfile, birth_date: e.target.value })} />
+                    </div>
                   </div>
                   <div className="actions">
                     <Button variant="outline" onClick={() => setIsEditing(false)}>Cancel</Button>
@@ -264,7 +292,7 @@ export default function ProfilePage() {
             <CardContent className="profile-card-content">
               {goals.length > 0 ? (
                 <div className="goals-grid">
-                  {goals.map((goal: any) => (
+                  {goals.map((goal) => (
                     <div
                       key={goal.id}
                       className="goal-card"
@@ -329,5 +357,3 @@ export default function ProfilePage() {
     </Layout>
   )
 }
-
-

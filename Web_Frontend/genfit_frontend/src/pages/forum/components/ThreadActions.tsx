@@ -3,6 +3,7 @@ import { Button } from '../../../components/ui/button';
 import { Heart, HeartOff, ChevronUp, ChevronDown } from 'lucide-react';
 import { useThreadVoteStatus, useVoteThread, useRemoveVoteThread } from '../../../lib/hooks/useData';
 import type { ForumThread } from '../../../lib/types/api';
+import ReportButton from '../../../components/ReportButton';
 
 interface ThreadActionsProps {
   thread: ForumThread;
@@ -11,15 +12,15 @@ interface ThreadActionsProps {
 const ThreadActions: React.FC<ThreadActionsProps> = ({ thread }) => {
   // Get current vote status
   const { data: voteStatus } = useThreadVoteStatus(thread.id);
-  
+
   // Voting mutations
   const voteThreadMutation = useVoteThread();
   const removeVoteMutation = useRemoveVoteThread();
-  
+
   // Check current vote state (voteStatus can be null if no vote exists)
   const hasUpvoted = voteStatus?.vote_type === 'UPVOTE';
   const hasDownvoted = voteStatus?.vote_type === 'DOWNVOTE';
-  
+
   const handleVote = async (voteType: 'UPVOTE' | 'DOWNVOTE') => {
     try {
       if ((voteType === 'UPVOTE' && hasUpvoted) || (voteType === 'DOWNVOTE' && hasDownvoted)) {
@@ -56,10 +57,10 @@ const ThreadActions: React.FC<ThreadActionsProps> = ({ thread }) => {
             <ChevronUp className="w-4 h-4" />
           )}
         </Button>
-        
+
         {/* Like Count */}
         <span className="like-count">{thread.like_count}</span>
-        
+
         {/* Downvote Button */}
         <Button
           variant="ghost"
@@ -74,6 +75,18 @@ const ThreadActions: React.FC<ThreadActionsProps> = ({ thread }) => {
             <ChevronDown className="w-4 h-4" />
           )}
         </Button>
+      </div>
+      <div className="comment-actions">
+        <div className="vote-buttons">
+          {/* Existing vote buttons code remains the same */}
+        </div>
+
+        {/* Add Report Button */}
+        <ReportButton
+          contentType="THREAD"
+          objectId={thread.id}
+          contentTitle={thread.title}
+        />
       </div>
     </div>
   );

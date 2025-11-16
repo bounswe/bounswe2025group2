@@ -4,7 +4,7 @@ from django.core.validators import RegexValidator
 from django.contrib.auth import get_user_model
 from django.utils import timezone
 from .utils import geocode_location
-from .models import Notification, UserWithType, FitnessGoal, Profile, Forum, Thread, Comment, Subcomment, Vote, Challenge, ChallengeParticipant, AiTutorChat, AiTutorResponse, UserAiMessage
+from .models import Notification, UserWithType, FitnessGoal, Profile, Forum, Thread, Comment, Subcomment, Vote, Challenge, ChallengeParticipant, AiTutorChat, AiTutorResponse, UserAiMessage, DailyAdvice
 from django.utils import timezone
 
 
@@ -61,8 +61,11 @@ class UserLoginSerializer(serializers.Serializer):
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserWithType
-        fields = ['id', 'username', 'email', 'user_type', 'is_verified_coach']
-        read_only_fields = ['id', 'is_verified_coach']
+        fields = ['id', 'username', 'email', 'user_type', 'is_verified_coach', 
+                  'current_streak', 'longest_streak', 'last_login_date', 'total_login_days',
+                  'daily_advice_enabled']
+        read_only_fields = ['id', 'is_verified_coach', 'current_streak', 'longest_streak', 
+                           'last_login_date', 'total_login_days']
 
     def update(self, instance, validated_data):
         instance.username = validated_data.get('username', instance.username)
@@ -168,6 +171,7 @@ class ProfileSerializer(serializers.ModelSerializer):
             'age',
             'created_at',
             'updated_at',
+            'preferred_sports',
         ]
         read_only_fields = ['username', 'created_at', 'updated_at']
 
@@ -449,4 +453,11 @@ class UserAiMessageSerializer(serializers.ModelSerializer):
         model = UserAiMessage
         fields = ['id', 'user', 'chat', 'message', 'created_at', 'updated_at']
         read_only_fields = ['created_at', 'updated_at']
+
+
+class DailyAdviceSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = DailyAdvice
+        fields = ['id', 'user', 'advice_text', 'date', 'created_at']
+        read_only_fields = ['created_at']
 

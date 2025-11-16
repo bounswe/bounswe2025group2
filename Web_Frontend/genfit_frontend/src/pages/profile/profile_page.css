@@ -58,7 +58,14 @@
 .info-item .label { font-size: 12px; color: #6b7280; }
 .info-item .value { font-size: 14px; color: #111827; }
 .info-item.full { grid-column: span 2; }
-.info-actions { display: flex; justify-content: flex-end; padding-top: 8px; }
+.info-actions {
+  grid-column: span 2;       
+  display: flex;
+  justify-content: center;    
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(0, 0, 0, 0.05); 
+}
 
 .edit-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 .field.full { grid-column: span 2; }
@@ -126,3 +133,17 @@
 .empty-goals .empty-desc { font-size: 13px; color: #6b7280; margin-bottom: 12px; }
 
 
+.info-item.half {
+  grid-column: span 1;
+}
+
+.info-item.full {
+  grid-column: span 2;
+}
+
+/* Ensure the info-grid has 2 columns */
+.info-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px 24px;
+}

@@ -6,7 +6,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import GFapi from '../api/GFapi';
 import { createQueryKey } from '../query/queryClient';
-import type { Goal, Challenge, ForumThread, Quote, Forum, Comment, Subcomment, Vote } from '../types/api';
+import type { Goal, Challenge, ForumThread, Quote, Forum, Comment, Subcomment, Vote, DailyAdvice, UserSettings } from '../types/api';
 
 /**
  * Hook to fetch user's goals
@@ -53,13 +53,91 @@ export function useDailyQuote() {
 }
 
 /**
+ * Hook to fetch daily AI-generated advice
+ */
+export function useDailyAdvice() {
+  return useQuery({
+    queryKey: createQueryKey('/api/daily-advice/'),
+    queryFn: () => GFapi.get<DailyAdvice>('/api/daily-advice/'),
+    staleTime: 24 * 60 * 60 * 1000, // 24 hours - advice is generated once per day
+    retry: 1, // Retry once if it fails
+  });
+}
+
+/**
+ * Hook to regenerate daily advice
+ */
+export function useRegenerateDailyAdvice() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: () => GFapi.post<DailyAdvice>('/api/daily-advice/regenerate/', {}),
+    onSuccess: () => {
+      // Invalidate daily advice query to refetch new advice
+      queryClient.invalidateQueries({ queryKey: createQueryKey('/api/daily-advice/') });
+    },
+    onError: (error) => {
+      console.error('Failed to regenerate daily advice:', error);
+    },
+  });
+}
+
+/**
  * Hook to fetch notifications
  */
+interface Notification {
+  id: number;
+  notification_type: string;
+  title?: string;
+  message: string;
+  sender_username?: string;
+  recipient_username: string;
+  related_object_id?: number;
+  related_object_type?: string;
+  is_read: boolean;
+  is_email_sent: boolean;
+  created_at: string;
+}
+
 export function useNotifications() {
   return useQuery({
     queryKey: createQueryKey('/api/notifications/'),
-    queryFn: () => GFapi.get<any[]>('/api/notifications/'),
+    queryFn: () => GFapi.get<Notification[]>('/api/notifications/'),
     staleTime: 60 * 1000, // 1 minute
+  });
+}
+
+/**
+ * Hook to fetch user settings
+ */
+export function useUserSettings() {
+  return useQuery({
+    queryKey: createQueryKey('/api/user/settings/'),
+    queryFn: () => GFapi.get<UserSettings>('/api/user/settings/'),
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+}
+
+/**
+ * Hook to update user settings
+ */
+export function useUpdateUserSettings() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: (settings: Partial<UserSettings>) => 
+      GFapi.patch<UserSettings>('/api/user/settings/', settings),
+    onSuccess: () => {
+      // Invalidate settings query to refetch
+      queryClient.invalidateQueries({ queryKey: createQueryKey('/api/user/settings/') });
+      // Invalidate user query to update user data
+      queryClient.invalidateQueries({ queryKey: createQueryKey('/api/user/') });
+      // Invalidate daily advice to reflect changes
+      queryClient.invalidateQueries({ queryKey: createQueryKey('/api/daily-advice/') });
+    },
+    onError: (error) => {
+      console.error('Failed to update settings:', error);
+    },
   });
 }
 
@@ -70,8 +148,6 @@ export function useNotifications() {
 export function useUserStats() {
   const { data: goals = [] } = useGoals();
   const { data: challenges = [] } = useChallengesLegacy();
-
-  console.log(goals)
 
   return {
     activeGoals: goals.filter(goal => goal.status === 'ACTIVE').length,
@@ -136,9 +212,10 @@ export function useCommentVoteStatus(commentId?: number) {
     queryFn: async () => {
       try {
         return await GFapi.get<Vote>(`/api/forum/vote/comment/${commentId}/status/`);
-      } catch (error: any) {
+      } catch (error: unknown) {
         // If no vote exists (404), return null instead of throwing error
-        if (error?.response?.status === 404) {
+        const err = error as { response?: { status?: number } };
+        if (err?.response?.status === 404) {
           return null;
         }
         throw error;
@@ -187,9 +264,10 @@ export function useSubcommentVoteStatus(subcommentId?: number) {
     queryFn: async () => {
       try {
         return await GFapi.get<Vote>(`/api/forum/vote/subcomment/${subcommentId}/status/`);
-      } catch (error: any) {
+      } catch (error: unknown) {
         // If no vote exists (404), return null instead of throwing error
-        if (error?.response?.status === 404) {
+        const err = error as { response?: { status?: number } };
+        if (err?.response?.status === 404) {
           return null;
         }
         throw error;
@@ -300,7 +378,7 @@ export function useUpdateSubcomment() {
   return useMutation({
     mutationFn: ({ subcommentId, content }: { subcommentId: number; content: string }) =>
       GFapi.put<Subcomment>(`/api/subcomments/update/${subcommentId}/`, { content }),
-    onSuccess: (data, _variables) => {
+    onSuccess: (data) => {
       // Invalidate subcomments for the parent comment
       queryClient.invalidateQueries({ 
         predicate: (query) => {
@@ -333,7 +411,7 @@ export function useDeleteSubcomment() {
   return useMutation({
     mutationFn: (subcommentId: number) =>
       GFapi.delete(`/api/subcomments/delete/${subcommentId}/`),
-    onSuccess: (_data, _subcommentId) => {
+    onSuccess: () => {
       // Invalidate all subcomments queries to refresh the lists
       queryClient.invalidateQueries({ 
         predicate: (query) => {
@@ -403,9 +481,10 @@ export function useThreadVoteStatus(threadId?: number) {
     queryFn: async () => {
       try {
         return await GFapi.get<Vote>(`/api/forum/vote/thread/${threadId}/status/`);
-      } catch (error: any) {
+      } catch (error: unknown) {
         // If no vote exists (404), return null instead of throwing error
-        if (error?.response?.status === 404) {
+        const err = error as { response?: { status?: number } };
+        if (err?.response?.status === 404) {
           return null;
         }
         throw error;
@@ -537,7 +616,7 @@ export function useDeleteComment() {
   return useMutation({
     mutationFn: (commentId: number) =>
       GFapi.delete(`/api/comments/delete/${commentId}/`),
-    onSuccess: (_data, _commentId) => {
+    onSuccess: () => {
       // Invalidate all thread comments queries to refresh the comment list
       queryClient.invalidateQueries({ 
         predicate: (query) => {
