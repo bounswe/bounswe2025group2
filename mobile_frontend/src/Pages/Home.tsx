@@ -8,6 +8,8 @@ import {
   Animated,
   Easing,
   ImageSourcePropType,
+  Platform,
+  TouchableOpacity,
 } from 'react-native';
 import Thread from '../components/Thread';
 import { useTheme } from '../context/ThemeContext';
@@ -33,6 +35,7 @@ const Home = () => {
   const [refreshing, setRefreshing] = useState<boolean>(false); // Pull-to-refresh state
   const [error, setError] = useState<string | null>(null); // Error message for failed requests
   const [profilePics, setProfilePics] = useState<Record<string, string>>({}); // Cached profile images keyed by username
+  const [showScrollButton, setShowScrollButton] = useState<boolean>(false); // Show scroll-to-top button
 
   // Context hooks for theming and authentication
   const { colors } = useTheme();
@@ -41,6 +44,11 @@ const Home = () => {
   // Animation references
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(16)).current;
+  const itemAnimations = useRef<Animated.Value[]>([]).current;
+  const scaleAnim = useRef(new Animated.Value(0.95)).current;
+  const shimmerAnim = useRef(new Animated.Value(0)).current;
+  const scrollButtonAnim = useRef(new Animated.Value(0)).current;
+  const flatListRef = useRef<FlatList>(null);
 
   // Profile image cache helpers
   const profilePicCache = useRef<Record<string, string>>({});
@@ -78,6 +86,7 @@ const Home = () => {
   const animateContent = useCallback(() => {
     fadeAnim.setValue(0);
     slideAnim.setValue(16);
+    scaleAnim.setValue(0.95);
 
     Animated.parallel([
       Animated.timing(fadeAnim, {
@@ -91,8 +100,14 @@ const Home = () => {
         easing: Easing.out(Easing.quad),
         useNativeDriver: true,
       }),
+      Animated.timing(scaleAnim, {
+        toValue: 1,
+        duration: 400,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }),
     ]).start();
-  }, [fadeAnim, slideAnim]);
+  }, [fadeAnim, slideAnim, scaleAnim]);
 
   /**
    * Fetches threads from the API endpoint.
@@ -228,7 +243,67 @@ const Home = () => {
   }, [fetchThreads]);
 
   /**
-   * Renders individual thread items in the FlatList.
+   * Handles scroll event to show/hide scroll-to-top button
+   */
+  const handleScroll = useCallback((event: any) => {
+    const offset = event.nativeEvent.contentOffset.y;
+    const shouldShow = offset > 300; // Show button after scrolling 300 pixels
+
+    if (shouldShow && !showScrollButton) {
+      setShowScrollButton(true);
+      Animated.timing(scrollButtonAnim, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+      }).start();
+    } else if (!shouldShow && showScrollButton) {
+      setShowScrollButton(false);
+      Animated.timing(scrollButtonAnim, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true,
+      }).start();
+    }
+  }, [showScrollButton, scrollButtonAnim]);
+
+  /**
+   * Scrolls to the top of the thread list (latest posts)
+   */
+  const scrollToTop = useCallback(() => {
+    if (flatListRef.current) {
+      flatListRef.current.scrollToOffset({ offset: 0, animated: true });
+    }
+  }, []);
+
+  /**
+   * Initializes and animates item animations when threads change
+   */
+  useEffect(() => {
+    if (threads.length > 0) {
+      // Clear old animations
+      itemAnimations.length = 0;
+
+      // Create and start animations for each thread
+      const animations = threads.map((_, index) => {
+        const anim = new Animated.Value(0);
+
+        Animated.timing(anim, {
+          toValue: 1,
+          duration: 400,
+          delay: index * 80, // Stagger each item by 80ms
+          easing: Easing.out(Easing.cubic),
+          useNativeDriver: true,
+        }).start();
+
+        return anim;
+      });
+
+      itemAnimations.push(...animations);
+    }
+  }, [threads, itemAnimations]);
+
+  /**
+   * Renders individual thread items in the FlatList with staggered animations.
    * Handles data mapping and fallback values for missing thread properties.
    */
   const renderItem = useCallback(
@@ -246,53 +321,109 @@ const Home = () => {
         return DEFAULT_PROFILE_PIC;
       })();
 
+      const itemAnim = itemAnimations[index] || new Animated.Value(1);
+
+      const animatedStyle = {
+        opacity: itemAnim,
+        transform: [
+          {
+            translateY: itemAnim.interpolate({
+              inputRange: [0, 1],
+              outputRange: [20, 0],
+            }),
+          },
+          {
+            scale: itemAnim.interpolate({
+              inputRange: [0, 1],
+              outputRange: [0.95, 1],
+            }),
+          },
+        ],
+      };
+
       return (
-        <Thread
-          key={item.id || index}
-          forumName={item.forum?.title || item.forum || 'Forum'}
-          content={`${item.title ? item.title + '\n' : ''}${item.content || ''}`}
-          profilePic={profilePicSource}
-          username={username}
-          threadId={item.id}
-          likeCount={item.like_count || 0}
-          commentCount={item.comment_count || 0}
-        />
+        <Animated.View style={animatedStyle} key={item.id || index}>
+          <Thread
+            forumName={item.forum?.title || item.forum || 'Forum'}
+            content={`${item.title ? item.title + '\n' : ''}${item.content || ''}`}
+            profilePic={profilePicSource}
+            username={username}
+            threadId={item.id}
+            likeCount={item.like_count || 0}
+            commentCount={item.comment_count || 0}
+          />
+        </Animated.View>
       );
     },
-    [profilePics]
+    [profilePics, itemAnimations]
   );
 
   /**
    * Renders the empty state component for FlatList.
-   * Shows loading spinner, error message, or empty state based on current state.
+   * Shows loading spinner with shimmer animation, error message, or empty state.
    * @returns {JSX.Element} Empty state component
    */
   const listEmpty = useMemo(() => {
     if (loading) {
+      // Shimmer animation during loading
+      Animated.loop(
+        Animated.timing(shimmerAnim, {
+          toValue: 1,
+          duration: 1500,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        })
+      ).start();
+
+      const shimmerOpacity = shimmerAnim.interpolate({
+        inputRange: [0, 0.5, 1],
+        outputRange: [0.3, 0.8, 0.3],
+      });
+
       return (
-        <View style={styles.loadingContainer}>
+        <Animated.View style={[styles.loadingContainer, { opacity: shimmerOpacity }]}>
           <ActivityIndicator size="large" color={colors.mentionText} />
-        </View>
+          <Text style={[styles.loadingText, { color: colors.subText, marginTop: 12 }]}>
+            Loading threads...
+          </Text>
+        </Animated.View>
       );
     }
 
     const content = error ? 'Failed to load threads. Pull to refresh.' : 'There is no such post.';
 
     return (
-      <View style={styles.emptyContainer}>
+      <Animated.View
+        style={[
+          styles.emptyContainer,
+          {
+            opacity: fadeAnim.interpolate({
+              inputRange: [0, 1],
+              outputRange: [0, 1],
+            }),
+          },
+        ]}
+      >
         <Text style={[styles.emptyText, { color: colors.subText }]}>{content}</Text>
-      </View>
+      </Animated.View>
     );
-  }, [colors.mentionText, colors.subText, error, loading]);
+  }, [colors.mentionText, colors.subText, error, loading, shimmerAnim, fadeAnim]);
 
   return (
     <Animated.View
       style={[
         styles.container,
-        { opacity: fadeAnim, transform: [{ translateY: slideAnim }] },
+        {
+          opacity: fadeAnim,
+          transform: [
+            { translateY: slideAnim },
+            { scale: scaleAnim },
+          ],
+        },
       ]}
     >
       <FlatList
+        ref={flatListRef}
         style={styles.list}
         contentContainerStyle={styles.content}
         data={threads}
@@ -301,7 +432,38 @@ const Home = () => {
         ListEmptyComponent={listEmpty}
         refreshing={refreshing}
         onRefresh={onRefresh}
+        onScroll={handleScroll}
+        scrollEventThrottle={16}
       />
+
+      {/* Scroll to Top Button */}
+      <Animated.View
+        style={[
+          styles.scrollToTopButton,
+          {
+            opacity: scrollButtonAnim,
+            transform: [
+              {
+                scale: scrollButtonAnim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [0.5, 1],
+                }),
+              },
+            ],
+            pointerEvents: showScrollButton ? 'auto' : 'none',
+          },
+        ]}
+      >
+        <TouchableOpacity
+          style={[styles.scrollButton, { backgroundColor: colors.active }]}
+          onPress={scrollToTop}
+          activeOpacity={0.7}
+        >
+          <Text style={[styles.scrollButtonText, { color: colors.background }]}>
+            ↑
+          </Text>
+        </TouchableOpacity>
+      </Animated.View>
     </Animated.View>
   );
 };
@@ -324,12 +486,38 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 40,
   },
+  loadingText: {
+    fontSize: 14,
+    fontWeight: '500',
+  },
   emptyContainer: {
     alignItems: 'center',
     marginTop: 40,
   },
   emptyText: {
     fontSize: 16,
+  },
+  scrollToTopButton: {
+    position: 'absolute',
+    bottom: 24,
+    right: 24,
+    zIndex: 10,
+  },
+  scrollButton: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  scrollButtonText: {
+    fontSize: 24,
+    fontWeight: 'bold',
   },
 });
 
