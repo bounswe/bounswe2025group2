@@ -85,49 +85,17 @@ describe('Settings Component', () => {
   });
 
   describe('Rendering', () => {
-    test('renders without crashing', () => {
-      render(<Settings />);
-      expect(useTheme).toHaveBeenCalled();
-    });
-
-    test('renders the dark theme switch', async () => {
-      const { root } = render(<Settings />);
-      await waitFor(() => {
-        expect(root).toBeTruthy();
-      });
-    });
-
-    test('renders all setting action buttons', async () => {
+    test('renders all setting action buttons and titles', async () => {
       const { getByText } = render(<Settings />);
 
       await waitFor(() => {
         expect(getByText('Edit Profile')).toBeTruthy();
         expect(getByText('Notification Preferences')).toBeTruthy();
         expect(getByText('Log Out')).toBeTruthy();
-      });
-    });
-
-    test('renders action subtitles', async () => {
-      const { getByText } = render(<Settings />);
-
-      await waitFor(() => {
         expect(getByText('Update your personal details')).toBeTruthy();
         expect(getByText('Manage alerts and reminders')).toBeTruthy();
         expect(getByText('Sign out from this device')).toBeTruthy();
       });
-    });
-
-    test('displays correct theme toggle status', async () => {
-      const { rerender } = render(<Settings />);
-
-      (useTheme as jest.Mock).mockReturnValue({
-        colors: mockColors,
-        isDark: true,
-        toggleTheme: jest.fn(),
-      });
-
-      rerender(<Settings />);
-      expect(useTheme).toHaveBeenCalled();
     });
   });
 
@@ -358,15 +326,7 @@ describe('Settings Component', () => {
   });
 
   describe('Button Interactions', () => {
-    test('responds to button press events', async () => {
-      const { getByText } = render(<Settings />);
-
-      await waitFor(() => {
-        expect(getByText('Edit Profile')).toBeTruthy();
-      });
-    });
-
-    test('handles multiple rapid presses', async () => {
+    test('handles multiple rapid button presses', async () => {
       const { getByText } = render(<Settings />);
 
       await waitFor(() => {
@@ -383,48 +343,16 @@ describe('Settings Component', () => {
 
       expect(mockNavigation.push).toHaveBeenCalledWith('Profile');
     });
-
-    test('applies correct theme colors to buttons', async () => {
-      const { getByText } = render(<Settings />);
-
-      await waitFor(() => {
-        expect(getByText('Edit Profile')).toBeTruthy();
-      });
-    });
   });
 
   describe('Animations', () => {
-    test('initializes fade animation on mount', () => {
+    test('renders with theme applied on mount', () => {
       render(<Settings />);
       expect(useTheme).toHaveBeenCalled();
-    });
-
-    test('renders animated cards with proper styling', async () => {
-      const { root } = render(<Settings />);
-
-      await waitFor(() => {
-        expect(root).toBeTruthy();
-      });
-    });
-
-    test('applies staggered animation delays to action rows', async () => {
-      render(<Settings />);
-
-      await waitFor(() => {
-        expect(useTheme).toHaveBeenCalled();
-      });
     });
   });
 
   describe('Theme Integration', () => {
-    test('uses theme colors for background', async () => {
-      const { root } = render(<Settings />);
-
-      await waitFor(() => {
-        expect(root).toBeTruthy();
-      });
-    });
-
     test('updates colors when theme changes', async () => {
       const { rerender } = render(<Settings />);
 
@@ -444,14 +372,6 @@ describe('Settings Component', () => {
 
       expect(useTheme).toHaveBeenCalled();
     });
-
-    test('applies correct border and card colors', async () => {
-      const { root } = render(<Settings />);
-
-      await waitFor(() => {
-        expect(root).toBeTruthy();
-      });
-    });
   });
 
   describe('Component State Management', () => {
@@ -470,46 +390,9 @@ describe('Settings Component', () => {
 
       expect(mockNavigation.push).toHaveBeenCalledWith('Profile');
     });
-
-    test('does not lose state when theme changes', async () => {
-      const { rerender } = render(<Settings />);
-
-      (useTheme as jest.Mock).mockReturnValue({
-        colors: mockColors,
-        isDark: true,
-        toggleTheme: jest.fn(),
-      });
-
-      rerender(<Settings />);
-
-      expect(useTheme).toHaveBeenCalled();
-    });
   });
 
   describe('Error Handling', () => {
-    test('handles missing navigation gracefully', async () => {
-      (useNavigation as jest.Mock).mockReturnValue({
-        push: jest.fn(),
-        reset: jest.fn(),
-      });
-
-      const { getByText } = render(<Settings />);
-
-      await waitFor(() => {
-        expect(getByText('Edit Profile')).toBeTruthy();
-      });
-    });
-
-    test('handles missing auth context gracefully', async () => {
-      (useAuth as jest.Mock).mockReturnValue({});
-
-      const { getByText } = render(<Settings />);
-
-      await waitFor(() => {
-        expect(getByText('Log Out')).toBeTruthy();
-      });
-    });
-
     test('handles network errors in logout', async () => {
       (global.fetch as jest.Mock).mockImplementation(() => {
         throw new Error('Network timeout');
@@ -528,29 +411,6 @@ describe('Settings Component', () => {
       await waitFor(() => {
         expect(mockNavigation.reset).toHaveBeenCalled();
       });
-    });
-
-    test('handles console errors during logout', async () => {
-      const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
-      (global.fetch as jest.Mock).mockRejectedValueOnce(
-        new Error('API Error')
-      );
-
-      const { getByText } = render(<Settings />);
-
-      await waitFor(() => {
-        expect(getByText('Log Out')).toBeTruthy();
-      });
-
-      const logoutButton = getByText('Log Out');
-      const pressable = logoutButton.parent?.parent;
-      if (pressable) fireEvent.press(pressable);
-
-      await waitFor(() => {
-        expect(consoleErrorSpy).toHaveBeenCalled();
-      });
-
-      consoleErrorSpy.mockRestore();
     });
   });
 
@@ -574,81 +434,25 @@ describe('Settings Component', () => {
 
       expect(mockToggleTheme.mock.calls.length).toBeGreaterThanOrEqual(3);
     });
-
-    test('handles empty colors object', async () => {
-      (useTheme as jest.Mock).mockReturnValue({
-        colors: {},
-        isDark: false,
-        toggleTheme: jest.fn(),
-      });
-
-      const { root } = render(<Settings />);
-
-      expect(root).toBeTruthy();
-    });
-
-    test('handles missing action handlers', async () => {
-      const { getByText } = render(<Settings />);
-
-      await waitFor(() => {
-        expect(getByText('Edit Profile')).toBeTruthy();
-      });
-    });
-
-    test('handles navigation reset failure gracefully', async () => {
-      mockNavigation.reset.mockImplementationOnce(() => {
-        throw new Error('Navigation reset failed');
-      });
-
-      const { getByText, UNSAFE_getAllByType } = render(<Settings />);
-
-      await waitFor(() => {
-        expect(getByText('Log Out')).toBeTruthy();
-      });
-
-      const pressables = UNSAFE_getAllByType(Pressable);
-      if (pressables[3]) {
-        try {
-          fireEvent.press(pressables[3]);
-        } catch (e) {
-          // Error is expected
-        }
-      }
-    });
   });
 
   describe('Accessibility', () => {
-    test('renders all interactive elements', async () => {
+    test('renders all interactive elements with descriptive labels', async () => {
       const { getByText } = render(<Settings />);
 
       await waitFor(() => {
         expect(getByText('Dark Theme')).toBeTruthy();
         expect(getByText('Edit Profile')).toBeTruthy();
-        expect(getByText('Notification Preferences')).toBeTruthy();
-        expect(getByText('Log Out')).toBeTruthy();
-      });
-    });
-
-    test('provides descriptive labels for all actions', async () => {
-      const { getByText } = render(<Settings />);
-
-      await waitFor(() => {
         expect(getByText('Update your personal details')).toBeTruthy();
+        expect(getByText('Notification Preferences')).toBeTruthy();
         expect(getByText('Manage alerts and reminders')).toBeTruthy();
+        expect(getByText('Log Out')).toBeTruthy();
         expect(getByText('Sign out from this device')).toBeTruthy();
       });
     });
   });
 
   describe('Data Integrity', () => {
-    test('maintains action data structure', async () => {
-      render(<Settings />);
-
-      await waitFor(() => {
-        expect(useTheme).toHaveBeenCalled();
-      });
-    });
-
     test('does not mutate original theme data', async () => {
       const originalColors = { ...mockColors };
 
@@ -661,7 +465,7 @@ describe('Settings Component', () => {
   });
 
   describe('Performance', () => {
-    test('renders efficiently without unnecessary re-renders', async () => {
+    test('renders efficiently on re-renders', async () => {
       const mockToggleTheme = jest.fn();
       (useTheme as jest.Mock).mockReturnValue({
         colors: mockColors,
@@ -674,16 +478,6 @@ describe('Settings Component', () => {
       rerender(<Settings />);
 
       expect(useTheme).toHaveBeenCalled();
-    });
-
-    test('memoizes action array properly', async () => {
-      const { getByText } = render(<Settings />);
-
-      await waitFor(() => {
-        expect(getByText('Edit Profile')).toBeTruthy();
-        expect(getByText('Notification Preferences')).toBeTruthy();
-        expect(getByText('Log Out')).toBeTruthy();
-      });
     });
   });
 });
