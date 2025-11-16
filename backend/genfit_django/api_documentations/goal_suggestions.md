@@ -76,6 +76,15 @@ Get AI-powered suggestions for a new fitness goal including target value, target
 }
 ```
 
+429 Too Many Requests - Rate limit exceeded:
+```json
+{
+  "detail": "Request was throttled. Expected available in 3421 seconds."
+}
+```
+
+**Note:** Each user is limited to **10 suggestion requests per hour**. If exceeded, wait for the time specified in the response before making another request.
+
 500 Internal Server Error - AI service failure:
 ```json
 {
@@ -129,6 +138,13 @@ async function getGoalSuggestions(title: string, description: string) {
       description
     })
   });
+  
+  // Handle rate limiting
+  if (response.status === 429) {
+    const data = await response.json();
+    const waitMinutes = Math.ceil(data.retry_after_seconds / 60);
+    throw new Error(`Too many requests. Please try again in ${waitMinutes} minutes.`);
+  }
   
   if (!response.ok) {
     throw new Error('Suggestions feature is currently unavailable');
@@ -288,6 +304,26 @@ def test_goal_suggestions():
 | SWIMMING | Swimming activities | meters, km, laps | Pool swimming, open water |
 | SPORTS | Sport-specific activities | minutes, hours, games, events | Basketball, tennis, soccer, competitions |
 
+## Rate Limiting
+
+**Limit:** 10 requests per hour per user
+
+**Purpose:** Prevent API abuse and manage Groq AI API costs
+
+**Behavior:**
+- Each authenticated user can make up to 10 suggestion requests per hour
+- Counter resets every hour from first request
+- Exceeded limit returns `429 Too Many Requests` with retry time
+- Frontend should display user-friendly message: "You've reached the hourly limit for AI suggestions. Please try again in X minutes."
+
+**Response Headers:**
+```
+X-RateLimit-Limit: 10
+X-RateLimit-Remaining: 3
+X-RateLimit-Reset: 1700150400
+Retry-After: 3421
+```
+
 ## Best Practices
 
 1. **Provide Clear Descriptions**: The more detailed the description, the better the AI can tailor suggestions
@@ -296,6 +332,7 @@ def test_goal_suggestions():
 4. **Heed Warnings**: If `is_realistic` is `false`, seriously consider the warning message
 5. **Consult Professionals**: For medical conditions or concerns, consult healthcare providers before starting new fitness programs
 6. **Progressive Loading**: Follow the suggested timeline to avoid injury and ensure sustainable progress
+7. **Respect Rate Limits**: Avoid spamming the endpoint - each suggestion counts toward your hourly limit
 
 ## Integration Notes
 

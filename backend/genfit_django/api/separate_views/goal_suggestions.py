@@ -1,7 +1,8 @@
-from rest_framework.decorators import api_view, permission_classes
+from rest_framework.decorators import api_view, permission_classes, throttle_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
+from rest_framework.throttling import UserRateThrottle
 from ..models import FitnessGoal, Profile, ChallengeParticipant
 from django.utils import timezone
 import os
@@ -11,6 +12,9 @@ import json
 import re
 
 load_dotenv()
+
+class GoalSuggestionsThrottle(UserRateThrottle):
+    rate = '10/hour'  # Max 10 suggestions per hour per user
 
 
 def get_user_context_for_goal_suggestion(user):
@@ -225,6 +229,7 @@ def get_goal_suggestions_from_groq(user, title, description, retry_count=0, max_
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
+@throttle_classes([GoalSuggestionsThrottle])
 def get_goal_suggestions(request):
     """
     Endpoint to get AI-powered suggestions for a new fitness goal
