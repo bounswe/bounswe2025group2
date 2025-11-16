@@ -23,7 +23,7 @@ export const GoalAISuggestions: React.FC<GoalAISuggestionsProps> = ({
   const [isExpanded, setIsExpanded] = useState(true);
   if (!suggestion.is_realistic) {
     return (
-      <Card className="bg-orange-50 border border-orange-200 shadow-sm">
+      <Card className="bg-orange-50 border border-[#e5e7eb] shadow-sm">
         <div className="p-4">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
@@ -73,7 +73,7 @@ export const GoalAISuggestions: React.FC<GoalAISuggestionsProps> = ({
   }
 
   return (
-    <Card className="bg-emerald-50 border border-emerald-200 shadow-sm">
+    <Card className="bg-emerald-50 border border-[#e5e7eb] shadow-sm">
       <div className="p-4">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
@@ -133,7 +133,12 @@ export const GoalAISuggestions: React.FC<GoalAISuggestionsProps> = ({
             <button
               type="button"
               onClick={onChatClick}
-              className="text-xs text-center text-emerald-700 hover:text-emerald-900 hover:underline transition-colors py-1"
+              className="text-xs text-center font-medium px-4 py-2 rounded-md transition-all"
+              style={{
+                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                boxShadow: '0 4px 15px rgba(102, 126, 234, 0.4)',
+                color: 'white'
+              }}
             >
               Need more tips? Chat with AI →
             </button>
