@@ -4,7 +4,6 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Lightbulb, AlertTriangle, CheckCircle, ChevronDown, ChevronUp } from 'lucide-react';
 import type { GoalSuggestion } from '@/lib/api/goalSuggestionsApi';
@@ -40,10 +39,21 @@ export const GoalAISuggestions: React.FC<GoalAISuggestionsProps> = ({
             <button
               type="button"
               onClick={() => setIsExpanded(!isExpanded)}
-              className="text-orange-600 hover:text-orange-800 transition-colors p-1 focus:outline-none focus:ring-0"
+              className="text-xs text-orange-600 hover:text-orange-700 font-medium flex items-center gap-1 px-2 py-1 rounded-md hover:bg-orange-100 transition-all focus:outline-none focus:ring-0"
               aria-label={isExpanded ? "Collapse" : "Expand"}
             >
-              {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+              {isExpanded ? (
+                <>
+                  <span>Show Less</span>
+                  <ChevronUp className="w-4 h-4" />
+                </>
+              ) : (
+                <>
+                  <span>Show More</span>
+                  <ChevronDown className="w-4 h-4" />
+                  <span className="inline-block w-2 h-2 bg-orange-500 rounded-full animate-pulse ml-1" />
+                </>
+              )}
             </button>
           </div>
           
@@ -63,15 +73,15 @@ export const GoalAISuggestions: React.FC<GoalAISuggestionsProps> = ({
             </>
           )}
           
-          <Button
+          <button
             type="button"
             onClick={() => onApply(suggestion)}
-            size="sm"
-            className="w-full bg-orange-500 hover:bg-orange-600 text-white"
+            className="w-full bg-orange-500 hover:bg-orange-600 text-white font-semibold rounded-lg transition-all hover:shadow-md flex items-center justify-center"
+            style={{ padding: '12px 16px', fontSize: '14px' }}
           >
-            <CheckCircle className="w-4 h-4 mr-2" />
+            <CheckCircle className="w-5 h-5 mr-2" />
             Apply Suggestions to Form
-          </Button>
+          </button>
         </div>
       </Card>
     );
@@ -90,10 +100,21 @@ export const GoalAISuggestions: React.FC<GoalAISuggestionsProps> = ({
           <button
             type="button"
             onClick={() => setIsExpanded(!isExpanded)}
-            className="text-emerald-600 hover:text-emerald-800 transition-colors p-1 focus:outline-none focus:ring-0"
+            className="text-xs text-emerald-600 hover:text-emerald-700 font-medium flex items-center gap-1 px-2 py-1 rounded-md hover:bg-emerald-100 transition-all focus:outline-none focus:ring-0"
             aria-label={isExpanded ? "Collapse" : "Expand"}
           >
-            {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+            {isExpanded ? (
+              <>
+                <span>Show Less</span>
+                <ChevronUp className="w-4 h-4" />
+              </>
+            ) : (
+              <>
+                <span>Show More</span>
+                <ChevronDown className="w-4 h-4" />
+                <span className="inline-block w-2 h-2 bg-emerald-500 rounded-full animate-pulse ml-1" />
+              </>
+            )}
           </button>
         </div>
         
@@ -125,15 +146,15 @@ export const GoalAISuggestions: React.FC<GoalAISuggestionsProps> = ({
         )}
 
         <div className="flex flex-col gap-2">
-          <Button
+          <button
             type="button"
             onClick={() => onApply(suggestion)}
-            size="sm"
-            className="w-full bg-emerald-600 hover:bg-emerald-700 text-white"
+            className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-lg transition-all hover:shadow-md flex items-center justify-center"
+            style={{ padding: '12px 16px', fontSize: '14px' }}
           >
-            <CheckCircle className="w-4 h-4 mr-2" />
+            <CheckCircle className="w-5 h-5 mr-2" />
             Apply Suggestions to Form
-          </Button>
+          </button>
           {onChatClick && (
             <button
               type="button"

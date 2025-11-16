@@ -429,6 +429,21 @@ a {
   animation: spin 1s linear infinite;
 }
 
+.animate-slide-up {
+  animation: slide-up 0.3s ease-out;
+}
+
+@keyframes slide-up {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
 /* Enhanced Dialog Overlay */
 [data-radix-dialog-overlay] {
   background-color: rgba(0, 0, 0, 0.75) !important;

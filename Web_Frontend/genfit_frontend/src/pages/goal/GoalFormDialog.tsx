@@ -42,6 +42,7 @@ const GoalFormDialog = ({ isOpen, onClose, editingGoal }: GoalFormDialogProps) =
     const [aiSuggestion, setAiSuggestion] = useState<GoalSuggestion | null>(null);
     const [isLoadingSuggestion, setIsLoadingSuggestion] = useState(false);
     const [suggestionError, setSuggestionError] = useState<string | null>(null);
+    const [showAppliedToast, setShowAppliedToast] = useState(false);
 
     useEffect(() => {
         if (editingGoal) {
@@ -129,6 +130,10 @@ const GoalFormDialog = ({ isOpen, onClose, editingGoal }: GoalFormDialogProps) =
             unit: suggestion.unit,
             target_date: calculateTargetDate(suggestion.days_to_complete),
         }));
+        
+        // Show success toast
+        setShowAppliedToast(true);
+        setTimeout(() => setShowAppliedToast(false), 3000);
     };
 
     const handleChatClick = () => {
@@ -185,11 +190,27 @@ const GoalFormDialog = ({ isOpen, onClose, editingGoal }: GoalFormDialogProps) =
     };
 
     return (
-        <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent className="goal-dialog">
-                <DialogHeader>
-                    <DialogTitle>{editingGoal ? 'Edit Goal' : 'Add New Goal'}</DialogTitle>
-                </DialogHeader>
+        <>
+            {/* Success Toast */}
+            {showAppliedToast && (
+                <div className="fixed bottom-4 right-4 z-[200] animate-slide-up">
+                    <div className="bg-emerald-600 text-white px-4 py-3 rounded-lg shadow-lg flex items-center gap-3">
+                        <div className="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center flex-shrink-0">
+                            <span className="text-emerald-600 text-lg font-bold">✓</span>
+                        </div>
+                        <div>
+                            <p className="text-sm font-semibold">Suggestions Applied!</p>
+                            <p className="text-xs opacity-90">Check the form fields below</p>
+                        </div>
+                    </div>
+                </div>
+            )}
+            
+            <Dialog open={isOpen} onOpenChange={onClose}>
+                <DialogContent className="goal-dialog">
+                    <DialogHeader>
+                        <DialogTitle>{editingGoal ? 'Edit Goal' : 'Add New Goal'}</DialogTitle>
+                    </DialogHeader>
                 <form onSubmit={handleFormSubmit} className="goal-form">
                     <div className="form-grid">
                         <div className="form-group">
@@ -387,6 +408,7 @@ const GoalFormDialog = ({ isOpen, onClose, editingGoal }: GoalFormDialogProps) =
                 </form>
             </DialogContent>
         </Dialog>
+        </>
     );
 };
 
