@@ -104,8 +104,10 @@ const GoalFormDialog = ({ isOpen, onClose, editingGoal }: GoalFormDialogProps) =
                 description: formData.description,
             });
             setAiSuggestion(suggestion);
+            setSuggestionError(null); // Clear any previous errors on success
         } catch (error: any) {
             setSuggestionError(error.message);
+            setAiSuggestion(null); // Clear suggestions on error
         } finally {
             setIsLoadingSuggestion(false);
         }
@@ -226,29 +228,50 @@ const GoalFormDialog = ({ isOpen, onClose, editingGoal }: GoalFormDialogProps) =
                             type="button"
                             onClick={fetchAISuggestions}
                             disabled={!canGetSuggestions || isLoadingSuggestion}
-                            className="w-full bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 text-white font-medium shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+                            className={`
+                                w-full py-3 font-semibold text-sm transition-all duration-200
+                                ${canGetSuggestions && !isLoadingSuggestion
+                                    ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-md hover:shadow-lg hover:from-purple-700 hover:to-indigo-700 active:scale-[0.98]'
+                                    : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                                }
+                            `}
                         >
                             {isLoadingSuggestion ? (
-                                <>
-                                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                                    Getting AI Suggestions...
-                                </>
+                                <span className="flex items-center justify-center gap-2">
+                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                    <span>Analyzing your goal...</span>
+                                </span>
                             ) : (
-                                <>
-                                    <Sparkles className="w-4 h-4 mr-2" />
-                                    Get AI Suggestions
-                                </>
+                                <span className="flex items-center justify-center gap-2">
+                                    <Sparkles className="w-4 h-4" />
+                                    <span>Get AI Suggestions</span>
+                                </span>
                             )}
                         </Button>
-                        {!canGetSuggestions && (
+                        {!canGetSuggestions && !isLoadingSuggestion && (
                             <p className="text-xs text-gray-500 mt-2 text-center">
-                                Fill in title and description to get AI suggestions
+                                💡 Fill in both title and description to get personalized suggestions
                             </p>
                         )}
                     </div>
 
+                    {/* Loading State */}
+                    {isLoadingSuggestion && (
+                        <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                            <div className="flex items-center gap-3">
+                                <div className="flex-shrink-0">
+                                    <Loader2 className="w-5 h-5 text-blue-600 animate-spin" />
+                                </div>
+                                <div className="flex-1">
+                                    <p className="text-sm font-medium text-blue-900">Getting AI suggestions...</p>
+                                    <p className="text-xs text-blue-600 mt-1">This may take 2-5 seconds</p>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
                     {/* Display AI Suggestions */}
-                    {aiSuggestion && (
+                    {aiSuggestion && !isLoadingSuggestion && (
                         <div className="mt-4 mb-4">
                             <GoalAISuggestions
                                 suggestion={aiSuggestion}
@@ -259,10 +282,38 @@ const GoalFormDialog = ({ isOpen, onClose, editingGoal }: GoalFormDialogProps) =
                     )}
 
                     {/* Display Error */}
-                    {suggestionError && (
-                        <div className="mt-4 mb-4">
-                            <div className="p-4 bg-red-50 border-2 border-red-300 rounded-lg text-sm text-red-800 font-medium shadow-sm">
-                                ❌ {suggestionError}
+                    {suggestionError && !isLoadingSuggestion && (
+                        <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+                            <div className="flex items-center gap-3">
+                                <div className="flex-shrink-0">
+                                    <span className="text-red-600 text-lg">✕</span>
+                                </div>
+                                <div className="flex-1">
+                                    <p className="text-sm font-medium text-red-900">
+                                        {suggestionError.includes('hourly limit') || suggestionError.includes('try again')
+                                            ? 'Rate Limit Reached' 
+                                            : suggestionError.includes('temporarily unavailable') || suggestionError.includes('Failed')
+                                            ? 'Service Unavailable'
+                                            : 'Suggestion Error'}
+                                    </p>
+                                    <p className="text-xs text-red-600 mt-1">{suggestionError}</p>
+                                    <div className="mt-2 flex gap-2">
+                                        <button
+                                            type="button"
+                                            onClick={fetchAISuggestions}
+                                            className="text-xs px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700 transition-colors"
+                                        >
+                                            🔄 Try Again
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setSuggestionError(null)}
+                                            className="text-xs px-3 py-1 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 transition-colors"
+                                        >
+                                            Dismiss
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     )}

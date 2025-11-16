@@ -3,7 +3,7 @@
  * Displays AI-powered suggestions for goals with option to apply them
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Lightbulb, AlertTriangle, CheckCircle, ChevronDown, ChevronUp } from 'lucide-react';
@@ -21,6 +21,11 @@ export const GoalAISuggestions: React.FC<GoalAISuggestionsProps> = ({
   onChatClick,
 }) => {
   const [isExpanded, setIsExpanded] = useState(true);
+  
+  // Reset expansion state when new suggestions arrive
+  useEffect(() => {
+    setIsExpanded(true);
+  }, [suggestion]);
   if (!suggestion.is_realistic) {
     return (
       <Card className="bg-orange-50 border border-[#e5e7eb] shadow-sm">
@@ -35,7 +40,7 @@ export const GoalAISuggestions: React.FC<GoalAISuggestionsProps> = ({
             <button
               type="button"
               onClick={() => setIsExpanded(!isExpanded)}
-              className="text-orange-600 hover:text-orange-800 transition-colors p-1"
+              className="text-orange-600 hover:text-orange-800 transition-colors p-1 focus:outline-none focus:ring-0"
               aria-label={isExpanded ? "Collapse" : "Expand"}
             >
               {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
@@ -85,7 +90,7 @@ export const GoalAISuggestions: React.FC<GoalAISuggestionsProps> = ({
           <button
             type="button"
             onClick={() => setIsExpanded(!isExpanded)}
-            className="text-emerald-600 hover:text-emerald-800 transition-colors p-1"
+            className="text-emerald-600 hover:text-emerald-800 transition-colors p-1 focus:outline-none focus:ring-0"
             aria-label={isExpanded ? "Collapse" : "Expand"}
           >
             {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
