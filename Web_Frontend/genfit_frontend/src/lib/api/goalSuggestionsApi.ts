@@ -42,19 +42,30 @@ export const getGoalSuggestions = async (
     // Handle rate limiting (429)
     if (error.status === 429) {
       const retryAfter = error.response?.headers?.get('retry-after');
-      const retryMinutes = retryAfter ? Math.ceil(parseInt(retryAfter) / 60) : 'a few';
+      const waitMinutes = retryAfter ? Math.ceil(parseInt(retryAfter) / 60) : 'a few';
       
       throw new Error(
-        `You've reached the hourly limit for AI suggestions. Please try again in ${retryMinutes} minutes.`
+        `You've reached the limit of 10 suggestions per hour. Please try again in ${waitMinutes} minutes.`
       );
     }
     
-    // Handle other errors
-    if (error.status === 500) {
-      throw new Error('AI suggestions are temporarily unavailable. Please create your goal manually.');
+    // Handle validation errors (400)
+    if (error.status === 400) {
+      const errorData = error.data || {};
+      throw new Error(errorData.error || 'Invalid goal details. Please check your input.');
     }
     
-    throw new Error(error.message || 'Failed to get goal suggestions');
+    // Handle server errors (500)
+    if (error.status === 500) {
+      throw new Error('Our AI service is temporarily unavailable. Please try again in a few moments.');
+    }
+    
+    // Handle network errors
+    if (!error.status) {
+      throw new Error('Network error. Please check your connection and try again.');
+    }
+    
+    throw new Error(error.message || 'Unable to connect to suggestion service.');
   }
 };
 

@@ -5,16 +5,43 @@ from rest_framework import status
 from rest_framework.throttling import UserRateThrottle
 from ..models import FitnessGoal, Profile, ChallengeParticipant
 from django.utils import timezone
+from django.core.cache import cache
 import os
 from groq import Groq
 from dotenv import load_dotenv
 import json
 import re
+import hashlib
+import logging
 
 load_dotenv()
 
+logger = logging.getLogger(__name__)
+
 class GoalSuggestionsThrottle(UserRateThrottle):
-    rate = '30/hour'  # Max 10 suggestions per hour per user
+    rate = '10/hour'  # Max 10 suggestions per hour per user
+    
+    def allow_request(self, request, view):
+        """
+        Override to check cache first - cached requests don't count against rate limit
+        """
+        # Only check cache for POST requests with valid data
+        if request.method == 'POST':
+            title = request.data.get('title', '').strip()
+            description = request.data.get('description', '').strip()
+            
+            if title:
+                # Create cache key to check if response is cached
+                cache_content = f"{request.user.id}:{title}:{description}"
+                cache_key = f"goal_suggestions_{hashlib.md5(cache_content.encode()).hexdigest()}"
+                
+                # If cached, allow without throttling
+                if cache.get(cache_key):
+                    logger.debug(f"[User {request.user.id}] Cached request - bypassing throttle")
+                    return True
+        
+        # Otherwise, apply normal rate limiting
+        return super().allow_request(request, view)
 
 
 def get_user_context_for_goal_suggestion(user):
@@ -84,6 +111,19 @@ def get_goal_suggestions_from_groq(user, title, description, retry_count=0, max_
     Includes retry logic if AI doesn't return valid JSON.
     AI also validates if the goal is realistic/safe.
     """
+    # Create cache key based on user ID, title, and description
+    cache_content = f"{user.id}:{title}:{description}"
+    cache_key = f"goal_suggestions_{hashlib.md5(cache_content.encode()).hexdigest()}"
+    
+    # Check cache first (only on initial request, not retries)
+    if retry_count == 0:
+        cached_result = cache.get(cache_key)
+        if cached_result:
+            logger.info(f"[Cache Hit] User {user.id} - {title[:30]}")
+            return cached_result
+    
+    logger.info(f"[User {user.id}] AI call attempt {retry_count + 1}/{max_retries + 1} - {title[:30]}")
+    
     user_context = get_user_context_for_goal_suggestion(user)
     
     # Create the system message with detailed instructions
@@ -185,11 +225,15 @@ def get_goal_suggestions_from_groq(user, title, description, retry_count=0, max_
                 if tip and len(tip) > 200:
                     suggestions['tips'][i] = tip[:197] + "..."
             
+            # Cache the result for 30 minutes
+            cache.set(cache_key, suggestions, timeout=1800)
+            logger.info(f"[User {user.id}] Success: realistic={suggestions['is_realistic']}, type={suggestions['goal_type']}")
+            
             return suggestions
         else:
             # No valid JSON found - retry if possible
             if retry_count < max_retries:
-                print(f"No valid JSON in response (attempt {retry_count + 1}/{max_retries + 1}). Retrying...")
+                logger.warning(f"[User {user.id}] No valid JSON in response (attempt {retry_count + 1}/{max_retries + 1})")
                 return get_goal_suggestions_from_groq(user, title, description, retry_count + 1, max_retries)
             else:
                 raise ValueError(f"No valid JSON found in AI response after {max_retries + 1} attempts")
@@ -197,14 +241,14 @@ def get_goal_suggestions_from_groq(user, title, description, retry_count=0, max_
     except json.JSONDecodeError as e:
         # JSON parsing failed - retry if possible
         if retry_count < max_retries:
-            print(f"JSON parsing failed (attempt {retry_count + 1}/{max_retries + 1}). Retrying...")
+            logger.warning(f"[User {user.id}] JSON parsing failed (attempt {retry_count + 1}/{max_retries + 1}): {str(e)[:100]}")
             return get_goal_suggestions_from_groq(user, title, description, retry_count + 1, max_retries)
         else:
             raise Exception(f"Failed to parse AI response after {max_retries + 1} attempts: {str(e)}")
     except ValueError as e:
         # Missing required fields - retry if possible
         if retry_count < max_retries and ("Missing required field" in str(e) or "must be a boolean" in str(e)):
-            print(f"Validation error (attempt {retry_count + 1}/{max_retries + 1}). Retrying...")
+            logger.warning(f"[User {user.id}] Validation error (attempt {retry_count + 1}/{max_retries + 1}): {str(e)}")
             return get_goal_suggestions_from_groq(user, title, description, retry_count + 1, max_retries)
         else:
             raise Exception(f"AI suggestion validation error: {str(e)}")
@@ -250,9 +294,35 @@ def get_goal_suggestions(request):
     title = request.data.get('title', '').strip()
     description = request.data.get('description', '').strip()
     
+    logger.info(f"[User {request.user.id}] Goal suggestions requested: title='{title[:50]}'")
+    
+    # Validate title
     if not title:
+        logger.warning(f"[User {request.user.id}] Validation failed: Missing title")
         return Response(
             {'error': 'Title is required'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+    
+    if len(title) < 3:
+        logger.warning(f"[User {request.user.id}] Validation failed: Title too short")
+        return Response(
+            {'error': 'Title must be at least 3 characters'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+    
+    if len(title) > 200:
+        logger.warning(f"[User {request.user.id}] Validation failed: Title too long")
+        return Response(
+            {'error': 'Title must be 200 characters or less'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+    
+    # Validate description
+    if description and len(description) > 1000:
+        logger.warning(f"[User {request.user.id}] Validation failed: Description too long")
+        return Response(
+            {'error': 'Description must be 1000 characters or less'},
             status=status.HTTP_400_BAD_REQUEST
         )
     
@@ -267,6 +337,7 @@ def get_goal_suggestions(request):
         return Response(suggestions, status=status.HTTP_200_OK)
         
     except Exception as e:
+        logger.error(f"[User {request.user.id}] Failed: {str(e)[:200]}")
         return Response(
             {
                 'error': 'Failed to generate suggestions',

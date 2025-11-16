@@ -98,14 +98,22 @@ const GoalFormDialog = ({ isOpen, onClose, editingGoal }: GoalFormDialogProps) =
         setSuggestionError(null);
         setAiSuggestion(null);
 
+        // Add timeout to prevent infinite loading (30 seconds)
+        const timeoutId = setTimeout(() => {
+            setIsLoadingSuggestion(false);
+            setSuggestionError('Request timed out. The AI service is taking longer than usual. Please try again.');
+        }, 30000);
+
         try {
             const suggestion = await getGoalSuggestions({
                 title: formData.title,
                 description: formData.description,
             });
+            clearTimeout(timeoutId);
             setAiSuggestion(suggestion);
             setSuggestionError(null); // Clear any previous errors on success
         } catch (error: any) {
+            clearTimeout(timeoutId);
             setSuggestionError(error.message);
             setAiSuggestion(null); // Clear suggestions on error
         } finally {

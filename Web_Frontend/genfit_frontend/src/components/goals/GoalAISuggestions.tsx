@@ -70,7 +70,7 @@ export const GoalAISuggestions: React.FC<GoalAISuggestionsProps> = ({
             className="w-full bg-orange-500 hover:bg-orange-600 text-white"
           >
             <CheckCircle className="w-4 h-4 mr-2" />
-            Apply to Form
+            Apply Suggestions to Form
           </Button>
         </div>
       </Card>
@@ -132,7 +132,7 @@ export const GoalAISuggestions: React.FC<GoalAISuggestionsProps> = ({
             className="w-full bg-emerald-600 hover:bg-emerald-700 text-white"
           >
             <CheckCircle className="w-4 h-4 mr-2" />
-            Apply to Form
+            Apply Suggestions to Form
           </Button>
           {onChatClick && (
             <button
