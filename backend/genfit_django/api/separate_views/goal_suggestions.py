@@ -14,7 +14,7 @@ import re
 load_dotenv()
 
 class GoalSuggestionsThrottle(UserRateThrottle):
-    rate = '10/hour'  # Max 10 suggestions per hour per user
+    rate = '20/hour'  # Max 10 suggestions per hour per user
 
 
 def get_user_context_for_goal_suggestion(user):
