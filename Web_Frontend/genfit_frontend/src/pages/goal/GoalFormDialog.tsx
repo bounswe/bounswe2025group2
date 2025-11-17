@@ -3,7 +3,7 @@ import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Textarea } from '../../components/ui/textarea';
 import { Label } from '../../components/ui/label';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../../components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '../../components/ui/dialog';
 import { Select, SelectItem } from '../../components/ui/select';
 import GFapi from '../../lib/api/GFapi';
 import { invalidateQueries } from '../../lib';
@@ -37,7 +37,7 @@ const GoalFormDialog = ({ isOpen, onClose, editingGoal }: GoalFormDialogProps) =
         unit: '',
         target_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
     });
-    
+
     // AI Suggestions state
     const [aiSuggestion, setAiSuggestion] = useState<GoalSuggestion | null>(null);
     const [isLoadingSuggestion, setIsLoadingSuggestion] = useState(false);
@@ -80,8 +80,8 @@ const GoalFormDialog = ({ isOpen, onClose, editingGoal }: GoalFormDialogProps) =
         setFormData(prev => {
             const goalTypeUnits = GOAL_TYPE_UNITS[value] || [];
             const suggestedUnit = goalTypeUnits.length > 0 ? goalTypeUnits[0] : '';
-            return { 
-                ...prev, 
+            return {
+                ...prev,
                 goal_type: value,
                 unit: suggestedUnit
             };
@@ -130,7 +130,7 @@ const GoalFormDialog = ({ isOpen, onClose, editingGoal }: GoalFormDialogProps) =
             unit: suggestion.unit,
             target_date: calculateTargetDate(suggestion.days_to_complete),
         }));
-        
+
         // Show success toast
         setShowAppliedToast(true);
         setTimeout(() => setShowAppliedToast(false), 3000);
@@ -154,7 +154,7 @@ const GoalFormDialog = ({ isOpen, onClose, editingGoal }: GoalFormDialogProps) =
 
     const handleFormSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        
+
         // Validation
         if (!formData.title.trim() || !formData.target_value || !formData.unit.trim()) {
             alert('Please fill in all required fields');
@@ -162,7 +162,7 @@ const GoalFormDialog = ({ isOpen, onClose, editingGoal }: GoalFormDialogProps) =
         }
 
         setIsSubmitting(true);
-        
+
         try {
             const payload = {
                 title: formData.title,
@@ -205,30 +205,33 @@ const GoalFormDialog = ({ isOpen, onClose, editingGoal }: GoalFormDialogProps) =
                     </div>
                 </div>
             )}
-            
+
             <Dialog open={isOpen} onOpenChange={onClose}>
                 <DialogContent className="goal-dialog">
                     <DialogHeader>
                         <DialogTitle>{editingGoal ? 'Edit Goal' : 'Add New Goal'}</DialogTitle>
-                    </DialogHeader>
+                    <DialogDescription>
+                        {editingGoal ? 'Update your goal details and progress targets' : 'Create a new fitness goal to track your progress and achievements'}
+                    </DialogDescription>
+                </DialogHeader>
                 <form onSubmit={handleFormSubmit} className="goal-form">
                     <div className="form-grid">
                         <div className="form-group">
                             <Label htmlFor="title" className="form-label">Title *</Label>
-                            <Input 
-                                id="title" 
-                                name="title" 
-                                value={formData.title} 
-                                onChange={handleInputChange} 
+                            <Input
+                                id="title"
+                                name="title"
+                                value={formData.title}
+                                onChange={handleInputChange}
                                 placeholder="e.g., Lose Weight, Run 5K"
-                                required 
+                                required
                             />
                         </div>
                         <div className="form-group">
                             <Label htmlFor="goal_type" className="form-label">Goal Type *</Label>
-                            <Select 
+                            <Select
                                 id="goal_type"
-                                value={formData.goal_type} 
+                                value={formData.goal_type}
                                 onValueChange={handleGoalTypeChange}
                             >
                                 <SelectItem value="WALKING_RUNNING">Walking/Running</SelectItem>
@@ -241,11 +244,11 @@ const GoalFormDialog = ({ isOpen, onClose, editingGoal }: GoalFormDialogProps) =
                     </div>
                     <div className="form-group">
                         <Label htmlFor="description" className="form-label">Description</Label>
-                        <Textarea 
-                            id="description" 
-                            name="description" 
-                            value={formData.description} 
-                            onChange={handleInputChange} 
+                        <Textarea
+                            id="description"
+                            name="description"
+                            value={formData.description}
+                            onChange={handleInputChange}
                             placeholder="Describe your goal and motivation..."
                             rows={3}
                         />
@@ -320,7 +323,7 @@ const GoalFormDialog = ({ isOpen, onClose, editingGoal }: GoalFormDialogProps) =
                                 <div className="flex-1">
                                     <p className="text-sm font-medium text-red-900">
                                         {suggestionError.includes('hourly limit') || suggestionError.includes('try again')
-                                            ? 'Rate Limit Reached' 
+                                            ? 'Rate Limit Reached'
                                             : suggestionError.includes('temporarily unavailable') || suggestionError.includes('Failed')
                                             ? 'Service Unavailable'
                                             : 'Suggestion Error'}
@@ -350,27 +353,27 @@ const GoalFormDialog = ({ isOpen, onClose, editingGoal }: GoalFormDialogProps) =
                     <div className="form-grid">
                         <div className="form-group">
                             <Label htmlFor="target_value" className="form-label">Target Value *</Label>
-                            <Input 
-                                id="target_value" 
-                                name="target_value" 
-                                type="number" 
-                                min="0" 
+                            <Input
+                                id="target_value"
+                                name="target_value"
+                                type="number"
+                                min="0"
                                 step="0.1"
-                                value={formData.target_value} 
-                                onChange={handleNumericInputChange} 
+                                value={formData.target_value}
+                                onChange={handleNumericInputChange}
                                 placeholder="Enter target number"
-                                required 
+                                required
                             />
                         </div>
                         <div className="form-group">
                             <Label htmlFor="unit" className="form-label">Unit *</Label>
-                            <Input 
-                                id="unit" 
-                                name="unit" 
-                                value={formData.unit} 
-                                onChange={handleInputChange} 
+                            <Input
+                                id="unit"
+                                name="unit"
+                                value={formData.unit}
+                                onChange={handleInputChange}
                                 placeholder="e.g., kg, miles, minutes"
-                                required 
+                                required
                             />
                             {GOAL_TYPE_UNITS[formData.goal_type] && (
                                 <p className="unit-suggestion">
@@ -381,19 +384,19 @@ const GoalFormDialog = ({ isOpen, onClose, editingGoal }: GoalFormDialogProps) =
                     </div>
                     <div className="form-group">
                         <Label htmlFor="target_date" className="form-label">Target Date *</Label>
-                        <Input 
-                            id="target_date" 
-                            name="target_date" 
-                            type="date" 
-                            value={formData.target_date} 
-                            onChange={handleInputChange} 
-                            required 
+                        <Input
+                            id="target_date"
+                            name="target_date"
+                            type="date"
+                            value={formData.target_date}
+                            onChange={handleInputChange}
+                            required
                         />
                     </div>
                     <DialogFooter className="form-actions">
-                        <Button 
-                            type="button" 
-                            variant="outline" 
+                        <Button
+                            type="button"
+                            variant="outline"
                             onClick={onClose}
                             disabled={isSubmitting}
                         >
@@ -413,3 +416,4 @@ const GoalFormDialog = ({ isOpen, onClose, editingGoal }: GoalFormDialogProps) =
 };
 
 export default GoalFormDialog;
+
