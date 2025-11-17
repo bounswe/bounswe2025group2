@@ -10,11 +10,6 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RenameIndex(
-            model_name='dailyadvice',
-            new_name='api_dailyad_user_id_40b1fe_idx',
-            old_name='api_dailyad_user_id_b8c5e3_idx',
-        ),
         migrations.AddField(
             model_name='challenge',
             name='difficulty_level',
