@@ -15,6 +15,7 @@ type Challenge = {
   id: number;
   title: string;
   challenge_type?: string;
+  difficulty_level?: 'Beginner' | 'Intermediate' | 'Advanced';
   target_value?: number;
   unit?: string;
   start_date?: string; // ISO
@@ -192,6 +193,14 @@ const ChallengeCard: React.FC<Props> = ({
         <Text style={styles.metaText}>
           🏆 {challenge.target_value ?? '-'} {challenge.unit ?? ''}
         </Text>
+        <View style={[
+          styles.difficultyBadge,
+          challenge.difficulty_level === 'Beginner' && styles.difficultyBeginner,
+          challenge.difficulty_level === 'Intermediate' && styles.difficultyIntermediate,
+          challenge.difficulty_level === 'Advanced' && styles.difficultyAdvanced,
+        ]}>
+          <Text style={styles.difficultyText}>Difficulty: {challenge.difficulty_level || 'Not set'}</Text>
+        </View>
         <Text style={styles.metaText}>👥 {participants} participants</Text>
       </View>
 
@@ -241,8 +250,31 @@ const styles = StyleSheet.create({
   pillText: { color: '#8a2e2e', fontSize: 12 },
   dateText: { color: '#8a2e2e', fontSize: 12 },
   title: { fontSize: 18, fontWeight: '700', color: '#8a2e2e' },
-  metaRow: { flexDirection: 'row', gap: 16 },
+  metaRow: { flexDirection: 'row', gap: 16, alignItems: 'center', flexWrap: 'wrap' },
   metaText: { color: '#8a2e2e' },
+  difficultyBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    borderWidth: 1,
+  },
+  difficultyBeginner: {
+    backgroundColor: '#d1fae5',
+    borderColor: '#10b981',
+  },
+  difficultyIntermediate: {
+    backgroundColor: '#fef3c7',
+    borderColor: '#f59e0b',
+  },
+  difficultyAdvanced: {
+    backgroundColor: '#fee2e2',
+    borderColor: '#ef4444',
+  },
+  difficultyText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#1f2937',
+  },
   actions: { marginTop: 8, gap: 8 },
   primaryBtn: {
     paddingVertical: 10,

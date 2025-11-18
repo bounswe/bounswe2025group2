@@ -99,6 +99,16 @@ const ChallengeDetailModal = ({
                                 </div>
                             </div>
 
+                            <div className="meta-item">
+                                <Trophy className="meta-icon" />
+                                <div>
+                                    <span className="meta-label">Difficulty</span>
+                                    <span className={`meta-value difficulty-badge difficulty-${challenge.difficulty_level?.toLowerCase()}`}>
+                                        {challenge.difficulty_level || 'Beginner'}
+                                    </span>
+                                </div>
+                            </div>
+
                             {challenge.location && (
                                 <div className="meta-item">
                                     <MapPin className="meta-icon" />

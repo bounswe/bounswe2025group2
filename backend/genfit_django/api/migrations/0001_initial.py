@@ -90,6 +90,7 @@ class Migration(migrations.Migration):
                 ('title', models.CharField(max_length=255)),
                 ('description', models.TextField(blank=True)),
                 ('challenge_type', models.CharField(max_length=50)),
+                ('difficulty_level', models.CharField(choices=[('Beginner', 'Beginner'), ('Intermediate', 'Intermediate'), ('Advanced', 'Advanced')], default='Beginner', max_length=20)),
                 ('target_value', models.FloatField()),
                 ('unit', models.CharField(max_length=20)),
                 ('location', models.CharField(blank=True, max_length=255, null=True)),
