@@ -28,22 +28,14 @@ All endpoints are relative to your base API URL (e.g., `http://127.0.0.1:8000/ap
 
 Creates a request. `sender` and `receiver` are inferred from the authenticated user.
 
-- If the authenticated user is the `mentor` (Coach), `sender` becomes mentor and `receiver` becomes mentee.
-- If the authenticated user is the `mentee` (User), `sender` becomes mentee and `receiver` becomes mentor.
+- The authenticated user must be either the `mentor` or the `mentee`.
+- If the authenticated user is the `mentor`, `sender` becomes mentor and `receiver` becomes mentee.
+- If the authenticated user is the `mentee`, `sender` becomes mentee and `receiver` becomes mentor.
 
 Valid roles:
-- `mentor` must be a user with `user_type="Coach"`
-- `mentee` must be a user with `user_type="User"`
+- Any authenticated user can be `mentor` or `mentee`.
 
-Request Body (Coach sending to User):
-```json
-{
-  "mentor": 12,
-  "mentee": 34
-}
-```
-
-Request Body (User requesting a Coach):
+Request Body:
 ```json
 {
   "mentor": 12,
@@ -60,17 +52,19 @@ Response (201 Created):
   "mentor": 12,
   "mentee": 34,
   "status": "PENDING",
-  "sender_username": "coach12",
-  "receiver_username": "user34",
-  "mentor_username": "coach12",
-  "mentee_username": "user34",
+  "sender_username": "userA",
+  "receiver_username": "userB",
+  "mentor_username": "userA",
+  "mentee_username": "userB",
   "created_at": "2025-11-18T10:10:00Z",
   "updated_at": "2025-11-18T10:10:00Z"
 }
 ```
 
 Common Errors:
-- 400 Bad Request if mentor is not a coach or mentee is not a user, or if a non-rejected relationship already exists between the pair.
+- 400 Bad Request if mentor and mentee are the same user.
+- 400 Bad Request if the authenticated user is neither the mentor nor the mentee.
+- 400 Bad Request if a non-rejected relationship already exists between the pair.
 
 ### Change Relationship Status (Unified)
 
@@ -128,18 +122,17 @@ Returns relationships where the authenticated user is involved, with optional qu
 
 Query Parameters:
 - `status`: filter by status; comma-separated and case-insensitive. Valid values: `pending,accepted,rejected,terminated`.
-- `as`: filter by exact role: `sender` | `receiver` | `mentor` | `mentee`.
-- `scope`: grouped role filter:
-  - `sender_receiver`: where user is sender or receiver
-  - `mentor_mentee`: where user is mentor or mentee
-  - `any` (default): any involvement
+- `as`: filter among request roles: `sender` | `receiver`.
+- `role`: filter among relationship roles: `mentor` | `mentee`.
+Default when filters are omitted: any involvement (sender/receiver/mentor/mentee).
 
 Examples:
 - All relationships: `GET /api/mentor-relationships/user/`
 - Only accepted ones: `GET /api/mentor-relationships/user/?status=accepted`
 - Multiple statuses: `GET /api/mentor-relationships/user/?status=accepted,terminated`
-- Exact role filter (you are mentor): `GET /api/mentor-relationships/user/?as=mentor`
-- Grouped scope filter with status: `GET /api/mentor-relationships/user/?scope=mentor_mentee&status=accepted`
+- Filter as sender: `GET /api/mentor-relationships/user/?as=sender`
+- Filter as mentor: `GET /api/mentor-relationships/user/?role=mentor`
+- Combine filters: `GET /api/mentor-relationships/user/?as=receiver&role=mentee&status=pending`
 
 Response (200 OK):
 ```json
@@ -151,10 +144,10 @@ Response (200 OK):
     "mentor": 12,
     "mentee": 34,
     "status": "ACCEPTED",
-    "sender_username": "coach12",
-    "receiver_username": "user34",
-    "mentor_username": "coach12",
-    "mentee_username": "user34",
+    "sender_username": "userA",
+    "receiver_username": "userB",
+    "mentor_username": "userA",
+    "mentee_username": "userB",
     "created_at": "2025-11-18T10:10:00Z",
     "updated_at": "2025-11-18T10:12:00Z"
   }
@@ -176,10 +169,10 @@ Response (200 OK):
   "mentor": 12,
   "mentee": 34,
   "status": "ACCEPTED",
-  "sender_username": "coach12",
-  "receiver_username": "user34",
-  "mentor_username": "coach12",
-  "mentee_username": "user34",
+    "sender_username": "userA",
+    "receiver_username": "userB",
+    "mentor_username": "userA",
+    "mentee_username": "userB",
   "created_at": "2025-11-18T10:10:00Z",
   "updated_at": "2025-11-18T10:12:00Z"
 }
@@ -197,14 +190,14 @@ Common Errors:
 
 ## Quick Test Flow
 
-1. Login as a Coach and create a request:
+1. Login as User A and create a request:
    - `POST /api/mentor-relationships/`
    - Body: `{ "mentor": 12, "mentee": 34 }`
-2. Login as the User (receiver) and accept it:
+2. Login as User B (receiver) and accept it:
    - `POST /api/mentor-relationships/55/status/`
    - Body: `{ "status": "ACCEPTED" }`
 3. Fetch accepted mentor/mentee relationships:
    - `GET /api/mentor-relationships/user/?scope=mentor_mentee&status=accepted`
-4. Login as the User (mentee) and terminate:
+4. Login as User B (mentee) and terminate:
    - `POST /api/mentor-relationships/55/status/`
    - Body: `{ "status": "TERMINATED" }`

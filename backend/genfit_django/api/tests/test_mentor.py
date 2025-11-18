@@ -55,12 +55,12 @@ class MentorRelationshipTests(TestCase):
         self.assertEqual(rel.sender_id, self.user.id)
         self.assertEqual(rel.receiver_id, self.coach.id)
 
-    def test_validation_blocks_non_coach_as_mentor(self):
+    def test_validation_blocks_same_user(self):
         self.client.force_login(self.user)
         payload = {'mentor': self.user.id, 'mentee': self.user.id}
         response = self.client.post(self.create_url, data=payload)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertIn('Mentor must be a coach', str(response.content))
+        self.assertIn('Mentor and mentee cannot be the same user', str(response.content))
 
     def test_accept_relationship_only_by_receiver(self):
         # Create request by coach

@@ -31,28 +31,28 @@ def get_user_mentor_relationships(request):
     List mentor-mentee relationships for the current user.
     Optional filtering via query params:
     - `status`: one of ACCEPTED, PENDING, TERMINATED, REJECTED (case-insensitive, comma-separated supported)
-    - `as`: filter by exact role: sender | receiver | mentor | mentee
-    - `scope`: group filter:
-        - sender_receiver: where user is sender or receiver
-        - mentor_mentee: where user is mentor or mentee
-        - any (default): any involvement (sender/receiver/mentor/mentee)
+    - `as`: filter among request roles: sender | receiver
+    - `role`: filter among relationship roles: mentor | mentee
+    Default when filters are omitted: any involvement (sender/receiver/mentor/mentee)
     """
     user = request.user
     status_filter = request.GET.get('status')
-    role = request.GET.get('as')
-    scope = request.GET.get('scope')
+    as_filter = request.GET.get('as')
+    role_filter = request.GET.get('role')
 
-    if role in ['sender', 'receiver', 'mentor', 'mentee']:
-        qs = MentorMenteeRelationship.objects.filter(**{role: user})
-    else:
-        if scope == 'sender_receiver':
-            qs = MentorMenteeRelationship.objects.filter(Q(sender=user) | Q(receiver=user))
-        elif scope == 'mentor_mentee':
-            qs = MentorMenteeRelationship.objects.filter(Q(mentor=user) | Q(mentee=user))
-        else:
-            qs = MentorMenteeRelationship.objects.filter(
-                Q(sender=user) | Q(receiver=user) | Q(mentor=user) | Q(mentee=user)
-            )
+    qs = MentorMenteeRelationship.objects.filter(
+        Q(sender=user) | Q(receiver=user) | Q(mentor=user) | Q(mentee=user)
+    )
+
+    if as_filter:
+        key = as_filter.strip().lower()
+        if key in ['sender', 'receiver']:
+            qs = qs.filter(**{key: user})
+
+    if role_filter:
+        key = role_filter.strip().lower()
+        if key in ['mentor', 'mentee']:
+            qs = qs.filter(**{key: user})
 
     if status_filter:
         values = [s.strip().upper() for s in status_filter.split(',') if s.strip()]

@@ -488,14 +488,10 @@ class MentorMenteeRelationshipSerializer(serializers.ModelSerializer):
         
         if mentor.id == mentee.id:
             raise serializers.ValidationError("Mentor and mentee cannot be the same user")
-        
-        # Check if mentor is actually a coach
-        if mentor.user_type != 'Coach':
-            raise serializers.ValidationError("Mentor must be a coach")
-        
-        # Check if mentee is a regular user
-        if mentee.user_type != 'User':
-            raise serializers.ValidationError("Mentee must be a regular user")
+
+        # The authenticated user must be either the mentor or the mentee
+        if request.user.id not in [mentor.id, mentee.id]:
+            raise serializers.ValidationError("You can only create relationships for yourself")
         
         # Check if relationship already exists
         existing = MentorMenteeRelationship.objects.filter(
