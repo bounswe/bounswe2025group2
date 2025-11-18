@@ -23,6 +23,7 @@ import ChatDetail from '../Pages/ChatDetail';
 import Forum from '../Pages/Forum.tsx';
 import ForumDetail from '../Pages/ForumDetail.tsx';
 import ThreadDetail from '../Pages/ThreadDetail.tsx';
+import AiChatDetail from '../Pages/AiChatDetail';
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -86,6 +87,11 @@ const AppNavigator = () => {
         name="ChatDetail" 
         component={ChatDetail}
         options={{ title: 'Chat' }}
+      />
+      <Stack.Screen
+        name="AiChatDetail"
+        component={AiChatDetail}
+        options={{ title: 'AI Chat' }}
       />
       <Stack.Screen
         name="ForumDetail"
