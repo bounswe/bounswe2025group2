@@ -7,7 +7,7 @@ class Migration(migrations.Migration):
 
     dependencies = [
         ('api', '0002_profile_preferred_sports'),
-        ('api', '0004_user_preferences'),
+        ('api', '0005_user_preferences'),
     ]
 
     operations = [
