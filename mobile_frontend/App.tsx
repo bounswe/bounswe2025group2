@@ -9,6 +9,7 @@ import AppNavigator from './src/navigation/AppNavigator';
 import { AuthProvider } from './src/context/AuthContext';
 import { ThreadProvider } from './src/context/ThreadContext';
 import { ChatProvider } from './src/context/ChatContext';
+import { AiChatProvider } from './src/context/AiChatContext';
 import { appTheme } from './src/theme/theme'; // <-- Import your custom theme
 
 const queryClient = new QueryClient();
@@ -22,10 +23,12 @@ const App = () => {
           <PaperProvider theme={appTheme}>
             <ThreadProvider>
               <ChatProvider>
-                <NavigationContainer>
-                  <AppNavigator />
-                </NavigationContainer>
-                <Toast />
+                <AiChatProvider>
+                  <NavigationContainer>
+                    <AppNavigator />
+                  </NavigationContainer>
+                  <Toast />
+                </AiChatProvider>
               </ChatProvider>
             </ThreadProvider>
           </PaperProvider>

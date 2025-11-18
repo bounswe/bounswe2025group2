@@ -34,9 +34,10 @@ export class AuthService {
   static async getCurrentUser(): Promise<User | null> {
     try {
       return await GFapi.get<User>('/api/user/');
-    } catch (error: any) {
+    } catch (error: unknown) {
       // If user is not authenticated, return null
-      if (error?.status === 401 || error?.status === 403) {
+      const err = error as { status?: number };
+      if (err?.status === 401 || err?.status === 403) {
         return null;
       }
       throw error;

@@ -211,6 +211,11 @@ class ThreadDetailSerializer(serializers.ModelSerializer):
         read_only_fields = ['created_at', 'updated_at', 'view_count', 'like_count', 'last_activity']
 
     def update(self, instance, validated_data):
+        instance.title = validated_data.get('title', instance.title)
+        instance.content = validated_data.get('content', instance.content)
+        instance.forum = validated_data.get('forum', instance.forum)
+        instance.is_pinned = validated_data.get('is_pinned', instance.is_pinned)
+        instance.is_locked = validated_data.get('is_locked', instance.is_locked)
         instance.updated_at = timezone.now()
         instance.save()
         return instance

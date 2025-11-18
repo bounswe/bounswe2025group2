@@ -14,6 +14,9 @@ from .separate_views import parse_food
 from .separate_views import cat_info
 from .separate_views import fitness_gif
 from .separate_views import ip_location
+from .separate_views import fitness_gif
+from .separate_views import ip_location
+from .separate_views import goal_suggestions
 from .separate_views import daily_advice_views
 
 
@@ -65,6 +68,7 @@ urlpatterns = [
     path('goals/<int:goal_id>/progress/', fitness_goals.update_goal_progress, name='update_goal_progress'),
     path('goals/<int:goal_id>/restart/', fitness_goals.restart_goal, name='restart_goal'),
     path('goals/check-inactive/', fitness_goals.check_inactive_goals, name='check_inactive_goals'),
+    path('goals/suggestions/', goal_suggestions.get_goal_suggestions, name='get_goal_suggestions'),
 
     # Profile URLs
     path('profile/', profile.profile_detail, name='profile-detail'),

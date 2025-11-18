@@ -57,6 +57,13 @@ export interface User {
   daily_advice_enabled?: boolean;
 }
 
+export interface UserSearchResult {
+  id: number;
+  username: string;
+  user_type: string;
+  is_verified_coach: boolean;
+}
+
 export interface LoginStats {
   current_streak: number;
   longest_streak: number;
@@ -96,6 +103,7 @@ export interface Challenge {
   end_date: string;
   target_value: number;
   challenge_type: string;
+  difficulty_level: 'Beginner' | 'Intermediate' | 'Advanced';
   unit: string;
   location?: string;
   longitude?: number;
@@ -133,6 +141,7 @@ export interface CreateChallengeData {
   title: string;
   description: string;
   challenge_type: string;
+  difficulty_level: 'Beginner' | 'Intermediate' | 'Advanced';
   target_value: number;
   unit: string;
   start_date: string;
