@@ -1365,6 +1365,7 @@ const ChallengeDetailContent: React.FC<{
       {/* Basic facts */}
       <Text style={{ marginTop: 12 }}>Type: {challenge.challenge_type || '—'}</Text>
       <Text>Target: {challenge.target_value ?? '—'} {challenge.unit || ''}</Text>
+      <Text>Difficulty: {challenge.difficulty_level || 'Not set'}</Text>
       <Text>Joined: {joined ? 'Yes' : 'No'}</Text>
       {participantsCount != null && <Text>Participants: {participantsCount}</Text>}
       <View style={{ flexDirection: 'row', gap: 12, marginTop: 12 }}>

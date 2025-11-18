@@ -350,6 +350,7 @@ class ChallengeSerializer(serializers.ModelSerializer):
     is_joined = serializers.SerializerMethodField()
     user_progress = serializers.SerializerMethodField()
     participant_count = serializers.SerializerMethodField()
+    difficulty_level = serializers.CharField(required=False, allow_blank=True, default='Beginner')
 
     class Meta:
         model = Challenge
