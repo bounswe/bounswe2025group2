@@ -6,19 +6,25 @@ import { ThemeProvider } from './context/ThemeContext';
 import { PaperProvider } from 'react-native-paper';
 import { appTheme } from './theme/theme';
 import { queryClient } from './lib/queryClient';
-import MainNavigator from './navigation/MainNavigator';
+import AppNavigator from './navigation/AppNavigator';
+import { ChatProvider } from './context/ChatContext';
+import { AiChatProvider } from './context/AiChatContext';
 
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <ThemeProvider> {/* Keep old ThemeContext for backward compatibility */}
-          <PaperProvider theme={appTheme}> {/* Add React Native Paper theme */}
-            <NavigationContainer>
-              <MainNavigator />
-            </NavigationContainer>
-          </PaperProvider>
-        </ThemeProvider>
+        <ChatProvider>
+          <AiChatProvider>
+            <ThemeProvider> {/* Keep old ThemeContext for backward compatibility */}
+              <PaperProvider theme={appTheme}> {/* Add React Native Paper theme */}
+                <NavigationContainer>
+                  <AppNavigator />
+                </NavigationContainer>
+              </PaperProvider>
+            </ThemeProvider>
+          </AiChatProvider>
+        </ChatProvider>
       </AuthProvider>
     </QueryClientProvider>
   );

@@ -57,6 +57,13 @@ export interface User {
   daily_advice_enabled?: boolean;
 }
 
+export interface UserSearchResult {
+  id: number;
+  username: string;
+  user_type: string;
+  is_verified_coach: boolean;
+}
+
 export interface LoginStats {
   current_streak: number;
   longest_streak: number;
