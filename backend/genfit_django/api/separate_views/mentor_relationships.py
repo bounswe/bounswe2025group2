@@ -29,14 +29,34 @@ def create_mentor_relationship(request):
 def get_user_mentor_relationships(request):
     """
     List mentor-mentee relationships for the current user.
-    Optional query param `status` to filter by relationship status.
+    Optional filtering via query params:
+    - `status`: one of ACCEPTED, PENDING, TERMINATED, REJECTED (case-insensitive, comma-separated supported)
+    - `as`: filter by exact role: sender | receiver | mentor | mentee
+    - `scope`: group filter:
+        - sender_receiver: where user is sender or receiver
+        - mentor_mentee: where user is mentor or mentee
+        - any (default): any involvement (sender/receiver/mentor/mentee)
     """
     user = request.user
-    status_filter = request.query_params.get('status')
+    status_filter = request.GET.get('status')
+    role = request.GET.get('as')
+    scope = request.GET.get('scope')
 
-    qs = MentorMenteeRelationship.objects.filter(Q(mentor=user) | Q(mentee=user))
+    if role in ['sender', 'receiver', 'mentor', 'mentee']:
+        qs = MentorMenteeRelationship.objects.filter(**{role: user})
+    else:
+        if scope == 'sender_receiver':
+            qs = MentorMenteeRelationship.objects.filter(Q(sender=user) | Q(receiver=user))
+        elif scope == 'mentor_mentee':
+            qs = MentorMenteeRelationship.objects.filter(Q(mentor=user) | Q(mentee=user))
+        else:
+            qs = MentorMenteeRelationship.objects.filter(
+                Q(sender=user) | Q(receiver=user) | Q(mentor=user) | Q(mentee=user)
+            )
+
     if status_filter:
-        qs = qs.filter(status=status_filter)
+        values = [s.strip().upper() for s in status_filter.split(',') if s.strip()]
+        qs = qs.filter(status__in=values)
 
     return Response(MentorMenteeRelationshipSerializer(qs, many=True).data, status=status.HTTP_200_OK)
 
@@ -54,71 +74,63 @@ def get_mentor_relationship_detail(request, relationship_id):
     return Response(MentorMenteeRelationshipSerializer(relationship).data, status=status.HTTP_200_OK)
 
 
-@api_view(['POST'])
-@permission_classes([IsAuthenticated])
-def respond_to_mentor_relationship(request, relationship_id):
-    """
-    Accept or reject a mentor-mentee relationship request.
-    Body must include: {"response": "ACCEPTED"} or {"response": "REJECTED"}.
-    Only the receiver of the request can respond.
-    """
-    relationship = get_object_or_404(MentorMenteeRelationship, id=relationship_id)
-
-    if relationship.status != 'PENDING':
-        return Response({'error': 'This request has already been responded to.'}, status=status.HTTP_400_BAD_REQUEST)
-
-    if request.user != relationship.receiver:
-        return Response({'error': 'Only the receiver can respond to this request.'}, status=status.HTTP_403_FORBIDDEN)
-
-    response_value = request.data.get('response')
-    if response_value not in ['ACCEPTED', 'REJECTED']:
-        return Response({'error': 'Invalid response. Must be ACCEPTED or REJECTED.'}, status=status.HTTP_400_BAD_REQUEST)
-
-    relationship.status = response_value
-    relationship.save()
-
-    # Notify the sender about the response
-    Notification.objects.create(
-        recipient=relationship.sender,
-        sender=request.user,
-        notification_type='SYSTEM',
-        title='Mentor Request Response',
-        message=f'{request.user.username} has {response_value.lower()} your mentor request.',
-        related_object_id=relationship.id,
-        related_object_type='MentorMenteeRelationship'
-    )
-
-    return Response({'message': f'Request {response_value.lower()}.'}, status=status.HTTP_200_OK)
 
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
-def terminate_mentor_relationship(request, relationship_id):
+def change_mentor_relationship_status(request, relationship_id):
     """
-    Terminate an accepted mentor-mentee relationship.
-    Only mentor or mentee can terminate.
+    Change status of a mentor-mentee relationship in a unified endpoint.
+    Body must include: {"status": "ACCEPTED|REJECTED|TERMINATED"}
+    Rules:
+    - ACCEPTED/REJECTED: only receiver can change when current status is PENDING
+    - TERMINATED: only mentor or mentee can change when current status is ACCEPTED
+    Notifications are sent accordingly.
     """
     relationship = get_object_or_404(MentorMenteeRelationship, id=relationship_id)
+    requested = request.data.get('status')
+    if not requested:
+        return Response({'error': 'status is required'}, status=status.HTTP_400_BAD_REQUEST)
 
-    if request.user not in [relationship.mentor, relationship.mentee]:
-        return Response({'error': 'Only mentor or mentee can terminate this relationship.'}, status=status.HTTP_403_FORBIDDEN)
+    target = str(requested).upper()
+    if target not in ['ACCEPTED', 'REJECTED', 'TERMINATED']:
+        return Response({'error': 'Invalid status. Must be ACCEPTED, REJECTED, or TERMINATED.'}, status=status.HTTP_400_BAD_REQUEST)
 
-    if relationship.status != 'ACCEPTED':
-        return Response({'error': 'Only accepted relationships can be terminated.'}, status=status.HTTP_400_BAD_REQUEST)
+    if target in ['ACCEPTED', 'REJECTED']:
+        if relationship.status != 'PENDING':
+            return Response({'error': 'This request has already been responded to.'}, status=status.HTTP_400_BAD_REQUEST)
+        if request.user != relationship.receiver:
+            return Response({'error': 'Only the receiver can respond to this request.'}, status=status.HTTP_403_FORBIDDEN)
+        relationship.status = target
+        relationship.save()
+        Notification.objects.create(
+            recipient=relationship.sender,
+            sender=request.user,
+            notification_type='SYSTEM',
+            title='Mentor Request Response',
+            message=f'{request.user.username} has {target.lower()} your mentor request.',
+            related_object_id=relationship.id,
+            related_object_type='MentorMenteeRelationship'
+        )
+        return Response({'message': f'Request {target.lower()}.'}, status=status.HTTP_200_OK)
 
-    relationship.status = 'TERMINATED'
-    relationship.save()
+    if target == 'TERMINATED':
+        if request.user not in [relationship.mentor, relationship.mentee]:
+            return Response({'error': 'Only mentor or mentee can terminate this relationship.'}, status=status.HTTP_403_FORBIDDEN)
+        if relationship.status != 'ACCEPTED':
+            return Response({'error': 'Only accepted relationships can be terminated.'}, status=status.HTTP_400_BAD_REQUEST)
+        relationship.status = 'TERMINATED'
+        relationship.save()
+        other_party = relationship.mentee if request.user == relationship.mentor else relationship.mentor
+        Notification.objects.create(
+            recipient=other_party,
+            sender=request.user,
+            notification_type='SYSTEM',
+            title='Mentor Relationship Terminated',
+            message=f'{request.user.username} has terminated the mentor relationship.',
+            related_object_id=relationship.id,
+            related_object_type='MentorMenteeRelationship'
+        )
+        return Response({'message': 'Relationship terminated.'}, status=status.HTTP_200_OK)
 
-    # Notify the other party
-    other_party = relationship.mentee if request.user == relationship.mentor else relationship.mentor
-    Notification.objects.create(
-        recipient=other_party,
-        sender=request.user,
-        notification_type='SYSTEM',
-        title='Mentor Relationship Terminated',
-        message=f'{request.user.username} has terminated the mentor relationship.',
-        related_object_id=relationship.id,
-        related_object_type='MentorMenteeRelationship'
-    )
-
-    return Response({'message': 'Relationship terminated.'}, status=status.HTTP_200_OK)
+    return Response({'error': 'Unhandled status change'}, status=status.HTTP_400_BAD_REQUEST)

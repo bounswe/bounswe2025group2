@@ -70,13 +70,13 @@ class MentorRelationshipTests(TestCase):
 
         # Attempt accept by non-receiver -> forbidden
         self.client.force_login(self.coach)
-        respond_url = reverse('respond_to_mentor_relationship', args=[rel_id])
-        response = self.client.post(respond_url, data={'response': 'ACCEPTED'})
+        respond_url = reverse('change_mentor_relationship_status', args=[rel_id])
+        response = self.client.post(respond_url, data={'status': 'ACCEPTED'})
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
         # Accept by receiver
         self.client.force_login(self.user)
-        response = self.client.post(respond_url, data={'response': 'ACCEPTED'})
+        response = self.client.post(respond_url, data={'status': 'ACCEPTED'})
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         rel = MentorMenteeRelationship.objects.get(id=rel_id)
         self.assertEqual(rel.status, 'ACCEPTED')
@@ -91,19 +91,19 @@ class MentorRelationshipTests(TestCase):
         self.client.force_login(self.coach)
         resp = self.client.post(self.create_url, data={'mentor': self.coach.id, 'mentee': self.user.id})
         rel_id = resp.json()['id']
-        respond_url = reverse('respond_to_mentor_relationship', args=[rel_id])
+        respond_url = reverse('change_mentor_relationship_status', args=[rel_id])
         self.client.force_login(self.user)
         self.client.post(respond_url, data={'response': 'ACCEPTED'})
 
         # Terminate by unrelated user -> forbidden
         self.client.force_login(self.other_user)
-        term_url = reverse('terminate_mentor_relationship', args=[rel_id])
-        response = self.client.post(term_url)
+        term_url = reverse('change_mentor_relationship_status', args=[rel_id])
+        response = self.client.post(term_url, data={'status': 'TERMINATED'})
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
         # Terminate by mentor
         self.client.force_login(self.coach)
-        response = self.client.post(term_url)
+        response = self.client.post(term_url, data={'status': 'TERMINATED'})
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         rel = MentorMenteeRelationship.objects.get(id=rel_id)
         self.assertEqual(rel.status, 'TERMINATED')
@@ -116,8 +116,8 @@ class MentorRelationshipTests(TestCase):
 
         # Accept the first
         self.client.force_login(self.user)
-        respond_url = reverse('respond_to_mentor_relationship', args=[r1['id']])
-        self.client.post(respond_url, data={'response': 'ACCEPTED'})
+        respond_url = reverse('change_mentor_relationship_status', args=[r1['id']])
+        self.client.post(respond_url, data={'status': 'ACCEPTED'})
 
         # List by coach, filter ACCEPTED
         self.client.force_login(self.coach)

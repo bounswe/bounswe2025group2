@@ -128,8 +128,7 @@ urlpatterns = [
     path('mentor-relationships/', mentor_relationships.create_mentor_relationship, name='create_mentor_relationship'),
     path('mentor-relationships/user/', mentor_relationships.get_user_mentor_relationships, name='get_user_mentor_relationships'),
     path('mentor-relationships/<int:relationship_id>/', mentor_relationships.get_mentor_relationship_detail, name='get_mentor_relationship_detail'),
-    path('mentor-relationships/<int:relationship_id>/respond/', mentor_relationships.respond_to_mentor_relationship, name='respond_to_mentor_relationship'),
-    path('mentor-relationships/<int:relationship_id>/terminate/', mentor_relationships.terminate_mentor_relationship, name='terminate_mentor_relationship'),
+    path('mentor-relationships/<int:relationship_id>/status/', mentor_relationships.change_mentor_relationship_status, name='change_mentor_relationship_status'),
 ]
 
 # Routers
