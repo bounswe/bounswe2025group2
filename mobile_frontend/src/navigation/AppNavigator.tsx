@@ -23,6 +23,9 @@ import ChatDetail from '../Pages/ChatDetail';
 import Forum from '../Pages/Forum.tsx';
 import ForumDetail from '../Pages/ForumDetail.tsx';
 import ThreadDetail from '../Pages/ThreadDetail.tsx';
+import MentorList from '../Pages/MentorList';
+import FindMentor from '../Pages/FindMentor';
+import MentorRequests from '../Pages/MentorRequests';
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -47,6 +50,7 @@ const MainTabs = () => {
   <Tab.Screen name="Home" component={withLayout(Home)} />
   <Tab.Screen name="Forum" component={withLayout(Forum)} />
       <Tab.Screen name="Chats" component={withLayout(Chats)} />
+      <Tab.Screen name="Mentors" component={withLayout(MentorList)} />
       <Tab.Screen name="Settings" component={withLayout(Settings)} />
       <Tab.Screen name="Goals" component={withLayout(Goals)} />
       <Tab.Screen name="Challenges" component={withLayout(Challenges)} />
@@ -96,6 +100,16 @@ const AppNavigator = () => {
         name="ThreadDetail"
         component={ThreadDetail}
         options={{ title: 'Thread' }}
+      />
+      <Stack.Screen
+        name="MentorRequests"
+        component={MentorRequests}
+        options={{ title: 'Mentor Requests' }}
+      />
+      <Stack.Screen
+        name="FindMentor"
+        component={FindMentor}
+        options={{ title: 'Find Mentor' }}
       />
     </Stack.Navigator>
   );

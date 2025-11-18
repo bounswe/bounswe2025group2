@@ -77,6 +77,24 @@ const BottomBar = ({ state, navigation }: any) => {
           Chats
         </CustomText>
       </Pressable>
+      <Pressable style={styles.tab} onPress={() => navigateToScreen('Mentors')}>
+        <MentorsIcon 
+          width={32} 
+          height={32} 
+          fill={isActiveRoute('Mentors') ? colors.active : colors.passive} 
+        />
+        <CustomText 
+          style={[
+            styles.label, 
+            { 
+              color: isActiveRoute('Mentors') ? colors.active : colors.passive,
+              fontWeight: isActiveRoute('Mentors') ? 'bold' : 'normal'
+            }
+          ]}
+        >
+          Mentors
+        </CustomText>
+      </Pressable>
       <Pressable style={styles.tab} onPress={() => navigateToScreen('Goals')}>
         <GoalsIcon 
           width={32} 
