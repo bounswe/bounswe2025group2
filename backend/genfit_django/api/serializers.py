@@ -132,7 +132,7 @@ class NotificationSerializer(serializers.ModelSerializer):
 
 class FitnessGoalSerializer(serializers.ModelSerializer):
     progress_percentage = serializers.FloatField(read_only=True)
-    mentor = serializers.PrimaryKeyRelatedField(queryset=UserWithType.objects.filter(user_type='Coach'), required=False, allow_null=True)
+    mentor = serializers.PrimaryKeyRelatedField(queryset=UserWithType.objects.all(), required=False, allow_null=True)
 
     class Meta:
         model = FitnessGoal
@@ -140,9 +140,7 @@ class FitnessGoalSerializer(serializers.ModelSerializer):
         read_only_fields = ('user', 'current_value', 'status', 'last_updated', 'progress_percentage')
 
     def validate_mentor(self, value):
-        if value:
-            return True
-        return False
+        return value
 
 class FitnessGoalUpdateSerializer(serializers.ModelSerializer):
     class Meta:

@@ -25,7 +25,7 @@ All endpoints are relative to your base API URL (e.g., `http://127.0.0.1:8000/ap
 
 | Method | Endpoint                        | Description                                                        |
 |--------|---------------------------------|--------------------------------------------------------------------|
-| GET | `/api/goals/`                   | List all fitness goals either set by him as a mentor or plain user |
+| GET | `/api/goals/`                   | List goals for the authenticated user; mentors can view mentee goals via `?username=<mentee_username>` |
 | POST | `/api/goals/`                   | Create a new fitness goal                                          |
 | GET | `/api/goals/:goal_id/`          | Retrieve a specific fitness goal                                   |
 | PUT | `/api/goals/:goal_id/`          | Update a specific fitness goal                                     |
@@ -39,7 +39,10 @@ All endpoints are relative to your base API URL (e.g., `http://127.0.0.1:8000/ap
 
 #### `GET /api/goals/`
 
-Retrieves all fitness goals that the authenticated user has access to. This includes goals created by the user and goals where the user is assigned as a mentor.
+Retrieves all fitness goals that the authenticated user has access to.
+
+- Without query params: lists goals owned by the authenticated user.
+- With `?username=<mentee_username>`: if the authenticated user is the mentor of `<mentee_username>` and the relationship is `ACCEPTED`, lists all goals of that mentee.
 
 **Response (200 OK)**
 ```json
@@ -65,18 +68,19 @@ Retrieves all fitness goals that the authenticated user has access to. This incl
 
 #### `POST /api/goals/`
 
-Creates a new fitness goal. The authenticated user will automatically be set as the goal creator.
+Creates a new fitness goal.
+
+- For self: omit `user` or set it to your own ID; `mentor` will be `null`.
+- For mentor assigning to a mentee: include `user` with the mentee’s ID; requires an `ACCEPTED` mentor–mentee relationship; `mentor` is automatically set to the authenticated user.
 
 **Request Body**
 ```json
 {
   "title": "Bench Press Goal",
   "description": "Increase bench press weight to 100kg",
-  "mentor": 7,          // Optional - mentor's user ID
-  "user": 5,            // Required only if coach is creating a goal for mentee
-  "category": "STRENGTH",
+  "user": 5,
+  "goal_type": "WORKOUT",
   "target_value": 100.0,
-  "current_value": 80.0,
   "unit": "kg",
   "start_date": "2025-04-24T00:00:00Z",
   "target_date": "2025-06-24T00:00:00Z"
@@ -91,20 +95,22 @@ Creates a new fitness goal. The authenticated user will automatically be set as 
   "description": "Increase bench press weight to 100kg",
   "user": 5,
   "mentor": 7,
-  "category": "STRENGTH",
+  "goal_type": "WORKOUT",
   "target_value": 100.0,
-  "current_value": 80.0,
+  "current_value": 0.0,
   "unit": "kg",
   "start_date": "2025-04-24T00:00:00Z",
   "target_date": "2025-06-24T00:00:00Z",
   "status": "ACTIVE",
-  "last_updated": "2025-04-24T15:40:00Z"
+  "last_updated": "2025-04-24T15:40:00Z",
+  "progress_percentage": 0.0
 }
 ```
 
 **Notes:**
-- If the authenticated user is a Coach and includes a user ID in the request, a notification will be automatically created for the mentee.
-- Status is automatically set to "ACTIVE" for new goals.
+- If the authenticated user is a mentor and includes a mentee `user` ID, a `GOAL` notification is automatically created for the mentee.
+- Status is automatically set to `ACTIVE` for new goals.
+- The `mentor` field is set only when a mentor creates a goal for a mentee.
 
 ### Retrieve, Update and Delete a Fitness Goal
 
@@ -120,14 +126,15 @@ Retrieves a specific fitness goal by its ID.
   "description": "Complete a 5K run under 30 minutes",
   "user": 5,
   "mentor": 3,
-  "category": "CARDIO",
+  "goal_type": "WALKING_RUNNING",
   "target_value": 5.0,
   "current_value": 2.5,
   "unit": "km",
   "start_date": "2025-04-10T10:00:00Z",
   "target_date": "2025-05-10T10:00:00Z",
   "status": "ACTIVE",
-  "last_updated": "2025-04-20T14:30:00Z"
+  "last_updated": "2025-04-20T14:30:00Z",
+  "progress_percentage": 50.0
 }
 ```
 
@@ -152,14 +159,15 @@ Updates a specific fitness goal. Partial updates are supported.
   "description": "Updated goal description",
   "user": 5,
   "mentor": 3,
-  "category": "CARDIO",
+  "goal_type": "WALKING_RUNNING",
   "target_value": 5.0,
   "current_value": 2.5,
   "unit": "km",
   "start_date": "2025-04-10T10:00:00Z",
   "target_date": "2025-07-01T00:00:00Z",
   "status": "ACTIVE",
-  "last_updated": "2025-04-24T16:30:00Z"
+  "last_updated": "2025-04-24T16:30:00Z",
+  "progress_percentage": 50.0
 }
 ```
 
@@ -211,9 +219,10 @@ Updates the progress of a specific fitness goal. This endpoint is specifically d
 ```
 
 **Important Note:**
+- Only the goal owner (mentee) can update progress.
 - This endpoint expects the **final value** for the goal progress, not incremental values. Any additions to the previous progress must be calculated in the front-end before sending the request.
-- If the `current_value` reaches or exceeds the `target_value`, the goal status will automatically be set to "COMPLETED" and a notification will be created.
-- When restarting a goal, the `current_value` will be reset to 0 and the `start_date` will be updated to the current time.
+- If the `current_value` reaches or exceeds the `target_value`, the goal status is automatically set to `COMPLETED` and a notification is created.
+- When restarting a goal, the `current_value` is reset to 0 and the `start_date` is updated to the current time.
 
 ### Check Inactive Goals
 
@@ -243,8 +252,8 @@ Checks for and marks goals that have been inactive for more than 7 days. A goal 
 | title | String | The title of the fitness goal                                                    |
 | description | String | Detailed description of the goal                                                 |
 | user | Integer | User ID of the goal owner                                                        |
-| mentor | Integer (Optional) | User ID of the mentor/coach assigned to the goal                                 |
-| category | String | Category of the goal (e.g., WALKING_RUNNING, WORKOUT, CYCLING, SPORTS, SWIMMING) |
+| mentor | Integer (Optional) | User ID of the mentor assigned to the goal (set only when mentor creates) |
+| goal_type | String | Type of the goal (e.g., WALKING_RUNNING, WORKOUT, CYCLING, SPORTS, SWIMMING) |
 | target_value | Float | Target numerical value to achieve                                                |
 | current_value | Float | Current progress value                                                           |
 | unit | String | Unit of measurement (e.g., kg, km, reps)                                         |
@@ -257,7 +266,7 @@ Checks for and marks goals that have been inactive for more than 7 days. A goal 
 
 The API automatically generates notifications in the following scenarios:
 
-1. **GOAL** - When a coach assigns a new goal to a mentee
+1. **GOAL** - When a mentor assigns a new goal to a mentee
 2. **ACHIEVEMENT** - When a user completes a goal
 3. **GOAL_INACTIVE** - When a goal has been inactive for more than 7 days
 
@@ -283,11 +292,12 @@ Error responses will include a JSON body with details about the error:
 
 ## Additional Notes
 
-1. Both users and their mentors/coaches can view the user's goals.
-2. Only the user who created a goal or is assigned as a mentor can retrieve, update, or delete that goal.
-3. The progress update endpoint is designed for the goal owner only.
+1. Users can view their own goals. Mentors can view a mentee’s goals using `?username=<mentee_username>` and an `ACCEPTED` relationship.
+2. Only the goal owner or the mentor who created the goal can retrieve, update, or delete it.
+3. The progress update endpoint is limited to the goal owner.
 4. Automatic notifications are generated for:
-   - New goals assigned by coaches
+   - New goals assigned by mentors
    - Completed goals
    - Goals that become inactive
-5. All timestamps are in UTC format.
+5. Being a coach is unrelated to being a mentor.
+6. All timestamps are in UTC format.

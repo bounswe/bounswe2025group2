@@ -20,6 +20,21 @@ def create_mentor_relationship(request):
     serializer = MentorMenteeRelationshipSerializer(data=request.data, context={'request': request})
     if serializer.is_valid():
         relationship = serializer.save()
+        if not Notification.objects.filter(
+            recipient=relationship.receiver,
+            notification_type='MENTOR_REQUEST',
+            related_object_id=relationship.id,
+            related_object_type='MentorMenteeRelationship'
+        ).exists():
+            Notification.objects.create(
+                recipient=relationship.receiver,
+                sender=relationship.sender,
+                notification_type='MENTOR_REQUEST',
+                title='New Mentor Request',
+                message=f'{relationship.sender.username} wants to establish a mentor-mentee relationship with you.',
+                related_object_id=relationship.id,
+                related_object_type='MentorMenteeRelationship'
+            )
         return Response(MentorMenteeRelationshipSerializer(relationship).data, status=status.HTTP_201_CREATED)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 

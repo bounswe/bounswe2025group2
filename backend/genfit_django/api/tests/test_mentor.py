@@ -93,7 +93,7 @@ class MentorRelationshipTests(TestCase):
         rel_id = resp.json()['id']
         respond_url = reverse('change_mentor_relationship_status', args=[rel_id])
         self.client.force_login(self.user)
-        self.client.post(respond_url, data={'response': 'ACCEPTED'})
+        self.client.post(respond_url, data={'status': 'ACCEPTED'})
 
         # Terminate by unrelated user -> forbidden
         self.client.force_login(self.other_user)
