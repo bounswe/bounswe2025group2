@@ -181,5 +181,5 @@ const ThreadPage: React.FC = () => {
     </Layout>
   );
 };
-
+}
 export default ThreadPage;
