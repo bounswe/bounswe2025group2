@@ -33,10 +33,14 @@ const AiChats = ({ navigation }: AiChatsProps) => {
   const handleCreateAiChat = async () => {
     if (isCreating) return;
 
+    console.log('[AiChats] Create AI Chat button pressed');
     setIsCreating(true);
     try {
+      console.log('[AiChats] Sending request to create AI chat');
       const newChat = await createAiChat();
+      console.log('[AiChats] createAiChat resolved with:', newChat);
       if (newChat) {
+        console.log('[AiChats] AI chat created with id:', newChat.id);
         Toast.show({
           type: 'success',
           text1: 'AI Chat Created',
@@ -46,6 +50,7 @@ const AiChats = ({ navigation }: AiChatsProps) => {
       }
     } catch (error) {
       console.error('[AiChats] Failed to create AI chat:', error);
+      console.log('[AiChats] AI chat creation failed');
       Toast.show({
         type: 'error',
         text1: 'Error',
@@ -53,10 +58,12 @@ const AiChats = ({ navigation }: AiChatsProps) => {
       });
     } finally {
       setIsCreating(false);
+      console.log('[AiChats] Create AI Chat button flow finished');
     }
   };
 
   const handleSelectChat = async (chatId: number) => {
+    console.log('[AiChats] Selecting AI chat id:', chatId);
     await selectAiChat(chatId);
     navigation.navigate('AiChatDetail', { chatId });
   };

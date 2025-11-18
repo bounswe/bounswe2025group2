@@ -76,7 +76,12 @@ type AiChatHistoryResponse = {
 };
 
 export const AiChatProvider = ({ children }: AiChatProviderProps) => {
-  const { getAuthHeader, isAuthenticated } = useAuth();
+  const { token, getAuthHeader, isAuthenticated } = useAuth() as {
+    token?: string | null;
+    getAuthHeader: () => Record<string, string>;
+    isAuthenticated: boolean;
+  };
+  const isLoggedIn = Boolean(token) || isAuthenticated;
   const [aiChats, setAiChats] = useState<AiTutorChat[]>([]);
   const [aiMessages, setAiMessages] = useState<AiMessage[]>([]);
   const [selectedAiChatId, setSelectedAiChatId] = useState<number | null>(null);
@@ -118,11 +123,12 @@ export const AiChatProvider = ({ children }: AiChatProviderProps) => {
   }, []);
 
   const fetchAiChats = useCallback(async () => {
-    if (!isAuthenticated) {
+    if (!isLoggedIn) {
       setAiChats([]);
       return;
     }
 
+    console.log('[AiChatContext] Fetching AI chats');
     setIsLoadingChats(true);
     setError(null);
 
@@ -138,9 +144,10 @@ export const AiChatProvider = ({ children }: AiChatProviderProps) => {
       handleError('Failed to fetch AI chats', err);
       setAiChats([]);
     } finally {
+      console.log('[AiChatContext] Fetch AI chats completed');
       setIsLoadingChats(false);
     }
-  }, [isAuthenticated, buildHeaders, handleError]);
+  }, [isLoggedIn, buildHeaders, handleError]);
 
   const hydrateMessages = useCallback((history: AiChatHistoryResponse) => {
     const userMessages = history.user_messages ?? [];
@@ -166,11 +173,12 @@ export const AiChatProvider = ({ children }: AiChatProviderProps) => {
 
   const fetchAiChatHistory = useCallback(
     async (chatId: number) => {
-      if (!isAuthenticated) {
+      if (!isLoggedIn) {
         setAiMessages([]);
         return;
       }
 
+    console.log('[AiChatContext] Fetching AI chat history for chat:', chatId);
       setIsLoadingMessages(true);
       setError(null);
 
@@ -186,14 +194,16 @@ export const AiChatProvider = ({ children }: AiChatProviderProps) => {
         handleError('Failed to load AI chat history', err);
         setAiMessages([]);
       } finally {
+      console.log('[AiChatContext] Fetch AI chat history completed for chat:', chatId);
         setIsLoadingMessages(false);
       }
     },
-    [isAuthenticated, buildHeaders, hydrateMessages, handleError],
+    [isLoggedIn, buildHeaders, hydrateMessages, handleError],
   );
 
   const selectAiChat = useCallback(
     async (chatId: number | null) => {
+      console.log('[AiChatContext] Selecting AI chat:', chatId);
       setSelectedAiChatId(chatId);
       if (chatId === null) {
         setAiMessages([]);
@@ -206,11 +216,13 @@ export const AiChatProvider = ({ children }: AiChatProviderProps) => {
   );
 
   const createAiChat = useCallback(async () => {
-    if (!isAuthenticated) {
+    if (!isLoggedIn) {
+      console.log('[AiChatContext] createAiChat blocked: not logged in');
       handleError('You must be logged in to create an AI chat', null);
       return null;
     }
 
+    console.log('[AiChatContext] Creating AI chat');
     setIsSendingMessage(true);
     setError(null);
 
@@ -226,15 +238,21 @@ export const AiChatProvider = ({ children }: AiChatProviderProps) => {
       await fetchAiChats();
       if (response.data?.id) {
         await selectAiChat(response.data.id);
+      } else {
+        console.log('[AiChatContext] createAiChat response missing id');
       }
       return response.data ?? null;
-    } catch (err) {
+    } catch (err: any) {
+      const status = err?.response?.status;
+      const data = err?.response?.data;
+      console.log('[AiChatContext] createAiChat failed', { status, data });
       handleError('Failed to create AI chat', err);
       return null;
     } finally {
+      console.log('[AiChatContext] Create AI chat request finished');
       setIsSendingMessage(false);
     }
-  }, [isAuthenticated, buildHeaders, fetchAiChats, selectAiChat, handleError]);
+  }, [isLoggedIn, buildHeaders, fetchAiChats, selectAiChat, handleError]);
 
   const sendAiMessage = useCallback(
     async (message: string) => {
@@ -282,6 +300,7 @@ export const AiChatProvider = ({ children }: AiChatProviderProps) => {
           setAiMessages((prev) => prev.filter((msg) => msg.id !== optimisticId));
         }
       } finally {
+      console.log('[AiChatContext] Send message flow finished for chat:', selectedAiChatId);
         setIsSendingMessage(false);
       }
     },
@@ -295,14 +314,14 @@ export const AiChatProvider = ({ children }: AiChatProviderProps) => {
   }, []);
 
   useEffect(() => {
-    if (isAuthenticated) {
+    if (isLoggedIn) {
       fetchAiChats();
     } else {
       setAiChats([]);
       setAiMessages([]);
       setSelectedAiChatId(null);
     }
-  }, [isAuthenticated, fetchAiChats]);
+  }, [isLoggedIn, fetchAiChats]);
 
   const value = useMemo(
     () => ({
