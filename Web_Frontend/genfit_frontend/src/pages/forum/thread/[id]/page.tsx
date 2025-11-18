@@ -1,12 +1,13 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useIsAuthenticated } from '../../../../lib/hooks/useAuth';
-import { useThread, useThreadComments } from '../../../../lib/hooks/useData';
+import { useThread, useThreadComments, useUpdateThread } from '../../../../lib/hooks/useData';
 import Layout from '../../../../components/Layout';
 import { Card } from '../../../../components/ui/card';
 import { Button } from '../../../../components/ui/button';
 import CommentItem from '../../components/CommentItem';
 import ThreadActions from '../../components/ThreadActions';
+import ThreadEditModal from '../../components/ThreadEditModal';
 import CommentForm from '../../components/CommentForm';
 import { ArrowLeft, MessageCircle, Calendar, User } from 'lucide-react';
 import './thread.css';
@@ -15,11 +16,13 @@ const ThreadPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const isAuthenticated = useIsAuthenticated();
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   
   const threadId = id ? parseInt(id) : undefined;
   
   const { data: thread, isLoading: threadLoading, error: threadError } = useThread(threadId);
   const { data: comments, isLoading: commentsLoading, error: commentsError } = useThreadComments(threadId);
+  const updateThreadMutation = useUpdateThread();
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -59,6 +62,21 @@ const ThreadPage: React.FC = () => {
       hour: '2-digit',
       minute: '2-digit'
     });
+  };
+
+  const handleEditThread = async (threadData: { title: string; content: string }) => {
+    if (!threadId) return;
+    
+    try {
+      await updateThreadMutation.mutateAsync({
+        threadId,
+        data: threadData
+      });
+      setIsEditModalOpen(false);
+    } catch (error) {
+      console.error('Failed to update thread:', error);
+      throw error;
+    }
   };
 
   return (
@@ -105,9 +123,23 @@ const ThreadPage: React.FC = () => {
               <p>{thread.content}</p>
             </div>
             
-            <ThreadActions thread={thread} />
+            <ThreadActions 
+              thread={thread} 
+              onEdit={() => setIsEditModalOpen(true)}
+              onDelete={() => navigate(-1)}
+            />
           </div>
         </Card>
+
+        {/* Edit Thread Modal */}
+        {thread && (
+          <ThreadEditModal
+            isOpen={isEditModalOpen}
+            onClose={() => setIsEditModalOpen(false)}
+            onSubmit={handleEditThread}
+            thread={thread}
+          />
+        )}
 
         {/* Comment Form */}
         <CommentForm threadId={threadId!} />

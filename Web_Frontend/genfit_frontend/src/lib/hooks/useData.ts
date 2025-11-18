@@ -691,3 +691,69 @@ export function useAddSubcomment() {
     },
   });
 }
+
+/**
+ * Hook to update a thread
+ */
+export function useUpdateThread() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: ({ threadId, data }: { threadId: number; data: Partial<ForumThread> }) =>
+      GFapi.put<ForumThread>(`/api/threads/${threadId}/`, data),
+    onSuccess: (_data, variables) => {
+      // Invalidate the specific thread
+      queryClient.invalidateQueries({ 
+        queryKey: createQueryKey(`/api/threads/${variables.threadId}/`) 
+      });
+      
+      // Invalidate forum threads list
+      queryClient.invalidateQueries({ 
+        predicate: (query) => {
+          const queryKey = query.queryKey as string[];
+          return queryKey.some(key => 
+            typeof key === 'string' && key.includes('/api/forums/') && key.includes('/threads/')
+          );
+        }
+      });
+      
+      // Invalidate all threads list
+      queryClient.invalidateQueries({ 
+        queryKey: createQueryKey('/api/threads/') 
+      });
+    },
+  });
+}
+
+/**
+ * Hook to delete a thread
+ */
+export function useDeleteThread() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: (threadId: number) =>
+      GFapi.delete(`/api/threads/${threadId}/`),
+    onSuccess: (_data, threadId) => {
+      // Invalidate the specific thread
+      queryClient.invalidateQueries({ 
+        queryKey: createQueryKey(`/api/threads/${threadId}/`) 
+      });
+      
+      // Invalidate forum threads list
+      queryClient.invalidateQueries({ 
+        predicate: (query) => {
+          const queryKey = query.queryKey as string[];
+          return queryKey.some(key => 
+            typeof key === 'string' && key.includes('/api/forums/') && key.includes('/threads/')
+          );
+        }
+      });
+      
+      // Invalidate all threads list
+      queryClient.invalidateQueries({ 
+        queryKey: createQueryKey('/api/threads/') 
+      });
+    },
+  });
+}
