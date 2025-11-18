@@ -67,6 +67,8 @@ const ThreadPage: React.FC = () => {
 
   const handleUsernameClick = (username: string) => {
     navigate(`/profile/other/${username}`);
+  }; // <-- ADDED MISSING CLOSING BRACE
+
   const handleEditThread = async (threadData: { title: string; content: string }) => {
     if (!threadId) return;
     
@@ -130,9 +132,9 @@ const ThreadPage: React.FC = () => {
             <div className="thread-body">
               <p>{thread.content}</p>
             </div>
-
-            <ThreadActions thread={thread} />
             
+            {/* Removed the duplicate <ThreadActions thread={thread} /> component */}
+
             <ThreadActions 
               thread={thread} 
               onEdit={() => setIsEditModalOpen(true)}
@@ -181,5 +183,5 @@ const ThreadPage: React.FC = () => {
     </Layout>
   );
 };
-}
+
 export default ThreadPage;
