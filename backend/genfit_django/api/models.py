@@ -176,6 +176,7 @@ class Notification(models.Model):
         ('SYSTEM', 'System Notification'),
         ('NEW_MESSAGE', 'New Message'),
         ('GOAL_INACTIVE', 'Goal Inactive Warning'),
+        ('MENTOR_REQUEST', 'Mentor Request'),
     ]
 
     recipient = models.ForeignKey(UserWithType, on_delete=models.CASCADE, related_name='notifications')
@@ -192,6 +193,30 @@ class Notification(models.Model):
 
     class Meta:
         ordering = ['-created_at']
+
+
+class MentorMenteeRelationship(models.Model):
+    RELATIONSHIP_STATUS = [
+        ('PENDING', 'Pending'),
+        ('ACCEPTED', 'Accepted'),
+        ('REJECTED', 'Rejected'),
+        ('TERMINATED', 'Terminated'),
+    ]
+    
+    sender = models.ForeignKey(UserWithType, on_delete=models.CASCADE, related_name='sent_mentor_requests')
+    receiver = models.ForeignKey(UserWithType, on_delete=models.CASCADE, related_name='received_mentor_requests')
+    mentor = models.ForeignKey(UserWithType, on_delete=models.CASCADE, related_name='mentor_relationships')
+    mentee = models.ForeignKey(UserWithType, on_delete=models.CASCADE, related_name='mentee_relationships')
+    status = models.CharField(max_length=20, choices=RELATIONSHIP_STATUS, default='PENDING')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        unique_together = ('mentor', 'mentee')
+        ordering = ['-created_at']
+    
+    def __str__(self):
+        return f"{self.mentor.username} -> {self.mentee.username} ({self.status})"
 
 
 class Profile(models.Model):
