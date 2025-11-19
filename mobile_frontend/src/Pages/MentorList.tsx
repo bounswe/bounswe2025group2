@@ -15,6 +15,7 @@ import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import {
   getUserMentorRelationships,
   changeMentorRelationshipStatus,
+  getCurrentUser,
   MentorRelationship,
 } from '../services/mentorService';
 
@@ -29,6 +30,7 @@ const MentorList = () => {
   const navigation = useNavigation();
   
   const [relationships, setRelationships] = useState<MentorRelationship[]>([]);
+  const [currentUserId, setCurrentUserId] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [filter, setFilter] = useState<'all' | 'mentor' | 'mentee'>('all');
@@ -38,6 +40,12 @@ const MentorList = () => {
    */
   const fetchRelationships = async () => {
     try {
+      // Fetch current user if not already loaded
+      if (!currentUserId) {
+        const user = await getCurrentUser();
+        setCurrentUserId(user.id);
+      }
+      
       const data = await getUserMentorRelationships({
         status: 'ACCEPTED',
         ...(filter !== 'all' && { role: filter }),
@@ -105,7 +113,7 @@ const MentorList = () => {
    */
   const renderRelationshipItem = ({ item }: { item: MentorRelationship }) => {
     // Determine which user to display based on current user's role
-    const isMentor = item.mentor_username !== item.mentee_username; // Simplified check
+    const isMentor = currentUserId === item.mentor;
     const displayUsername = isMentor ? item.mentee_username : item.mentor_username;
     const role = isMentor ? 'Your Mentee' : 'Your Mentor';
 

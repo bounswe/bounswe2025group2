@@ -30,17 +30,17 @@ const Login = ({ navigation }: any) => {
 
     try {
       // First, get CSRF token by making a GET request to quotes endpoint
-      await fetch('http://164.90.166.81:8000/api/quotes/random/', { 
+      await fetch('http://10.0.2.2:8000/api/quotes/random/', { 
         method: 'GET',
         credentials: 'include',
       });
       
       // Get the CSRF token from cookies
-      const cookies = await Cookies.get('http://164.90.166.81:8000');
+      const cookies = await Cookies.get('http://10.0.2.2:8000');
       const csrfToken = cookies.csrftoken?.value;
 
       // Now make the login request with the CSRF token
-      const response = await fetch('http://164.90.166.81:8000/api/login/', {
+      const response = await fetch('http://10.0.2.2:8000/api/login/', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -57,13 +57,9 @@ const Login = ({ navigation }: any) => {
       console.log('Login response:', data);
 
       if (response.ok) {
-        // Store the auth token (backend may return token or we use session)
-        if (data.token) {
-          await setToken(data.token);
-        } else {
-          // For session-based auth, generate a token from user data
-          await setToken(`sessiontoken_${data.user_id}_${Date.now()}`);
-        }
+        // Backend uses session cookies, no need to store token
+        // Just store a marker that user is logged in
+        await setToken('logged_in');
 
         // Set current user information
         setCurrentUser({

@@ -26,27 +26,13 @@ export interface User {
 }
 
 /**
- * Get authentication headers with token from AsyncStorage
+ * Get headers for API requests
+ * Backend uses session cookies, so no Authorization header needed
  */
 const getAuthHeaders = async (): Promise<Record<string, string>> => {
-  try {
-    const token = await AsyncStorage.getItem('userToken');
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
-    };
-
-    if (token) {
-      headers.Authorization = token.startsWith('Bearer ') ? token : `Bearer ${token}`;
-      console.log('Using auth token:', headers.Authorization.substring(0, 20) + '...');
-    } else {
-      console.warn('No auth token found in AsyncStorage');
-    }
-
-    return headers;
-  } catch (error) {
-    console.error('Error getting auth headers:', error);
-    return { 'Content-Type': 'application/json' };
-  }
+  return {
+    'Content-Type': 'application/json',
+  };
 };
 
 /**
