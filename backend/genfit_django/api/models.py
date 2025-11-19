@@ -467,3 +467,17 @@ class DailyAdvice(models.Model):
     
     def __str__(self):
         return f"Daily advice for {self.user.username} on {self.date}"
+    
+class ContactSubmission(models.Model):
+    name = models.CharField(max_length=100)
+    email = models.EmailField()
+    subject = models.CharField(max_length=200)
+    message = models.TextField()
+    submitted_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        db_table = 'contact_submissions'
+        ordering = ['-submitted_at']
+    
+    def __str__(self):
+        return f"{self.name} - {self.subject}"    
