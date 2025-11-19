@@ -125,7 +125,7 @@ const MentorRequests = () => {
    * Get the profile picture URL for a user
    */
   const getProfilePictureUrl = (username: string) => {
-    return `http://164.90.166.81:8000/api/profile/other/picture/${username}/?t=${Date.now()}`;
+    return `http://10.0.2.2:8000/api/profile/other/picture/${username}/?t=${Date.now()}`;
   };
 
   /**

@@ -16,7 +16,7 @@ const Login = ({ navigation }: any) => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const { colors, isDark } = useTheme();
-  const { setCurrentUser } = useAuth();
+  const { setCurrentUser, setToken } = useAuth();
 
   const handleLogin = async () => {
     if (!username || !password) {
@@ -57,6 +57,14 @@ const Login = ({ navigation }: any) => {
       console.log('Login response:', data);
 
       if (response.ok) {
+        // Store the auth token (backend may return token or we use session)
+        if (data.token) {
+          await setToken(data.token);
+        } else {
+          // For session-based auth, generate a token from user data
+          await setToken(`sessiontoken_${data.user_id}_${Date.now()}`);
+        }
+
         // Set current user information
         setCurrentUser({
           id: data.user_id || 0,

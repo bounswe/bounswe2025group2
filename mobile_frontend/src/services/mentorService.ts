@@ -1,7 +1,7 @@
 import Cookies from '@react-native-cookies/cookies';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const API_BASE_URL = 'http://164.90.166.81:8000/api';
+const API_BASE_URL = 'http://10.0.2.2:8000/api';
 
 export interface MentorRelationship {
   id: number;
@@ -50,8 +50,6 @@ const getAuthHeaders = async (): Promise<Record<string, string>> => {
 };
 
 /**
- * Get CSRF token from cookies
- */
  * Create a mentor-mentee relationship request
  * @param mentorId - The ID of the user who will be the mentor
  * @param menteeId - The ID of the user who will be the mentee
