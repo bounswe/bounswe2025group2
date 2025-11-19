@@ -303,16 +303,34 @@ export const getCurrentUser = async (): Promise<User> => {
 
     console.log('Fetching current user from:', `${API_BASE_URL}/user/`);
 
+    // Log cookies for debugging why server may return 403
+    try {
+      const cookieSnapshot = await Cookies.get(API_ORIGIN);
+      console.log('Cookies at getCurrentUser:', cookieSnapshot);
+    } catch (e) {
+      console.warn('Failed to read cookies before getCurrentUser:', e);
+    }
+
     const response = await fetch(`${API_BASE_URL}/user/`, {
       method: 'GET',
       credentials: 'include',
       headers: authHeaders,
     });
 
+    console.log('getCurrentUser response status:', response.status);
+    const respCt = response.headers.get('content-type') || '';
+    console.log('getCurrentUser content-type:', respCt);
+
     if (!response.ok) {
       const errorText = await response.text();
       console.error('Get current user error:', response.status, errorText);
       throw new Error(`Failed to fetch current user: ${response.status}`);
+    }
+
+    if (!respCt.includes('application/json')) {
+      const text = await response.text();
+      console.warn('getCurrentUser non-JSON response:', text.slice(0, 300));
+      throw new Error('Server returned non-JSON response for current user');
     }
 
     const userData = await response.json();
