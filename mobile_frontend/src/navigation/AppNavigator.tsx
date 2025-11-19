@@ -48,6 +48,7 @@ const MainTabs = () => {
   <Tab.Screen name="Home" component={withLayout(Home)} />
   <Tab.Screen name="Forum" component={withLayout(Forum)} />
       <Tab.Screen name="Chats" component={withLayout(Chats)} />
+      <Tab.Screen name="Mentors" component={withLayout(MentorList)} />
       <Tab.Screen name="Settings" component={withLayout(Settings)} />
       <Tab.Screen name="Goals" component={withLayout(Goals)} />
       <Tab.Screen name="Challenges" component={withLayout(Challenges)} />
@@ -102,6 +103,16 @@ const AppNavigator = () => {
         name="ThreadDetail"
         component={ThreadDetail}
         options={{ title: 'Thread' }}
+      />
+      <Stack.Screen
+        name="MentorRequests"
+        component={MentorRequests}
+        options={{ title: 'Mentor Requests' }}
+      />
+      <Stack.Screen
+        name="FindMentor"
+        component={FindMentor}
+        options={{ title: 'Find Mentor' }}
       />
     </Stack.Navigator>
   );
