@@ -1,7 +1,9 @@
 import Cookies from '@react-native-cookies/cookies';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const API_BASE_URL = 'http://10.0.2.2:8000/api';
+const API_BASE_URL = 'http://164.90.166.81:8000/api';
+// Cookies are set on the origin, not the /api path — derive origin for cookie reads
+const API_ORIGIN = API_BASE_URL.replace(/\/api\/?$/, '');
 
 export interface MentorRelationship {
   id: number;
@@ -46,8 +48,24 @@ export const createMentorRelationship = async (
   menteeId: number
 ): Promise<MentorRelationship> => {
   try {
-    const cookies = await Cookies.get(API_BASE_URL);
-    const csrfToken = cookies?.csrftoken?.value;
+    // Try to read CSRF token from cookies on the origin
+    let cookies = await Cookies.get(API_ORIGIN);
+    let csrfToken = cookies?.csrftoken?.value;
+
+    // If cookie not present, request CSRF token endpoint which will set the cookie
+    if (!csrfToken) {
+      try {
+        const csrfResp = await fetch(`${API_BASE_URL}/csrf-token/`, { method: 'GET', credentials: 'include' });
+        if (csrfResp.ok) {
+          const j = await csrfResp.json();
+          csrfToken = j.csrfToken || csrfToken;
+          cookies = await Cookies.get(API_ORIGIN);
+          csrfToken = csrfToken || cookies?.csrftoken?.value;
+        }
+      } catch (e) {
+        console.warn('Failed to fetch csrf-token endpoint:', e);
+      }
+    }
     const authHeaders = await getAuthHeaders();
 
     console.log('Creating mentor relationship:', { mentorId, menteeId });
@@ -76,6 +94,13 @@ export const createMentorRelationship = async (
       }
     }
 
+    // Safe parse JSON
+    const contentType = response.headers.get('content-type') || '';
+    if (!contentType.includes('application/json')) {
+      const text = await response.text();
+      console.warn('Expected JSON response but got:', text.slice(0, 200));
+      throw new Error('Server returned non-JSON response');
+    }
     return response.json();
   } catch (error) {
     console.error('createMentorRelationship error:', error);
@@ -120,6 +145,13 @@ export const getUserMentorRelationships = async (filters?: {
       throw new Error(`Failed to fetch mentor relationships: ${response.status}`);
     }
 
+    const ct = response.headers.get('content-type') || '';
+    if (!ct.includes('application/json')) {
+      const text = await response.text();
+      console.warn('Non-JSON getUserMentorRelationships response:', text.slice(0, 200));
+      throw new Error('Server returned non-JSON response');
+    }
+
     return response.json();
   } catch (error) {
     console.error('getUserMentorRelationships error:', error);
@@ -151,6 +183,13 @@ export const getMentorRelationshipDetail = async (
       throw new Error('Failed to fetch relationship details');
     }
 
+    const ct = response.headers.get('content-type') || '';
+    if (!ct.includes('application/json')) {
+      const text = await response.text();
+      console.warn('Non-JSON getMentorRelationshipDetail response:', text.slice(0, 200));
+      throw new Error('Server returned non-JSON response');
+    }
+
     return response.json();
   } catch (error) {
     console.error('getMentorRelationshipDetail error:', error);
@@ -169,9 +208,23 @@ export const changeMentorRelationshipStatus = async (
   status: 'ACCEPTED' | 'REJECTED' | 'TERMINATED'
 ): Promise<{ message: string }> => {
   try {
-    const cookies = await Cookies.get(API_BASE_URL);
-    const csrfToken = cookies?.csrftoken?.value;
+    // Ensure CSRF token available (read from origin cookies or csrf-token endpoint)
+    let cookies = await Cookies.get(API_ORIGIN);
+    let csrfToken = cookies?.csrftoken?.value;
     const authHeaders = await getAuthHeaders();
+    if (!csrfToken) {
+      try {
+        const csrfResp = await fetch(`${API_BASE_URL}/csrf-token/`, { method: 'GET', credentials: 'include' });
+        if (csrfResp.ok) {
+          const j = await csrfResp.json();
+          csrfToken = j.csrfToken || csrfToken;
+          cookies = await Cookies.get(API_ORIGIN);
+          csrfToken = csrfToken || cookies?.csrftoken?.value;
+        }
+      } catch (e) {
+        console.warn('Failed to fetch csrf-token endpoint:', e);
+      }
+    }
 
     const response = await fetch(
       `${API_BASE_URL}/mentor-relationships/${relationshipId}/status/`,
@@ -187,8 +240,21 @@ export const changeMentorRelationshipStatus = async (
     );
 
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || 'Failed to change relationship status');
+      const text = await response.text();
+      console.error('change status error:', response.status, text);
+      try {
+        const error = JSON.parse(text);
+        throw new Error(error.error || 'Failed to change relationship status');
+      } catch {
+        throw new Error(`Failed to change relationship status: ${response.status}`);
+      }
+    }
+
+    const ct2 = response.headers.get('content-type') || '';
+    if (!ct2.includes('application/json')) {
+      const t = await response.text();
+      console.warn('Non-JSON changeMentorRelationshipStatus response:', t.slice(0, 200));
+      throw new Error('Server returned non-JSON response');
     }
 
     return response.json();

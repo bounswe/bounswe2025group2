@@ -54,7 +54,7 @@ const MentorRequests = () => {
       setOutgoingRequests(outgoing);
     } catch (error) {
       console.error('Error fetching requests:', error);
-      Alert.alert('Error', 'Failed to load mentor requests');
+      // Preserve state on error
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -83,10 +83,10 @@ const MentorRequests = () => {
     setProcessingId(relationshipId);
     try {
       await changeMentorRelationshipStatus(relationshipId, 'ACCEPTED');
-      Alert.alert('Success', 'Mentor request accepted!');
       fetchRequests();
     } catch (error: any) {
-      Alert.alert('Error', error.message || 'Failed to accept request');
+      console.error('Error accepting request:', error);
+      // Preserve state on error
     } finally {
       setProcessingId(null);
     }
@@ -108,10 +108,10 @@ const MentorRequests = () => {
             setProcessingId(relationshipId);
             try {
               await changeMentorRelationshipStatus(relationshipId, 'REJECTED');
-              Alert.alert('Success', 'Request rejected');
               fetchRequests();
             } catch (error: any) {
-              Alert.alert('Error', error.message || 'Failed to reject request');
+              console.error('Error rejecting request:', error);
+              // Preserve state on error
             } finally {
               setProcessingId(null);
             }
@@ -125,7 +125,7 @@ const MentorRequests = () => {
    * Get the profile picture URL for a user
    */
   const getProfilePictureUrl = (username: string) => {
-    return `http://10.0.2.2:8000/api/profile/other/picture/${username}/?t=${Date.now()}`;
+    return `http://164.90.166.81:8000/api/profile/other/picture/${username}/?t=${Date.now()}`;
   };
 
   /**

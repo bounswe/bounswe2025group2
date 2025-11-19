@@ -53,7 +53,7 @@ const FindMentor = () => {
         setCurrentUser(currentUserData);
       } catch (error) {
         console.error('Error fetching data:', error);
-        Alert.alert('Error', 'Failed to load users');
+        // Preserve state on error
       } finally {
         setLoading(false);
       }
@@ -90,21 +90,10 @@ const FindMentor = () => {
       const menteeId = requestAsMentee ? currentUser.id : targetUser.id;
 
       await createMentorRelationship(mentorId, menteeId);
-      
-      Alert.alert(
-        'Success',
-        `Mentor request sent to ${targetUser.username}`,
-        [
-          {
-            text: 'OK',
-            onPress: () => {
-              navigation.goBack();
-            },
-          },
-        ]
-      );
+      navigation.goBack();
     } catch (error: any) {
-      Alert.alert('Error', error.message || 'Failed to send mentor request');
+      console.error('Error sending request:', error);
+      // Preserve state on error
     } finally {
       setRequestingUserId(null);
     }
@@ -138,7 +127,7 @@ const FindMentor = () => {
    * Get the profile picture URL for a user
    */
   const getProfilePictureUrl = (username: string) => {
-    return `http://10.0.2.2:8000/api/profile/other/picture/${username}/?t=${Date.now()}`;
+    return `http://164.90.166.81:8000/api/profile/other/picture/${username}/?t=${Date.now()}`;
   };
 
   /**

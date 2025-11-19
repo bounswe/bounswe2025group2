@@ -24,6 +24,9 @@ import Forum from '../Pages/Forum.tsx';
 import ForumDetail from '../Pages/ForumDetail.tsx';
 import ThreadDetail from '../Pages/ThreadDetail.tsx';
 import AiChatDetail from '../Pages/AiChatDetail';
+import MentorList from '../Pages/MentorList';
+import MentorRequests from '../Pages/MentorRequests';
+import FindMentor from '../Pages/FindMentor';
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
