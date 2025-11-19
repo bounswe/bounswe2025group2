@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useIsAuthenticated, useLogout } from '../lib';
 import { useNavigate } from 'react-router-dom';
 import { Button } from './ui/button';
 import './Header.css';
 import { useQuery } from '@tanstack/react-query';
 import { createQueryKey } from '../lib/query/queryClient';
+import { useUserSearch } from '../lib/hooks/useUserSearch';
 
 interface HeaderProps {
   onSearch?: (searchTerm: string) => void;
@@ -16,6 +17,9 @@ const Header: React.FC<HeaderProps> = ({ onSearch }) => {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
+  const [showSearchDropdown, setShowSearchDropdown] = useState(false);
+  const searchRef = useRef<HTMLDivElement>(null);
+  const { users, isLoading } = useUserSearch(searchTerm);
 
   const { data: profilePicture } = useQuery<string | { image: string }>({
     queryKey: createQueryKey('/api/profile/picture/'),
@@ -36,11 +40,40 @@ const Header: React.FC<HeaderProps> = ({ onSearch }) => {
     enabled: !!user,
   });
 
+  // Close search dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
+        setShowSearchDropdown(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (onSearch && searchTerm.trim()) {
       onSearch(searchTerm.trim());
     }
+  };
+
+  const handleSearchInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setSearchTerm(value);
+    setShowSearchDropdown(value.trim().length > 0);
+  };
+
+  const handleUserClick = (username: string) => {
+    // Navigate to the user's profile
+    if (user?.username === username) {
+      navigate('/profile');
+    } else {
+      navigate(`/profile/other/${username}`);
+    }
+    setSearchTerm('');
+    setShowSearchDropdown(false);
   };
 
   const handleLogout = async () => {
@@ -82,12 +115,13 @@ const Header: React.FC<HeaderProps> = ({ onSearch }) => {
 
         {/* Search Bar */}
         <form className="header-search" onSubmit={handleSearch}>
-          <div className="search-container">
+          <div className="search-container" ref={searchRef}>
             <input
               type="text"
               placeholder="Search goals, challenges, users..."
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={handleSearchInputChange}
+              onFocus={() => searchTerm.trim().length > 0 && setShowSearchDropdown(true)}
               className="search-input"
             />
             <Button type="submit" variant="ghost" className="search-button">
@@ -96,6 +130,55 @@ const Header: React.FC<HeaderProps> = ({ onSearch }) => {
                 <path d="m21 21-4.35-4.35"></path>
               </svg>
             </Button>
+
+            {/* User Search Dropdown */}
+            {showSearchDropdown && (
+              <div className="search-dropdown">
+                {isLoading ? (
+                  <div className="search-dropdown-item search-loading">
+                    Searching...
+                  </div>
+                ) : users.length > 0 ? (
+                  <>
+                    <div className="search-dropdown-header">Users</div>
+                    {users.map((searchUser) => (
+                      <div
+                        key={searchUser.id}
+                        className="search-dropdown-item user-result"
+                        onClick={() => handleUserClick(searchUser.username)}
+                      >
+                        <div className="user-result-avatar">
+                          {searchUser.username.charAt(0).toUpperCase()}
+                        </div>
+                        <div className="user-result-info">
+                          <div className="user-result-username">
+                            {searchUser.username}
+                            {searchUser.is_verified_coach && (
+                              <span title="Verified Coach">
+                                <svg 
+                                  width="14" 
+                                  height="14" 
+                                  viewBox="0 0 24 24" 
+                                  fill="currentColor"
+                                  className="verified-badge"
+                                >
+                                  <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                              </span>
+                            )}
+                          </div>
+                          <div className="user-result-type">{searchUser.user_type}</div>
+                        </div>
+                      </div>
+                    ))}
+                  </>
+                ) : searchTerm.trim().length > 0 ? (
+                  <div className="search-dropdown-item search-empty">
+                    No users found
+                  </div>
+                ) : null}
+              </div>
+            )}
           </div>
         </form>
 
