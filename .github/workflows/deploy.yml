@@ -27,7 +27,7 @@ jobs:
       - name: Build and push frontend
         run: |
           docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/genfit-frontend ./Web_Frontend/genfit_frontend \
-            --build-arg VITE_API_BASE_URL=http://${{ secrets.DROPLET_IP }}:8000
+            --build-arg VITE_API_BASE_URL=https://api.genfit.website
           docker push ${{ secrets.DOCKERHUB_USERNAME }}/genfit-frontend
 
       - name: Deploy on DigitalOcean Droplet

@@ -19,9 +19,11 @@ from .separate_views import ip_location
 from .separate_views import goal_suggestions
 from .separate_views import daily_advice_views
 from .separate_views import mentor_relationships
+from .views.health import health_check
 
 
 urlpatterns = [
+    path('health/', health_check, name='health_check'),
     path('register/', views.register, name='register'),
     path('verify-email/<str:uidb64>/<str:token>/', views.verify_email, name='verify_email'),
     path('login/', views.user_login, name='login'),
