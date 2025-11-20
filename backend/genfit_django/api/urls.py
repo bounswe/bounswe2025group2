@@ -128,6 +128,8 @@ urlpatterns = [
     # Challenge search
     path('challenges/search/', challenges.search_challenges, name='search-challenges'),
 
+    path('contact/', views.contact_submission, name='contact-submission'),
+
     # Mentor-Mentee Relationship endpoints
     path('mentor-relationships/', mentor_relationships.create_mentor_relationship, name='create_mentor_relationship'),
     path('mentor-relationships/user/', mentor_relationships.get_user_mentor_relationships, name='get_user_mentor_relationships'),

@@ -4,7 +4,7 @@ from django.core.validators import RegexValidator
 from django.contrib.auth import get_user_model
 from django.utils import timezone
 from .utils import geocode_location
-from .models import Notification, UserWithType, FitnessGoal, Profile, Forum, Thread, Comment, Subcomment, Vote, Challenge, ChallengeParticipant, AiTutorChat, AiTutorResponse, UserAiMessage, DailyAdvice, MentorMenteeRelationship
+from .models import Notification, UserWithType, FitnessGoal, Profile, ContactSubmission, Forum, Thread, Comment, Subcomment, Vote, Challenge, ChallengeParticipant, AiTutorChat, AiTutorResponse, UserAiMessage, DailyAdvice, MentorMenteeRelationship
 from django.utils import timezone
 
 
@@ -549,3 +549,22 @@ class MentorMenteeRelationshipSerializer(serializers.ModelSerializer):
         
         return relationship
 
+class ContactSubmissionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ContactSubmission
+        fields = ['name', 'email', 'subject', 'message']
+    
+    def validate_name(self, value):
+        if len(value.strip()) < 2:
+            raise serializers.ValidationError("Name must be at least 2 characters long.")
+        return value.strip()
+    
+    def validate_subject(self, value):
+        if len(value.strip()) < 5:
+            raise serializers.ValidationError("Subject must be at least 5 characters long.")
+        return value.strip()
+    
+    def validate_message(self, value):
+        if len(value.strip()) < 10:
+            raise serializers.ValidationError("Message must be at least 10 characters long.")
+        return value.strip()
