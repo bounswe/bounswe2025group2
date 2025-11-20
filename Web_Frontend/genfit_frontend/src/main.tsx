@@ -40,7 +40,7 @@ createRoot(document.getElementById('root')!).render(
           <Route path="/profile/other/:username" element={<ProfilePage />} />
           <Route path="/settings" element={<SettingsPage />} />
           <Route path="/challenges" element={<ChallengesPage />} />
-          <Route path="/chat" element={<ChatPage />} />
+          <Route path="/chatting" element={<ChatPage />} />
           <Route path="/contact" element={<ContactPage />} />
         </Routes>
       </Router>
