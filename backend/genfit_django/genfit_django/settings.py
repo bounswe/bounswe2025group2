@@ -168,6 +168,8 @@ CORS_ALLOWED_ORIGINS = [
     'http://genfit.website',
     'http://www.genfit.website',
     'http://api.genfit.website',
+    'https://129.212.168.212',
+    'http://129.212.168.212',
 ]
 
 
