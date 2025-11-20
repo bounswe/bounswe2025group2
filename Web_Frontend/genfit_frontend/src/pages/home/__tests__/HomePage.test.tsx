@@ -242,8 +242,8 @@ describe('HomePage', () => {
 
     // Check if food results are displayed
     await waitFor(() => {
-      expect(screen.getByText('egg')).toBeInTheDocument();
-      expect(screen.getByText('banana')).toBeInTheDocument();
+      expect(screen.getByText('Egg, whole, raw')).toBeInTheDocument();
+      expect(screen.getByText('Banana, raw')).toBeInTheDocument();
     });
   });
 
@@ -321,11 +321,11 @@ describe('HomePage', () => {
 
     await waitFor(() => {
       // Check egg nutritional info
-      expect(screen.getByText('143.0 cal')).toBeInTheDocument();
+      expect(screen.getByText('143.0 kcal')).toBeInTheDocument();
       expect(screen.getByText('12.6g')).toBeInTheDocument(); // protein
 
       // Check banana nutritional info
-      expect(screen.getByText('105.0 cal')).toBeInTheDocument();
+      expect(screen.getByText('105.0 kcal')).toBeInTheDocument();
       expect(screen.getByText('1.3g')).toBeInTheDocument(); // protein
     });
   });

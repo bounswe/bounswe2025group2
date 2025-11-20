@@ -506,18 +506,51 @@
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
+.food-header {
+  margin-bottom: 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 2px solid #f3f4f6;
+}
+
 .food-card h3 {
   font-size: 1.125rem;
   font-weight: 600;
   color: #1f2937;
-  margin-bottom: 1rem;
+  margin-bottom: 0.5rem;
   text-transform: capitalize;
+}
+
+.brand-name,
+.brand-owner {
+  display: inline-block;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #6b7280;
+  background: #f3f4f6;
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  margin-top: 0.5rem;
+}
+
+.brand-name {
+  color: #800000;
+  background: #fee2e2;
+}
+
+.serving-info {
+  font-size: 0.875rem;
+  color: #6b7280;
+  background: #f9fafb;
+  padding: 0.5rem 0.75rem;
+  border-radius: 6px;
+  margin-bottom: 1rem;
+  font-weight: 500;
 }
 
 .food-details {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 1rem;
 }
 
 .food-detail {
@@ -532,6 +565,41 @@
   border-bottom: none;
 }
 
+.food-detail.macro {
+  padding: 0.75rem;
+  background: #fef3c7;
+  border-radius: 6px;
+  border: none;
+  margin-bottom: 0.5rem;
+}
+
+.food-detail.macro .detail-label {
+  color: #92400e;
+  font-weight: 600;
+}
+
+.food-detail.macro .detail-value {
+  color: #92400e;
+  font-size: 1rem;
+}
+
+.nutrients-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.nutrients-grid .food-detail {
+  padding: 0.5rem;
+  border-bottom: none;
+  background: #f9fafb;
+  border-radius: 4px;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.25rem;
+}
+
 .detail-label {
   font-size: 0.875rem;
   font-weight: 500;
@@ -540,6 +608,20 @@
 
 .detail-value {
   font-size: 0.875rem;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.ingredients {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 2px solid #f3f4f6;
+  font-size: 0.875rem;
+  color: #6b7280;
+  line-height: 1.6;
+}
+
+.ingredients-label {
   font-weight: 600;
   color: #1f2937;
 }
@@ -565,6 +647,9 @@
     min-width: 100%;
   }
 
+  .nutrients-grid {
+    grid-template-columns: 1fr;
+  }
 
   .goal-tabs {
     gap: 0.25rem;

@@ -38,8 +38,8 @@ ALLOWED_HOSTS = ['localhost',
                  'api.genfit.website',
                 ]
 
-# For now, we are allowing all hosts. In production, we should specify your domain.
-CORS_ALLOW_ALL_ORIGINS = False
+# For development, allow all origins. In production, use specific origins.
+CORS_ALLOW_ALL_ORIGINS = DEBUG  # Allow all origins in development
 # CORS_ALLOWED_ORIGINS = ['http://localhost:3000']
 CORS_ALLOW_CREDENTIALS = True
 
@@ -144,12 +144,14 @@ DATABASES = {
 
 
 CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000",  # Frontend in Docker
     "http://localhost:5000",
     "http://localhost:8000",
     "http://localhost:5173",
     "http://10.0.2.2:8000",
     "http://10.0.2.2:5000",
     "http://10.0.2.2:3000",
+    "https://localhost:3000",
     "https://localhost:5000",
     "https://localhost:8000",
     "https://localhost:5173",
