@@ -39,7 +39,7 @@ ALLOWED_HOSTS = ['localhost',
                 ]
 
 # For now, we are allowing all hosts. In production, we should specify your domain.
-CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_ALL_ORIGINS = False
 # CORS_ALLOWED_ORIGINS = ['http://localhost:3000']
 CORS_ALLOW_CREDENTIALS = True
 
@@ -232,6 +232,8 @@ CSRF_COOKIE_SECURE = not DEBUG  # Only send CSRF cookie over HTTPS in production
 if not DEBUG:
     SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
     SECURE_SSL_REDIRECT = False  # Load balancer handles SSL, not Django
+    CSRF_COOKIE_DOMAIN = '.genfit.website'
+    SESSION_COOKIE_DOMAIN = '.genfit.website'
 
 # Email Configuration
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
