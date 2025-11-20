@@ -57,6 +57,7 @@ describe('Forum Page - Unit Tests', () => {
   // Setup mocks before each test
   beforeEach(() => {
     jest.clearAllMocks();
+    jest.useFakeTimers();
 
     // Mock useAuth hook
     (useAuth as jest.Mock).mockReturnValue({
@@ -82,18 +83,38 @@ describe('Forum Page - Unit Tests', () => {
     (global.fetch as jest.Mock).mockClear();
   });
 
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
   describe('Component Rendering Tests', () => {
     test('renders loading state initially', async () => {
-      // Mock fetch to never resolve (simulating loading)
-      (global.fetch as jest.Mock).mockImplementation(
-        () => new Promise(() => {})
+      (global.fetch as jest.Mock).mockImplementationOnce(
+        () => new Promise(resolve => {
+          setTimeout(() => resolve({
+            ok: true,
+            json: async () => mockForums,
+          }), 100);
+        })
       );
 
-      const { UNSAFE_queryAllByType } = render(<Forum />);
+      const { UNSAFE_queryAllByType, getByText } = render(<Forum />);
       
-      // ActivityIndicator is rendered but doesn't have testID by default
+      // Initially loading
       const indicators = UNSAFE_queryAllByType(ActivityIndicator);
       expect(indicators.length).toBeGreaterThan(0);
+
+      // Advance timers to resolve fetch
+      jest.advanceTimersByTime(100);
+
+      // Wait for re-render and check forums are shown
+      await waitFor(() => {
+        expect(getByText('General Discussion')).toBeTruthy();
+      });
+
+      // Loading should be gone
+      const indicatorsAfter = UNSAFE_queryAllByType(ActivityIndicator);
+      expect(indicatorsAfter.length).toBe(0);
     });
 
     test('renders forum list after successful API call', async () => {
@@ -253,8 +274,6 @@ describe('Forum Page - Unit Tests', () => {
         expect(getByText('Retry')).toBeTruthy();
       });
 
-      const initialCallCount = (global.fetch as jest.Mock).mock.calls.length;
-
       (global.fetch as jest.Mock).mockResolvedValueOnce({
         ok: true,
         json: async () => mockForums,
@@ -263,9 +282,7 @@ describe('Forum Page - Unit Tests', () => {
       fireEvent.press(getByText('Retry'));
       
       await waitFor(() => {
-        expect((global.fetch as jest.Mock).mock.calls.length).toBeGreaterThan(
-          initialCallCount
-        );
+        expect(getByText('General Discussion')).toBeTruthy();
       });
     });
 
@@ -373,10 +390,13 @@ describe('Forum Page - Unit Tests', () => {
         json: async () => undefined,
       });
 
-      render(<Forum />);
+      const { queryByText } = render(<Forum />);
       
       await waitFor(() => {
-        expect(global.fetch).toHaveBeenCalled();
+        // Since data is undefined, no forums should be rendered
+        expect(queryByText('General Discussion')).toBeFalsy();
+        // And no error should be shown
+        expect(queryByText(/Failed to load forums/)).toBeFalsy();
       });
     });
 
@@ -390,10 +410,13 @@ describe('Forum Page - Unit Tests', () => {
         json: async () => forumsWithMissing,
       });
 
-      render(<Forum />);
+      const { queryByText } = render(<Forum />);
       
       await waitFor(() => {
-        expect(global.fetch).toHaveBeenCalled();
+        // Description should be rendered
+        expect(queryByText('Description only')).toBeTruthy();
+        // But no title since it's missing
+        expect(queryByText('General Discussion')).toBeFalsy();
       });
     });
 
@@ -508,15 +531,29 @@ describe('Forum Page - Unit Tests', () => {
 
   describe('Accessibility Tests', () => {
     test('activity indicator is rendered during loading', async () => {
-      (global.fetch as jest.Mock).mockImplementation(
-        () => new Promise(() => {})
+      (global.fetch as jest.Mock).mockImplementationOnce(
+        () => new Promise(resolve => {
+          setTimeout(() => resolve({
+            ok: true,
+            json: async () => [],
+          }), 100);
+        })
       );
 
       const { UNSAFE_queryAllByType } = render(<Forum />);
       
-      // ActivityIndicator is rendered but doesn't have testID
+      // ActivityIndicator should be rendered initially
       const indicators = UNSAFE_queryAllByType(ActivityIndicator);
       expect(indicators.length).toBeGreaterThan(0);
+
+      // Advance timers
+      jest.advanceTimersByTime(100);
+
+      // After fetch, loading should be gone
+      await waitFor(() => {
+        const indicatorsAfter = UNSAFE_queryAllByType(ActivityIndicator);
+        expect(indicatorsAfter.length).toBe(0);
+      });
     });
 
     test('error message is visible and readable', async () => {
