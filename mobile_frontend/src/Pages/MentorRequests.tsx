@@ -52,9 +52,9 @@ const MentorRequests = () => {
 
       setIncomingRequests(incoming);
       setOutgoingRequests(outgoing);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fetching requests:', error);
-      // Preserve state on error
+      Alert.alert('Error', `Failed to load requests: ${error.message || 'Check connection'}`);
     } finally {
       setLoading(false);
       setRefreshing(false);

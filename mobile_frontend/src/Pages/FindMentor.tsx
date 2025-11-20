@@ -51,9 +51,9 @@ const FindMentor = () => {
         setUsers(otherUsers);
         setFilteredUsers(otherUsers);
         setCurrentUser(currentUserData);
-      } catch (error) {
+      } catch (error: any) {
         console.error('Error fetching data:', error);
-        // Preserve state on error
+        Alert.alert('Error', `Failed to load users: ${error.message || 'Check connection'}`);
       } finally {
         setLoading(false);
       }

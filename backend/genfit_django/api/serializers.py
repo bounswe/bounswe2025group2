@@ -59,6 +59,8 @@ class UserLoginSerializer(serializers.Serializer):
     remember_me = serializers.BooleanField(default=False)
 
 class UserSerializer(serializers.ModelSerializer):
+    daily_advice_enabled = serializers.SerializerMethodField()
+
     class Meta:
         model = UserWithType
         fields = ['id', 'username', 'email', 'user_type', 'is_verified_coach', 
@@ -66,6 +68,12 @@ class UserSerializer(serializers.ModelSerializer):
                   'daily_advice_enabled']
         read_only_fields = ['id', 'is_verified_coach', 'current_streak', 'longest_streak', 
                            'last_login_date', 'total_login_days']
+
+    def get_daily_advice_enabled(self, obj):
+        try:
+            return obj.daily_advice_enabled
+        except:
+            return True
 
     def update(self, instance, validated_data):
         instance.username = validated_data.get('username', instance.username)

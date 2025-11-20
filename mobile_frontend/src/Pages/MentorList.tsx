@@ -51,9 +51,9 @@ const MentorList = () => {
         ...(filter !== 'all' && { role: filter }),
       });
       setRelationships(data);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fetching relationships:', error);
-      // Preserve previous state on error
+      Alert.alert('Error', `Failed to load mentor relationships: ${error.message || 'Check connection'}`);
     } finally {
       setLoading(false);
       setRefreshing(false);

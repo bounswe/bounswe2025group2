@@ -29,12 +29,38 @@ export interface User {
 
 /**
  * Get headers for API requests
- * Backend uses session cookies, so no Authorization header needed
+ * Backend uses session cookies, so we manually attach them to ensure they are sent
  */
 const getAuthHeaders = async (): Promise<Record<string, string>> => {
-  return {
-    'Content-Type': 'application/json',
-  };
+  try {
+    const cookies = await Cookies.get(API_ORIGIN);
+    const cookieStrings: string[] = [];
+    
+    if (cookies) {
+      Object.values(cookies).forEach(cookie => {
+        if (cookie && cookie.value) {
+          cookieStrings.push(`${cookie.name}=${cookie.value}`);
+        }
+      });
+    }
+    
+    const cookieHeader = cookieStrings.join('; ');
+    console.log('Constructed Cookie Header:', cookieHeader);
+
+    if (!cookieStrings.some(c => c.startsWith('sessionid='))) {
+      console.warn('Warning: sessionid cookie is missing in getAuthHeaders!');
+    }
+
+    return {
+      'Content-Type': 'application/json',
+      ...(cookieHeader ? { 'Cookie': cookieHeader } : {}),
+    };
+  } catch (error) {
+    console.warn('Error constructing auth headers:', error);
+    return {
+      'Content-Type': 'application/json',
+    };
+  }
 };
 
 /**
