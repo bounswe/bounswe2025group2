@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import Cookies from '@react-native-cookies/cookies';
 
 type User = {
   id: number;
@@ -58,7 +59,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     try {
       if (token) {
         // Call logout endpoint if it exists
-        await fetch('http://164.90.166.81:8000/api/logout/', {
+        await fetch('http://10.0.2.2:8000/api/logout/', {
           method: 'POST',
           headers: {
             ...getAuthHeader(),
@@ -69,6 +70,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     } catch (error) {
       console.error('Logout error:', error);
     } finally {
+      // Clear cookies from all domains
+      await Cookies.clearAll();
       await setToken(null);
       setCurrentUser(null);
     }

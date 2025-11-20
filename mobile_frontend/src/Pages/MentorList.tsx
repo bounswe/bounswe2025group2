@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import { useAuth } from '../context/AuthContext';
 import {
   getUserMentorRelationships,
   changeMentorRelationshipStatus,
@@ -28,6 +29,7 @@ const DEFAULT_PROFILE_PIC = require('../assets/temp_images/profile.png');
 const MentorList = () => {
   const { colors } = useTheme();
   const navigation = useNavigation();
+  const { currentUser } = useAuth();
   
   const [relationships, setRelationships] = useState<MentorRelationship[]>([]);
   const [currentUserId, setCurrentUserId] = useState<number | null>(null);
@@ -40,8 +42,10 @@ const MentorList = () => {
    */
   const fetchRelationships = async () => {
     try {
-      // Fetch current user if not already loaded
-      if (!currentUserId) {
+      // Use currentUser from AuthContext if available, otherwise fetch
+      if (currentUser) {
+        setCurrentUserId(currentUser.id);
+      } else if (!currentUserId) {
         const user = await getCurrentUser();
         setCurrentUserId(user.id);
       }
@@ -105,7 +109,7 @@ const MentorList = () => {
    * Get the profile picture URL for a user
    */
   const getProfilePictureUrl = (username: string) => {
-    return `http://164.90.166.81:8000/api/profile/other/picture/${username}/?t=${Date.now()}`;
+    return `http://10.0.2.2:8000/api/profile/other/picture/${username}/?t=${Date.now()}`;
   };
 
   /**

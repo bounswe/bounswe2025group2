@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 import { useNavigation } from '@react-navigation/native';
+import { useAuth } from '../context/AuthContext';
 import {
   getAllUsers,
   getCurrentUser,
@@ -27,6 +28,7 @@ const DEFAULT_PROFILE_PIC = require('../assets/temp_images/profile.png');
 const FindMentor = () => {
   const { colors } = useTheme();
   const navigation = useNavigation();
+  const { currentUser: authUser } = useAuth();
   
   const [users, setUsers] = useState<User[]>([]);
   const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
@@ -41,16 +43,37 @@ const FindMentor = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [usersData, currentUserData] = await Promise.all([
-          getAllUsers(),
-          getCurrentUser(),
-        ]);
+        let currentUserData = authUser;
+        if (!currentUserData) {
+           currentUserData = await getCurrentUser();
+        }
+        
+        const usersData = await getAllUsers();
         
         // Filter out current user from the list
-        const otherUsers = usersData.filter(u => u.id !== currentUserData.id);
+        const otherUsers = usersData.filter(u => u.id !== currentUserData?.id);
         setUsers(otherUsers);
         setFilteredUsers(otherUsers);
-        setCurrentUser(currentUserData);
+        
+        if (currentUserData && 'user_type' in currentUserData) {
+            setCurrentUser(currentUserData as User);
+        } else {
+            // If auth user doesn't have full details, fetch them (might fail on remote server)
+            try {
+                const fullUser = await getCurrentUser();
+                setCurrentUser(fullUser);
+            } catch (e) {
+                console.warn('Could not fetch full user details', e);
+                // Fallback: create a partial user object compatible with the interface
+                if (currentUserData) {
+                    setCurrentUser({
+                        ...currentUserData,
+                        user_type: 'ATHLETE', // Default fallback
+                        email: currentUserData.email || ''
+                    } as User);
+                }
+            }
+        }
       } catch (error: any) {
         console.error('Error fetching data:', error);
         Alert.alert('Error', `Failed to load users: ${error.message || 'Check connection'}`);
@@ -127,7 +150,7 @@ const FindMentor = () => {
    * Get the profile picture URL for a user
    */
   const getProfilePictureUrl = (username: string) => {
-    return `http://164.90.166.81:8000/api/profile/other/picture/${username}/?t=${Date.now()}`;
+    return `http://10.0.2.2:8000/api/profile/other/picture/${username}/?t=${Date.now()}`;
   };
 
   /**

@@ -1,7 +1,7 @@
 import Cookies from '@react-native-cookies/cookies';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const API_BASE_URL = 'http://164.90.166.81:8000/api';
+const API_BASE_URL = 'http://10.0.2.2:8000/api';
 // Cookies are set on the origin, not the /api path — derive origin for cookie reads
 const API_ORIGIN = API_BASE_URL.replace(/\/api\/?$/, '');
 
