@@ -8,7 +8,7 @@ Please visit our **[wiki page](https://github.com/bounswe/bounswe2025group2/wiki
 ----
 
 Our brief project description is:
-
+ 
 > **Youth Sports & Fitness Hub**
 >
 > A platform connecting kids with local sports programs to keep them active and away from bad habits:
