@@ -137,7 +137,7 @@ const GoalFormDialog = ({ isOpen, onClose, editingGoal }: GoalFormDialogProps) =
     };
 
     const handleChatClick = () => {
-        window.open('/chat', '_blank');
+        window.open('/chatting', '_blank');
     };
 
     // Check if AI suggestions button should be enabled
