@@ -480,7 +480,7 @@ export default function ProfilePage() {
                     {selectedRel && selectedRel.status === 'PENDING' && isReceiver && (
                       <>
                         <Button size="sm" className="nav-btn" onClick={() => GFapi.post(`/api/mentor-relationships/${selectedRel.id}/status/`, { status: 'ACCEPTED' }).then(() => { queryClient.invalidateQueries({ queryKey: createQueryKey('/api/mentor-relationships/user/') }); })}>Accept</Button>
-                        <Button size="sm" variant="destructive" className="danger-btn" onClick={() => GFapi.post(`/api/mentor-relationships/${selectedRel.id}/status/`, { status: 'REJECTED' }).then(() => { queryClient.invalidateQueries({ queryKey: createQueryKey('/api/mentor-relationships/user/') }); })}>Reject</Button>
+                        <Button size="sm" className="nav-btn" onClick={() => GFapi.post(`/api/mentor-relationships/${selectedRel.id}/status/`, { status: 'REJECTED' }).then(() => { queryClient.invalidateQueries({ queryKey: createQueryKey('/api/mentor-relationships/user/') }); })}>Reject</Button>
                       </>
                     )}
                     {(!selectedRel || (selectedRel && ['REJECTED', 'TERMINATED'].includes(selectedRel.status))) && (
