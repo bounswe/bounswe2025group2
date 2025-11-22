@@ -14,6 +14,7 @@ import { useTheme } from '../context/ThemeContext';
 import Cookies from '@react-native-cookies/cookies';
 import { useAuth } from '../context/AuthContext';
 import { useFocusEffect } from '@react-navigation/native';
+import { API_URL } from '@constants/api';
 
 const DEFAULT_PROFILE_PIC = require('../assets/temp_images/profile.png');
 
@@ -107,11 +108,11 @@ const Home = () => {
       setError(null);
 
       // Get CSRF token from cookies for Django backend security
-      const cookies = await Cookies.get('http://164.90.166.81:8000');
+      const cookies = await Cookies.get(API_URL);
       const csrfToken = cookies.csrftoken?.value;
 
       // Make authenticated request to threads API
-      const response = await fetch('http://164.90.166.81:8000/api/threads/', {
+      const response = await fetch(`${API_URL}threads/`, {
         headers: {
           ...getAuthHeader(), // Include authentication headers
           'Content-Type': 'application/json',

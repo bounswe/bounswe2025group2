@@ -11,6 +11,7 @@ import axios from 'axios';
 import Cookies from '@react-native-cookies/cookies';
 import Toast from 'react-native-toast-message';
 import { useAuth } from './AuthContext';
+import { API_URL } from '../constants/api';
 
 export type AiTutorChat = {
   id: number;
@@ -60,8 +61,6 @@ type AiChatProviderProps = {
   children: ReactNode;
 };
 
-const API_BASE_URL = 'http://164.90.166.81:8000';
-
 type AiChatHistoryResponse = {
   user_messages?: Array<{
     id: number;
@@ -98,7 +97,7 @@ export const AiChatProvider = ({ children }: AiChatProviderProps) => {
       };
 
       try {
-        const cookies = await Cookies.get(API_BASE_URL);
+        const cookies = await Cookies.get(API_URL);
         const csrfToken = cookies?.csrftoken?.value;
         if (csrfToken) {
           headers['X-CSRFToken'] = csrfToken;
@@ -134,7 +133,7 @@ export const AiChatProvider = ({ children }: AiChatProviderProps) => {
 
     try {
       const headers = await buildHeaders();
-      const response = await axios.get<AiTutorChat[]>(`${API_BASE_URL}/api/ai-tutor/`, {
+      const response = await axios.get<AiTutorChat[]>(`${API_URL}ai-tutor/`, {
         headers,
         withCredentials: true,
       });
@@ -185,7 +184,7 @@ export const AiChatProvider = ({ children }: AiChatProviderProps) => {
       try {
         const headers = await buildHeaders();
         const response = await axios.get<AiChatHistoryResponse>(
-          `${API_BASE_URL}/api/ai-tutor/${chatId}/chat_history/`,
+          `${API_URL}ai-tutor/${chatId}/chat_history/`,
           { headers, withCredentials: true },
         );
         console.log('[AiChatContext] Loaded AI chat history for chat:', chatId);
@@ -229,7 +228,7 @@ export const AiChatProvider = ({ children }: AiChatProviderProps) => {
     try {
       const headers = await buildHeaders();
       const response = await axios.post<AiTutorChat>(
-        `${API_BASE_URL}/api/ai-tutor/`,
+        `${API_URL}ai-tutor/`,
         {},
         { headers, withCredentials: true },
       );
@@ -284,7 +283,7 @@ export const AiChatProvider = ({ children }: AiChatProviderProps) => {
         setAiMessages((prev) => [...prev, userMessage]);
 
         await axios.post(
-          `${API_BASE_URL}/api/ai-tutor/${selectedAiChatId}/send_message/`,
+          `${API_URL}ai-tutor/${selectedAiChatId}/send_message/`,
           { message },
           { headers, withCredentials: true },
         );

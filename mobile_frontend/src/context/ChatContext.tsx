@@ -3,6 +3,7 @@ import axios from 'axios';
 import { useAuth } from './AuthContext';
 import Cookies from '@react-native-cookies/cookies';
 import { webSocketService } from '../services/WebSocketService';
+import { API_URL } from '../constants/api';
 
 // Types for our chat system
 export type Message = {
@@ -79,11 +80,11 @@ export const ChatProvider = ({ children }: ChatProviderProps) => {
   const [isConnected, setIsConnected] = useState<boolean>(false);
 
   const fetchContacts = useCallback(async () => {
-    try {
-      const cookies = await Cookies.get('http://164.90.166.81:8000');
+    try { 
+      const cookies = await Cookies.get(API_URL);
       const csrfToken = cookies.csrftoken?.value;
       
-      const res = await axios.get('http://164.90.166.81:8000/api/users/', {
+      const res = await axios.get(`${API_URL}users/`, {
         headers: {
           ...getAuthHeader(),
           'Content-Type': 'application/json',
@@ -115,10 +116,10 @@ export const ChatProvider = ({ children }: ChatProviderProps) => {
 
   const fetchChats = useCallback(async () => {
     try {
-      const cookies = await Cookies.get('http://164.90.166.81:8000');
+      const cookies = await Cookies.get(API_URL);
       const csrfToken = cookies.csrftoken?.value;
       
-      const res = await axios.get('http://164.90.166.81:8000/chat/get-chats/', {
+      const res = await axios.get(`${API_URL}chat/get-chats/`, {
         headers: {
           ...getAuthHeader(),
           'Content-Type': 'application/json',
@@ -135,11 +136,11 @@ export const ChatProvider = ({ children }: ChatProviderProps) => {
 
   const createChat = useCallback(async (userId: number) => {
     try {
-      const cookies = await Cookies.get('http://164.90.166.81:8000');
+      const cookies = await Cookies.get(API_URL);
       const csrfToken = cookies.csrftoken?.value;
       
       const res = await axios.post(
-        'http://164.90.166.81:8000/chat/create-chat/',
+        `${API_URL}chat/create-chat/`,
         { user_id: userId },
         { 
           headers: {

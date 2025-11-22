@@ -1,5 +1,6 @@
 import { Message } from '../context/ChatContext';
 import Cookies from '@react-native-cookies/cookies';
+import { API_URL } from '@constants/api';
 
 export class WebSocketService {
   private ws: any = null;
@@ -30,7 +31,7 @@ export class WebSocketService {
 
     try {
       // Get session cookie for authentication
-      const cookies = await Cookies.get('http://164.90.166.81:8000');
+      const cookies = await Cookies.get(API_URL);
       
       if (!cookies || Object.keys(cookies).length === 0) {
         console.error('No session cookies found. User may not be authenticated.');
@@ -51,7 +52,7 @@ export class WebSocketService {
       }
 
       // WebSocket URL with session cookie as query parameter
-      const wsUrl = `ws://164.90.166.81:8000/ws/chat/${chatId}/?sessionid=${sessionCookie}`;
+      const wsUrl = `${API_URL}ws/chat/${chatId}/?sessionid=${sessionCookie}`;
       
       // Use native WebSocket API with session cookie in URL
       this.ws = new WebSocket(wsUrl);

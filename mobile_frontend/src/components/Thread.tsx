@@ -5,6 +5,7 @@ import { useTheme } from '../context/ThemeContext';
 import Cookies from '@react-native-cookies/cookies';
 import { useAuth } from '../context/AuthContext';
 import { useNavigation } from '@react-navigation/native';
+import { API_URL } from '@constants/api';
 
 type ThreadProps = {
   forumName: string;
@@ -34,9 +35,9 @@ const Thread = ({ forumName, content, imageUrl, profilePic, username, threadId, 
     // Fetch user's vote status
     const fetchVoteStatus = async () => {
       try {
-        const cookies = await Cookies.get('http://164.90.166.81:8000');
+        const cookies = await Cookies.get(API_URL);
         const csrfToken = cookies.csrftoken?.value;
-        const res = await fetch(`http://164.90.166.81:8000/api/forum/vote/thread/${threadId}/status/`, {
+        const res = await fetch(`${API_URL}forum/vote/thread/${threadId}/status/`, {
           headers: {
             ...getAuthHeader(),
             'Content-Type': 'application/json',
@@ -61,9 +62,9 @@ const Thread = ({ forumName, content, imageUrl, profilePic, username, threadId, 
     const fetchComments = async () => {
       setCommentsLoading(true);
       try {
-        const cookies = await Cookies.get('http://164.90.166.81:8000');
+        const cookies = await Cookies.get(API_URL);
         const csrfToken = cookies.csrftoken?.value;
-        const res = await fetch(`http://164.90.166.81:8000/api/comments/thread/${threadId}/date/`, {
+        const res = await fetch(`${API_URL}comments/thread/${threadId}/date/`, {
           headers: {
             ...getAuthHeader(),
             'Content-Type': 'application/json',
@@ -89,12 +90,12 @@ const Thread = ({ forumName, content, imageUrl, profilePic, username, threadId, 
   const handleVote = async (type: 'UPVOTE' | 'DOWNVOTE') => {
     if (loadingVote) return;
     setLoadingVote(true);
-    const cookies = await Cookies.get('http://164.90.166.81:8000');
+    const cookies = await Cookies.get(API_URL);
     const csrfToken = cookies.csrftoken?.value;
     try {
       if (vote === type) {
         // Remove vote
-        const res = await fetch(`http://164.90.166.81:8000/api/forum/vote/thread/${threadId}/`, {
+        const res = await fetch(`${API_URL}forum/vote/thread/${threadId}/`, {
           method: 'DELETE',
           headers: {
             ...getAuthHeader(),
@@ -109,7 +110,7 @@ const Thread = ({ forumName, content, imageUrl, profilePic, username, threadId, 
         }
       } else {
         // Upvote or downvote
-        const res = await fetch('http://164.90.166.81:8000/api/forum/vote/', {
+        const res = await fetch(`${API_URL}forum/vote/`, {
           method: 'POST',
           headers: {
             ...getAuthHeader(),
@@ -138,10 +139,10 @@ const Thread = ({ forumName, content, imageUrl, profilePic, username, threadId, 
   const handleComment = async () => {
     if (!commentText.trim()) return;
     setCommentLoading(true);
-    const cookies = await Cookies.get('http://164.90.166.81:8000');
+    const cookies = await Cookies.get(API_URL);
     const csrfToken = cookies.csrftoken?.value;
     try {
-      const res = await fetch(`http://164.90.166.81:8000/api/comments/add/${threadId}/`, {
+      const res = await fetch(`${API_URL}comments/add/${threadId}/`, {
         method: 'POST',
         headers: {
           ...getAuthHeader(),
@@ -158,9 +159,9 @@ const Thread = ({ forumName, content, imageUrl, profilePic, username, threadId, 
         const fetchComments = async () => {
           setCommentsLoading(true);
           try {
-            const cookies = await Cookies.get('http://164.90.166.81:8000');
+            const cookies = await Cookies.get(API_URL);
             const csrfToken = cookies.csrftoken?.value;
-            const res = await fetch(`http://164.90.166.81:8000/api/comments/thread/${threadId}/date/`, {
+            const res = await fetch(`${API_URL}comments/thread/${threadId}/date/`, {
               headers: {
                 ...getAuthHeader(),
                 'Content-Type': 'application/json',

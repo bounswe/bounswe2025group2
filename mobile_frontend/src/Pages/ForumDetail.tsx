@@ -5,9 +5,7 @@ import { useRoute, useNavigation } from '@react-navigation/native';
 import { RootStackParamList } from '../types/navigation';
 import { useAuth } from '../context/AuthContext';
 import CustomText from '@components/CustomText';
-
-const API_BASE_URL = 'http://164.90.166.81:8000/api';
-
+import { API_URL } from '../constants/api';
 
 type Thread = {
   id: number;
@@ -36,7 +34,7 @@ const ForumDetail = () => {
     try {
       setIsLoading(true);
       setError(null);
-      const res = await fetch(`${API_BASE_URL}/forums/${forumId}/threads/`, {
+      const res = await fetch(`${API_URL}forums/${forumId}/threads/`, {
         headers: {
           'Content-Type': 'application/json',
           ...getAuthHeader(),

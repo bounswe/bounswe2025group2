@@ -21,11 +21,10 @@ import Cookies from '@react-native-cookies/cookies';
 import { useAuth } from '../context/AuthContext';
 import ChallengeCard from '../components/ChallengeCard';
 import CustomText from '@components/CustomText';
+import { API_URL } from '../constants/api';
 
 type ChallengeListItem = { id: number; is_joined?: boolean };
 type BoolParam = '' | 'true' | 'false';
-
-const API = 'http://164.90.166.81:8000/api';
 
 const Challenges: React.FC = () => {
   const { currentUser, getAuthHeader } = useAuth();
@@ -61,7 +60,7 @@ const Challenges: React.FC = () => {
   });
 
   const [isCoach, setIsCoach] = useState<boolean>(false);
-  const COOKIE_ORIGIN = useMemo(() => API.replace(/\/api\/?$/, ''), []);
+  const COOKIE_ORIGIN = useMemo(() => API_URL.replace(/\/api\/?$/, ''), []);
 
   // Function to fetch user data and determine if user is coach
   const fetchUserAndCheckCoach = useCallback(async () => {
@@ -71,7 +70,7 @@ const Challenges: React.FC = () => {
       const cookies = await Cookies.get(COOKIE_ORIGIN);
       const csrf = cookies.csrftoken?.value;
 
-      const response = await fetch(`${API}/user`, {
+      const response = await fetch(`${API_URL}user`, {
         method: 'GET',
         headers: {
           ...getAuthHeader(),
@@ -158,7 +157,7 @@ const Challenges: React.FC = () => {
       .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`)
       .join('&');
 
-    return `${API}/challenges/search/${qs ? `?${qs}` : ''}`;
+    return `${API_URL}challenges/search/${qs ? `?${qs}` : ''}`;
   };
 
   const fetchChallenges = useCallback(async () => {
@@ -363,7 +362,7 @@ const Challenges: React.FC = () => {
       if (minAge.trim()) body.min_age = Number(minAge);
       if (maxAge.trim()) body.max_age = Number(maxAge);
 
-      const res = await fetch(`${API}/challenges/create/`, {
+      const res = await fetch(`${API_URL}challenges/create/`, {
         method: 'POST',
         headers: {
           ...getAuthHeader(),
@@ -448,7 +447,7 @@ const Challenges: React.FC = () => {
         renderItem={({ item }) => (
           <ChallengeCard
             challengeId={item.id}
-            baseUrl={API}
+            baseUrl={API_URL}
             joined={item.is_joined}
             onViewDetails={(id: number) => setDetailId(id)}
           />
@@ -676,7 +675,7 @@ const Challenges: React.FC = () => {
           {detailId != null && (
             <ChallengeDetailContent
               id={detailId}
-              api={API}
+              api={API_URL}
               onClose={() => setDetailId(null)}
               onMembershipChange={handleMembershipChange}
             />
