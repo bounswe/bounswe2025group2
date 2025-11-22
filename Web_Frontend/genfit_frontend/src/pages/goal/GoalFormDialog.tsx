@@ -7,6 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Select, SelectItem } from '../../components/ui/select';
 import GFapi from '../../lib/api/GFapi';
 import { invalidateQueries } from '../../lib';
+import { queryClient, createQueryKey } from '../../lib';
 import type { Goal } from '../../lib/types/api';
 import { Save, X, Sparkles, Loader2 } from 'lucide-react';
 import { GoalAISuggestions } from '../../components/goals/GoalAISuggestions';
@@ -25,9 +26,11 @@ interface GoalFormDialogProps {
     isOpen: boolean;
     onClose: () => void;
     editingGoal: Goal | null;
+    targetUserId?: number;
+    invalidateUsername?: string;
 }
 
-const GoalFormDialog = ({ isOpen, onClose, editingGoal }: GoalFormDialogProps) => {
+const GoalFormDialog = ({ isOpen, onClose, editingGoal, targetUserId, invalidateUsername }: GoalFormDialogProps) => {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [formData, setFormData] = useState({
         title: '',
@@ -176,10 +179,14 @@ const GoalFormDialog = ({ isOpen, onClose, editingGoal }: GoalFormDialogProps) =
             if (editingGoal) {
                 await GFapi.put(`/api/goals/${editingGoal.id}/`, payload);
             } else {
-                await GFapi.post('/api/goals/', payload);
+                const createPayload = targetUserId ? { ...payload, user: targetUserId } : payload;
+                await GFapi.post('/api/goals/', createPayload);
             }
 
             await invalidateQueries(['/api/goals/']);
+            if (invalidateUsername) {
+                await queryClient.invalidateQueries({ queryKey: createQueryKey('/api/goals/', { username: invalidateUsername }) });
+            }
             onClose();
         } catch (error) {
             console.error('Failed to save goal:', error);

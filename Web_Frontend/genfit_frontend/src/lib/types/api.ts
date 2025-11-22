@@ -84,6 +84,7 @@ export interface Goal {
   title: string;
   description: string;
   user: number;
+  mentor?: number;
   goal_type: string;
   target_value: number;
   current_value: number;

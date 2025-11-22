@@ -25,7 +25,7 @@ All endpoints are relative to your base API URL (e.g., `http://127.0.0.1:8000/ap
 
 | Method | Endpoint                        | Description                                                        |
 |--------|---------------------------------|--------------------------------------------------------------------|
-| GET | `/api/goals/`                   | List goals for the authenticated user; mentors can view mentee goals via `?username=<mentee_username>` |
+| GET | `/api/goals/`                   | List goals for the authenticated user; view any user's goals via `?username=<username>` |
 | POST | `/api/goals/`                   | Create a new fitness goal                                          |
 | GET | `/api/goals/:goal_id/`          | Retrieve a specific fitness goal                                   |
 | PUT | `/api/goals/:goal_id/`          | Update a specific fitness goal                                     |
@@ -39,10 +39,10 @@ All endpoints are relative to your base API URL (e.g., `http://127.0.0.1:8000/ap
 
 #### `GET /api/goals/`
 
-Retrieves all fitness goals that the authenticated user has access to.
+Retrieves fitness goals.
 
 - Without query params: lists goals owned by the authenticated user.
-- With `?username=<mentee_username>`: if the authenticated user is the mentor of `<mentee_username>` and the relationship is `ACCEPTED`, lists all goals of that mentee.
+- With `?username=<username>`: lists all goals of the specified user (read-only). No mentor relationship is required for viewing.
 
 **Response (200 OK)**
 ```json
@@ -111,6 +111,23 @@ Creates a new fitness goal.
 - If the authenticated user is a mentor and includes a mentee `user` ID, a `GOAL` notification is automatically created for the mentee.
 - Status is automatically set to `ACTIVE` for new goals.
 - The `mentor` field is set only when a mentor creates a goal for a mentee.
+
+### Permissions Summary
+
+- Viewing goals:
+  - Any authenticated user can view another user's goals using `?username=<username>`.
+  - Goal detail (`GET /api/goals/:goal_id/`) is restricted to the goal owner or the mentor who created that goal.
+- Creating goals (`POST /api/goals/`):
+  - Users can create their own goals.
+  - Mentors can create goals for mentees only with an `ACCEPTED` mentor–mentee relationship; the created goal's `mentor` is set to the creator.
+- Updating goals (`PUT /api/goals/:goal_id/`):
+  - Owners can update any fields.
+  - Mentors can update only the goals they created and cannot update progression (`current_value`).
+- Deleting goals (`DELETE /api/goals/:goal_id/`):
+  - Owners can delete any of their goals.
+  - Mentors can delete only goals they created (where `mentor` equals the mentor).
+- Progress updates (`PATCH /api/goals/:goal_id/progress/`):
+  - Only the goal owner can update progress or restart.
 
 ### Retrieve, Update and Delete a Fitness Goal
 
