@@ -2,6 +2,7 @@ from rest_framework import serializers
 from django.contrib.auth import password_validation
 from django.core.validators import RegexValidator
 from django.contrib.auth import get_user_model
+from django.db.models import Q
 from django.utils import timezone
 from .utils import geocode_location
 from .models import Notification, UserWithType, FitnessGoal, Profile, ContactSubmission, Forum, Thread, Comment, Subcomment, Vote, Challenge, ChallengeParticipant, AiTutorChat, AiTutorResponse, UserAiMessage, DailyAdvice, MentorMenteeRelationship
@@ -480,6 +481,7 @@ class MentorMenteeRelationshipSerializer(serializers.ModelSerializer):
             'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'sender', 'receiver', 'created_at', 'updated_at']
+        validators = []
 
     def validate(self, data):
         """Validate the mentor-mentee relationship data"""
@@ -499,8 +501,8 @@ class MentorMenteeRelationshipSerializer(serializers.ModelSerializer):
         
         # Check if relationship already exists
         existing = MentorMenteeRelationship.objects.filter(
-            mentor=mentor, mentee=mentee
-        ).exclude(status='REJECTED').exists()
+            (Q(mentor=mentor, mentee=mentee) | Q(mentor=mentee, mentee=mentor))
+        ).exclude(status__in=['REJECTED', 'TERMINATED']).exists()
         
         if existing:
             raise serializers.ValidationError("A relationship between this mentor and mentee already exists")
@@ -527,14 +529,25 @@ class MentorMenteeRelationshipSerializer(serializers.ModelSerializer):
         else:
             raise serializers.ValidationError("You can only create relationships for yourself")
         
-        # Create the relationship
-        relationship = MentorMenteeRelationship.objects.create(
-            sender=sender,
-            receiver=receiver,
+        existing_same_orientation = MentorMenteeRelationship.objects.filter(
             mentor=mentor,
-            mentee=mentee,
-            status='PENDING'
-        )
+            mentee=mentee
+        ).first()
+
+        if existing_same_orientation and existing_same_orientation.status in ['REJECTED', 'TERMINATED']:
+            existing_same_orientation.sender = sender
+            existing_same_orientation.receiver = receiver
+            existing_same_orientation.status = 'PENDING'
+            existing_same_orientation.save()
+            relationship = existing_same_orientation
+        else:
+            relationship = MentorMenteeRelationship.objects.create(
+                sender=sender,
+                receiver=receiver,
+                mentor=mentor,
+                mentee=mentee,
+                status='PENDING'
+            )
         
         # Create notification for the receiver
         Notification.objects.create(

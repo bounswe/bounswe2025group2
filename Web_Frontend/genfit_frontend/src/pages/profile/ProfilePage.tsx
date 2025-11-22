@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react'
-import { useParams } from 'react-router-dom'
+import { useState, useEffect, useMemo } from 'react'
+import { useParams, useLocation } from 'react-router-dom'
 import { useQuery, useMutation } from '@tanstack/react-query'
 import { createQueryKey, queryClient } from '../../lib/query/queryClient'
 import GFapi from '../../lib/api/GFapi'
@@ -11,7 +11,7 @@ import { Input } from '../../components/ui/input'
 import { Label } from '../../components/ui/label'
 import { Textarea } from '../../components/ui/textarea'
 import './profile_page.css'
-import { useGoals } from '../../lib'
+import { useGoals, useUser } from '../../lib'
 
 interface ProfileDetailsResponse {
   username: string
@@ -28,7 +28,14 @@ interface ProfileDetailsResponse {
 
 export default function ProfilePage() {
   const params = useParams();
+  const location = useLocation();
   const otherUsername = params.username;
+  const { data: me } = useUser();
+  const usernameFromPath = location.pathname.startsWith('/profile/other/')
+    ? location.pathname.split('/profile/other/')[1]?.split('/')[0]
+    : undefined;
+  const effectiveUsername = otherUsername ?? usernameFromPath;
+  const isOwnProfile = !effectiveUsername || effectiveUsername === me?.username;
   const [isEditing, setIsEditing] = useState(false)
   const [editedProfile, setEditedProfile] = useState({
     name: '',
@@ -70,6 +77,111 @@ export default function ProfilePage() {
   const { data: profileDetails } = useQuery<ProfileDetailsResponse>({
     queryKey: createQueryKey(otherUsername ? `/api/profile/other/${otherUsername}/` : '/api/profile/'),
   })
+
+  const { data: relationships = [] } = useQuery<Array<{ id: number; mentor: number; mentee: number; status: string; sender: number; receiver: number; mentor_username: string; mentee_username: string }>>({
+    queryKey: createQueryKey('/api/mentor-relationships/user/'),
+    queryFn: () => GFapi.get('/api/mentor-relationships/user/'),
+    enabled: !!me,
+    staleTime: 60_000,
+  })
+
+  const { data: users = [] } = useQuery<Array<{ id: number; username: string }>>({
+    queryKey: createQueryKey('/api/users/'),
+    queryFn: () => GFapi.get('/api/users/'),
+    enabled: !!otherUsername,
+    staleTime: 5 * 60_000,
+  })
+
+  const otherUserId = otherUsername ? (users.find(u => u.username === otherUsername)?.id ?? null) : null;
+
+  const relatedRels = useMemo(() => {
+    if (!me || !otherUserId) return [];
+    return relationships.filter(r => (
+      (r.mentor === me.id && r.mentee === otherUserId) ||
+      (r.mentor === otherUserId && r.mentee === me.id)
+    ));
+  }, [me?.id, otherUserId, relationships]);
+  const selectedRel = relatedRels.find(r => r.status === 'ACCEPTED' && r.mentor === me?.id)
+    || relatedRels.find(r => r.status === 'ACCEPTED' && r.mentee === me?.id)
+    || relatedRels.find(r => r.status === 'PENDING' && r.receiver === me?.id)
+    || relatedRels.find(r => r.status === 'PENDING' && r.sender === me?.id)
+    || undefined;
+  const isSender = !!(selectedRel && selectedRel.sender === me?.id);
+  const isReceiver = !!(selectedRel && selectedRel.receiver === me?.id);
+
+  const acceptedRels = relationships.filter(r => r.status === 'ACCEPTED');
+  const myMentors = me ? acceptedRels.filter(r => r.mentee === me.id).map(r => ({ id: r.mentor, username: r.mentor_username })) : [];
+  const myMentees = me ? acceptedRels.filter(r => r.mentor === me.id).map(r => ({ id: r.mentee, username: r.mentee_username })) : [];
+  const mentorshipUsernames = Array.from(new Set([...myMentors, ...myMentees].map(u => u.username))).filter(Boolean);
+
+  const { data: mentorshipPictures } = useQuery<Record<string, string>>({
+    queryKey: createQueryKey(`/api/profile/other/pictures/${mentorshipUsernames.join(',')}`),
+    queryFn: async () => {
+      const base = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+      const entries: Record<string, string> = {};
+      for (const uname of mentorshipUsernames) {
+        const endpoint = `/api/profile/other/picture/${uname}/`;
+        try {
+          const response = await fetch(new URL(endpoint, base).toString(), { credentials: 'include' });
+          if (!response.ok) continue;
+          const contentType = response.headers.get('Content-Type') || '';
+          if (contentType.startsWith('image/')) {
+            const blob = await response.blob();
+            entries[uname] = URL.createObjectURL(blob);
+          } else {
+            const data = await response.json();
+            if (data?.image) entries[uname] = data.image;
+          }
+        } catch (e) {
+          console.warn('Mentorship picture fetch failed', uname, e)
+        }
+      }
+      return entries;
+    },
+    enabled: !!isOwnProfile && mentorshipUsernames.length > 0,
+    staleTime: 5 * 60_000,
+    initialData: {} as Record<string, string>,
+  })
+
+  useEffect(() => {
+    console.log('ProfilePage route/debug', {
+      pathname: location.pathname,
+      otherUsername,
+      meUsername: me?.username,
+      effectiveUsername,
+      isOwnProfile,
+      relatedRelsCount: relatedRels.length,
+      selectedRelStatus: selectedRel?.status,
+      isSender,
+      isReceiver,
+      mentorsCount: myMentors.length,
+      menteesCount: myMentees.length,
+    })
+  }, [location.pathname, otherUsername, me, effectiveUsername, isOwnProfile, relatedRels, selectedRel, isSender, isReceiver, myMentors.length, myMentees.length])
+
+  const requestAsMentor = useMutation({
+    mutationFn: async () => {
+      if (!me || !otherUserId) throw new Error('Missing user info');
+      return GFapi.post('/api/mentor-relationships/', { mentor: me.id, mentee: otherUserId });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: createQueryKey('/api/mentor-relationships/user/') });
+      alert('Mentor request sent');
+    },
+    onError: (e) => alert(String(e))
+  });
+
+  const requestAsMentee = useMutation({
+    mutationFn: async () => {
+      if (!me || !otherUserId) throw new Error('Missing user info');
+      return GFapi.post('/api/mentor-relationships/', { mentor: otherUserId, mentee: me.id });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: createQueryKey('/api/mentor-relationships/user/') });
+      alert('Mentor request sent');
+    },
+    onError: (e) => alert(String(e))
+  });
 
   const { data: profilePicture } = useQuery<string | { image: string }>({
     queryKey: createQueryKey(otherUsername ? `/api/profile/other/picture/${otherUsername}/` : '/api/profile/picture/'),
@@ -193,10 +305,10 @@ export default function ProfilePage() {
                 )}
               </div>
             </div>
-            <div className="hero-center">
-              <h1 className="profile-username">{profileDetails?.username ?? 'Profile'}</h1>
-              <div className="username-badge">@{profileDetails?.username ?? 'user'}</div>
-            </div>
+              <div className="hero-center">
+                <h1 className="profile-username">{profileDetails?.username ?? 'Profile'}</h1>
+                <div className="username-badge">@{profileDetails?.username ?? 'user'}</div>
+                </div>
           </div>
         </section>
 
@@ -279,6 +391,111 @@ export default function ProfilePage() {
           </Card>
         </section>
 
+        {isOwnProfile && (
+          <section className="profile-section">
+            <Card className="profile-card">
+              <CardHeader className="profile-card-header">
+                <CardTitle>Mentorship</CardTitle>
+              </CardHeader>
+              <CardContent className="profile-card-content">
+                <div className="info-grid">
+                  <div className="info-item full">
+                    <div className="label">Your Mentors</div>
+                    <div className="mentorship-grid">
+                      {myMentors.length > 0 ? myMentors.map(u => (
+                        <div key={`mentor-${u.id}`} className="mentorship-item" onClick={() => window.location.href = `/profile/other/${u.username}`}> 
+                          <div className="mentorship-avatar">
+                            {mentorshipPictures[u.username] ? (
+                              <img src={mentorshipPictures[u.username]} alt={u.username} />
+                            ) : (
+                              <div className="avatar-fallback">{u.username?.[0]?.toUpperCase() || 'U'}</div>
+                            )}
+                          </div>
+                          <div className="mentorship-name">{u.username}</div>
+                          <div className="mentorship-role-label">Mentor</div>
+                        </div>
+                      )) : (
+                        <div className="info-item">You currently have no mentors.</div>
+                      )}
+                    </div>
+                  </div>
+                  <div className="info-item full">
+                    <div className="label">Your Mentees</div>
+                    <div className="mentorship-grid">
+                      {myMentees.length > 0 ? myMentees.map(u => (
+                        <div key={`mentee-${u.id}`} className="mentorship-item" onClick={() => window.location.href = `/profile/other/${u.username}`}> 
+                          <div className="mentorship-avatar">
+                            {mentorshipPictures[u.username] ? (
+                              <img src={mentorshipPictures[u.username]} alt={u.username} />
+                            ) : (
+                              <div className="avatar-fallback">{u.username?.[0]?.toUpperCase() || 'U'}</div>
+                            )}
+                          </div>
+                          <div className="mentorship-name">{u.username}</div>
+                          <div className="mentorship-role-label">Mentee</div>
+                        </div>
+                      )) : (
+                        <div className="info-item">You currently have no mentees.</div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </section>
+        )}
+
+        {!isOwnProfile && (
+          <section className="profile-section">
+            <Card className="profile-card">
+              <CardHeader className="profile-card-header">
+                <CardTitle>Mentorship</CardTitle>
+              </CardHeader>
+              <CardContent className="profile-card-content">
+                <div className="info-grid">
+                  <div className="info-item full info-status">
+                    <div className="value">
+                      {selectedRel && selectedRel.status === 'ACCEPTED'
+                        ? (selectedRel.mentor === me?.id
+                            ? `${otherUsername} is your mentee`
+                            : `${otherUsername} is your mentor`)
+                        : selectedRel && selectedRel.status === 'PENDING' && isSender
+                          ? (selectedRel.mentor === me?.id
+                              ? `You have asked ${otherUsername} to be your mentee`
+                              : `You have asked ${otherUsername} to be your mentor`)
+                          : selectedRel && selectedRel.status === 'PENDING' && isReceiver
+                            ? (selectedRel.mentor === otherUserId
+                                ? `${otherUsername} has asked to be your mentor`
+                                : `${otherUsername} has asked to be your mentee`)
+                            : `You and ${otherUsername} are not connected with a mentor-mentee relationship`}
+                    </div>
+                  </div>
+                  <div className="info-actions">
+                    {selectedRel && selectedRel.status === 'ACCEPTED' && (
+                      <Button size="sm" variant="destructive" className="danger-btn" onClick={() => GFapi.post(`/api/mentor-relationships/${selectedRel.id}/status/`, { status: 'TERMINATED' }).then(() => { queryClient.invalidateQueries({ queryKey: createQueryKey('/api/mentor-relationships/user/') }); })}>Terminate Relationship</Button>
+                    )}
+                    {selectedRel && selectedRel.status === 'PENDING' && isSender && (
+                      <Button size="sm" variant="destructive" className="danger-btn" onClick={() => GFapi.post(`/api/mentor-relationships/${selectedRel.id}/status/`, { status: 'REJECTED' }).then(() => { queryClient.invalidateQueries({ queryKey: createQueryKey('/api/mentor-relationships/user/') }); })}>Cancel Request</Button>
+                    )}
+                    {selectedRel && selectedRel.status === 'PENDING' && isReceiver && (
+                      <>
+                        <Button size="sm" className="nav-btn" onClick={() => GFapi.post(`/api/mentor-relationships/${selectedRel.id}/status/`, { status: 'ACCEPTED' }).then(() => { queryClient.invalidateQueries({ queryKey: createQueryKey('/api/mentor-relationships/user/') }); })}>Accept</Button>
+                        <Button size="sm" variant="destructive" className="danger-btn" onClick={() => GFapi.post(`/api/mentor-relationships/${selectedRel.id}/status/`, { status: 'REJECTED' }).then(() => { queryClient.invalidateQueries({ queryKey: createQueryKey('/api/mentor-relationships/user/') }); })}>Reject</Button>
+                      </>
+                    )}
+                    {(!selectedRel || (selectedRel && ['REJECTED', 'TERMINATED'].includes(selectedRel.status))) && (
+                      <>
+                        <Button size="sm" className="nav-btn" onClick={() => requestAsMentor.mutate()} disabled={requestAsMentor.isPending}>Be Their Mentor</Button>
+                        <Button size="sm" className="nav-btn" onClick={() => requestAsMentee.mutate()} disabled={requestAsMentee.isPending}>Request Them as Mentor</Button>
+                      </>
+                    )}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </section>
+        )}
+
         <section className="profile-section">
           <Card className="profile-card">
             <CardHeader className="profile-card-header goals-header">
@@ -353,6 +570,10 @@ export default function ProfilePage() {
             )}
           </DialogContent>
         </Dialog>
+
+        
+
+        
       </div>
     </Layout>
   )
