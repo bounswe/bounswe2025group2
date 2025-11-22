@@ -507,3 +507,99 @@
         font-size: 0.875rem;
     }
 }
+
+.clickable-username {
+  color: #2563eb;
+  cursor: pointer;
+  transition: color 0.2s ease, text-decoration 0.2s ease;
+  font-weight: 500;
+}
+
+.clickable-username:hover {
+  color: #1d4ed8;
+  text-decoration: underline;
+}
+
+/* Make entire author section clickable for better UX */
+.comment-author {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  padding: 4px 8px;
+  border-radius: 6px;
+  margin-right: auto;
+}
+
+.comment-author:hover {
+  background-color: #f8fafc;
+}
+
+.comment-author:hover .clickable-username {
+  color: #1d4ed8;
+  text-decoration: underline;
+}
+
+.comment-author:hover .w-4.h-4 {
+  color: #2563eb;
+}
+
+/* Thread meta items styling */
+.meta-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.meta-item .clickable-username {
+  margin-left: 0.25rem;
+}
+
+/* Ensure consistent styling across all username elements */
+.author-name {
+  color: inherit;
+  font-weight: 500;
+  transition: color 0.2s ease, text-decoration 0.2s ease;
+}
+
+/* Comment card specific styles */
+.comment-card .comment-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.comment-card .comment-author {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Subcomment specific styling */
+.comment-card.ml-8 {
+  border-left: 3px solid #dbeafe;
+  margin-left: 2rem;
+}
+
+.comment-card.ml-8 .comment-author:hover {
+  background-color: #eff6ff;
+}
+
+/* Animation for username hover */
+@keyframes usernamePulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.comment-author:hover .clickable-username {
+  animation: usernamePulse 0.3s ease;
+}
