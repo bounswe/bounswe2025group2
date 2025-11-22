@@ -37,8 +37,14 @@ const Login = ({ navigation }: any) => {
       const quotesUrl = `${API_URL}quotes/random/`;
       console.log('Quotes URL:', quotesUrl);
       
+      // Extract the origin (base URL) for Referer header
+      const origin = API_URL.replace(/\/api\/?$/, '');
+      
       const quotesResponse = await fetch(quotesUrl, { 
         method: 'GET',
+        headers: {
+          'Referer': origin,
+        },
         credentials: 'include',
       });
       
@@ -51,11 +57,12 @@ const Login = ({ navigation }: any) => {
       const csrfToken = cookies?.csrftoken?.value;
       console.log('CSRF token retrieved:', csrfToken ? 'Yes' : 'No');
 
-      // Now make the login request with the CSRF token
+      // Now make the login request with the CSRF token and Referer header
       const response = await fetch(loginUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Referer': origin,
           ...(csrfToken ? { 'X-CSRFToken': csrfToken } : {}),
         },
         credentials: 'include',
