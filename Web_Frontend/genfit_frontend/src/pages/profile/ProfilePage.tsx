@@ -112,6 +112,7 @@ export default function ProfilePage() {
   const acceptedRels = relationships.filter(r => r.status === 'ACCEPTED');
   const myMentors = me ? acceptedRels.filter(r => r.mentee === me.id).map(r => ({ id: r.mentor, username: r.mentor_username })) : [];
   const myMentees = me ? acceptedRels.filter(r => r.mentor === me.id).map(r => ({ id: r.mentee, username: r.mentee_username })) : [];
+  const myPendingRequests = me ? relationships.filter(r => r.status === 'PENDING' && (r.sender === me.id || r.receiver === me.id)) : [];
   const mentorshipUsernames = Array.from(new Set([...myMentors, ...myMentees].map(u => u.username))).filter(Boolean);
 
   const { data: mentorshipPictures } = useQuery<Record<string, string>>({
@@ -436,6 +437,47 @@ export default function ProfilePage() {
                         </div>
                       )) : (
                         <div className="info-item">You currently have no mentees.</div>
+                      )}
+                    </div>
+                  </div>
+                  <div className="info-item full">
+                    <div className="label">Pending Requests</div>
+                    <div className="pending-requests-list">
+                      {myPendingRequests.length > 0 ? myPendingRequests.map(r => {
+                        const amSender = r.sender === me!.id;
+                        const amReceiver = r.receiver === me!.id;
+                        const amMentor = r.mentor === me!.id;
+                        const otherUsernameLabel = amMentor ? r.mentee_username : r.mentor_username;
+                        const displayName = otherUsernameLabel && otherUsernameLabel.length > 16 
+                          ? `${otherUsernameLabel.slice(0, 14)}…` 
+                          : otherUsernameLabel;
+                        const roleWord = amMentor ? 'mentee' : 'mentor';
+                        const sentence = amReceiver
+                          ? `${displayName} asked to be your ${roleWord}`
+                          : `You asked ${displayName} to be your ${roleWord}`;
+                        return (
+                          <div key={`pending-${r.id}`} className="pending-request-item">
+                            <div className="pending-left" onClick={() => window.location.href = `/profile/other/${otherUsernameLabel}`}>
+                              <div className="pending-avatar">
+                                <div className="avatar-fallback">{otherUsernameLabel?.[0]?.toUpperCase() || 'U'}</div>
+                              </div>
+                              <div className="pending-name" title={otherUsernameLabel || ''}>{displayName}</div>
+                            </div>
+                            <div className="pending-text" title={sentence}>{sentence}</div>
+                            <div className="pending-actions">
+                              {amReceiver ? (
+                                <>
+                                  <Button size="sm" className="nav-btn" onClick={() => GFapi.post(`/api/mentor-relationships/${r.id}/status/`, { status: 'ACCEPTED' }).then(() => { queryClient.invalidateQueries({ queryKey: createQueryKey('/api/mentor-relationships/user/') }); })}>Accept</Button>
+                                  <Button size="sm" className="nav-btn" onClick={() => GFapi.post(`/api/mentor-relationships/${r.id}/status/`, { status: 'REJECTED' }).then(() => { queryClient.invalidateQueries({ queryKey: createQueryKey('/api/mentor-relationships/user/') }); })}>Reject</Button>
+                                </>
+                              ) : (
+                                <Button size="sm" className="nav-btn" onClick={() => GFapi.post(`/api/mentor-relationships/${r.id}/status/`, { status: 'REJECTED' }).then(() => { queryClient.invalidateQueries({ queryKey: createQueryKey('/api/mentor-relationships/user/') }); })}>Cancel</Button>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      }) : (
+                        <div className="info-item">You have no pending requests.</div>
                       )}
                     </div>
                   </div>
