@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { API_URL } from '../constants/api';
 
 type User = {
   id: number;
@@ -58,7 +59,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     try {
       if (token) {
         // Call logout endpoint if it exists
-        await fetch('http://164.90.166.81:8000/api/logout/', {
+        await fetch(`${API_URL}logout/`, {
           method: 'POST',
           headers: {
             ...getAuthHeader(),

@@ -23,6 +23,7 @@ import { useAuth } from '../context/AuthContext';
 import Cookies from '@react-native-cookies/cookies';
 import { launchImageLibrary } from 'react-native-image-picker';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import { API_URL } from '@constants/api';
 
 interface ProfileDetailsResponse {
   username: string;
@@ -50,7 +51,6 @@ interface Goal {
   last_updated: string;
 }
 
-const API_BASE = 'http://164.90.166.81:8000';
 
 const Profile = () => {
   const theme = useTheme();
@@ -80,8 +80,8 @@ const Profile = () => {
   const { data: profileDetails, isLoading: isLoadingProfile } = useQuery<ProfileDetailsResponse>({
     queryKey: ['profile', otherUsername || 'me'],
     queryFn: async () => {
-      const endpoint = otherUsername ? `/api/profile/other/${otherUsername}/` : '/api/profile/';
-      const response = await fetch(`${API_BASE}${endpoint}`, {
+      const endpoint = otherUsername ? `/profile/other/${otherUsername}/` : '/profile/';
+      const response = await fetch(`${API_URL}${endpoint}`, {
         headers: {
           ...getAuthHeader(),
           'Content-Type': 'application/json',
@@ -102,13 +102,13 @@ const Profile = () => {
     queryKey: ['profilePicture', otherUsername || 'me', pictureRefreshKey],
     queryFn: async () => {
       const endpoint = otherUsername 
-        ? `/api/profile/other/picture/${otherUsername}/` 
-        : '/api/profile/picture/';
+        ? `/profile/other/picture/${otherUsername}/` 
+        : '/profile/picture/';
       
       // Add cache-busting timestamp to the URL
       const cacheBuster = `?t=${Date.now()}`;
       
-      const response = await fetch(`${API_BASE}${endpoint}${cacheBuster}`, {
+      const response = await fetch(`${API_URL}${endpoint}${cacheBuster}`, {
         headers: {
           ...getAuthHeader(),
         },
@@ -119,7 +119,7 @@ const Profile = () => {
       
       const contentType = response.headers.get('Content-Type') || '';
       if (contentType.startsWith('image/')) {
-        return `${API_BASE}${endpoint}${cacheBuster}`;
+        return `${API_URL}${endpoint}${cacheBuster}`;
       } 
       
       if (contentType.includes('application/json')) {
@@ -144,7 +144,7 @@ const Profile = () => {
         return [];
       }
       
-      const response = await fetch(`${API_BASE}/api/goals/`, {
+      const response = await fetch(`${API_URL}goals/`, {
         headers: {
           ...getAuthHeader(),
           'Content-Type': 'application/json',
@@ -162,10 +162,10 @@ const Profile = () => {
   // Update profile mutation
   const updateProfileMutation = useMutation({
     mutationFn: async (payload: typeof editedProfile) => {
-      const cookies = await Cookies.get(API_BASE);
+      const cookies = await Cookies.get(API_URL);
       const csrfToken = cookies.csrftoken?.value;
       
-      const response = await fetch(`${API_BASE}/api/profile/`, {
+      const response = await fetch(`${API_URL}profile/`, {
         method: 'PUT',
         headers: {
           ...getAuthHeader(),
@@ -192,7 +192,7 @@ const Profile = () => {
   // Upload picture mutation
   const uploadPictureMutation = useMutation({
     mutationFn: async (uri: string) => {
-      const cookies = await Cookies.get(API_BASE);
+      const cookies = await Cookies.get(API_URL);
       const csrfToken = cookies.csrftoken?.value;
       
       const formData = new FormData();
@@ -202,7 +202,7 @@ const Profile = () => {
         type: 'image/jpeg',
       } as any);
       
-      const response = await fetch(`${API_BASE}/api/profile/picture/upload/`, {
+      const response = await fetch(`${API_URL}profile/picture/upload/`, {
         method: 'POST',
         headers: {
           ...getAuthHeader(),
@@ -228,10 +228,10 @@ const Profile = () => {
   // Delete picture mutation
   const deletePictureMutation = useMutation({
     mutationFn: async () => {
-      const cookies = await Cookies.get(API_BASE);
+      const cookies = await Cookies.get(API_URL);
       const csrfToken = cookies.csrftoken?.value;
       
-      const response = await fetch(`${API_BASE}/api/profile/picture/delete/`, {
+      const response = await fetch(`${API_URL}profile/picture/delete/`, {
         method: 'DELETE',
         headers: {
           ...getAuthHeader(),
@@ -256,10 +256,10 @@ const Profile = () => {
   // Delete goal mutation
   const deleteGoalMutation = useMutation({
     mutationFn: async (goalId: number) => {
-      const cookies = await Cookies.get(API_BASE);
+      const cookies = await Cookies.get(API_URL);
       const csrfToken = cookies.csrftoken?.value;
       
-      const response = await fetch(`${API_BASE}/api/goals/${goalId}/`, {
+      const response = await fetch(`${API_URL}goals/${goalId}/`, {
         method: 'DELETE',
         headers: {
           ...getAuthHeader(),

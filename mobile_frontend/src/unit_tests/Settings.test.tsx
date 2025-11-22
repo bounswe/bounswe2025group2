@@ -12,7 +12,7 @@ import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import { useNavigation } from '@react-navigation/native';
 import Cookies from '@react-native-cookies/cookies';
-
+import { API_URL } from '@constants/api';
 // Type declarations for global mocks
 declare const global: {
   fetch: jest.Mock;
@@ -232,7 +232,7 @@ describe('Settings Component', () => {
 
       await waitFor(() => {
         expect(global.fetch).toHaveBeenCalledWith(
-          'http://164.90.166.81:8000/api/logout/',
+          `${API_URL}logout/`,
           expect.objectContaining({
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },

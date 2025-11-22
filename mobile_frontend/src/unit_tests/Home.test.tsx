@@ -12,6 +12,7 @@ import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { useFocusEffect } from '@react-navigation/native';
 import Cookies from '@react-native-cookies/cookies';
+import { API_URL } from '@constants/api';
 
 // Type declarations for global mocks
 declare const global: {
@@ -139,7 +140,7 @@ describe('Home Component', () => {
 
       await waitFor(() => {
         expect(global.fetch).toHaveBeenCalledWith(
-          'http://164.90.166.81:8000/api/threads/',
+          `${API_URL}threads/`,
           expect.objectContaining({
             headers: expect.objectContaining({
               Authorization: 'Bearer test-token',
@@ -357,7 +358,7 @@ describe('Home Component', () => {
 
       await waitFor(() => {
         expect(global.fetch).toHaveBeenCalledWith(
-          'http://164.90.166.81:8000/api/profile/other/picture/user1/',
+          `${API_URL}profile/other/picture/user1/`,
           expect.objectContaining({
             headers: expect.objectContaining(mockAuthHeader),
             credentials: 'include',
@@ -371,11 +372,11 @@ describe('Home Component', () => {
 
       await waitFor(() => {
         expect(global.fetch).toHaveBeenCalledWith(
-          expect.stringContaining('/api/profile/other/picture/user1/'),
+          expect.stringContaining('/profile/other/picture/user1/'),
           expect.any(Object)
         );
         expect(global.fetch).toHaveBeenCalledWith(
-          expect.stringContaining('/api/profile/other/picture/user2/'),
+          expect.stringContaining('/profile/other/picture/user2/'),
           expect.any(Object)
         );
       });
@@ -383,7 +384,7 @@ describe('Home Component', () => {
 
     test('handles profile picture fetch errors gracefully', async () => {
       (global.fetch as jest.Mock).mockImplementation((url) => {
-        if (url.includes('/api/profile/other/picture/')) {
+        if (url.includes('/profile/other/picture/')) {
           return Promise.reject(new Error('Profile pic not found'));
         }
         return Promise.resolve({ ok: true, json: async () => mockThreads });
@@ -413,7 +414,7 @@ describe('Home Component', () => {
 
       await waitFor(() => {
         const profilePicCalls = (global.fetch as jest.Mock).mock.calls.filter((call) =>
-          call[0].includes('/api/profile/other/picture/')
+          call[0].includes('/profile/other/picture/')
         );
         expect(profilePicCalls.length).toBe(1);
       });
