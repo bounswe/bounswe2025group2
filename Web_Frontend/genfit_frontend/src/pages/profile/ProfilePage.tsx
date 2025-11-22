@@ -448,7 +448,6 @@ export default function ProfilePage() {
                     <div className="label">Pending Requests</div>
                     <div className="pending-requests-list">
                       {myPendingRequests.length > 0 ? myPendingRequests.map(r => {
-                        const amSender = r.sender === me!.id;
                         const amReceiver = r.receiver === me!.id;
                         const amMentor = r.mentor === me!.id;
                         const otherUsernameLabel = amMentor ? r.mentee_username : r.mentor_username;
