@@ -12,6 +12,7 @@ import { Label } from '../../components/ui/label'
 import { Textarea } from '../../components/ui/textarea'
 import './profile_page.css'
 import { useGoals, useUser } from '../../lib'
+import GoalFormDialog from '../goal/GoalFormDialog'
 
 interface ProfileDetailsResponse {
   username: string
@@ -59,6 +60,8 @@ export default function ProfilePage() {
     start_date: string;
     target_date: string;
   } | null>(null)
+  const [isGoalFormOpen, setIsGoalFormOpen] = useState(false)
+  const [editingGoal, setEditingGoal] = useState<any | null>(null)
 
   const handleDeleteSelectedGoal = async () => {
     if (!selectedGoal) return
@@ -108,6 +111,7 @@ export default function ProfilePage() {
     || undefined;
   const isSender = !!(selectedRel && selectedRel.sender === me?.id);
   const isReceiver = !!(selectedRel && selectedRel.receiver === me?.id);
+  const isMentorOfOther = !!(selectedRel && selectedRel.status === 'ACCEPTED' && selectedRel.mentor === me?.id);
 
   const acceptedRels = relationships.filter(r => r.status === 'ACCEPTED');
   const myMentors = me ? acceptedRels.filter(r => r.mentee === me.id).map(r => ({ id: r.mentor, username: r.mentor_username })) : [];
@@ -540,14 +544,19 @@ export default function ProfilePage() {
 
         <section className="profile-section">
           <Card className="profile-card">
-            <CardHeader className="profile-card-header goals-header">
-              <CardTitle>Goals</CardTitle>
-              {!otherUsername && goals.length > 0 && (
-                <Button className="nav-btn" onClick={() => window.location.href = '/goals?new=true'}>
-                  Create Goal
-                </Button>
-              )}
-            </CardHeader>
+              <CardHeader className="profile-card-header goals-header">
+                <CardTitle>Goals</CardTitle>
+                {!otherUsername && goals.length > 0 && (
+                  <Button className="nav-btn" onClick={() => window.location.href = '/goals?new=true'}>
+                    Create Goal
+                  </Button>
+                )}
+                {otherUsername && isMentorOfOther && (
+                  <Button className="nav-btn" onClick={() => { setEditingGoal(null); setIsGoalFormOpen(true); }}>
+                    Add Goal for {otherUsername}
+                  </Button>
+                )}
+              </CardHeader>
             <CardContent className="profile-card-content">
               {goals.length > 0 ? (
                 <div className="goals-grid">
@@ -570,6 +579,12 @@ export default function ProfilePage() {
                           {goal.current_value} / {goal.target_value} {goal.unit}
                         </div>
                       </div>
+                      {otherUsername && isMentorOfOther && (goal as any).mentor === me?.id && (
+                        <div className="actions" style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+                          <Button className="nav-btn" size="sm" onClick={(e) => { e.stopPropagation(); setEditingGoal(goal); setIsGoalFormOpen(true); }}>Edit</Button>
+                          <Button className="nav-btn" size="sm" onClick={async (e) => { e.stopPropagation(); if (!confirm('Delete this goal?')) return; await GFapi.delete(`/api/goals/${goal.id}/`); await queryClient.invalidateQueries({ queryKey: createQueryKey('/api/goals/') }); if (otherUsername) await queryClient.invalidateQueries({ queryKey: createQueryKey('/api/goals/', { username: otherUsername }) }); }}>Delete</Button>
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -588,6 +603,14 @@ export default function ProfilePage() {
             </CardContent>
           </Card>
         </section>
+
+        <GoalFormDialog
+          isOpen={isGoalFormOpen}
+          onClose={() => setIsGoalFormOpen(false)}
+          editingGoal={editingGoal}
+          targetUserId={otherUserId || undefined}
+          invalidateUsername={otherUsername}
+        />
 
         <Dialog open={isGoalDetailOpen} onOpenChange={setIsGoalDetailOpen}>
           <DialogContent>
