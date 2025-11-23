@@ -100,6 +100,28 @@ const Profile = () => {
   // Extract origin for Referer header (same pattern as Login.tsx)
   const origin = API_URL.replace(/\/api\/?$/, '');
 
+  // Fetch current user (like web version does)
+  const { data: me } = useQuery<User>({
+    queryKey: ['currentUser'],
+    queryFn: async () => {
+      const response = await fetch(`${API_URL}user/`, {
+        headers: {
+          ...getAuthHeader(),
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch current user');
+      }
+      
+      return response.json();
+    },
+    staleTime: 5 * 60_000, // 5 minutes like web
+    retry: false,
+  });
+
   // Fetch profile details
   const { data: profileDetails, isLoading: isLoadingProfile } = useQuery<ProfileDetailsResponse>({
     queryKey: ['profile', otherUsername || 'me'],
@@ -223,8 +245,17 @@ const Profile = () => {
 
   // Calculate relationship states
   const otherUserId = otherUsername ? (users.find(u => u.username === otherUsername)?.id ?? null) : null;
-  // Use currentUser.username to get the logged-in user's ID, not profileDetails which is the viewed profile
-  const myUserId = currentUser?.username ? users.find(u => u.username === currentUser.username)?.id : null;
+  // Use me.id directly from the /api/user/ endpoint (like web version)
+  const myUserId = me?.id ?? null;
+  
+  // Debug logging
+  console.log('User ID Calculation:', {
+    meFromAPI: me,
+    otherUsername,
+    allUsers: users.map(u => ({ id: u.id, username: u.username })),
+    myUserId,
+    otherUserId,
+  });
 
   const relatedRels = useMemo(() => {
     if (!myUserId || !otherUserId) return [];
@@ -512,16 +543,27 @@ const Profile = () => {
       const cookies = await Cookies.get(API_URL);
       const csrfToken = cookies.csrftoken?.value;
       
+      const requestBody = { mentor: myUserId, mentee: otherUserId };
+      const authHeader = getAuthHeader();
+      
+      console.log('=== Request as Mentor ===');
+      console.log('URL:', `${API_URL}mentor-relationships/`);
+      console.log('Request body:', requestBody);
+      console.log('Auth header:', authHeader);
+      console.log('CSRF token:', csrfToken ? 'Present' : 'Missing');
+      console.log('Current user:', currentUser);
+      console.log('========================');
+      
       const response = await fetch(`${API_URL}mentor-relationships/`, {
         method: 'POST',
         headers: {
-          ...getAuthHeader(),
+          ...authHeader,
           'Content-Type': 'application/json',
           'Referer': origin,
           ...(csrfToken ? { 'X-CSRFToken': csrfToken } : {}),
         },
         credentials: 'include',
-        body: JSON.stringify({ mentor: myUserId, mentee: otherUserId }),
+        body: JSON.stringify(requestBody),
       });
       
       console.log('Request as mentor response status:', response.status);
@@ -568,16 +610,27 @@ const Profile = () => {
       const cookies = await Cookies.get(API_URL);
       const csrfToken = cookies.csrftoken?.value;
       
+      const requestBody = { mentor: otherUserId, mentee: myUserId };
+      const authHeader = getAuthHeader();
+      
+      console.log('=== Request as Mentee ===');
+      console.log('URL:', `${API_URL}mentor-relationships/`);
+      console.log('Request body:', requestBody);
+      console.log('Auth header:', authHeader);
+      console.log('CSRF token:', csrfToken ? 'Present' : 'Missing');
+      console.log('Current user:', currentUser);
+      console.log('========================');
+      
       const response = await fetch(`${API_URL}mentor-relationships/`, {
         method: 'POST',
         headers: {
-          ...getAuthHeader(),
+          ...authHeader,
           'Content-Type': 'application/json',
           'Referer': origin,
           ...(csrfToken ? { 'X-CSRFToken': csrfToken } : {}),
         },
         credentials: 'include',
-        body: JSON.stringify({ mentor: otherUserId, mentee: myUserId }),
+        body: JSON.stringify(requestBody),
       });
       
       console.log('Request as mentee response status:', response.status);
