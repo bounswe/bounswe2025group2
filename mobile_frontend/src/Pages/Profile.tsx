@@ -100,13 +100,22 @@ const Profile = () => {
   // Extract origin for Referer header (same pattern as Login.tsx)
   const origin = API_URL.replace(/\/api\/?$/, '');
 
+  const getSanitizedAuthHeader = (): Record<string, string> => {
+    const header = getAuthHeader() as { Authorization?: string };
+    const authValue = header?.Authorization;
+    if (authValue && authValue.trim().length > 0) {
+      return { Authorization: authValue };
+    }
+    return {};
+  };
+
   // Fetch current user (like web version does)
   const { data: me } = useQuery<User | null>({
     queryKey: ['currentUser'],
     queryFn: async () => {
       const response = await fetch(`${API_URL}user/`, {
         headers: {
-          ...getAuthHeader(),
+          ...getSanitizedAuthHeader(),
           'Content-Type': 'application/json',
           'Accept': 'application/json',
         },
@@ -134,7 +143,7 @@ const Profile = () => {
       const endpoint = otherUsername ? `profile/other/${otherUsername}/` : 'profile/';
       const response = await fetch(`${API_URL}${endpoint}`, {
         headers: {
-          ...getAuthHeader(),
+          ...getSanitizedAuthHeader(),
           'Content-Type': 'application/json',
         },
         credentials: 'include',
@@ -161,7 +170,7 @@ const Profile = () => {
       
       const response = await fetch(`${API_URL}${endpoint}${cacheBuster}`, {
         headers: {
-          ...getAuthHeader(),
+          ...getSanitizedAuthHeader(),
         },
         credentials: 'include',
       });
@@ -190,7 +199,7 @@ const Profile = () => {
     queryFn: async () => {
       const response = await fetch(`${API_URL}mentor-relationships/user/`, {
         headers: {
-          ...getAuthHeader(),
+          ...getSanitizedAuthHeader(),
           'Content-Type': 'application/json',
           'Accept': 'application/json',
         },
@@ -210,7 +219,7 @@ const Profile = () => {
     queryFn: async () => {
       const response = await fetch(`${API_URL}users/`, {
         headers: {
-          ...getAuthHeader(),
+          ...getSanitizedAuthHeader(),
           'Content-Type': 'application/json',
           'Accept': 'application/json',
         },
@@ -232,7 +241,7 @@ const Profile = () => {
       
       const response = await fetch(`${API_URL}users/`, {
         headers: {
-          ...getAuthHeader(),
+          ...getSanitizedAuthHeader(),
           'Content-Type': 'application/json',
           'Accept': 'application/json',
         },
@@ -256,6 +265,15 @@ const Profile = () => {
   // Use me.id directly from the /api/user/ endpoint (like web version)
   const myUserId = me?.id ?? null;
   
+  useEffect(() => {
+    console.log('Mentor relationship context', {
+      me,
+      myUserId,
+      otherUsername,
+      otherUserId,
+    });
+  }, [me, myUserId, otherUsername, otherUserId]);
+
   const relatedRels = useMemo(() => {
     if (!myUserId || !otherUserId) return [];
     return relationships.filter((r: MentorRelationship) => (
@@ -291,7 +309,7 @@ const Profile = () => {
           const cacheBuster = `?t=${Date.now()}`;
           const response = await fetch(`${API_URL}${endpoint}${cacheBuster}`, {
             headers: {
-              ...getAuthHeader(),
+              ...getSanitizedAuthHeader(),
             },
             credentials: 'include',
           });
@@ -320,7 +338,7 @@ const Profile = () => {
       
       const response = await fetch(`${API_URL}${endpoint}`, {
         headers: {
-          ...getAuthHeader(),
+          ...getSanitizedAuthHeader(),
           'Content-Type': 'application/json',
         },
         credentials: 'include',
@@ -356,7 +374,7 @@ const Profile = () => {
         const response = await fetch(`${API_URL}profile/`, {
           method: 'PUT',
           headers: {
-            ...getAuthHeader(),
+            ...getSanitizedAuthHeader(),
             'Content-Type': 'application/json',
             'Referer': origin,
             ...(csrfToken ? { 'X-CSRFToken': csrfToken } : {}),
@@ -427,7 +445,7 @@ const Profile = () => {
         const response = await fetch(`${API_URL}profile/picture/upload/`, {
           method: 'POST',
           headers: {
-            ...getAuthHeader(),
+            ...getSanitizedAuthHeader(),
             'Referer': origin,
             ...(csrfToken ? { 'X-CSRFToken': csrfToken } : {}),
           },
@@ -466,7 +484,7 @@ const Profile = () => {
         const response = await fetch(`${API_URL}profile/picture/delete/`, {
           method: 'DELETE',
           headers: {
-            ...getAuthHeader(),
+            ...getSanitizedAuthHeader(),
             'Referer': origin,
             ...(csrfToken ? { 'X-CSRFToken': csrfToken } : {}),
           },
@@ -546,7 +564,7 @@ const Profile = () => {
       const response = await fetch(`${API_URL}mentor-relationships/`, {
         method: 'POST',
         headers: {
-          ...getAuthHeader(),
+          ...getSanitizedAuthHeader(),
           'Content-Type': 'application/json',
           'Referer': origin,
           ...(csrfToken ? { 'X-CSRFToken': csrfToken } : {}),
@@ -555,19 +573,31 @@ const Profile = () => {
         credentials: 'include',
         body: JSON.stringify({ mentor: me.id, mentee: otherUserId }),
       });
-      
+
+      const rawText = await response.text();
+
       if (!response.ok) {
-        const responseText = await response.text();
-        let error;
+        console.error('Mentor request failed', {
+          status: response.status,
+          statusText: response.statusText,
+          bodyPreview: rawText.slice(0, 500),
+          payload: { mentor: me.id, mentee: otherUserId },
+        });
+
         try {
-          error = JSON.parse(responseText);
+          const errorJson = JSON.parse(rawText);
+          throw new Error(errorJson.detail || 'Failed to send mentor request');
         } catch {
           throw new Error(`Server error (${response.status})`);
         }
-        throw new Error(error.detail || 'Failed to send mentor request');
       }
-      
-      return response.json();
+
+      try {
+        return JSON.parse(rawText);
+      } catch {
+        console.error('Unexpected mentor request response', rawText.slice(0, 200));
+        throw new Error('Unexpected response format from server');
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['mentor-relationships', 'me'] });
@@ -594,7 +624,7 @@ const Profile = () => {
       const response = await fetch(`${API_URL}mentor-relationships/`, {
         method: 'POST',
         headers: {
-          ...getAuthHeader(),
+          ...getSanitizedAuthHeader(),
           'Content-Type': 'application/json',
           'Referer': origin,
           ...(csrfToken ? { 'X-CSRFToken': csrfToken } : {}),
@@ -603,19 +633,31 @@ const Profile = () => {
         credentials: 'include',
         body: JSON.stringify({ mentor: otherUserId, mentee: me.id }),
       });
-      
+
+      const rawText = await response.text();
+
       if (!response.ok) {
-        const responseText = await response.text();
-        let error;
+        console.error('Mentee request failed', {
+          status: response.status,
+          statusText: response.statusText,
+          bodyPreview: rawText.slice(0, 500),
+          payload: { mentor: otherUserId, mentee: me.id },
+        });
+
         try {
-          error = JSON.parse(responseText);
+          const errorJson = JSON.parse(rawText);
+          throw new Error(errorJson.detail || 'Failed to send mentor request');
         } catch {
           throw new Error(`Server error (${response.status})`);
         }
-        throw new Error(error.detail || 'Failed to send mentor request');
       }
-      
-      return response.json();
+
+      try {
+        return JSON.parse(rawText);
+      } catch {
+        console.error('Unexpected mentee request response', rawText.slice(0, 200));
+        throw new Error('Unexpected response format from server');
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['mentor-relationships', 'me'] });
