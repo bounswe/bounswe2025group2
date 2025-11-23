@@ -802,6 +802,12 @@
   font-size: 0.95rem;
   outline: none;
   transition: border-color 0.2s;
+  background-color: white;
+  color: #1f2937;
+}
+
+.challenge-search .search-input::placeholder {
+  color: #9ca3af;
 }
 
 .challenge-search .search-input:focus {
