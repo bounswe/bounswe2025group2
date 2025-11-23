@@ -17,21 +17,19 @@ def create_mentor_relationship(request):
     Body must include `mentor` and `mentee` (user IDs).
     `sender` and `receiver` are inferred from `request.user`.
     """
-    serializer = MentorMenteeRelationshipSerializer(data=request.data, context={'request': request})
-    if serializer.is_valid():
-        relationship = serializer.save()
-        
-        Notification.objects.create(
-            recipient=relationship.receiver,
-            sender=relationship.sender,
-            notification_type='MENTOR_REQUEST',
-            title='New Mentor Request',
-            message=f'{relationship.sender.username} wants to establish a mentor-mentee relationship with you.',
-            related_object_id=relationship.id,
-            related_object_type='MentorMenteeRelationship'
-        )
-        return Response(MentorMenteeRelationshipSerializer(relationship).data, status=status.HTTP_201_CREATED)
-    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    try:
+        serializer = MentorMenteeRelationshipSerializer(data=request.data, context={'request': request})
+        if serializer.is_valid():
+            # The serializer.save() already creates the notification in its create() method
+            relationship = serializer.save()
+            return Response(MentorMenteeRelationshipSerializer(relationship).data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    except Exception as e:
+        # Log the error for debugging
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"Error creating mentor relationship: {str(e)}", exc_info=True)
+        return Response({'error': f'An error occurred: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 @api_view(['GET'])
