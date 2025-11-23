@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { useChallenges } from '../../lib';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../components/ui/dialog';
-import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import type { Challenge } from '../../lib/types/api';
 import { Trophy, Search, Calendar, Users, TrendingUp } from 'lucide-react';
@@ -121,19 +120,6 @@ const ChallengePickerDialog = ({ isOpen, onClose, onSelectChallenge }: Challenge
                   <span className={`picker-difficulty ${challenge.difficulty_level.toLowerCase()}`}>
                     {challenge.difficulty_level}
                   </span>
-                </div>
-
-                <div className="picker-challenge-footer">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleSelect(challenge);
-                    }}
-                  >
-                    Share This Challenge
-                  </Button>
                 </div>
               </div>
             ))

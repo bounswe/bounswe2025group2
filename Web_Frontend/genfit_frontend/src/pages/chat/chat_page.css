@@ -960,14 +960,6 @@
   border: 1px solid #ef4444;
 }
 
-.picker-challenge-footer {
-  display: flex;
-  justify-content: flex-end;
-  margin-top: 0.75rem;
-  padding-top: 0.75rem;
-  border-top: 1px solid #e5e7eb;
-}
-
 /* Responsive Design */
 @media (max-width: 1024px) {
   .chat-layout {
