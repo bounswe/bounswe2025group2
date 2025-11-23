@@ -584,6 +584,26 @@ div[data-state="open"] .detail-modal,
     margin-top: 0.25rem;
 }
 
+/* Challenge Highlight Animation (for linked challenges) */
+.challenge-highlighted {
+    animation: challenge-highlight 2s ease-in-out;
+}
+
+@keyframes challenge-highlight {
+    0% {
+        box-shadow: 0 0 0 0 rgba(128, 0, 0, 0.7);
+        transform: scale(1);
+    }
+    50% {
+        box-shadow: 0 0 30px 10px rgba(128, 0, 0, 0.4);
+        transform: scale(1.02);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(128, 0, 0, 0);
+        transform: scale(1);
+    }
+}
+
 /* Progress Form */
 .progress-form {
     padding: 1rem 0;
