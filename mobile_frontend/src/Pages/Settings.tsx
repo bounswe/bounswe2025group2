@@ -12,6 +12,7 @@ import { useTheme } from '../context/ThemeContext';
 import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../context/AuthContext';
 import Cookies from '@react-native-cookies/cookies';
+import { API_URL } from '@constants/api';
 
 type SettingAction = {
   label: string;
@@ -45,7 +46,7 @@ const Settings = () => {
 
   const handleLogout = async () => {
     try {
-      await fetch('http://164.90.166.81:8000/api/logout/', {
+      await fetch(`${API_URL}logout/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
       });

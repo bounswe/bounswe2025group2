@@ -10,6 +10,7 @@ import { Button } from '../../components/ui/button'
 import { Input } from '../../components/ui/input'
 import { Label } from '../../components/ui/label'
 import { Textarea } from '../../components/ui/textarea'
+import { UserCheck } from 'lucide-react'
 import './profile_page.css'
 import { useGoals, useUser } from '../../lib'
 import GoalFormDialog from '../goal/GoalFormDialog'
@@ -88,7 +89,7 @@ export default function ProfilePage() {
     staleTime: 60_000,
   })
 
-  const { data: users = [] } = useQuery<Array<{ id: number; username: string }>>({
+  const { data: users = [], isLoading: isLoadingUsers } = useQuery<Array<{ id: number; username: string }>>({
     queryKey: createQueryKey('/api/users/'),
     queryFn: () => GFapi.get('/api/users/'),
     enabled: !!otherUsername,
@@ -155,6 +156,9 @@ export default function ProfilePage() {
       meUsername: me?.username,
       effectiveUsername,
       isOwnProfile,
+      otherUserId,
+      isLoadingUsers,
+      usersCount: users.length,
       relatedRelsCount: relatedRels.length,
       selectedRelStatus: selectedRel?.status,
       isSender,
@@ -162,30 +166,46 @@ export default function ProfilePage() {
       mentorsCount: myMentors.length,
       menteesCount: myMentees.length,
     })
-  }, [location.pathname, otherUsername, me, effectiveUsername, isOwnProfile, relatedRels, selectedRel, isSender, isReceiver, myMentors.length, myMentees.length])
+  }, [location.pathname, otherUsername, me, effectiveUsername, isOwnProfile, otherUserId, isLoadingUsers, users.length, relatedRels, selectedRel, isSender, isReceiver, myMentors.length, myMentees.length])
 
   const requestAsMentor = useMutation({
     mutationFn: async () => {
-      if (!me || !otherUserId) throw new Error('Missing user info');
+      if (!me) {
+        throw new Error('You must be logged in to send a mentor request');
+      }
+      if (!otherUserId) {
+        throw new Error('Unable to find the user. Please refresh the page and try again.');
+      }
       return GFapi.post('/api/mentor-relationships/', { mentor: me.id, mentee: otherUserId });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: createQueryKey('/api/mentor-relationships/user/') });
       alert('Mentor request sent');
     },
-    onError: (e) => alert(String(e))
+    onError: (e) => {
+      console.error('Mentor request error:', e);
+      alert(String(e));
+    }
   });
 
   const requestAsMentee = useMutation({
     mutationFn: async () => {
-      if (!me || !otherUserId) throw new Error('Missing user info');
+      if (!me) {
+        throw new Error('You must be logged in to send a mentor request');
+      }
+      if (!otherUserId) {
+        throw new Error('Unable to find the user. Please refresh the page and try again.');
+      }
       return GFapi.post('/api/mentor-relationships/', { mentor: otherUserId, mentee: me.id });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: createQueryKey('/api/mentor-relationships/user/') });
       alert('Mentor request sent');
     },
-    onError: (e) => alert(String(e))
+    onError: (e) => {
+      console.error('Mentor request error:', e);
+      alert(String(e));
+    }
   });
 
   const { data: profilePicture } = useQuery<string | { image: string }>({
@@ -530,8 +550,8 @@ export default function ProfilePage() {
                     )}
                     {(!selectedRel || (selectedRel && ['REJECTED', 'TERMINATED'].includes(selectedRel.status))) && (
                       <>
-                        <Button size="sm" className="nav-btn" onClick={() => requestAsMentor.mutate()} disabled={requestAsMentor.isPending}>Be Their Mentor</Button>
-                        <Button size="sm" className="nav-btn" onClick={() => requestAsMentee.mutate()} disabled={requestAsMentee.isPending}>Request Them as Mentor</Button>
+                        <Button size="sm" className="nav-btn" onClick={() => requestAsMentor.mutate()} disabled={requestAsMentor.isPending || isLoadingUsers || !otherUserId}>Be Their Mentor</Button>
+                        <Button size="sm" className="nav-btn" onClick={() => requestAsMentee.mutate()} disabled={requestAsMentee.isPending || isLoadingUsers || !otherUserId}>Request Them as Mentor</Button>
                       </>
                     )}
                   </div>
@@ -566,7 +586,14 @@ export default function ProfilePage() {
                       onClick={() => { setSelectedGoal(goal); setIsGoalDetailOpen(true); }}
                     >
                       <div className="goal-header">
-                        <h4>{goal.title}</h4>
+                        <div className="goal-title-with-badge">
+                          <h4>{goal.title}</h4>
+                          {goal.mentor && (
+                            <div className="mentor-icon-badge" title="Goal assigned by your mentor">
+                              <UserCheck className="w-4 h-4" />
+                            </div>
+                          )}
+                        </div>
                         <span className={`goal-status ${String(goal.status || '').toLowerCase()}`}>{goal.status}</span>
                       </div>
                       <div className="goal-desc">{goal.description}</div>

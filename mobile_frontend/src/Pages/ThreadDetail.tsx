@@ -6,8 +6,8 @@ import { useAuth } from '../context/AuthContext';
 import CustomText from '@components/CustomText';
 import Toast from 'react-native-toast-message';
 import Cookies from '@react-native-cookies/cookies';
+import { API_URL } from '@constants/api';
 
-const API_BASE_URL = 'http://164.90.166.81:8000/api';
 
 type ThreadParam = { threadId: number };
 
@@ -48,7 +48,7 @@ const ThreadDetail = () => {
   const fetchThreadDetail = async () => {
     try {
       setLoading(true);
-      const res = await fetch(`${API_BASE_URL}/threads/${threadId}/`, {
+      const res = await fetch(`${API_URL}threads/${threadId}/`, {
         headers: { 'Content-Type': 'application/json', ...getAuthHeader() },
       });
         if (!res.ok) throw new Error('Failed to load thread');
@@ -64,7 +64,7 @@ const ThreadDetail = () => {
   };
   const fetchComments = async () => {
     try {
-      const res = await fetch(`${API_BASE_URL}/comments/thread/${threadId}/date/`, { credentials: 'include' });
+      const res = await fetch(`${API_URL}comments/thread/${threadId}/date/`, { credentials: 'include' });
       if (res.ok) {
         const data: Comment[] = await res.json();
         setComments(data);
@@ -77,10 +77,10 @@ const ThreadDetail = () => {
   const likeThread = async () => {
     try {
       // Get CSRF token from cookies
-      const cookies = await Cookies.get(API_BASE_URL);
+      const cookies = await Cookies.get(API_URL);
       const csrf = cookies.csrftoken?.value;
       // Use vote endpoint
-      const res = await fetch(`${API_BASE_URL}/forum/vote/`, {
+      const res = await fetch(`${API_URL}forum/vote/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -116,10 +116,10 @@ const ThreadDetail = () => {
     setIsSubmitting(true);
     try {
       // Get CSRF token from cookies
-      const cookies = await Cookies.get(API_BASE_URL);
+      const cookies = await Cookies.get(API_URL);
       const csrf = cookies.csrftoken?.value;
       // Use add comment endpoint
-      const res = await fetch(`${API_BASE_URL}/comments/add/${threadId}/`, {
+      const res = await fetch(`${API_URL}comments/add/${threadId}/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

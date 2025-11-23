@@ -8,6 +8,7 @@ import { RootStackParamList } from '../types/navigation';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useAuth } from '../context/AuthContext';
 import Toast from 'react-native-toast-message';
+import { API_URL } from '@constants/api';
 
 // Import SVG icons
 import MenuIcon from '../assets/images/menu.svg';
@@ -33,7 +34,7 @@ const TopBar = () => {
       setLoading(true);
       try {
         // Fetch profile picture
-        const picRes = await fetch('http://164.90.166.81:8000/api/profile/picture/', {
+        const picRes = await fetch(`${API_URL}profile/picture/`, {
           headers: {
             ...getAuthHeader(),
             'Content-Type': 'application/json',
@@ -46,11 +47,11 @@ const TopBar = () => {
             const picData = await picRes.json();
             image = picData.image || null;
           } else if (contentType && contentType.includes('image/')) {
-            image = 'http://164.90.166.81:8000/api/profile/picture/?t=' + Date.now();
+            image = `${API_URL}profile/picture/?t=` + Date.now();
           }
         }
         // Fetch username
-        const userRes = await fetch('http://164.90.166.81:8000/api/profile/', {
+        const userRes = await fetch(`${API_URL}profile/`, {
           headers: {
             ...getAuthHeader(),
             'Content-Type': 'application/json',

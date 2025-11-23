@@ -27,6 +27,7 @@ function ForumPage() {
         }, 200);
     };
 
+
     const handleCardMouseEnter = (event: React.MouseEvent<HTMLDivElement>) => {
         const card = event.currentTarget;
         card.style.transform = 'translateY(-8px) scale(1.02)';
