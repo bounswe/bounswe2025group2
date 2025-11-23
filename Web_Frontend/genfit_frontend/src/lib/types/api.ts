@@ -84,7 +84,7 @@ export interface Goal {
   title: string;
   description: string;
   user: number;
-  mentor?: number;
+  mentor?: number | null;
   goal_type: string;
   target_value: number;
   current_value: number;
@@ -93,6 +93,8 @@ export interface Goal {
   target_date: string;
   status: string;
   last_updated: string;
+  progress_percentage?: number;
+  progress?: number; // computed field for compatibility
 }
 
 // Challenge Types

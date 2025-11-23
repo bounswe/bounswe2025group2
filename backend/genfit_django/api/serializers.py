@@ -472,6 +472,24 @@ class MentorMenteeRelationshipSerializer(serializers.ModelSerializer):
     receiver_username = serializers.CharField(source='receiver.username', read_only=True)
     mentor_username = serializers.CharField(source='mentor.username', read_only=True)
     mentee_username = serializers.CharField(source='mentee.username', read_only=True)
+    
+    # Explicitly define mentor and mentee fields for better error messages
+    mentor = serializers.PrimaryKeyRelatedField(
+        queryset=UserWithType.objects.all(),
+        error_messages={
+            'required': 'Mentor ID is required',
+            'does_not_exist': 'User with ID {pk_value} does not exist',
+            'incorrect_type': 'Invalid mentor ID format'
+        }
+    )
+    mentee = serializers.PrimaryKeyRelatedField(
+        queryset=UserWithType.objects.all(),
+        error_messages={
+            'required': 'Mentee ID is required',
+            'does_not_exist': 'User with ID {pk_value} does not exist',
+            'incorrect_type': 'Invalid mentee ID format'
+        }
+    )
 
     class Meta:
         model = MentorMenteeRelationship
@@ -492,6 +510,12 @@ class MentorMenteeRelationshipSerializer(serializers.ModelSerializer):
         mentor = data.get('mentor')
         mentee = data.get('mentee')
         
+        # Validate that both users exist (they should if DRF converted the IDs properly)
+        if not mentor:
+            raise serializers.ValidationError({"mentor": "Mentor user not found"})
+        if not mentee:
+            raise serializers.ValidationError({"mentee": "Mentee user not found"})
+        
         if mentor.id == mentee.id:
             raise serializers.ValidationError("Mentor and mentee cannot be the same user")
 
@@ -511,6 +535,8 @@ class MentorMenteeRelationshipSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         """Create a new mentor-mentee relationship request"""
+        from django.db import IntegrityError, transaction
+        
         request = self.context.get('request')
         user = request.user
         
@@ -529,38 +555,49 @@ class MentorMenteeRelationshipSerializer(serializers.ModelSerializer):
         else:
             raise serializers.ValidationError("You can only create relationships for yourself")
         
-        existing_same_orientation = MentorMenteeRelationship.objects.filter(
-            mentor=mentor,
-            mentee=mentee
-        ).first()
+        try:
+            with transaction.atomic():
+                # Check for existing relationship in the same orientation
+                existing_same_orientation = MentorMenteeRelationship.objects.filter(
+                    mentor=mentor,
+                    mentee=mentee
+                ).first()
 
-        if existing_same_orientation and existing_same_orientation.status in ['REJECTED', 'TERMINATED']:
-            existing_same_orientation.sender = sender
-            existing_same_orientation.receiver = receiver
-            existing_same_orientation.status = 'PENDING'
-            existing_same_orientation.save()
-            relationship = existing_same_orientation
-        else:
-            relationship = MentorMenteeRelationship.objects.create(
-                sender=sender,
-                receiver=receiver,
-                mentor=mentor,
-                mentee=mentee,
-                status='PENDING'
-            )
-        
-        # Create notification for the receiver
-        Notification.objects.create(
-            recipient=receiver,
-            sender=sender,
-            notification_type='MENTOR_REQUEST',
-            title='New Mentor Request',
-            message=f'{sender.username} wants to establish a mentor-mentee relationship with you.',
-            related_object_id=relationship.id,
-            related_object_type='MentorMenteeRelationship'
-        )
-        
-        return relationship
+                if existing_same_orientation and existing_same_orientation.status in ['REJECTED', 'TERMINATED']:
+                    # Reactivate the existing relationship
+                    existing_same_orientation.sender = sender
+                    existing_same_orientation.receiver = receiver
+                    existing_same_orientation.status = 'PENDING'
+                    existing_same_orientation.save()
+                    relationship = existing_same_orientation
+                elif existing_same_orientation:
+                    # Relationship already exists in a non-terminal state
+                    raise serializers.ValidationError("A relationship request already exists between these users")
+                else:
+                    # Create new relationship
+                    relationship = MentorMenteeRelationship.objects.create(
+                        sender=sender,
+                        receiver=receiver,
+                        mentor=mentor,
+                        mentee=mentee,
+                        status='PENDING'
+                    )
+                
+                # Create notification for the receiver
+                Notification.objects.create(
+                    recipient=receiver,
+                    sender=sender,
+                    notification_type='MENTOR_REQUEST',
+                    title='New Mentor Request',
+                    message=f'{sender.username} wants to establish a mentor-mentee relationship with you.',
+                    related_object_id=relationship.id,
+                    related_object_type='MentorMenteeRelationship'
+                )
+                
+                return relationship
+                
+        except IntegrityError as e:
+            raise serializers.ValidationError(f"Database integrity error: A relationship might already exist. {str(e)}")
 
 class ContactSubmissionSerializer(serializers.ModelSerializer):
     class Meta:
