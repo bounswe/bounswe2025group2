@@ -74,7 +74,7 @@ const Profile = () => {
   const theme = useTheme();
   const route = useRoute();
   const navigation = useNavigation();
-  const { getAuthHeader, currentUser } = useAuth();
+  const { getAuthHeader } = useAuth();
   const queryClient = useQueryClient();
   
   // @ts-ignore
@@ -101,17 +101,22 @@ const Profile = () => {
   const origin = API_URL.replace(/\/api\/?$/, '');
 
   // Fetch current user (like web version does)
-  const { data: me } = useQuery<User>({
+  const { data: me } = useQuery<User | null>({
     queryKey: ['currentUser'],
     queryFn: async () => {
       const response = await fetch(`${API_URL}user/`, {
         headers: {
           ...getAuthHeader(),
           'Content-Type': 'application/json',
+          'Accept': 'application/json',
         },
         credentials: 'include',
       });
       
+      if (response.status === 401 || response.status === 403) {
+        return null;
+      }
+
       if (!response.ok) {
         throw new Error('Failed to fetch current user');
       }
@@ -187,6 +192,7 @@ const Profile = () => {
         headers: {
           ...getAuthHeader(),
           'Content-Type': 'application/json',
+          'Accept': 'application/json',
         },
         credentials: 'include',
       });
@@ -194,7 +200,7 @@ const Profile = () => {
       if (!response.ok) throw new Error('Failed to fetch relationships');
       return response.json();
     },
-    enabled: !!profileDetails,
+    enabled: !!me,
     staleTime: 60_000,
   });
 
@@ -206,6 +212,7 @@ const Profile = () => {
         headers: {
           ...getAuthHeader(),
           'Content-Type': 'application/json',
+          'Accept': 'application/json',
         },
         credentials: 'include',
       });
@@ -213,7 +220,7 @@ const Profile = () => {
       if (!response.ok) throw new Error('Failed to fetch users');
       return response.json();
     },
-    enabled: true, // Always fetch to get both current user and other user IDs
+    enabled: !!otherUsername,
     staleTime: 5 * 60_000,
   });
 
@@ -227,6 +234,7 @@ const Profile = () => {
         headers: {
           ...getAuthHeader(),
           'Content-Type': 'application/json',
+          'Accept': 'application/json',
         },
         credentials: 'include',
       });
@@ -248,15 +256,6 @@ const Profile = () => {
   // Use me.id directly from the /api/user/ endpoint (like web version)
   const myUserId = me?.id ?? null;
   
-  // Debug logging
-  console.log('User ID Calculation:', {
-    meFromAPI: me,
-    otherUsername,
-    allUsers: users.map(u => ({ id: u.id, username: u.username })),
-    myUserId,
-    otherUserId,
-  });
-
   const relatedRels = useMemo(() => {
     if (!myUserId || !otherUserId) return [];
     return relationships.filter((r: MentorRelationship) => (
@@ -535,59 +534,40 @@ const Profile = () => {
   // Request as mentor mutation
   const requestAsMentor = useMutation({
     mutationFn: async () => {
-      if (!myUserId || !otherUserId) {
-        console.error('Missing IDs:', { myUserId, otherUserId, profileUsername: profileDetails?.username, otherUsername });
-        throw new Error('Missing user information. Please try again.');
+      if (!me || !otherUserId) {
+        throw new Error('Missing user info');
       }
-      
+
+      console.log('Sending mentor request', { mentor: me.id, mentee: otherUserId });
+
       const cookies = await Cookies.get(API_URL);
       const csrfToken = cookies.csrftoken?.value;
-      
-      const requestBody = { mentor: myUserId, mentee: otherUserId };
-      const authHeader = getAuthHeader();
-      
-      console.log('=== Request as Mentor ===');
-      console.log('URL:', `${API_URL}mentor-relationships/`);
-      console.log('Request body:', requestBody);
-      console.log('Auth header:', authHeader);
-      console.log('CSRF token:', csrfToken ? 'Present' : 'Missing');
-      console.log('Current user:', currentUser);
-      console.log('========================');
       
       const response = await fetch(`${API_URL}mentor-relationships/`, {
         method: 'POST',
         headers: {
-          ...authHeader,
+          ...getAuthHeader(),
           'Content-Type': 'application/json',
           'Referer': origin,
           ...(csrfToken ? { 'X-CSRFToken': csrfToken } : {}),
+          'Accept': 'application/json',
         },
         credentials: 'include',
-        body: JSON.stringify(requestBody),
+        body: JSON.stringify({ mentor: me.id, mentee: otherUserId }),
       });
       
-      console.log('Request as mentor response status:', response.status);
-      const responseText = await response.text();
-      console.log('Response text:', responseText.substring(0, 500));
-      
       if (!response.ok) {
+        const responseText = await response.text();
         let error;
         try {
           error = JSON.parse(responseText);
         } catch {
-          console.error('Response is not JSON:', responseText.substring(0, 200));
-          throw new Error(`Server error (${response.status}): ${responseText.substring(0, 100)}`);
+          throw new Error(`Server error (${response.status})`);
         }
-        console.error('Request as mentor failed:', error);
         throw new Error(error.detail || 'Failed to send mentor request');
       }
       
-      try {
-        return JSON.parse(responseText);
-      } catch (e) {
-        console.error('Failed to parse success response:', responseText.substring(0, 200));
-        throw new Error('Invalid response format from server');
-      }
+      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['mentor-relationships', 'me'] });
@@ -602,59 +582,40 @@ const Profile = () => {
   // Request as mentee mutation
   const requestAsMentee = useMutation({
     mutationFn: async () => {
-      if (!myUserId || !otherUserId) {
-        console.error('Missing IDs:', { myUserId, otherUserId, profileUsername: profileDetails?.username, otherUsername });
-        throw new Error('Missing user information. Please try again.');
+      if (!me || !otherUserId) {
+        throw new Error('Missing user info');
       }
-      
+
+      console.log('Sending mentee request', { mentor: otherUserId, mentee: me.id });
+
       const cookies = await Cookies.get(API_URL);
       const csrfToken = cookies.csrftoken?.value;
-      
-      const requestBody = { mentor: otherUserId, mentee: myUserId };
-      const authHeader = getAuthHeader();
-      
-      console.log('=== Request as Mentee ===');
-      console.log('URL:', `${API_URL}mentor-relationships/`);
-      console.log('Request body:', requestBody);
-      console.log('Auth header:', authHeader);
-      console.log('CSRF token:', csrfToken ? 'Present' : 'Missing');
-      console.log('Current user:', currentUser);
-      console.log('========================');
       
       const response = await fetch(`${API_URL}mentor-relationships/`, {
         method: 'POST',
         headers: {
-          ...authHeader,
+          ...getAuthHeader(),
           'Content-Type': 'application/json',
           'Referer': origin,
           ...(csrfToken ? { 'X-CSRFToken': csrfToken } : {}),
+          'Accept': 'application/json',
         },
         credentials: 'include',
-        body: JSON.stringify(requestBody),
+        body: JSON.stringify({ mentor: otherUserId, mentee: me.id }),
       });
       
-      console.log('Request as mentee response status:', response.status);
-      const responseText = await response.text();
-      console.log('Response text:', responseText.substring(0, 500));
-      
       if (!response.ok) {
+        const responseText = await response.text();
         let error;
         try {
           error = JSON.parse(responseText);
         } catch {
-          console.error('Response is not JSON:', responseText.substring(0, 200));
-          throw new Error(`Server error (${response.status}): ${responseText.substring(0, 100)}`);
+          throw new Error(`Server error (${response.status})`);
         }
-        console.error('Request as mentee failed:', error);
         throw new Error(error.detail || 'Failed to send mentor request');
       }
       
-      try {
-        return JSON.parse(responseText);
-      } catch (e) {
-        console.error('Failed to parse success response:', responseText.substring(0, 200));
-        throw new Error('Invalid response format from server');
-      }
+      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['mentor-relationships', 'me'] });
