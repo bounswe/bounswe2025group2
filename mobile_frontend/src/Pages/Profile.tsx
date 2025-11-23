@@ -93,9 +93,6 @@ const Profile = () => {
   const [selectedGoal, setSelectedGoal] = useState<Goal | null>(null);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [pictureRefreshKey, setPictureRefreshKey] = useState(Date.now());
-  const [searchTerm, setSearchTerm] = useState('');
-  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
-  const [showSearchDropdown, setShowSearchDropdown] = useState(false);
 
   // Extract origin for Referer header (same pattern as Login.tsx)
   const origin = API_URL.replace(/\/api\/?$/, '');
@@ -231,33 +228,6 @@ const Profile = () => {
     },
     enabled: !!otherUsername,
     staleTime: 5 * 60_000,
-  });
-
-  // Search users query
-  const { data: searchResults = [], isLoading: isSearching } = useQuery<User[]>({
-    queryKey: ['userSearch', debouncedSearchTerm],
-    queryFn: async () => {
-      if (!debouncedSearchTerm.trim()) return [];
-      
-      const response = await fetch(`${API_URL}users/`, {
-        headers: {
-          ...getSanitizedAuthHeader(),
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        },
-        credentials: 'include',
-      });
-      
-      if (!response.ok) throw new Error('Failed to search users');
-      const allUsers = await response.json();
-      
-      // Filter users based on search term
-      return allUsers.filter((user: User) => 
-        user.username.toLowerCase().includes(debouncedSearchTerm.toLowerCase())
-      );
-    },
-    enabled: debouncedSearchTerm.length > 0,
-    staleTime: 60_000,
   });
 
   // Calculate relationship states
@@ -789,25 +759,6 @@ const Profile = () => {
     return isNaN(parsed.getTime()) ? new Date() : parsed;
   };
 
-  const handleUserSearchSelect = (username: string) => {
-    // Close modal and clear search immediately
-    setShowSearchDropdown(false);
-    setSearchTerm('');
-    // Navigate after a small delay to ensure modal closes first
-    setTimeout(() => {
-      // @ts-ignore
-      navigation.push('Profile', { username });
-    }, 100);
-  };
-  
-  // Debounce search term
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedSearchTerm(searchTerm);
-    }, 300);
-    return () => clearTimeout(timer);
-  }, [searchTerm]);
-
   // Update local state when profile data is fetched
   useEffect(() => {
     if (profileDetails) {
@@ -941,29 +892,6 @@ const Profile = () => {
                 <InfoRow label="Bio" value={profileDetails?.bio || 'No bio provided.'} isLast />
               </View>
             )}
-          </Card.Content>
-        </Card>
-
-        {/* User Search Bar */}
-        <Card mode="outlined" style={styles.searchCard}>
-          <Card.Content>
-            <View style={styles.searchContainer}>
-              <TextInput
-                mode="outlined"
-                placeholder="Search users..."
-                value={searchTerm}
-                onChangeText={(text) => {
-                  setSearchTerm(text);
-                  setShowSearchDropdown(text.trim().length > 0);
-                }}
-                onFocus={() => searchTerm.trim().length > 0 && setShowSearchDropdown(true)}
-                onBlur={() => setTimeout(() => setShowSearchDropdown(false), 200)}
-                left={<TextInput.Icon icon="magnify" />}
-                right={searchTerm ? <TextInput.Icon icon="close" onPress={() => { setSearchTerm(''); setShowSearchDropdown(false); }} /> : null}
-                dense
-                style={styles.searchInput}
-              />
-            </View>
           </Card.Content>
         </Card>
 
@@ -1257,53 +1185,6 @@ const Profile = () => {
            </Dialog.Actions>
         </Modal>
       </Portal>
-
-      {/* Search Results Dropdown Portal */}
-      <Portal>
-        <Dialog
-          visible={showSearchDropdown}
-          onDismiss={() => setShowSearchDropdown(false)}
-          style={styles.searchModalContainer}
-        >
-          <Dialog.Title>Search Results</Dialog.Title>
-          <Dialog.ScrollArea style={{ maxHeight: 400, paddingHorizontal: 0 }}>
-            <ScrollView contentContainerStyle={{ paddingTop: 0 }}>
-              {isSearching ? (
-                <View style={{ padding: 12, alignItems: 'center' }}>
-                  <ActivityIndicator size="small" />
-                  <Text variant="bodySmall" style={{ marginTop: 8 }}>Searching...</Text>
-                </View>
-              ) : searchResults.length > 0 ? (
-                <>
-                  <Text variant="labelSmall" style={{ paddingHorizontal: 24, paddingVertical: 8, color: theme.colors.onSurfaceVariant }}>Users</Text>
-                  {searchResults.map((user) => (
-                    <Pressable
-                      key={user.id}
-                      onPress={() => handleUserSearchSelect(user.username)}
-                      style={({ pressed }) => [
-                        { 
-                          flexDirection: 'row', 
-                          alignItems: 'center', 
-                          padding: 16,
-                          paddingHorizontal: 24,
-                          backgroundColor: pressed ? theme.colors.surfaceVariant : 'transparent'
-                        }
-                      ]}
-                    >
-                      <Avatar.Text size={40} label={user.username.charAt(0).toUpperCase()} />
-                      <Text variant="bodyMedium" style={{ marginLeft: 12 }}>{user.username}</Text>
-                    </Pressable>
-                  ))}
-                </>
-              ) : searchTerm.trim().length > 0 ? (
-                <View style={{ padding: 24, alignItems: 'center' }}>
-                  <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>No users found</Text>
-                </View>
-              ) : null}
-            </ScrollView>
-          </Dialog.ScrollArea>
-        </Dialog>
-      </Portal>
     </>
   );
 };
@@ -1351,20 +1232,6 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  searchCard: {
-    margin: 16,
-    marginBottom: 8,
-  },
-  searchContainer: {
-    position: 'relative',
-  },
-  searchInput: {
-    backgroundColor: 'transparent',
-  },
-  searchModalContainer: {
-    margin: 20,
-    maxHeight: 500,
   },
   heroCard: {
     margin: 16,
