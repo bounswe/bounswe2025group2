@@ -458,7 +458,7 @@ const Profile = () => {
   if (isLoadingProfile) {
     return (
       <View style={[styles.container, styles.loader, { backgroundColor: theme.colors.background }]}>
-        <ActivityIndicator animating={true} size="large" />
+        <ActivityIndicator animating={true} size="large" testID="activity-indicator" />
       </View>
     );
   }
@@ -492,6 +492,7 @@ const Profile = () => {
                     onPress={handleChoosePhoto}
                     mode="contained-tonal"
                     disabled={uploadPictureMutation.isPending}
+                    testID="camera-button"
                   />
                   {profilePictureUri && (
                     <IconButton 
@@ -500,6 +501,7 @@ const Profile = () => {
                       onPress={handleDeletePhoto}
                       mode="contained-tonal"
                       disabled={deletePictureMutation.isPending}
+                      testID="delete-picture-button"
                     />
                   )}
                 </View>
