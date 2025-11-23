@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, ScrollView, ActivityIndicator, Pressable, TextInput } from 'react-native';
+import { View, StyleSheet, ScrollView, ActivityIndicator, Pressable, TextInput, TouchableOpacity } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
-import { useRoute } from '@react-navigation/native';
+import { useRoute, useNavigation } from '@react-navigation/native';
 import { useAuth } from '../context/AuthContext';
 import CustomText from '@components/CustomText';
 import Toast from 'react-native-toast-message';
@@ -30,6 +30,7 @@ type ThreadDetailData = {
 const ThreadDetail = () => {
   const { colors } = useTheme();
   const route = useRoute();
+  const navigation = useNavigation();
   const { threadId } = route.params as ThreadParam;
   const { getAuthHeader } = useAuth();
   const [thread, setThread] = useState<ThreadDetailData | null>(null);
@@ -166,7 +167,22 @@ const ThreadDetail = () => {
     <ScrollView style={[styles.container, { backgroundColor: colors.background }]}> 
       <CustomText style={[styles.title, { color: colors.text }]}>{thread.title}</CustomText>
       <CustomText style={[styles.body, { color: colors.subText }]}>{thread.body}</CustomText>
-      <CustomText style={[styles.author, { color: colors.subText }]}>By {thread.author}</CustomText>
+      {/* Thread Author - Make clickable */}
+      <View style={styles.authorRow}>
+        <CustomText style={[styles.author, { color: colors.subText }]}>By </CustomText>
+        <TouchableOpacity
+          onPress={() => {
+            navigation.navigate('Profile', { username: thread.author });
+          }}
+        >
+          <CustomText style={[styles.authorName, { color: colors.active }]}>
+            @{thread.author}
+          </CustomText>
+        </TouchableOpacity>
+        <CustomText style={[styles.author, { color: colors.subText }]}>
+          {' '}• {new Date(thread.created_at).toLocaleDateString()}
+        </CustomText>
+      </View>
       <View style={styles.likeSection}>
         <Pressable onPress={likeThread} style={styles.likeButton}>
           <CustomText style={[styles.likeText, { color: colors.active }]}>Like ({likes})</CustomText>
@@ -188,9 +204,24 @@ const ThreadDetail = () => {
         </Pressable>
       </View>
       {comments.map(comment => (
-        <View key={comment.id} style={[styles.commentCard, { borderColor: colors.border }]}> 
-          <CustomText style={[styles.commentAuthor, { color: colors.text }]}>{comment.author}</CustomText>
-          <CustomText style={[styles.commentContent, { color: colors.subText }]}>{comment.content}</CustomText>
+        <View key={comment.id} style={[styles.commentCard, { borderColor: colors.border, backgroundColor: colors.navBar }]}> 
+          <View style={styles.commentHeader}>
+            <TouchableOpacity
+              onPress={() => {
+                navigation.navigate('Profile', { username: comment.author });
+              }}
+            >
+              <CustomText style={[styles.commentAuthor, { color: colors.active }]}>
+                @{comment.author}
+              </CustomText>
+            </TouchableOpacity>
+            <CustomText style={[styles.commentDate, { color: colors.subText }]}>
+              {new Date(comment.created_at).toLocaleDateString()}
+            </CustomText>
+          </View>
+          <CustomText style={[styles.commentContent, { color: colors.text }]}>
+            {comment.content}
+          </CustomText>
         </View>
       ))}
     </ScrollView>
@@ -202,10 +233,32 @@ const styles = StyleSheet.create({
   center: { justifyContent: 'center', alignItems: 'center' },
   title: { fontSize: 24, fontWeight: 'bold', marginBottom: 8 },
   body: { fontSize: 16, marginBottom: 8 },
-  author: { fontSize: 14, marginBottom: 16 },
+  authorRow: { 
+    flexDirection: 'row', 
+    flexWrap: 'wrap', 
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  authorName: { 
+    fontSize: 14, 
+    fontWeight: '600' 
+  },
   sectionHeading: { fontSize: 20, fontWeight: '600', marginVertical: 12 },
   commentCard: { borderWidth: 1, borderRadius: 8, padding: 12, marginBottom: 8 },
-  commentAuthor: { fontSize: 14, fontWeight: '600' },
+  commentHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  commentAuthor: { 
+    fontSize: 14, 
+    fontWeight: '600' 
+  },
+  commentDate: { 
+    fontSize: 12, 
+    color: '#888' 
+  },
   commentContent: { fontSize: 14, marginTop: 4 },
   likeSection: { flexDirection: 'row', justifyContent: 'flex-start', marginBottom: 16 },
   likeButton: { paddingVertical: 8, paddingHorizontal: 12, borderRadius: 16, borderWidth: 1, marginRight: 8 },
