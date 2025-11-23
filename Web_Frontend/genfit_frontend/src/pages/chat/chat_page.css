@@ -533,15 +533,6 @@
   color: #f59e0b;
 }
 
-.message.received.ai-message .message-text .challenge-link {
-  color: #10b981;
-  font-weight: 700;
-}
-
-.message.received.ai-message .message-text .challenge-link:hover {
-  color: #059669;
-}
-
 .message-time {
   font-size: 0.7rem;
   margin-top: 0.25rem;
