@@ -76,11 +76,14 @@ const Profile = () => {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [pictureRefreshKey, setPictureRefreshKey] = useState(Date.now());
 
+  // Extract origin for Referer header (same pattern as Login.tsx)
+  const origin = API_URL.replace(/\/api\/?$/, '');
+
   // Fetch profile details
   const { data: profileDetails, isLoading: isLoadingProfile } = useQuery<ProfileDetailsResponse>({
     queryKey: ['profile', otherUsername || 'me'],
     queryFn: async () => {
-      const endpoint = otherUsername ? `/profile/other/${otherUsername}/` : '/profile/';
+      const endpoint = otherUsername ? `profile/other/${otherUsername}/` : 'profile/';
       const response = await fetch(`${API_URL}${endpoint}`, {
         headers: {
           ...getAuthHeader(),
@@ -102,8 +105,8 @@ const Profile = () => {
     queryKey: ['profilePicture', otherUsername || 'me', pictureRefreshKey],
     queryFn: async () => {
       const endpoint = otherUsername 
-        ? `/profile/other/picture/${otherUsername}/` 
-        : '/profile/picture/';
+        ? `profile/other/picture/${otherUsername}/` 
+        : 'profile/picture/';
       
       // Add cache-busting timestamp to the URL
       const cacheBuster = `?t=${Date.now()}`;
@@ -162,121 +165,198 @@ const Profile = () => {
   // Update profile mutation
   const updateProfileMutation = useMutation({
     mutationFn: async (payload: typeof editedProfile) => {
-      const cookies = await Cookies.get(API_URL);
-      const csrfToken = cookies.csrftoken?.value;
-      
-      const response = await fetch(`${API_URL}profile/`, {
-        method: 'PUT',
-        headers: {
-          ...getAuthHeader(),
-          'Content-Type': 'application/json',
-          ...(csrfToken ? { 'X-CSRFToken': csrfToken } : {}),
-        },
-        credentials: 'include',
-        body: JSON.stringify(payload),
-      });
-      
-      if (!response.ok) throw new Error('Failed to update profile');
-      return response.json();
+      try {
+        // Filter out empty string values - only send fields with actual data
+        const filteredPayload = Object.entries(payload).reduce((acc, [key, value]) => {
+          if (value !== '') {
+            acc[key] = value;
+          }
+          return acc;
+        }, {} as Record<string, string>);
+        
+        console.log('Updating profile with payload:', filteredPayload);
+        console.log('API_URL:', API_URL);
+        console.log('Origin:', origin);
+        
+        const cookies = await Cookies.get(API_URL);
+        const csrfToken = cookies.csrftoken?.value;
+        console.log('CSRF token:', csrfToken ? 'Present' : 'Missing');
+        
+        const response = await fetch(`${API_URL}profile/`, {
+          method: 'PUT',
+          headers: {
+            ...getAuthHeader(),
+            'Content-Type': 'application/json',
+            'Referer': origin,
+            ...(csrfToken ? { 'X-CSRFToken': csrfToken } : {}),
+          },
+          credentials: 'include',
+          body: JSON.stringify(filteredPayload),
+        });
+        
+        console.log('Response status:', response.status);
+        
+        if (!response.ok) {
+          const contentType = response.headers.get('content-type');
+          let errorData: any = {};
+          
+          if (contentType && contentType.includes('application/json')) {
+            errorData = await response.json();
+          } else {
+            const text = await response.text();
+            console.error('Non-JSON error response:', text.substring(0, 500));
+          }
+          
+          console.error('Update profile error details:', errorData);
+          
+          // Show more specific error messages
+          if (errorData.detail) {
+            throw new Error(errorData.detail);
+          } else if (errorData.name || errorData.surname || errorData.bio || errorData.location || errorData.birth_date) {
+            // Field-specific errors
+            const fieldErrors = Object.entries(errorData)
+              .map(([field, errors]: [string, any]) => `${field}: ${Array.isArray(errors) ? errors.join(', ') : errors}`)
+              .join('\n');
+            throw new Error(`Validation errors:\n${fieldErrors}`);
+          } else {
+            throw new Error(`Failed to update profile: ${response.status}`);
+          }
+        }
+        
+        return response.json();
+      } catch (error) {
+        console.error('Update profile error:', error);
+        throw error;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['profile', 'me'] });
       setIsEditing(false);
       Alert.alert('Success', 'Profile updated successfully');
     },
-    onError: () => {
-      Alert.alert('Error', 'Failed to update profile');
+    onError: (error: Error) => {
+      Alert.alert('Error', error.message || 'Failed to update profile');
     },
   });
 
   // Upload picture mutation
   const uploadPictureMutation = useMutation({
     mutationFn: async (uri: string) => {
-      const cookies = await Cookies.get(API_URL);
-      const csrfToken = cookies.csrftoken?.value;
-      
-      const formData = new FormData();
-      formData.append('profile_picture', {
-        uri,
-        name: 'profile.jpg',
-        type: 'image/jpeg',
-      } as any);
-      
-      const response = await fetch(`${API_URL}profile/picture/upload/`, {
-        method: 'POST',
-        headers: {
-          ...getAuthHeader(),
-          ...(csrfToken ? { 'X-CSRFToken': csrfToken } : {}),
-        },
-        credentials: 'include',
-        body: formData,
-      });
-      
-      if (!response.ok) throw new Error('Failed to upload picture');
-      return response.json();
+      try {
+        const cookies = await Cookies.get(API_URL);
+        const csrfToken = cookies.csrftoken?.value;
+        
+        const formData = new FormData();
+        formData.append('profile_picture', {
+          uri,
+          name: 'profile.jpg',
+          type: 'image/jpeg',
+        } as any);
+        
+        const response = await fetch(`${API_URL}profile/picture/upload/`, {
+          method: 'POST',
+          headers: {
+            ...getAuthHeader(),
+            'Referer': origin,
+            ...(csrfToken ? { 'X-CSRFToken': csrfToken } : {}),
+          },
+          credentials: 'include',
+          body: formData,
+        });
+        
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          console.error('Upload picture error details:', errorData);
+          throw new Error(errorData.detail || 'Failed to upload picture');
+        }
+        
+        return response.json();
+      } catch (error) {
+        console.error('Upload picture error:', error);
+        throw error;
+      }
     },
     onSuccess: () => {
-      // Update the refresh key to force re-fetch
       setPictureRefreshKey(Date.now());
       Alert.alert('Success', 'Profile picture updated');
     },
-    onError: () => {
-      Alert.alert('Error', 'Failed to upload picture');
+    onError: (error: Error) => {
+      Alert.alert('Error', error.message || 'Failed to upload picture');
     },
   });
 
   // Delete picture mutation
   const deletePictureMutation = useMutation({
     mutationFn: async () => {
-      const cookies = await Cookies.get(API_URL);
-      const csrfToken = cookies.csrftoken?.value;
-      
-      const response = await fetch(`${API_URL}profile/picture/delete/`, {
-        method: 'DELETE',
-        headers: {
-          ...getAuthHeader(),
-          ...(csrfToken ? { 'X-CSRFToken': csrfToken } : {}),
-        },
-        credentials: 'include',
-      });
-      
-      if (!response.ok) throw new Error('Failed to delete picture');
-      return response.json();
+      try {
+        const cookies = await Cookies.get(API_URL);
+        const csrfToken = cookies.csrftoken?.value;
+        
+        const response = await fetch(`${API_URL}profile/picture/delete/`, {
+          method: 'DELETE',
+          headers: {
+            ...getAuthHeader(),
+            'Referer': origin,
+            ...(csrfToken ? { 'X-CSRFToken': csrfToken } : {}),
+          },
+          credentials: 'include',
+        });
+        
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          console.error('Delete picture error details:', errorData);
+          throw new Error(errorData.detail || 'Failed to delete picture');
+        }
+        
+        return response.json();
+      } catch (error) {
+        console.error('Delete picture error:', error);
+        throw error;
+      }
     },
     onSuccess: () => {
-      // Update the refresh key to force re-fetch
       setPictureRefreshKey(Date.now());
       Alert.alert('Success', 'Profile picture deleted');
     },
-    onError: () => {
-      Alert.alert('Error', 'Failed to delete picture');
+    onError: (error: Error) => {
+      Alert.alert('Error', error.message || 'Failed to delete picture');
     },
   });
 
   // Delete goal mutation
   const deleteGoalMutation = useMutation({
     mutationFn: async (goalId: number) => {
-      const cookies = await Cookies.get(API_URL);
-      const csrfToken = cookies.csrftoken?.value;
-      
-      const response = await fetch(`${API_URL}goals/${goalId}/`, {
-        method: 'DELETE',
-        headers: {
-          ...getAuthHeader(),
-          ...(csrfToken ? { 'X-CSRFToken': csrfToken } : {}),
-        },
-        credentials: 'include',
-      });
-      
-      if (!response.ok) throw new Error('Failed to delete goal');
+      try {
+        const cookies = await Cookies.get(API_URL);
+        const csrfToken = cookies.csrftoken?.value;
+        
+        const response = await fetch(`${API_URL}goals/${goalId}/`, {
+          method: 'DELETE',
+          headers: {
+            ...getAuthHeader(),
+            'Referer': origin,
+            ...(csrfToken ? { 'X-CSRFToken': csrfToken } : {}),
+          },
+          credentials: 'include',
+        });
+        
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          console.error('Delete goal error details:', errorData);
+          throw new Error(errorData.detail || 'Failed to delete goal');
+        }
+      } catch (error) {
+        console.error('Delete goal error:', error);
+        throw error;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['goals', 'me'] });
       closeGoalDetails();
       Alert.alert('Success', 'Goal deleted successfully');
     },
-    onError: () => {
-      Alert.alert('Error', 'Failed to delete goal');
+    onError: (error: Error) => {
+      Alert.alert('Error', error.message || 'Failed to delete goal');
     },
   });
 
@@ -378,7 +458,7 @@ const Profile = () => {
   if (isLoadingProfile) {
     return (
       <View style={[styles.container, styles.loader, { backgroundColor: theme.colors.background }]}>
-        <ActivityIndicator animating={true} size="large" />
+        <ActivityIndicator animating={true} size="large" testID="activity-indicator" />
       </View>
     );
   }
@@ -412,6 +492,7 @@ const Profile = () => {
                     onPress={handleChoosePhoto}
                     mode="contained-tonal"
                     disabled={uploadPictureMutation.isPending}
+                    testID="camera-button"
                   />
                   {profilePictureUri && (
                     <IconButton 
@@ -420,6 +501,7 @@ const Profile = () => {
                       onPress={handleDeletePhoto}
                       mode="contained-tonal"
                       disabled={deletePictureMutation.isPending}
+                      testID="delete-picture-button"
                     />
                   )}
                 </View>
