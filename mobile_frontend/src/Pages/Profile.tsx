@@ -24,6 +24,9 @@ import Cookies from '@react-native-cookies/cookies';
 import { launchImageLibrary } from 'react-native-image-picker';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { API_URL } from '@constants/api';
+import { useGoals, FitnessGoal } from '../services/goalApi';
+import GoalFormModal from '../components/goals/GoalFormModal';
+import GoalDetailModal from '../components/goals/GoalDetailModal';
 
 interface ProfileDetailsResponse {
   username: string;
@@ -93,6 +96,12 @@ const Profile = () => {
   const [selectedGoal, setSelectedGoal] = useState<Goal | null>(null);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [pictureRefreshKey, setPictureRefreshKey] = useState(Date.now());
+  
+  // Goals state
+  const [isGoalFormOpen, setIsGoalFormOpen] = useState(false);
+  const [editingGoal, setEditingGoal] = useState<FitnessGoal | null>(null);
+  const [selectedGoalForDetail, setSelectedGoalForDetail] = useState<FitnessGoal | null>(null);
+  const [isGoalModalOpen, setIsGoalModalOpen] = useState(false);
 
   // Extract origin for Referer header (same pattern as Login.tsx)
   const origin = API_URL.replace(/\/api\/?$/, '');
@@ -244,6 +253,22 @@ const Profile = () => {
     });
   }, [me, myUserId, otherUsername, otherUserId]);
 
+  // Invalidate and refetch relationships when navigating to different user's profile
+  useEffect(() => {
+    queryClient.invalidateQueries({ queryKey: ['mentor-relationships', 'me'] });
+  }, [otherUsername, queryClient]);
+
+  // Poll current user and relationships every 1 second to detect login changes
+  useEffect(() => {
+    const intervalId = setInterval(() => {
+      // Refetch current user and relationships
+      queryClient.invalidateQueries({ queryKey: ['currentUser'] });
+      queryClient.invalidateQueries({ queryKey: ['mentor-relationships', 'me'] });
+    }, 1000); // 1 second
+
+    return () => clearInterval(intervalId);
+  }, [queryClient]);
+
   const relatedRels = useMemo(() => {
     if (!myUserId || !otherUserId) return [];
     return relationships.filter((r: MentorRelationship) => (
@@ -262,10 +287,10 @@ const Profile = () => {
   const isReceiver = !!(selectedRel && selectedRel.receiver === myUserId);
   const isMentorOfOther = !!(selectedRel && selectedRel.status === 'ACCEPTED' && selectedRel.mentor === myUserId);
 
-  const acceptedRels = relationships.filter((r: MentorRelationship) => r.status === 'ACCEPTED');
+  const acceptedRels = relationships.filter((r: MentorRelationship) => r.status === 'ACCEPTED' && r.mentor !== r.mentee);
   const myMentors = myUserId ? acceptedRels.filter((r: MentorRelationship) => r.mentee === myUserId).map((r: MentorRelationship) => ({ id: r.mentor, username: r.mentor_username })) : [];
   const myMentees = myUserId ? acceptedRels.filter((r: MentorRelationship) => r.mentor === myUserId).map((r: MentorRelationship) => ({ id: r.mentee, username: r.mentee_username })) : [];
-  const myPendingRequests = myUserId ? relationships.filter((r: MentorRelationship) => r.status === 'PENDING' && (r.sender === myUserId || r.receiver === myUserId)) : [];
+  const myPendingRequests = myUserId ? relationships.filter((r: MentorRelationship) => r.status === 'PENDING' && (r.sender === myUserId || r.receiver === myUserId) && r.mentor !== r.mentee) : [];
   const mentorshipUsernames = Array.from(new Set([...myMentors, ...myMentees].map(u => u.username))).filter(Boolean);
 
   // Fetch profile pictures for mentors and mentees
@@ -299,27 +324,8 @@ const Profile = () => {
     staleTime: 5 * 60_000,
   });
 
-  // Fetch goals - for own profile or other user's profile
-  const { data: goals = [], isLoading: isLoadingGoals } = useQuery<Goal[]>({
-    queryKey: ['goals', otherUsername || 'me'],
-    queryFn: async () => {
-      // Fetch goals with username parameter for other users
-      const endpoint = otherUsername ? `goals/?username=${otherUsername}` : 'goals/';
-      
-      const response = await fetch(`${API_URL}${endpoint}`, {
-        headers: {
-          ...getSanitizedAuthHeader(),
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-      });
-      
-      if (!response.ok) return [];
-      const data = await response.json();
-      return Array.isArray(data) ? data : [];
-    },
-    enabled: true, // Always fetch goals
-  });
+  // Fetch goals - using the custom hook
+  const { data: goals = [], isLoading: isLoadingGoals } = useGoals(otherUsername);
 
   // Update profile mutation
   const updateProfileMutation = useMutation({
@@ -492,7 +498,7 @@ const Profile = () => {
         const response = await fetch(`${API_URL}goals/${goalId}/`, {
           method: 'DELETE',
           headers: {
-            ...getAuthHeader(),
+            ...getSanitizedAuthHeader(),
             'Referer': origin,
             ...(csrfToken ? { 'X-CSRFToken': csrfToken } : {}),
           },
@@ -522,8 +528,26 @@ const Profile = () => {
   // Request as mentor mutation
   const requestAsMentor = useMutation({
     mutationFn: async () => {
-      if (!me || !otherUserId) {
-        throw new Error('Missing user info');
+      console.log('requestAsMentor called with:', {
+        me,
+        otherUserId,
+        otherUsername,
+        usersCount: users.length,
+        checkUser: users.find(u => u.username === otherUsername),
+      });
+
+      if (!me) {
+        throw new Error('You must be logged in');
+      }
+      
+      if (!otherUserId) {
+        throw new Error('Unable to identify the user. Please refresh and try again.');
+      }
+
+      // Prevent sending request to self
+      if (me.id === otherUserId) {
+        console.error('Self-request detected:', { meId: me.id, otherUserId, comparison: me.id === otherUserId });
+        throw new Error('You cannot send a mentor request to yourself');
       }
 
       console.log('Sending mentor request', { mentor: me.id, mentee: otherUserId });
@@ -582,8 +606,17 @@ const Profile = () => {
   // Request as mentee mutation
   const requestAsMentee = useMutation({
     mutationFn: async () => {
-      if (!me || !otherUserId) {
-        throw new Error('Missing user info');
+      if (!me) {
+        throw new Error('You must be logged in');
+      }
+      
+      if (!otherUserId) {
+        throw new Error('Unable to identify the user. Please refresh and try again.');
+      }
+
+      // Prevent sending request to self
+      if (me.id === otherUserId) {
+        throw new Error('You cannot send a mentor request to yourself');
       }
 
       console.log('Sending mentee request', { mentor: otherUserId, mentee: me.id });
@@ -648,7 +681,7 @@ const Profile = () => {
       const response = await fetch(`${API_URL}mentor-relationships/${relationshipId}/status/`, {
         method: 'POST',
         headers: {
-          ...getAuthHeader(),
+          ...getSanitizedAuthHeader(),
           'Content-Type': 'application/json',
           'Referer': origin,
           ...(csrfToken ? { 'X-CSRFToken': csrfToken } : {}),
@@ -785,6 +818,23 @@ const Profile = () => {
   return (
     <>
       <ScrollView style={[styles.container, { backgroundColor: theme.colors.background }]}>
+        {/* Header with Search Button */}
+        {!otherUsername && (
+          <View style={styles.headerButtonContainer}>
+            <Button
+              mode="outlined"
+              icon="magnify"
+              onPress={() => {
+                // @ts-ignore
+                navigation.navigate('MentorSearch');
+              }}
+              style={styles.headerButton}
+            >
+              Find Mentors
+            </Button>
+          </View>
+        )}
+
         {/* Profile Hero Section */}
         <Card mode="contained" style={[styles.heroCard, { backgroundColor: theme.colors.primaryContainer }]}>
           <Card.Content style={styles.heroContent}>
@@ -1090,14 +1140,14 @@ const Profile = () => {
                     <Button 
                       mode="contained" 
                       onPress={() => requestAsMentor.mutate()}
-                      disabled={requestAsMentor.isPending}
+                      disabled={requestAsMentor.isPending || !me || !otherUserId}
                     >
                       Be Their Mentor
                     </Button>
                     <Button 
                       mode="contained" 
                       onPress={() => requestAsMentee.mutate()}
-                      disabled={requestAsMentee.isPending}
+                      disabled={requestAsMentee.isPending || !me || !otherUserId}
                     >
                       Request Them as Mentor
                     </Button>
@@ -1109,21 +1159,25 @@ const Profile = () => {
         )}
 
         {/* Goals Section - Show for own profile or when viewing mentee as mentor */}
-        {(!otherUsername || (otherUsername && goals.length > 0)) && (
+        {(!otherUsername || (otherUsername && (goals.length > 0 || (selectedRel && selectedRel.status === 'ACCEPTED' && selectedRel.mentor === myUserId)))) && (
           <Card style={styles.sectionCard}>
             <Card.Title
               title="Goals"
               right={(props) => {
                 // Show "New" button for own profile or when viewing mentee as mentor
+                const isMentorOfOther = otherUsername && selectedRel && selectedRel.status === 'ACCEPTED' && selectedRel.mentor === myUserId;
+                
                 if (!otherUsername && goals.length > 0) {
                   return (
+                    <Button {...props} icon="plus" onPress={() => setIsGoalFormOpen(true)}>New</Button>
+                  );
+                }
+                if (isMentorOfOther) {
+                  return (
                     <Button {...props} icon="plus" onPress={() => {
-                      // @ts-ignore
-                      navigation.navigate('Main', { 
-                        screen: 'Goals',
-                        params: { openCreate: true }
-                      })
-                    }}>New</Button>
+                      setEditingGoal(null);
+                      setIsGoalFormOpen(true);
+                    }}>Add for Mentee</Button>
                   );
                 }
                 return null;
@@ -1131,9 +1185,20 @@ const Profile = () => {
             />
             <Card.Content>
               {isLoadingGoals ? <ActivityIndicator/> : goals.length > 0 ? (
-                  goals.map((goal: Goal, index: number) => (
+                  goals.map((goal: FitnessGoal, index: number) => (
                     <React.Fragment key={goal.id}>
-                      <GoalCard goal={goal} onPress={() => openGoalDetails(goal)} />
+                      <Pressable onPress={() => {
+                        setSelectedGoalForDetail(goal);
+                        setIsGoalModalOpen(true);
+                      }}>
+                        <GoalCard 
+                          goal={goal} 
+                          onPress={() => {
+                            setSelectedGoalForDetail(goal);
+                            setIsGoalModalOpen(true);
+                          }}
+                        />
+                      </Pressable>
                       {index < goals.length - 1 && <Divider style={styles.goalDivider} />}
                     </React.Fragment>
                   ))
@@ -1142,16 +1207,20 @@ const Profile = () => {
                   <Avatar.Icon icon="flag-checkered" size={48} style={{backgroundColor: theme.colors.surfaceVariant}}/>
                   <Text variant="titleMedium" style={styles.emptyStateText}>No Goals Set</Text>
                   <Text variant="bodyMedium" style={styles.emptyStateText}>
-                    {otherUsername ? 'This user has not set any goals yet.' : "You haven't set any goals yet."}
+                    {otherUsername ? (
+                      selectedRel && selectedRel.status === 'ACCEPTED' && selectedRel.mentor === myUserId
+                        ? 'No goals set for this mentee yet. Tap "Add for Mentee" to create one.'
+                        : 'This user has not set any goals yet.'
+                    ) : "You haven't set any goals yet."}
                   </Text>
                   {!otherUsername && (
+                    <Button mode="contained" style={styles.emptyStateButton} onPress={() => setIsGoalFormOpen(true)}>Set Your First Goal</Button>
+                  )}
+                  {otherUsername && selectedRel && selectedRel.status === 'ACCEPTED' && selectedRel.mentor === myUserId && (
                     <Button mode="contained" style={styles.emptyStateButton} onPress={() => {
-                      // @ts-ignore
-                      navigation.navigate('Main', { 
-                        screen: 'Goals',
-                        params: { openCreate: true }
-                      })
-                    }}>Set Your First Goal</Button>
+                      setEditingGoal(null);
+                      setIsGoalFormOpen(true);
+                    }}>Add Goal for Mentee</Button>
                   )}
                 </View>
               )}
@@ -1185,6 +1254,40 @@ const Profile = () => {
            </Dialog.Actions>
         </Modal>
       </Portal>
+
+      {/* Goal Form Modal */}
+      <GoalFormModal
+        isVisible={isGoalFormOpen}
+        onClose={() => {
+          setIsGoalFormOpen(false);
+          setEditingGoal(null);
+        }}
+        editingGoal={editingGoal}
+        targetUserId={otherUserId || undefined}
+        onSuccess={() => {
+          queryClient.invalidateQueries({ queryKey: ['goals'] });
+        }}
+      />
+
+      {/* Goal Detail Modal */}
+      <GoalDetailModal
+        isVisible={isGoalModalOpen}
+        goal={selectedGoalForDetail}
+        onClose={() => {
+          setIsGoalModalOpen(false);
+          setSelectedGoalForDetail(null);
+        }}
+        isOwner={selectedGoalForDetail?.user === myUserId}
+        isMentor={selectedGoalForDetail?.mentor === myUserId}
+        onGoalUpdated={() => {
+          queryClient.invalidateQueries({ queryKey: ['goals'] });
+        }}
+        onGoalDeleted={() => {
+          queryClient.invalidateQueries({ queryKey: ['goals'] });
+          setIsGoalModalOpen(false);
+          setSelectedGoalForDetail(null);
+        }}
+      />
     </>
   );
 };
@@ -1226,6 +1329,15 @@ const GoalCard = ({ goal, onPress }: { goal: any, onPress: () => void }) => {
 
 const styles = StyleSheet.create({
   container: {
+    flex: 1,
+  },
+  headerButtonContainer: {
+    flexDirection: 'row',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    gap: 8,
+  },
+  headerButton: {
     flex: 1,
   },
   loader: {
