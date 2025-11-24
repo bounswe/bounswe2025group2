@@ -6,8 +6,9 @@ import './ActivityDashboard.css';
 
 // Simple icon components
 const FlameIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-    <path d="M13.5 0.5C13.5 0.5 21 8 21 14C21 18.971 16.971 23 12 23C7.029 23 3 18.971 3 14C3 9 8.5 3.5 8.5 3.5C8.5 3.5 7 7 7 10C7 13.314 9.686 16 13 16C16.314 16 19 13.314 19 10C19 7 13.5 0.5 13.5 0.5Z" />
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+    <path d="M12 2C12 2 8 6 8 10C8 12.21 9.79 14 12 14C14.21 14 16 12.21 16 10C16 6 12 2 12 2Z" opacity="0.7"/>
+    <path d="M12 4C12 4 6 9 6 14C6 17.31 8.69 20 12 20C15.31 20 18 17.31 18 14C18 9 12 4 12 4Z"/>
   </svg>
 );
 
@@ -70,9 +71,27 @@ export function ActivityDashboard({ goals, challenges, activeGoals, joinedChalle
   const navigate = useNavigate();
   const { data: loginStats, isLoading: statsLoading } = useLoginStats();
 
+  // Helper function to format date as YYYY-MM-DD in local time (avoiding timezone issues)
+  const formatDateLocal = (date: Date): string => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  // Helper function to parse backend date string as local date
+  // Handles both "YYYY-MM-DD" and "YYYY-MM-DDTHH:MM:SSZ" formats
+  const parseLocalDate = (dateString: string): Date => {
+    // Extract just the date part (before 'T' if it exists)
+    const datePart = dateString.split('T')[0];
+    const [year, month, day] = datePart.split('-').map(Number);
+    return new Date(year, month - 1, day);
+  };
+
   // Generate calendar for current month
   const calendarDays = useMemo(() => {
     const today = new Date();
+    today.setHours(0, 0, 0, 0); // Normalize to midnight for accurate comparisons
     const year = today.getFullYear();
     const month = today.getMonth();
     
@@ -108,7 +127,7 @@ export function ActivityDashboard({ goals, challenges, activeGoals, joinedChalle
     // Add current month days
     for (let i = 1; i <= totalDays; i++) {
       const date = new Date(year, month, i);
-      const dateStr = date.toISOString().split('T')[0];
+      const dateStr = formatDateLocal(date);
       
       // Check if user logged in on this day (only for past and today, not future)
       const isPastOrToday = date <= today;
@@ -121,8 +140,8 @@ export function ActivityDashboard({ goals, challenges, activeGoals, joinedChalle
       
       // Check goals
       goals.forEach(goal => {
-        const targetDate = new Date(goal.target_date);
-        const goalDateStr = targetDate.toISOString().split('T')[0];
+        const targetDate = parseLocalDate(goal.target_date);
+        const goalDateStr = formatDateLocal(targetDate);
         if (goalDateStr === dateStr && goal.status === 'ACTIVE') {
           const daysUntil = Math.ceil((targetDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
           events.push({
@@ -136,8 +155,8 @@ export function ActivityDashboard({ goals, challenges, activeGoals, joinedChalle
       
       // Check challenges
       challenges.forEach(challenge => {
-        const endDate = new Date(challenge.end_date);
-        const challengeDateStr = endDate.toISOString().split('T')[0];
+        const endDate = parseLocalDate(challenge.end_date);
+        const challengeDateStr = formatDateLocal(endDate);
         if (challengeDateStr === dateStr && challenge.is_active && challenge.is_joined) {
           const daysUntil = Math.ceil((endDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
           events.push({
@@ -174,6 +193,7 @@ export function ActivityDashboard({ goals, challenges, activeGoals, joinedChalle
   // Get upcoming deadlines (next 7 days)
   const upcomingDeadlines = useMemo(() => {
     const today = new Date();
+    today.setHours(0, 0, 0, 0); // Normalize to midnight
     const sevenDaysFromNow = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
     
     const deadlines: Array<{
@@ -187,7 +207,7 @@ export function ActivityDashboard({ goals, challenges, activeGoals, joinedChalle
     // Add goal deadlines
     goals.forEach(goal => {
       if (goal.status === 'ACTIVE') {
-        const targetDate = new Date(goal.target_date);
+        const targetDate = parseLocalDate(goal.target_date);
         if (targetDate >= today && targetDate <= sevenDaysFromNow) {
           const daysUntil = Math.ceil((targetDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
           deadlines.push({
@@ -204,7 +224,7 @@ export function ActivityDashboard({ goals, challenges, activeGoals, joinedChalle
     // Add challenge deadlines
     challenges.forEach(challenge => {
       if (challenge.is_active && challenge.is_joined) {
-        const endDate = new Date(challenge.end_date);
+        const endDate = parseLocalDate(challenge.end_date);
         if (endDate >= today && endDate <= sevenDaysFromNow) {
           const daysUntil = Math.ceil((endDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
           deadlines.push({
@@ -252,28 +272,20 @@ export function ActivityDashboard({ goals, challenges, activeGoals, joinedChalle
             <div className="section-title">
               <FlameIcon />
               <h2>Login Streak</h2>
+              {loginStats?.streak_active && <span className="streak-badge">Active</span>}
             </div>
-            <div className="streak-stats">
-              <div className="streak-stat-card primary">
-                <div className="streak-number">{loginStats?.current_streak || 0}</div>
-                <div className="streak-label">Current</div>
-                {loginStats?.streak_active && (
-                  <div className="streak-status active">Active</div>
-                )}
-              </div>
-              <div className="streak-stat-card">
-                <div className="streak-number">{loginStats?.longest_streak || 0}</div>
-                <div className="streak-label">Best</div>
-              </div>
-              <div className="streak-stat-card">
-                <div className="streak-number">{loginStats?.total_login_days || 0}</div>
-                <div className="streak-label">Total</div>
+            <div className="streak-main">
+              <div className="streak-current">{loginStats?.current_streak || 0}</div>
+              <div className="streak-secondary">
+                <span>Best: {loginStats?.longest_streak || 0}</span>
+                <span>•</span>
+                <span>Total: {loginStats?.total_login_days || 0} days</span>
               </div>
             </div>
             {loginStats && !loginStats.logged_in_today && (
               <div className="streak-warning">
                 <AlertIcon />
-                <span>Log in today to continue!</span>
+                <span>Log in today to continue your streak!</span>
               </div>
             )}
           </section>

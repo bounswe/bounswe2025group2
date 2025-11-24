@@ -127,7 +127,7 @@ function HomePage() {
               type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="e.g. 2 eggs and a banana"
+              placeholder="Enter food item"
               className="nutrition-input"
               disabled={isAnalyzing}
             />

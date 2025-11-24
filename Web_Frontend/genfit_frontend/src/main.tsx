@@ -14,6 +14,7 @@ import NotificationsPage from "./pages/notifications/notificationPage";
 import ProfilePage from "./pages/profile/ProfilePage";
 import SettingsPage from "./pages/settings/SettingsPage";
 import ContactPage from './pages/contact/ContactPage';
+import GlossaryPage from './pages/glossary/GlossaryPage';
 import '../index.css';
 
 import ChallengesPage from "./pages/challenges/ChallengesPage";
@@ -42,6 +43,7 @@ createRoot(document.getElementById('root')!).render(
           <Route path="/challenges" element={<ChallengesPage />} />
           <Route path="/chatting" element={<ChatPage />} />
           <Route path="/contact" element={<ContactPage />} />
+          <Route path="/glossary" element={<GlossaryPage />} />
         </Routes>
       </Router>
     </QueryClientProvider>
