@@ -37,8 +37,10 @@ const ForumDetail = () => {
       const res = await fetch(`${API_URL}forums/${forumId}/threads/`, {
         headers: {
           'Content-Type': 'application/json',
+          'Accept': 'application/json',
           ...getAuthHeader(),
         },
+        credentials: 'include',
       });
       if (!res.ok) throw new Error(res.statusText || 'Failed to load threads');
       const data: Thread[] = await res.json();

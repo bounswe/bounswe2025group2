@@ -31,8 +31,10 @@ const Forum = () => {
       const res = await fetch(`${API_URL}forums/`, {
         headers: {
           'Content-Type': 'application/json',
+          'Accept': 'application/json',
           ...getAuthHeader(),
         },
+        credentials: 'include',
       });
       if (!res.ok) throw new Error(res.statusText || 'Failed to load forums');
       const data: Forum[] = await res.json();

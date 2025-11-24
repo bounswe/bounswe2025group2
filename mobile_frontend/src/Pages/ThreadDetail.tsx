@@ -49,7 +49,12 @@ const ThreadDetail = () => {
     try {
       setLoading(true);
       const res = await fetch(`${API_URL}threads/${threadId}/`, {
-        headers: { 'Content-Type': 'application/json', ...getAuthHeader() },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          ...getAuthHeader() 
+        },
+        credentials: 'include',
       });
         if (!res.ok) throw new Error('Failed to load thread');
   const data: ThreadDetailData = await res.json();
@@ -64,7 +69,14 @@ const ThreadDetail = () => {
   };
   const fetchComments = async () => {
     try {
-      const res = await fetch(`${API_URL}comments/thread/${threadId}/date/`, { credentials: 'include' });
+      const res = await fetch(`${API_URL}comments/thread/${threadId}/`, {
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          ...getAuthHeader(),
+        },
+        credentials: 'include',
+      });
       if (res.ok) {
         const data: Comment[] = await res.json();
         setComments(data);
@@ -79,12 +91,16 @@ const ThreadDetail = () => {
       // Get CSRF token from cookies
       const cookies = await Cookies.get(API_URL);
       const csrf = cookies.csrftoken?.value;
+      const origin = API_URL.replace(/\/api\/?$/, '');
       // Use vote endpoint
       const res = await fetch(`${API_URL}forum/vote/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'Referer': origin,
           ...(csrf ? { 'X-CSRFToken': csrf } : {}),
+          ...getAuthHeader(),
         },
         credentials: 'include',
         body: JSON.stringify({
@@ -118,12 +134,16 @@ const ThreadDetail = () => {
       // Get CSRF token from cookies
       const cookies = await Cookies.get(API_URL);
       const csrf = cookies.csrftoken?.value;
+      const origin = API_URL.replace(/\/api\/?$/, '');
       // Use add comment endpoint
       const res = await fetch(`${API_URL}comments/add/${threadId}/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'Referer': origin,
           ...(csrf ? { 'X-CSRFToken': csrf } : {}),
+          ...getAuthHeader(),
         },
         credentials: 'include',
         body: JSON.stringify({ content: newComment.trim() }),
