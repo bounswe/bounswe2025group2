@@ -31,6 +31,14 @@ interface Notification {
 // ──────────────────────────────────────────────────────────────────────────────
 
 import { API_URL } from '../constants/api';
+
+/**
+ * Extracts the origin (base URL) for Referer header
+ */
+const getOrigin = (): string => {
+  return API_URL.replace(/\/api\/?$/, '');
+};
+
 /**
  * Retrieves CSRF token stored locally if available.
  */
@@ -93,9 +101,16 @@ const ensureCsrfToken = async (): Promise<string> => {
     `${API_URL}`,
   ];
 
+  const origin = getOrigin();
   for (const url of bootstrapCandidates) {
     try {
-      await fetch(url, { method: 'GET', credentials: 'include' });
+      await fetch(url, { 
+        method: 'GET', 
+        credentials: 'include',
+        headers: {
+          'Referer': origin,
+        },
+      });
       token = await getCsrfToken();
       if (token && token.length >= MIN_CSRF_LEN) return token;
     } catch { /* ignore and try next */ }
@@ -110,8 +125,10 @@ const ensureCsrfToken = async (): Promise<string> => {
 // Compose headers with valid CSRF; if token is missing/short, we fetch/refresh it.
 const buildAuthHeaders = async () => {
   const token = await ensureCsrfToken();
+  const origin = getOrigin();
   return {
     'Content-Type': 'application/json',
+    'Referer': origin,
     'X-CSRFToken': token,
   } as const;
 };
@@ -136,11 +153,13 @@ const throwDetailed = async (res: Response, method: string, url: string, label: 
  */
 const fetchNotifications = async (): Promise<Notification[]> => {
   const csrfToken = await getCSRFToken();
+  const origin = getOrigin();
   const res = await fetch(`${API_URL}notifications/`, {
     method: 'GET',
     credentials: 'include',
     headers: {
       'Content-Type': 'application/json',
+      'Referer': origin,
       ...(csrfToken ? { 'X-CSRFToken': csrfToken } : {}),
     },
   });
