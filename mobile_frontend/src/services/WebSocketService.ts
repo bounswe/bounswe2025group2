@@ -11,16 +11,12 @@ export class WebSocketService {
   private onDisconnectCallback: (() => void) | null = null;
 
   async connect(chatId: number, onMessage: (message: Message) => void, onError: (error: string) => void, onConnect: () => void, onDisconnect: () => void) {
-    // Disconnect from previous chat if connected to a different one
-    if (this.ws && this.chatId !== chatId) {
-      console.log('Disconnecting from previous chat:', this.chatId);
+    // Always disconnect any existing connection first to ensure fresh session
+    if (this.ws) {
+      console.log('Disconnecting existing WebSocket connection before reconnecting');
       this.disconnect();
-    }
-    
-    // Don't reconnect if already connected to the same chat
-    if (this.ws && this.chatId === chatId && this.ws.readyState === 1) {
-      console.log('Already connected to chat:', chatId);
-      return;
+      // Small delay to ensure cleanup completes
+      await new Promise<void>(resolve => setTimeout(() => resolve(), 100));
     }
     
     this.chatId = chatId;
@@ -31,7 +27,14 @@ export class WebSocketService {
 
     try {
       // Get session cookie for authentication
-      const cookies = await Cookies.get(API_URL);
+      // Try base URL first (where session is typically set), then fall back to API_URL
+      const baseUrl = API_URL.replace(/\/api\/?$/, '');
+      let cookies = await Cookies.get(baseUrl);
+      
+      // If no cookies at base URL, try API_URL
+      if (!cookies || Object.keys(cookies).length === 0) {
+        cookies = await Cookies.get(API_URL);
+      }
       
       if (!cookies || Object.keys(cookies).length === 0) {
         console.error('No session cookies found. User may not be authenticated.');
@@ -45,16 +48,25 @@ export class WebSocketService {
 
       if (!sessionCookie) {
         console.error('No session cookie found. User may not be authenticated.');
+        console.error('Available cookies:', Object.keys(cookies));
         if (this.onErrorCallback) {
           this.onErrorCallback('No session found. Please log in again.');
         }
         return;
       }
 
-      // WebSocket URL with session cookie as query parameter
-      const wsUrl = `${API_URL}ws/chat/${chatId}/?sessionid=${sessionCookie}`;
+      // Build base origin (remove trailing /api/) for WebSocket endpoint
+      const origin = API_URL.replace(/\/api\/?$/, '');
+      const wsProtocol = origin.startsWith('https') ? 'wss' : 'ws';
+      // URL encode the session cookie value to handle special characters
+      const encodedSessionId = encodeURIComponent(sessionCookie);
+      // Pass session cookie as query parameter (React Native WebSocket doesn't support headers)
+      // Note: Backend must be configured to read session from query parameters
+      const wsUrl = origin.replace(/^https?/, wsProtocol) + `/ws/chat/${chatId}/?sessionid=${encodedSessionId}`;
       
-      // Use native WebSocket API with session cookie in URL
+      console.log('Connecting to WebSocket:', wsUrl.replace(encodedSessionId, '***'));
+      
+      // React Native WebSocket doesn't support custom headers, so we use query parameter
       this.ws = new WebSocket(wsUrl);
     } catch (error) {
       console.error('Error checking authentication:', error);
