@@ -101,6 +101,17 @@ const ForumDetail = () => {
       const csrf = cookies.csrftoken?.value;
       const origin = API_URL.replace(/\/api\/?$/, '');
 
+      const payload = {
+        forum: forumId,
+        title: newThreadTitle.trim(),
+        content: newThreadContent.trim(),
+        is_pinned: false,
+        is_locked: false,
+      };
+
+      console.log('Creating thread with payload:', payload);
+      console.log('CSRF token:', csrf ? 'present' : 'missing');
+
       const res = await fetch(`${API_URL}threads/`, {
         method: 'POST',
         headers: {
@@ -111,19 +122,25 @@ const ForumDetail = () => {
           ...getAuthHeader(),
         },
         credentials: 'include',
-        body: JSON.stringify({
-          forum: forumId,
-          title: newThreadTitle.trim(),
-          content: newThreadContent.trim(),
-          is_pinned: false,
-          is_locked: false,
-        }),
+        body: JSON.stringify(payload),
       });
 
+      console.log('Response status:', res.status);
+
       if (!res.ok) {
-        const errorData = await res.json().catch(() => ({}));
-        throw new Error(errorData.detail || errorData.error || 'Failed to create thread');
+        const errorText = await res.text();
+        console.error('Error response:', errorText);
+        let errorData;
+        try {
+          errorData = JSON.parse(errorText);
+        } catch {
+          throw new Error(`Failed to create thread: ${res.status} ${res.statusText}`);
+        }
+        throw new Error(errorData.detail || errorData.error || JSON.stringify(errorData) || 'Failed to create thread');
       }
+
+      const responseData = await res.json();
+      console.log('Thread created successfully:', responseData);
 
       Toast.show({
         type: 'success',
@@ -138,6 +155,7 @@ const ForumDetail = () => {
       setContentError('');
       await fetchThreads();
     } catch (err) {
+      console.error('Create thread error:', err);
       Toast.show({
         type: 'error',
         text1: 'Error',
@@ -223,16 +241,24 @@ const ForumDetail = () => {
       >
         <View style={styles.modalOverlay}>
           <View style={[styles.modalContainer, { backgroundColor: colors.background }]}>
-            <View style={styles.modalHeader}>
-              <CustomText style={[styles.modalTitle, { color: colors.text }]}>Create New Thread</CustomText>
-              <TouchableOpacity onPress={closeModal} disabled={isSubmitting}>
+            {/* Header with icon and close button */}
+            <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
+              <View style={styles.modalTitleRow}>
+                <CustomText style={[styles.modalIcon, { color: colors.active }]}>💬</CustomText>
+                <CustomText style={[styles.modalTitle, { color: colors.text }]}>Create New Thread</CustomText>
+              </View>
+              <TouchableOpacity onPress={closeModal} disabled={isSubmitting} style={styles.closeButtonContainer}>
                 <CustomText style={[styles.closeButton, { color: colors.text }]}>✕</CustomText>
               </TouchableOpacity>
             </View>
 
-            <ScrollView style={styles.modalContent}>
+            <View style={styles.modalContent}>
+              {/* Title Field */}
               <View style={styles.formGroup}>
-                <CustomText style={[styles.label, { color: colors.text }]}>Thread Title</CustomText>
+                <View style={styles.labelRow}>
+                  <CustomText style={[styles.labelIcon, { color: colors.active }]}>T</CustomText>
+                  <CustomText style={[styles.label, { color: colors.text }]}>THREAD TITLE</CustomText>
+                </View>
                 <TextInput
                   style={[
                     styles.input,
@@ -242,7 +268,7 @@ const ForumDetail = () => {
                       backgroundColor: colors.background,
                     }
                   ]}
-                  placeholder="Enter a descriptive title..."
+                  placeholder="Enter a descriptive title for your thread..."
                   placeholderTextColor={colors.subText}
                   value={newThreadTitle}
                   onChangeText={setNewThreadTitle}
@@ -250,15 +276,19 @@ const ForumDetail = () => {
                   editable={!isSubmitting}
                 />
                 {titleError ? (
-                  <CustomText style={styles.errorText}>{titleError}</CustomText>
+                  <CustomText style={styles.errorText}>⚠ {titleError}</CustomText>
                 ) : null}
                 <CustomText style={[styles.charCount, { color: colors.subText }]}>
                   {newThreadTitle.length}/200 characters
                 </CustomText>
               </View>
 
+              {/* Content Field */}
               <View style={styles.formGroup}>
-                <CustomText style={[styles.label, { color: colors.text }]}>Thread Content</CustomText>
+                <View style={styles.labelRow}>
+                  <CustomText style={[styles.labelIcon, { color: colors.active }]}>📄</CustomText>
+                  <CustomText style={[styles.label, { color: colors.text }]}>THREAD CONTENT</CustomText>
+                </View>
                 <TextInput
                   style={[
                     styles.textarea,
@@ -279,17 +309,18 @@ const ForumDetail = () => {
                   editable={!isSubmitting}
                 />
                 {contentError ? (
-                  <CustomText style={styles.errorText}>{contentError}</CustomText>
+                  <CustomText style={styles.errorText}>⚠ {contentError}</CustomText>
                 ) : null}
                 <CustomText style={[styles.charCount, { color: colors.subText }]}>
                   {newThreadContent.length}/5000 characters
                 </CustomText>
               </View>
-            </ScrollView>
+            </View>
 
-            <View style={styles.modalActions}>
+            {/* Actions */}
+            <View style={[styles.modalActions, { borderTopColor: colors.border }]}>
               <TouchableOpacity
-                style={[styles.cancelButton, { borderColor: colors.border }]}
+                style={[styles.cancelButton, { borderColor: colors.border, backgroundColor: colors.navBar }]}
                 onPress={closeModal}
                 disabled={isSubmitting}
               >
@@ -307,11 +338,14 @@ const ForumDetail = () => {
                 disabled={isSubmitting || !newThreadTitle.trim() || !newThreadContent.trim()}
               >
                 {isSubmitting ? (
-                  <ActivityIndicator size="small" color={colors.background} />
+                  <View style={styles.submitContent}>
+                    <ActivityIndicator size="small" color="#FFFFFF" />
+                    <CustomText style={[styles.submitButtonText, { color: '#FFFFFF' }]}>Creating...</CustomText>
+                  </View>
                 ) : (
-                  <CustomText style={[styles.submitButtonText, { color: colors.background }]}>
-                    Create Thread
-                  </CustomText>
+                  <View style={styles.submitContent}>
+                    <CustomText style={[styles.submitButtonText, { color: '#FFFFFF' }]}>💬 Create Thread</CustomText>
+                  </View>
                 )}
               </TouchableOpacity>
             </View>
@@ -351,69 +385,115 @@ const styles = StyleSheet.create({
   fabText: { fontSize: 32, fontWeight: '300', marginTop: -2 },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
     justifyContent: 'center',
     alignItems: 'center',
   },
   modalContainer: {
     width: '90%',
-    maxHeight: '80%',
-    borderRadius: 12,
-    padding: 20,
-    elevation: 5,
+    maxHeight: '85%',
+    borderRadius: 16,
+    padding: 0,
+    elevation: 8,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: 16,
   },
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 20,
+    paddingHorizontal: 20,
+    paddingVertical: 18,
+    borderBottomWidth: 1,
   },
-  modalTitle: { fontSize: 20, fontWeight: 'bold' },
-  closeButton: { fontSize: 24, fontWeight: '300' },
-  modalContent: { flex: 1 },
-  formGroup: { marginBottom: 20 },
-  label: { fontSize: 16, fontWeight: '600', marginBottom: 8 },
+  modalTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  modalIcon: {
+    fontSize: 24,
+  },
+  modalTitle: { fontSize: 22, fontWeight: 'bold' },
+  closeButtonContainer: {
+    padding: 4,
+  },
+  closeButton: { fontSize: 28, fontWeight: 'bold' },
+  modalContent: { paddingHorizontal: 20, paddingVertical: 20 },
+  formGroup: { marginBottom: 24 },
+  labelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 10,
+  },
+  labelIcon: {
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  label: { fontSize: 13, fontWeight: '700', letterSpacing: 0.5 },
   input: {
-    borderWidth: 1,
-    borderRadius: 8,
-    padding: 12,
+    borderWidth: 2,
+    borderRadius: 10,
+    padding: 14,
     fontSize: 16,
+    elevation: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
   },
   textarea: {
-    borderWidth: 1,
-    borderRadius: 8,
-    padding: 12,
+    borderWidth: 2,
+    borderRadius: 10,
+    padding: 14,
     fontSize: 16,
-    minHeight: 120,
+    minHeight: 140,
+    elevation: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
   },
   errorText: { color: '#ff4444', fontSize: 12, marginTop: 4 },
   charCount: { fontSize: 12, marginTop: 4, textAlign: 'right' },
   modalActions: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: 20,
+    paddingHorizontal: 20,
+    paddingVertical: 20,
+    borderTopWidth: 1,
+    gap: 12,
   },
   cancelButton: {
     flex: 1,
     borderWidth: 1,
-    borderRadius: 8,
-    paddingVertical: 12,
-    marginRight: 8,
+    borderRadius: 10,
+    paddingVertical: 14,
     alignItems: 'center',
+    justifyContent: 'center',
   },
   cancelButtonText: { fontSize: 16, fontWeight: '600' },
   submitButton: {
     flex: 1,
-    borderRadius: 8,
-    paddingVertical: 12,
-    marginLeft: 8,
+    borderRadius: 10,
+    paddingVertical: 14,
     alignItems: 'center',
+    justifyContent: 'center',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
   },
-  submitButtonText: { fontSize: 16, fontWeight: '600' },
+  submitContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  submitButtonText: { fontSize: 16, fontWeight: '700' },
 });
 
 export default ForumDetail;
