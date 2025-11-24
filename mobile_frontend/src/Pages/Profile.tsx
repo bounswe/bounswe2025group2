@@ -262,10 +262,10 @@ const Profile = () => {
   const isReceiver = !!(selectedRel && selectedRel.receiver === myUserId);
   const isMentorOfOther = !!(selectedRel && selectedRel.status === 'ACCEPTED' && selectedRel.mentor === myUserId);
 
-  const acceptedRels = relationships.filter((r: MentorRelationship) => r.status === 'ACCEPTED');
+  const acceptedRels = relationships.filter((r: MentorRelationship) => r.status === 'ACCEPTED' && r.mentor !== r.mentee);
   const myMentors = myUserId ? acceptedRels.filter((r: MentorRelationship) => r.mentee === myUserId).map((r: MentorRelationship) => ({ id: r.mentor, username: r.mentor_username })) : [];
   const myMentees = myUserId ? acceptedRels.filter((r: MentorRelationship) => r.mentor === myUserId).map((r: MentorRelationship) => ({ id: r.mentee, username: r.mentee_username })) : [];
-  const myPendingRequests = myUserId ? relationships.filter((r: MentorRelationship) => r.status === 'PENDING' && (r.sender === myUserId || r.receiver === myUserId)) : [];
+  const myPendingRequests = myUserId ? relationships.filter((r: MentorRelationship) => r.status === 'PENDING' && (r.sender === myUserId || r.receiver === myUserId) && r.mentor !== r.mentee) : [];
   const mentorshipUsernames = Array.from(new Set([...myMentors, ...myMentees].map(u => u.username))).filter(Boolean);
 
   // Fetch profile pictures for mentors and mentees
@@ -492,7 +492,7 @@ const Profile = () => {
         const response = await fetch(`${API_URL}goals/${goalId}/`, {
           method: 'DELETE',
           headers: {
-            ...getAuthHeader(),
+            ...getSanitizedAuthHeader(),
             'Referer': origin,
             ...(csrfToken ? { 'X-CSRFToken': csrfToken } : {}),
           },
@@ -524,6 +524,11 @@ const Profile = () => {
     mutationFn: async () => {
       if (!me || !otherUserId) {
         throw new Error('Missing user info');
+      }
+
+      // Prevent sending request to self
+      if (me.id === otherUserId) {
+        throw new Error('You cannot send a mentor request to yourself');
       }
 
       console.log('Sending mentor request', { mentor: me.id, mentee: otherUserId });
@@ -584,6 +589,11 @@ const Profile = () => {
     mutationFn: async () => {
       if (!me || !otherUserId) {
         throw new Error('Missing user info');
+      }
+
+      // Prevent sending request to self
+      if (me.id === otherUserId) {
+        throw new Error('You cannot send a mentor request to yourself');
       }
 
       console.log('Sending mentee request', { mentor: otherUserId, mentee: me.id });
@@ -648,7 +658,7 @@ const Profile = () => {
       const response = await fetch(`${API_URL}mentor-relationships/${relationshipId}/status/`, {
         method: 'POST',
         headers: {
-          ...getAuthHeader(),
+          ...getSanitizedAuthHeader(),
           'Content-Type': 'application/json',
           'Referer': origin,
           ...(csrfToken ? { 'X-CSRFToken': csrfToken } : {}),
@@ -785,6 +795,23 @@ const Profile = () => {
   return (
     <>
       <ScrollView style={[styles.container, { backgroundColor: theme.colors.background }]}>
+        {/* Header with Search Button */}
+        {!otherUsername && (
+          <View style={styles.headerButtonContainer}>
+            <Button
+              mode="outlined"
+              icon="magnify"
+              onPress={() => {
+                // @ts-ignore
+                navigation.navigate('MentorSearch');
+              }}
+              style={styles.headerButton}
+            >
+              Find Mentors
+            </Button>
+          </View>
+        )}
+
         {/* Profile Hero Section */}
         <Card mode="contained" style={[styles.heroCard, { backgroundColor: theme.colors.primaryContainer }]}>
           <Card.Content style={styles.heroContent}>
@@ -1226,6 +1253,15 @@ const GoalCard = ({ goal, onPress }: { goal: any, onPress: () => void }) => {
 
 const styles = StyleSheet.create({
   container: {
+    flex: 1,
+  },
+  headerButtonContainer: {
+    flexDirection: 'row',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    gap: 8,
+  },
+  headerButton: {
     flex: 1,
   },
   loader: {
