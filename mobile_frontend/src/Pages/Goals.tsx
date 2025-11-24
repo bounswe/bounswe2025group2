@@ -84,12 +84,49 @@ type ModalType = 'create' | 'edit' | 'progress' | null;
 const GOALS_ENDPOINT = `${API_URL}goals/`;
 
 /**
+ * Extracts the origin (base URL) for Referer header
+ */
+const getOrigin = (): string => {
+  return API_URL.replace(/\/api\/?$/, '');
+};
+
+/**
  * Fetches CSRF token from cookies for authenticated requests
+ * If not available, bootstraps it by making a GET request
  */
 const getCSRFToken = async (): Promise<string> => {
   try {
     const cookies = await CookieManager.get(API_URL);
-    return cookies?.csrftoken?.value || '';
+    const token = cookies?.csrftoken?.value || '';
+    
+    // If we have a valid token, return it
+    if (token && token.length >= 32) {
+      return token;
+    }
+    
+    // Bootstrap CSRF token by making a GET request (similar to Login.tsx)
+    const origin = getOrigin();
+    const bootstrapUrl = `${API_URL}quotes/random/`;
+    try {
+      await fetch(bootstrapUrl, {
+        method: 'GET',
+        headers: {
+          'Referer': origin,
+        },
+        credentials: 'include',
+      });
+      
+      // Try to get token again after bootstrap
+      const cookiesAfter = await CookieManager.get(API_URL);
+      const tokenAfter = cookiesAfter?.csrftoken?.value || '';
+      if (tokenAfter && tokenAfter.length >= 32) {
+        return tokenAfter;
+      }
+    } catch (bootstrapError) {
+      console.warn('Failed to bootstrap CSRF token:', bootstrapError);
+    }
+    
+    return '';
   } catch (error) {
     console.error('Failed to get CSRF token:', error);
     return '';
@@ -865,12 +902,15 @@ const Goals: React.FC = () => {
 
     try {
       setLoading(true);
+      const origin = getOrigin();
       const response = await fetch(GOALS_ENDPOINT, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
+          'Referer': origin,
           ...getAuthHeader(),
         },
+        credentials: 'include',
       });
 
       if (!response.ok) {
@@ -900,14 +940,17 @@ const Goals: React.FC = () => {
     try {
       setActionLoading(true);
       const csrfToken = await getCSRFToken();
+      const origin = getOrigin();
 
       const response = await fetch(GOALS_ENDPOINT, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Referer': origin,
           'X-CSRFToken': csrfToken,
           ...getAuthHeader(),
         },
+        credentials: 'include',
         body: JSON.stringify({
           title: formData.title,
           description: formData.description,
@@ -919,7 +962,17 @@ const Goals: React.FC = () => {
       });
 
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        let errorMessage = `HTTP error! status: ${response.status}`;
+        try {
+          const errorData = await response.json();
+          if (errorData.error || errorData.message || errorData.detail) {
+            errorMessage = errorData.error || errorData.message || errorData.detail;
+          }
+        } catch (e) {
+          // If response is not JSON, use the status text
+          errorMessage = response.statusText || errorMessage;
+        }
+        throw new Error(errorMessage);
       }
 
       Alert.alert('Success', 'Goal created successfully!');
@@ -927,7 +980,8 @@ const Goals: React.FC = () => {
       await fetchGoals();
     } catch (error) {
       console.error('Failed to create goal:', error);
-      Alert.alert('Error', 'Failed to create goal. Please try again.');
+      const errorMessage = error instanceof Error ? error.message : 'Failed to create goal. Please try again.';
+      Alert.alert('Error', errorMessage);
     } finally {
       setActionLoading(false);
     }
@@ -946,14 +1000,17 @@ const Goals: React.FC = () => {
     try {
       setActionLoading(true);
       const csrfToken = await getCSRFToken();
+      const origin = getOrigin();
 
       const response = await fetch(`${GOALS_ENDPOINT}${goalId}/`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
+          'Referer': origin,
           'X-CSRFToken': csrfToken,
           ...getAuthHeader(),
         },
+        credentials: 'include',
         body: JSON.stringify({
           title: formData.title,
           description: formData.description,
@@ -965,7 +1022,17 @@ const Goals: React.FC = () => {
       });
 
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        let errorMessage = `HTTP error! status: ${response.status}`;
+        try {
+          const errorData = await response.json();
+          if (errorData.error || errorData.message || errorData.detail) {
+            errorMessage = errorData.error || errorData.message || errorData.detail;
+          }
+        } catch (e) {
+          // If response is not JSON, use the status text
+          errorMessage = response.statusText || errorMessage;
+        }
+        throw new Error(errorMessage);
       }
 
       Alert.alert('Success', 'Goal updated successfully!');
@@ -974,7 +1041,8 @@ const Goals: React.FC = () => {
       await fetchGoals();
     } catch (error) {
       console.error('Failed to update goal:', error);
-      Alert.alert('Error', 'Failed to update goal. Please try again.');
+      const errorMessage = error instanceof Error ? error.message : 'Failed to update goal. Please try again.';
+      Alert.alert('Error', errorMessage);
     } finally {
       setActionLoading(false);
     }
@@ -993,21 +1061,34 @@ const Goals: React.FC = () => {
     try {
       setActionLoading(true);
       const csrfToken = await getCSRFToken();
+      const origin = getOrigin();
 
       const response = await fetch(`${GOALS_ENDPOINT}${goalId}/progress/`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
+          'Referer': origin,
           'X-CSRFToken': csrfToken,
           ...getAuthHeader(),
         },
+        credentials: 'include',
         body: JSON.stringify({
           current_value: currentValue,
         }),
       });
 
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        let errorMessage = `HTTP error! status: ${response.status}`;
+        try {
+          const errorData = await response.json();
+          if (errorData.error || errorData.message || errorData.detail) {
+            errorMessage = errorData.error || errorData.message || errorData.detail;
+          }
+        } catch (e) {
+          // If response is not JSON, use the status text
+          errorMessage = response.statusText || errorMessage;
+        }
+        throw new Error(errorMessage);
       }
 
       // Show different message if progress was capped
@@ -1022,7 +1103,8 @@ const Goals: React.FC = () => {
       await fetchGoals();
     } catch (error) {
       console.error('Failed to update progress:', error);
-      Alert.alert('Error', 'Failed to update progress. Please try again.');
+      const errorMessage = error instanceof Error ? error.message : 'Failed to update progress. Please try again.';
+      Alert.alert('Error', errorMessage);
     } finally {
       setActionLoading(false);
     }
