@@ -26,7 +26,7 @@ import ThreadDetail from '../Pages/ThreadDetail.tsx';
 import AiChatDetail from '../Pages/AiChatDetail';
 import Exercises from '../Pages/Exercises';
 import ExerciseDetail from '../Pages/ExerciseDetail';
-import MentorSearch from '../Pages/MentorSearch';
+import Search from '../Pages/Search';
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -117,9 +117,9 @@ const AppNavigator = () => {
         options={{ title: 'Exercise Details', headerShown: true }}
       />
       <Stack.Screen
-        name="MentorSearch"
-        component={MentorSearch}
-        options={{ title: 'Find Mentors & Mentees', headerShown: true }}
+        name="Search"
+        component={Search}
+        options={{ title: 'Search Users', headerShown: true }}
       />
     </Stack.Navigator>
   );
