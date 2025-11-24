@@ -244,7 +244,6 @@ const ForumDetail = () => {
             {/* Header with icon and close button */}
             <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
               <View style={styles.modalTitleRow}>
-                <CustomText style={[styles.modalIcon, { color: colors.active }]}>💬</CustomText>
                 <CustomText style={[styles.modalTitle, { color: colors.text }]}>Create New Thread</CustomText>
               </View>
               <TouchableOpacity onPress={closeModal} disabled={isSubmitting} style={styles.closeButtonContainer}>
@@ -255,10 +254,7 @@ const ForumDetail = () => {
             <View style={styles.modalContent}>
               {/* Title Field */}
               <View style={styles.formGroup}>
-                <View style={styles.labelRow}>
-                  <CustomText style={[styles.labelIcon, { color: colors.active }]}>T</CustomText>
-                  <CustomText style={[styles.label, { color: colors.text }]}>THREAD TITLE</CustomText>
-                </View>
+                <CustomText style={[styles.label, { color: colors.text }]}>THREAD TITLE</CustomText>
                 <TextInput
                   style={[
                     styles.input,
@@ -276,7 +272,7 @@ const ForumDetail = () => {
                   editable={!isSubmitting}
                 />
                 {titleError ? (
-                  <CustomText style={styles.errorText}>⚠ {titleError}</CustomText>
+                  <CustomText style={styles.errorText}>{titleError}</CustomText>
                 ) : null}
                 <CustomText style={[styles.charCount, { color: colors.subText }]}>
                   {newThreadTitle.length}/200 characters
@@ -285,10 +281,7 @@ const ForumDetail = () => {
 
               {/* Content Field */}
               <View style={styles.formGroup}>
-                <View style={styles.labelRow}>
-                  <CustomText style={[styles.labelIcon, { color: colors.active }]}>📄</CustomText>
-                  <CustomText style={[styles.label, { color: colors.text }]}>THREAD CONTENT</CustomText>
-                </View>
+                <CustomText style={[styles.label, { color: colors.text }]}>THREAD CONTENT</CustomText>
                 <TextInput
                   style={[
                     styles.textarea,
@@ -309,7 +302,7 @@ const ForumDetail = () => {
                   editable={!isSubmitting}
                 />
                 {contentError ? (
-                  <CustomText style={styles.errorText}>⚠ {contentError}</CustomText>
+                  <CustomText style={styles.errorText}>{contentError}</CustomText>
                 ) : null}
                 <CustomText style={[styles.charCount, { color: colors.subText }]}>
                   {newThreadContent.length}/5000 characters
@@ -344,7 +337,7 @@ const ForumDetail = () => {
                   </View>
                 ) : (
                   <View style={styles.submitContent}>
-                    <CustomText style={[styles.submitButtonText, { color: '#FFFFFF' }]}>💬 Create Thread</CustomText>
+                    <CustomText style={[styles.submitButtonText, { color: '#FFFFFF' }]}>Create Thread</CustomText>
                   </View>
                 )}
               </TouchableOpacity>
