@@ -11,9 +11,9 @@ import Toast from 'react-native-toast-message';
 import { API_URL } from '@constants/api';
 
 // Import SVG icons
-import MenuIcon from '../assets/images/menu.svg';
 import SettingsIcon from '../assets/images/settings.svg';
 import NotificationsIcon from '../assets/images/notifications.svg';
+import SearchIcon from '../assets/images/search.svg';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -95,10 +95,12 @@ const TopBar = () => {
       ]}
     >
       <View style={styles.leftSection}>
-        <MenuIcon width={42} height={42} fill={colors.border} />
         <CustomText style={[styles.appTitle, { color: colors.border }]}>GenFit</CustomText>
       </View>
       <View style={styles.rightSection}>
+        <Pressable onPress={() => navigation.navigate('Search')}>
+          <SearchIcon width={36} height={36} fill={colors.border} />
+        </Pressable>
           <Pressable onPress={() => navigation.navigate('Exercises')}>
             <View style={[styles.infoButton, { borderColor: colors.border }]}>
               <Text style={[styles.infoIcon, { color: colors.border }]}>𝑖</Text>
@@ -147,7 +149,7 @@ const styles = StyleSheet.create({
   leftSection: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    justifyContent: 'flex-start',
   },
   rightSection: {
     flexDirection: 'row',
