@@ -77,6 +77,7 @@
 
 .auth-tabs {
   display: flex;
+  gap: 0.5rem;
   background: #f3f4f6;
   border-radius: 8px;
   padding: 4px;
@@ -214,6 +215,203 @@
   color: #6b7280;
 }
 
+/* Terms and Conditions Checkbox */
+.terms-checkbox-group {
+  margin: 0.5rem 0;
+}
+
+.terms-checkbox-label {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  font-size: 0.875rem;
+  color: #374151;
+  cursor: pointer;
+  line-height: 1.5;
+}
+
+.terms-checkbox {
+  margin-top: 0.2rem;
+  width: 1rem;
+  height: 1rem;
+  cursor: pointer;
+  accent-color: #800000;
+  flex-shrink: 0;
+}
+
+.terms-checkbox:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.terms-link {
+  background: none;
+  border: none;
+  color: #800000;
+  text-decoration: underline;
+  cursor: pointer;
+  font-size: inherit;
+  padding: 0;
+  font-weight: 500;
+  transition: color 0.2s;
+}
+
+.terms-link:hover {
+  color: #600000;
+}
+
+/* Terms and Conditions Modal */
+.terms-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+}
+
+.terms-modal-content {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  width: 100%;
+  max-width: 800px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.terms-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem 2rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.terms-modal-header h2 {
+  margin: 0;
+  font-size: 1.5rem;
+  color: #800000;
+  font-weight: 600;
+}
+
+.terms-modal-close {
+  background: none;
+  border: none;
+  font-size: 2rem;
+  color: #6b7280;
+  cursor: pointer;
+  line-height: 1;
+  padding: 0;
+  width: 2rem;
+  height: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: background-color 0.2s, color 0.2s;
+}
+
+.terms-modal-close:hover {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.terms-modal-body {
+  padding: 2rem;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.terms-effective-date {
+  color: #6b7280;
+  font-size: 0.875rem;
+  margin-bottom: 1.5rem;
+}
+
+.terms-section {
+  margin-bottom: 1.5rem;
+}
+
+.terms-section h3 {
+  color: #800000;
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+}
+
+.terms-section p {
+  color: #374151;
+  line-height: 1.6;
+  margin-bottom: 0.5rem;
+}
+
+.terms-section ul {
+  margin: 0.5rem 0 0.5rem 1.5rem;
+  color: #374151;
+}
+
+.terms-section li {
+  margin-bottom: 0.5rem;
+  line-height: 1.6;
+}
+
+.terms-footer {
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid #e5e7eb;
+  color: #6b7280;
+  font-size: 0.875rem;
+  font-style: italic;
+}
+
+.terms-modal-footer {
+  display: flex;
+  gap: 1rem;
+  padding: 1.5rem 2rem;
+  border-top: 1px solid #e5e7eb;
+  justify-content: flex-end;
+}
+
+.terms-accept-button {
+  background: #800000;
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 6px;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.terms-accept-button:hover {
+  background: #600000;
+}
+
+.terms-close-button {
+  background: transparent;
+  color: #6b7280;
+  border: 1px solid #d1d5db;
+  padding: 0.75rem 1.5rem;
+  border-radius: 6px;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s, border-color 0.2s;
+}
+
+.terms-close-button:hover {
+  background: #f3f4f6;
+  border-color: #9ca3af;
+}
+
 @media (max-width: 768px) {
   .auth-container {
     flex-direction: column;
@@ -254,6 +452,34 @@
   
   .form-row {
     grid-template-columns: 1fr;
+  }
+
+  .terms-modal-content {
+    max-height: 95vh;
+    margin: 0.5rem;
+  }
+
+  .terms-modal-header,
+  .terms-modal-body,
+  .terms-modal-footer {
+    padding: 1rem;
+  }
+
+  .terms-modal-header h2 {
+    font-size: 1.25rem;
+  }
+
+  .terms-section h3 {
+    font-size: 1rem;
+  }
+
+  .terms-modal-footer {
+    flex-direction: column;
+  }
+
+  .terms-accept-button,
+  .terms-close-button {
+    width: 100%;
   }
 }
 

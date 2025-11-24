@@ -17,21 +17,19 @@ def create_mentor_relationship(request):
     Body must include `mentor` and `mentee` (user IDs).
     `sender` and `receiver` are inferred from `request.user`.
     """
-    serializer = MentorMenteeRelationshipSerializer(data=request.data, context={'request': request})
-    if serializer.is_valid():
-        relationship = serializer.save()
-        
-        Notification.objects.create(
-            recipient=relationship.receiver,
-            sender=relationship.sender,
-            notification_type='MENTOR_REQUEST',
-            title='New Mentor Request',
-            message=f'{relationship.sender.username} wants to establish a mentor-mentee relationship with you.',
-            related_object_id=relationship.id,
-            related_object_type='MentorMenteeRelationship'
-        )
-        return Response(MentorMenteeRelationshipSerializer(relationship).data, status=status.HTTP_201_CREATED)
-    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    try:
+        serializer = MentorMenteeRelationshipSerializer(data=request.data, context={'request': request})
+        if serializer.is_valid():
+            # The serializer.save() already creates the notification in its create() method
+            relationship = serializer.save()
+            return Response(MentorMenteeRelationshipSerializer(relationship).data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    except Exception as e:
+        # Log the error for debugging
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"Error creating mentor relationship: {str(e)}", exc_info=True)
+        return Response({'error': f'An error occurred: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 @api_view(['GET'])
@@ -109,20 +107,37 @@ def change_mentor_relationship_status(request, relationship_id):
     if target in ['ACCEPTED', 'REJECTED']:
         if relationship.status != 'PENDING':
             return Response({'error': 'This request has already been responded to.'}, status=status.HTTP_400_BAD_REQUEST)
-        if request.user != relationship.receiver:
-            return Response({'error': 'Only the receiver can respond to this request.'}, status=status.HTTP_403_FORBIDDEN)
-        relationship.status = target
-        relationship.save()
-        Notification.objects.create(
-            recipient=relationship.sender,
-            sender=request.user,
-            notification_type='SYSTEM',
-            title='Mentor Request Response',
-            message=f'{request.user.username} has {target.lower()} your mentor request.',
-            related_object_id=relationship.id,
-            related_object_type='MentorMenteeRelationship'
-        )
-        return Response({'message': f'Request {target.lower()}.'}, status=status.HTTP_200_OK)
+        if target == 'ACCEPTED':
+            if request.user != relationship.receiver:
+                return Response({'error': 'Only the receiver can accept this request.'}, status=status.HTTP_403_FORBIDDEN)
+            relationship.status = 'ACCEPTED'
+            relationship.save()
+            Notification.objects.create(
+                recipient=relationship.sender,
+                sender=request.user,
+                notification_type='SYSTEM',
+                title='Mentor Request Response',
+                message=f'{request.user.username} has accepted your mentor request.',
+                related_object_id=relationship.id,
+                related_object_type='MentorMenteeRelationship'
+            )
+            return Response({'message': 'Request accepted.'}, status=status.HTTP_200_OK)
+        if target == 'REJECTED':
+            if request.user not in [relationship.receiver, relationship.sender]:
+                return Response({'error': 'Only the receiver or sender can reject/cancel this request.'}, status=status.HTTP_403_FORBIDDEN)
+            relationship.status = 'REJECTED'
+            relationship.save()
+            notify_recipient = relationship.sender if request.user == relationship.receiver else relationship.receiver
+            Notification.objects.create(
+                recipient=notify_recipient,
+                sender=request.user,
+                notification_type='SYSTEM',
+                title='Mentor Request Update',
+                message=f'{request.user.username} has rejected/cancelled the mentor request.',
+                related_object_id=relationship.id,
+                related_object_type='MentorMenteeRelationship'
+            )
+            return Response({'message': 'Request rejected/cancelled.'}, status=status.HTTP_200_OK)
 
     if target == 'TERMINATED':
         if request.user not in [relationship.mentor, relationship.mentee]:
