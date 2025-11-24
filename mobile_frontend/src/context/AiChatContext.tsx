@@ -91,9 +91,13 @@ export const AiChatProvider = ({ children }: AiChatProviderProps) => {
 
   const buildHeaders = useCallback(
     async () => {
+      // Extract the origin (base URL) for Referer header
+      const origin = API_URL.replace(/\/api\/?$/, '');
+      
       const headers: Record<string, string> = {
         ...getAuthHeader(),
         'Content-Type': 'application/json',
+        'Referer': origin,
       };
 
       try {
