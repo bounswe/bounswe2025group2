@@ -23,6 +23,8 @@ import ChatDetail from '../Pages/ChatDetail';
 import Forum from '../Pages/Forum.tsx';
 import ForumDetail from '../Pages/ForumDetail.tsx';
 import ThreadDetail from '../Pages/ThreadDetail.tsx';
+import Exercises from '../Pages/Exercises';
+import ExerciseDetail from '../Pages/ExerciseDetail';
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -96,6 +98,16 @@ const AppNavigator = () => {
         name="ThreadDetail"
         component={ThreadDetail}
         options={{ title: 'Thread' }}
+      />
+      <Stack.Screen
+        name="Exercises"
+        component={Exercises}
+        options={{ title: 'Exercises', headerShown: true }}
+      />
+      <Stack.Screen
+        name="ExerciseDetail"
+        component={ExerciseDetail}
+        options={{ title: 'Exercise Details', headerShown: true }}
       />
     </Stack.Navigator>
   );
