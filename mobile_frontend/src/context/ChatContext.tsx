@@ -3,8 +3,7 @@ import axios from 'axios';
 import { useAuth } from './AuthContext';
 import Cookies from '@react-native-cookies/cookies';
 import { webSocketService } from '../services/WebSocketService';
-import { API_URL } from '../constants/api';
-
+import { API_CHAT_URL, API_URL } from '../constants/api';
 // Types for our chat system
 export type Message = {
   id: number;
@@ -84,10 +83,14 @@ export const ChatProvider = ({ children }: ChatProviderProps) => {
       const cookies = await Cookies.get(API_URL);
       const csrfToken = cookies.csrftoken?.value;
       
-      const res = await axios.get(`${API_URL}users/`, {
+      // Extract the origin (base URL) for Referer header
+      const origin = API_URL.replace(/\/api\/?$/, '');
+      
+      const res = await axios.get(`${API_CHAT_URL}get-users/`, {
         headers: {
           ...getAuthHeader(),
           'Content-Type': 'application/json',
+          'Referer': origin,
           ...(csrfToken ? { 'X-CSRFToken': csrfToken } : {}),
         },
         withCredentials: true,
@@ -119,10 +122,14 @@ export const ChatProvider = ({ children }: ChatProviderProps) => {
       const cookies = await Cookies.get(API_URL);
       const csrfToken = cookies.csrftoken?.value;
       
-      const res = await axios.get(`${API_URL}chat/get-chats/`, {
+      // Extract the origin (base URL) for Referer header
+      const origin = API_URL.replace(/\/api\/?$/, '');
+      
+      const res = await axios.get(`${API_CHAT_URL}get-chats/`, {
         headers: {
           ...getAuthHeader(),
           'Content-Type': 'application/json',
+          'Referer': origin,
           ...(csrfToken ? { 'X-CSRFToken': csrfToken } : {}),
         },
         withCredentials: true,
@@ -139,13 +146,17 @@ export const ChatProvider = ({ children }: ChatProviderProps) => {
       const cookies = await Cookies.get(API_URL);
       const csrfToken = cookies.csrftoken?.value;
       
+      // Extract the origin (base URL) for Referer header
+      const origin = API_URL.replace(/\/api\/?$/, '');
+      
       const res = await axios.post(
-        `${API_URL}chat/create-chat/`,
+        `${API_CHAT_URL}create-chat/`,
         { user_id: userId },
         { 
           headers: {
             ...getAuthHeader(),
             'Content-Type': 'application/json',
+            'Referer': origin,
             ...(csrfToken ? { 'X-CSRFToken': csrfToken } : {}),
           },
           withCredentials: true,

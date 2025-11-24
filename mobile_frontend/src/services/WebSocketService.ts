@@ -51,11 +51,18 @@ export class WebSocketService {
         return;
       }
 
-      // WebSocket URL with session cookie as query parameter
-      const wsUrl = `${API_URL}ws/chat/${chatId}/?sessionid=${sessionCookie}`;
+      // Build base origin (remove trailing /api/) for WebSocket endpoint
+      const origin = API_URL.replace(/\/api\/?$/, '');
+      const wsProtocol = origin.startsWith('https') ? 'wss' : 'ws';
+      const wsUrl = origin.replace(/^https?/, wsProtocol) + `/ws/chat/${chatId}/`;
       
-      // Use native WebSocket API with session cookie in URL
-      this.ws = new WebSocket(wsUrl);
+      // Include session cookie in headers to satisfy Django authentication
+      this.ws = new WebSocket(wsUrl, undefined, {
+        headers: {
+          Cookie: `sessionid=${sessionCookie}`,
+          Origin: origin,
+        },
+      });
     } catch (error) {
       console.error('Error checking authentication:', error);
       if (this.onErrorCallback) {
