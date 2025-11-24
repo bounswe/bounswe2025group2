@@ -20,7 +20,7 @@ type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 const TopBar = () => {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
-  const navigation = useNavigation<NavigationProp>();
+  const navigation = useNavigation() as NavigationProp;
   const { getAuthHeader } = useAuth();
   const CONTENT_HEIGHT = 49; // Height of the actual content area
 
@@ -99,6 +99,11 @@ const TopBar = () => {
         <CustomText style={[styles.appTitle, { color: colors.border }]}>GenFit</CustomText>
       </View>
       <View style={styles.rightSection}>
+          <Pressable onPress={() => navigation.navigate('Exercises')}>
+            <View style={[styles.infoButton, { borderColor: colors.border }]}>
+              <Text style={[styles.infoIcon, { color: colors.border }]}>𝑖</Text>
+            </View>
+          </Pressable>
         <Pressable onPress={() => navigation.navigate('Notifications')}>
           <NotificationsIcon width={36} height={36} color={colors.border} />
         </Pressable>
@@ -196,6 +201,19 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     fontSize: 16,
     textTransform: 'lowercase',
+  },
+  infoButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    borderWidth: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'transparent',
+  },
+  infoIcon: {
+    fontSize: 24,
+    fontWeight: 'bold',
   },
 });
 
