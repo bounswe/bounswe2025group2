@@ -731,14 +731,14 @@ const CreateGoalModal: React.FC<CreateGoalModalProps> = ({
                 style={[styles.textInput, { backgroundColor: colors.navBar, color: colors.text, borderColor: colors.border }]}
                 value={formData.target_value}
                 onChangeText={(text) => setFormData({ ...formData, target_value: text })}
-                placeholder="100"
+                placeholder="1,10,100"
                 placeholderTextColor={colors.subText}
                 keyboardType="numeric"
               />
             </View>
             <View style={[styles.inputGroup, styles.inputGroupHalf, styles.inputGroupRight]}>
               <CustomText style={[styles.inputLabel, { color: colors.text }]}>
-                Unit
+                Unit*
               </CustomText>
               <TextInput
                 style={[styles.textInput, { backgroundColor: colors.navBar, color: colors.text, borderColor: colors.border }]}
@@ -930,7 +930,7 @@ const EditGoalModal: React.FC<EditGoalModalProps> = ({
             </View>
             <View style={[styles.inputGroup, styles.inputGroupHalf, styles.inputGroupRight]}>
               <CustomText style={[styles.inputLabel, { color: colors.text }]}>
-                Unit
+                Unit*
               </CustomText>
               <TextInput
                 style={[styles.textInput, { backgroundColor: colors.navBar, color: colors.text, borderColor: colors.border }]}
