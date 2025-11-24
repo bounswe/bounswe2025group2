@@ -216,6 +216,21 @@ export const ChatProvider = ({ children }: ChatProviderProps) => {
     }
   }, []);
 
+  // Clear all chat state when user logs out (token becomes null)
+  useEffect(() => {
+    if (!token) {
+      // Disconnect WebSocket if connected
+      disconnectFromChat();
+      // Clear all state
+      setContacts([]);
+      setChats([]);
+      setActiveChatId(null);
+      setMessages([]);
+      setIsConnected(false);
+    }
+  }, [token, disconnectFromChat]);
+
+  // Fetch data when user logs in (token becomes available)
   useEffect(() => {
     if (token) {
       fetchContacts();
