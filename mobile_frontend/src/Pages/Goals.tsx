@@ -522,6 +522,28 @@ const CreateGoalModal: React.FC<CreateGoalModalProps> = ({
       return;
     }
 
+    // Warn if unit is empty, but allow them to proceed with default value
+    if (!formData.unit.trim()) {
+      Alert.alert(
+        'Warning',
+        'You haven\'t entered a unit. A default unit will be used. It\'s recommended to specify a unit (e.g., steps, km, min) for your goal.',
+        [
+          {
+            text: 'Go Back',
+            style: 'cancel',
+          },
+          {
+            text: 'Continue',
+            onPress: () => {
+              // Submit with default unit value
+              onSubmit({ ...formData, unit: 'unit' });
+            },
+          },
+        ]
+      );
+      return;
+    }
+
     onSubmit(formData);
   };
 
@@ -1158,7 +1180,7 @@ const Goals: React.FC = () => {
           description: formData.description,
           goal_type: formData.goal_type,
           target_value: Number(formData.target_value),
-          unit: formData.unit.trim() || "",
+          unit: formData.unit.trim() || "unit",
           target_date: formData.target_date.toISOString(),
         }),
       });
@@ -1218,7 +1240,7 @@ const Goals: React.FC = () => {
           description: formData.description,
           goal_type: formData.goal_type,
           target_value: Number(formData.target_value),
-          unit: formData.unit.trim() || "",
+          unit: formData.unit.trim() || "unit",
           target_date: formData.target_date.toISOString(),
         }),
       });
