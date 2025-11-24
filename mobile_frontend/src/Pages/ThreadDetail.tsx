@@ -24,6 +24,7 @@ type ThreadDetailData = {
   body: string;
   author: string;
   like_count: number;
+  user_has_liked?: boolean;
   comments: Comment[];
 };
 
@@ -34,6 +35,7 @@ const ThreadDetail = () => {
   const { getAuthHeader } = useAuth();
   const [thread, setThread] = useState<ThreadDetailData | null>(null);
   const [likes, setLikes] = useState<number>(0);
+  const [isLiked, setIsLiked] = useState<boolean>(false);
   const [newComment, setNewComment] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [loading, setLoading] = useState(true);
@@ -60,6 +62,7 @@ const ThreadDetail = () => {
   const data: ThreadDetailData = await res.json();
   setThread(data);
   setLikes(data.like_count);
+  setIsLiked(data.user_has_liked || false);
         return data;
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error loading thread');
@@ -85,14 +88,22 @@ const ThreadDetail = () => {
       console.error('Failed to load comments', e);
     }
   };
-  // Trigger like action on thread
-  const likeThread = async () => {
+  // Toggle like on thread
+  const toggleLike = async () => {
+    // Optimistic update - update UI immediately
+    const wasLiked = isLiked;
+    const previousLikes = likes;
+    
+    setIsLiked(!wasLiked);
+    setLikes(wasLiked ? likes - 1 : likes + 1);
+    
     try {
       // Get CSRF token from cookies
       const cookies = await Cookies.get(API_URL);
       const csrf = cookies.csrftoken?.value;
       const origin = API_URL.replace(/\/api\/?$/, '');
-      // Use vote endpoint
+      
+      // Use vote endpoint - clicking again will toggle the like
       const res = await fetch(`${API_URL}forum/vote/`, {
         method: 'POST',
         headers: {
@@ -112,18 +123,22 @@ const ThreadDetail = () => {
         let json: any = {};
         try { json = await res.json(); } catch { json = {}; }
         if (!res.ok) {
+          // Revert optimistic update on error
+          setIsLiked(wasLiked);
+          setLikes(previousLikes);
           const msg = (json && (json.detail || json.error)) || 'Failed to like thread';
           throw new Error(msg);
         }
-        const updatedLikes = json.like_count ?? likes + 1;
-  setLikes(updatedLikes);
-  // Refresh thread data
-  await fetchThreadDetail();
-  await fetchComments();
-  Toast.show({ type: 'success', text1: 'Liked!', text2: `${updatedLikes} likes` });
+        
+        // Update state based on actual response
+        if (json.like_count !== undefined) setLikes(json.like_count);
+        if (json.user_has_liked !== undefined) setIsLiked(json.user_has_liked);
+        
+        const message = json.user_has_liked ? 'Liked!' : 'Like removed';
+  Toast.show({ type: 'success', text1: message });
     } catch (e) {
       console.error(e);
-      Toast.show({ type: 'error', text1: 'Error', text2: 'Could not like thread' });
+      Toast.show({ type: 'error', text1: 'Error', text2: 'Could not update like' });
     }
   };
   // Submit a new comment
@@ -188,8 +203,19 @@ const ThreadDetail = () => {
       <CustomText style={[styles.body, { color: colors.subText }]}>{thread.body}</CustomText>
       <CustomText style={[styles.author, { color: colors.subText }]}>By {thread.author}</CustomText>
       <View style={styles.likeSection}>
-        <Pressable onPress={likeThread} style={styles.likeButton}>
-          <CustomText style={[styles.likeText, { color: colors.active }]}>Like ({likes})</CustomText>
+        <Pressable 
+          onPress={toggleLike} 
+          style={[
+            styles.likeButton, 
+            { 
+              borderColor: isLiked ? colors.active : colors.border,
+              backgroundColor: isLiked ? `${colors.active}15` : 'transparent'
+            }
+          ]}
+        >
+          <CustomText style={[styles.likeText, { color: isLiked ? colors.active : colors.subText }]}>
+            {isLiked ? '👍' : '🤍'} {likes}
+          </CustomText>
         </Pressable>
       </View>
       <CustomText style={[styles.sectionHeading, { color: colors.text }]}>Comments</CustomText>
