@@ -1,0 +1,319 @@
+.glossary-content {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 16px;
+}
+
+/* Hero Section */
+.glossary-hero {
+  text-align: center;
+  padding: 40px 0;
+  background: linear-gradient(180deg, #500707 0%, #2e0303 100%);
+  border-radius: 12px;
+  color: white;
+  margin-bottom: 32px;
+}
+
+.glossary-hero h1 {
+  font-size: 2.5rem;
+  font-weight: 800;
+  margin: 0 0 8px 0;
+}
+
+.glossary-hero p {
+  font-size: 1.1rem;
+  opacity: 0.9;
+  margin: 0;
+}
+
+/* Controls Section */
+.glossary-controls {
+  margin-bottom: 32px;
+}
+
+.search-section {
+  margin-bottom: 24px;
+}
+
+.glossary-search {
+  width: 100%;
+  padding: 14px 18px;
+  border: 2px solid #e5e7eb;
+  border-radius: 10px;
+  font-size: 1rem;
+  transition: all 0.2s ease;
+  background: white;
+}
+
+.glossary-search:focus {
+  outline: none;
+  border-color: #800000;
+  box-shadow: 0 0 0 3px rgba(128, 0, 0, 0.1);
+}
+
+.glossary-search::placeholder {
+  color: #9ca3af;
+}
+
+/* Category Filters */
+.category-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: center;
+}
+
+.category-btn {
+  background: white;
+  border: 2px solid #e5e7eb;
+  padding: 10px 20px;
+  border-radius: 24px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #6b7280;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.category-btn:hover {
+  border-color: #800000;
+  color: #800000;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.category-btn.active {
+  background: #800000;
+  color: white;
+  border-color: #800000;
+}
+
+.category-count {
+  background: rgba(0, 0, 0, 0.1);
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.category-btn.active .category-count {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* Results Section */
+.glossary-results {
+  margin-bottom: 40px;
+}
+
+.results-count {
+  font-size: 0.95rem;
+  color: #6b7280;
+  margin-bottom: 20px;
+  font-weight: 500;
+  text-align: center;
+}
+
+.terms-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  gap: 24px;
+}
+
+/* Term Cards */
+.term-card {
+  background: white;
+  border: 1px solid rgba(128, 0, 0, 0.18);
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  border-left: 4px solid #800000;
+}
+
+.term-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.12);
+  border-color: #800000;
+}
+
+.term-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 16px;
+  gap: 12px;
+}
+
+.term-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #500707;
+  margin: 0;
+  flex: 1;
+  line-height: 1.3;
+}
+
+.category-badge {
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 6px 12px;
+  border-radius: 16px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.category-badge.exercise {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.category-badge.nutrition {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.category-badge.wellness {
+  background: #fce7f3;
+  color: #9f1239;
+}
+
+.category-badge.training {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.category-badge.anatomy {
+  background: #f3e8ff;
+  color: #6b21a8;
+}
+
+.term-definition {
+  font-size: 0.95rem;
+  line-height: 1.7;
+  color: #374151;
+  margin: 0;
+}
+
+/* No Results */
+.no-results {
+  text-align: center;
+  padding: 60px 20px;
+  background: #f9fafb;
+  border-radius: 12px;
+  border: 2px dashed #d1d5db;
+}
+
+.no-results-icon {
+  font-size: 4rem;
+  margin-bottom: 20px;
+  opacity: 0.5;
+}
+
+.no-results h3 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #374151;
+  margin: 0 0 8px 0;
+}
+
+.no-results p {
+  font-size: 1rem;
+  color: #6b7280;
+  margin: 0;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .glossary-hero h1 {
+    font-size: 2rem;
+  }
+
+  .glossary-hero p {
+    font-size: 1rem;
+  }
+
+  .terms-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .category-filters {
+    justify-content: flex-start;
+  }
+
+  .category-btn {
+    font-size: 0.85rem;
+    padding: 8px 16px;
+  }
+
+  .term-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .category-badge {
+    align-self: flex-start;
+  }
+}
+
+@media (max-width: 480px) {
+  .glossary-content {
+    padding: 0 12px;
+  }
+
+  .glossary-hero {
+    padding: 32px 16px;
+  }
+
+  .glossary-hero h1 {
+    font-size: 1.75rem;
+  }
+
+  .term-card {
+    padding: 20px;
+  }
+
+  .term-title {
+    font-size: 1.1rem;
+  }
+
+  .term-definition {
+    font-size: 0.9rem;
+  }
+
+  .category-filters {
+    gap: 8px;
+  }
+
+  .category-btn {
+    font-size: 0.8rem;
+    padding: 6px 12px;
+  }
+
+  .category-count {
+    padding: 2px 6px;
+    font-size: 0.75rem;
+  }
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.term-card {
+  animation: fadeIn 0.3s ease-out;
+}
+

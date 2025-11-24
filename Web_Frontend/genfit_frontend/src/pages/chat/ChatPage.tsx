@@ -52,6 +52,7 @@ const ChatPage = () => {
   const [messageInput, setMessageInput] = useState('');
   const [connected, setConnected] = useState(false);
   const [showUserList, setShowUserList] = useState(false);
+  const [showConnectionError, setShowConnectionError] = useState(false);
   
   // State for AI chat
   const [selectedAiChat, setSelectedAiChat] = useState<AiTutorChat | null>(null);
@@ -78,6 +79,20 @@ const ChatPage = () => {
   useEffect(() => {
     scrollToBottom();
   }, [messages, aiMessages]);
+
+  // Handle connection error display with delay
+  useEffect(() => {
+    if (!connected && selectedChat) {
+      // Wait 2 seconds before showing the error to allow for reconnection
+      const timer = setTimeout(() => {
+        setShowConnectionError(true);
+      }, 2000);
+      
+      return () => clearTimeout(timer);
+    } else {
+      setShowConnectionError(false);
+    }
+  }, [connected, selectedChat]);
 
   // WebSocket connection effect for regular chat
   useEffect(() => {
@@ -129,7 +144,7 @@ const ChatPage = () => {
       setConnected(false);
       setMessages([]); // Clear messages when switching chats
     };
-  }, [selectedChat, user?.username, refetchChats]);
+  }, [selectedChat, user?.username]);
 
   // Update AI messages when chat history changes
   useEffect(() => {
@@ -686,7 +701,7 @@ const ChatPage = () => {
         </div>
 
         {/* Connection status for regular chat */}
-        {selectedChat && !connected && !showAiChat && (
+        {showConnectionError && !showAiChat && (
           <div className="connection-error">
             Disconnected from chat server. Please refresh or re-select the chat.
           </div>

@@ -544,13 +544,13 @@ export default function ProfilePage() {
                     )}
                     {selectedRel && selectedRel.status === 'PENDING' && isReceiver && (
                       <>
-                        <Button size="sm" className="nav-btn" onClick={() => GFapi.post(`/api/mentor-relationships/${selectedRel.id}/status/`, { status: 'ACCEPTED' }).then(() => { queryClient.invalidateQueries({ queryKey: createQueryKey('/api/mentor-relationships/user/') }); })}>Accept</Button>
+                        <Button size="sm" className="nav-btn mr-2" onClick={() => GFapi.post(`/api/mentor-relationships/${selectedRel.id}/status/`, { status: 'ACCEPTED' }).then(() => { queryClient.invalidateQueries({ queryKey: createQueryKey('/api/mentor-relationships/user/') }); })}>Accept</Button>
                         <Button size="sm" className="nav-btn" onClick={() => GFapi.post(`/api/mentor-relationships/${selectedRel.id}/status/`, { status: 'REJECTED' }).then(() => { queryClient.invalidateQueries({ queryKey: createQueryKey('/api/mentor-relationships/user/') }); })}>Reject</Button>
                       </>
                     )}
                     {(!selectedRel || (selectedRel && ['REJECTED', 'TERMINATED'].includes(selectedRel.status))) && (
                       <>
-                        <Button size="sm" className="nav-btn" onClick={() => requestAsMentor.mutate()} disabled={requestAsMentor.isPending || isLoadingUsers || !otherUserId}>Be Their Mentor</Button>
+                        <Button size="sm" className="nav-btn mr-2" onClick={() => requestAsMentor.mutate()} disabled={requestAsMentor.isPending || isLoadingUsers || !otherUserId}>Be Their Mentor</Button>
                         <Button size="sm" className="nav-btn" onClick={() => requestAsMentee.mutate()} disabled={requestAsMentee.isPending || isLoadingUsers || !otherUserId}>Request Them as Mentor</Button>
                       </>
                     )}
