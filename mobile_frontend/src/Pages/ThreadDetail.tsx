@@ -47,6 +47,7 @@ const ThreadDetail = () => {
   const [thread, setThread] = useState<ThreadDetailData | null>(null);
   const [likes, setLikes] = useState<number>(0);
   const [isLiked, setIsLiked] = useState<boolean>(false);
+  const [voteStatus, setVoteStatus] = useState<string | null>(null);
   const [newComment, setNewComment] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [loading, setLoading] = useState(true);
@@ -56,7 +57,32 @@ const ThreadDetail = () => {
   useEffect(() => {
     fetchThreadDetail();
     fetchComments();
+    fetchVoteStatus();
   }, []);
+
+  const fetchVoteStatus = async () => {
+    try {
+      const res = await fetch(`${API_URL}forum/vote/thread/${threadId}/status/`, {
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          ...getAuthHeader(),
+        },
+        credentials: 'include',
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setVoteStatus(data.vote_type);
+        setIsLiked(data.vote_type === 'UPVOTE');
+      } else {
+        // No vote exists
+        setVoteStatus(null);
+        setIsLiked(false);
+      }
+    } catch (e) {
+      console.error('Failed to load vote status', e);
+    }
+  };
 
   const fetchThreadDetail = async () => {
     try {
@@ -102,54 +128,72 @@ const ThreadDetail = () => {
       console.error('Failed to load comments', e);
     }
   };
-  // Toggle like on thread
+  // Toggle like on thread - matches web implementation
   const toggleLike = async () => {
-    // Optimistic update - update UI immediately
-    const wasLiked = isLiked;
-    const previousLikes = likes;
-    
-    setIsLiked(!wasLiked);
-    setLikes(wasLiked ? likes - 1 : likes + 1);
-    
     try {
       // Get CSRF token from cookies
       const cookies = await Cookies.get(API_URL);
       const csrf = cookies.csrftoken?.value;
       const origin = API_URL.replace(/\/api\/?$/, '');
       
-      // Use vote endpoint - clicking again will toggle the like
-      const res = await fetch(`${API_URL}forum/vote/`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          'Referer': origin,
-          ...(csrf ? { 'X-CSRFToken': csrf } : {}),
-          ...getAuthHeader(),
-        },
-        credentials: 'include',
-        body: JSON.stringify({
-          content_type: 'THREAD',
-          object_id: threadId,
-          vote_type: 'UPVOTE',
-        }),
-      });
-        let json: any = {};
-        try { json = await res.json(); } catch { json = {}; }
+      const hasUpvoted = voteStatus === 'UPVOTE';
+      
+      if (hasUpvoted) {
+        // Remove vote if clicking upvote when already upvoted
+        console.log('Removing upvote for thread:', threadId);
+        const res = await fetch(`${API_URL}forum/vote/thread/${threadId}/`, {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'Referer': origin,
+            ...(csrf ? { 'X-CSRFToken': csrf } : {}),
+            ...getAuthHeader(),
+          },
+          credentials: 'include',
+        });
+        
         if (!res.ok) {
-          // Revert optimistic update on error
-          setIsLiked(wasLiked);
-          setLikes(previousLikes);
-          const msg = (json && (json.detail || json.error)) || 'Failed to like thread';
-          throw new Error(msg);
+          throw new Error(`Failed to remove vote (${res.status})`);
         }
         
-        // Update state based on actual response
-        if (json.like_count !== undefined) setLikes(json.like_count);
-        if (json.user_has_liked !== undefined) setIsLiked(json.user_has_liked);
+        setVoteStatus(null);
+        setIsLiked(false);
+      } else {
+        // Add or change vote to upvote
+        console.log('Adding upvote for thread:', threadId);
+        const res = await fetch(`${API_URL}forum/vote/`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'Referer': origin,
+            ...(csrf ? { 'X-CSRFToken': csrf } : {}),
+            ...getAuthHeader(),
+          },
+          credentials: 'include',
+          body: JSON.stringify({
+            content_type: 'THREAD',
+            object_id: threadId,
+            vote_type: 'UPVOTE',
+          }),
+        });
+        
+        if (!res.ok) {
+          const json = await res.json().catch(() => ({}));
+          throw new Error(json.detail || json.error || `Failed to vote (${res.status})`);
+        }
+        
+        setVoteStatus('UPVOTE');
+        setIsLiked(true);
+      }
+      
+      // Refresh thread data and vote status
+      await fetchThreadDetail();
+      await fetchVoteStatus();
     } catch (e) {
-      console.error(e);
-      Toast.show({ type: 'error', text1: 'Error', text2: 'Could not update like' });
+      console.error('Like toggle error:', e);
+      Toast.show({ type: 'error', text1: 'Error', text2: e instanceof Error ? e.message : 'Could not update like' });
     }
   };
   // Submit a new comment
@@ -245,7 +289,7 @@ const ThreadDetail = () => {
             source={thread.author_profile_photo ? { uri: thread.author_profile_photo } : DEFAULT_PROFILE_PIC} 
             style={styles.profilePhoto}
           />
-          <CustomText style={[styles.metadataText, { color: colors.text }]}>{thread.author}</CustomText>
+          <CustomText style={[styles.metadataText, { color: colors.text }]}>@{thread.author}</CustomText>
         </View>
         <View style={styles.metadataRow}>
           <CustomText style={[styles.metadataIcon, { color: colors.active }]}>📅</CustomText>
@@ -270,7 +314,7 @@ const ThreadDetail = () => {
           ]}
         >
           <CustomText style={[styles.likeText, { color: isLiked ? colors.active : colors.subText }]}>
-            {isLiked ? '👍' : '🤍'} {likes}
+            👍 {likes}
           </CustomText>
         </Pressable>
       </View>
@@ -296,7 +340,7 @@ const ThreadDetail = () => {
               source={comment.author_profile_photo ? { uri: comment.author_profile_photo } : DEFAULT_PROFILE_PIC} 
               style={styles.commentProfilePhoto}
             />
-            <CustomText style={[styles.commentAuthor, { color: colors.text }]}>{comment.author_username}</CustomText>
+            <CustomText style={[styles.commentAuthor, { color: colors.text }]}>@{comment.author_username}</CustomText>
           </View>
           <CustomText style={[styles.commentContent, { color: colors.text }]}>{comment.content}</CustomText>
         </View>
