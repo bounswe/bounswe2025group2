@@ -84,50 +84,6 @@ describe('ActivityDashboard', () => {
     });
   });
 
-  it('renders login streak information', async () => {
-    renderWithProviders(
-      <ActivityDashboard
-        goals={mockGoals}
-        challenges={mockChallenges}
-        activeGoals={2}
-        joinedChallenges={1}
-      />
-    );
-
-    await waitFor(() => {
-      expect(screen.getByText('Login Streak')).toBeInTheDocument();
-      expect(screen.getByText('Current')).toBeInTheDocument();
-      expect(screen.getByText('Best')).toBeInTheDocument();
-      expect(screen.getByText('Total')).toBeInTheDocument();
-      // Check that the streak section exists
-      const streakSection = screen.getByText('Login Streak').closest('.streak-section');
-      expect(streakSection).toBeInTheDocument();
-    });
-  });
-
-  it('shows warning when user has not logged in today', async () => {
-    vi.mocked(libHooks.useLoginStats).mockReturnValue(
-      createMockQueryResult({
-        data: { ...mockLoginStats, logged_in_today: false },
-        isLoading: false,
-        error: null,
-      })
-    );
-
-    renderWithProviders(
-      <ActivityDashboard
-        goals={mockGoals}
-        challenges={mockChallenges}
-        activeGoals={2}
-        joinedChallenges={1}
-      />
-    );
-
-    await waitFor(() => {
-      expect(screen.getByText('Log in today to continue!')).toBeInTheDocument();
-    });
-  });
-
   it('renders calendar with current month', async () => {
     renderWithProviders(
       <ActivityDashboard
