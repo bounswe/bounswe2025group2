@@ -14,6 +14,7 @@ export type RootStackParamList = {
   ChatDetail: { chatId: number };
   Exercises: undefined;
   ExerciseDetail: { exercise: Exercise };
+  AiChatDetail: { chatId: number };
 };
 
 // export type RootTabScreenProps<T extends keyof RootStackParamList> = BottomTabScreenProps<RootStackParamList, T>;

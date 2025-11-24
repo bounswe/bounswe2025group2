@@ -1,8 +1,9 @@
-import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
+import React, { createContext, useContext, useState, ReactNode, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { useAuth } from './AuthContext';
 import Cookies from '@react-native-cookies/cookies';
 import { webSocketService } from '../services/WebSocketService';
+import { API_URL } from '../constants/api';
 
 // Types for our chat system
 export type Message = {
@@ -78,12 +79,12 @@ export const ChatProvider = ({ children }: ChatProviderProps) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isConnected, setIsConnected] = useState<boolean>(false);
 
-  const fetchContacts = async () => {
-    try {
-      const cookies = await Cookies.get('http://164.90.166.81:8000');
+  const fetchContacts = useCallback(async () => {
+    try { 
+      const cookies = await Cookies.get(API_URL);
       const csrfToken = cookies.csrftoken?.value;
       
-      const res = await axios.get('http://164.90.166.81:8000/api/users/', {
+      const res = await axios.get(`${API_URL}users/`, {
         headers: {
           ...getAuthHeader(),
           'Content-Type': 'application/json',
@@ -111,14 +112,14 @@ export const ChatProvider = ({ children }: ChatProviderProps) => {
       console.error('Failed to fetch users:', err);
       setContacts([]);
     }
-  };
+  }, [getAuthHeader]);
 
-  const fetchChats = async () => {
+  const fetchChats = useCallback(async () => {
     try {
-      const cookies = await Cookies.get('http://164.90.166.81:8000');
+      const cookies = await Cookies.get(API_URL);
       const csrfToken = cookies.csrftoken?.value;
       
-      const res = await axios.get('http://164.90.166.81:8000/chat/get-chats/', {
+      const res = await axios.get(`${API_URL}chat/get-chats/`, {
         headers: {
           ...getAuthHeader(),
           'Content-Type': 'application/json',
@@ -131,15 +132,15 @@ export const ChatProvider = ({ children }: ChatProviderProps) => {
       console.error('Failed to fetch chats:', err);
       setChats([]);
     }
-  };
+  }, [getAuthHeader]);
 
-  const createChat = async (userId: number) => {
+  const createChat = useCallback(async (userId: number) => {
     try {
-      const cookies = await Cookies.get('http://164.90.166.81:8000');
+      const cookies = await Cookies.get(API_URL);
       const csrfToken = cookies.csrftoken?.value;
       
       const res = await axios.post(
-        'http://164.90.166.81:8000/chat/create-chat/',
+        `${API_URL}chat/create-chat/`,
         { user_id: userId },
         { 
           headers: {
@@ -156,10 +157,10 @@ export const ChatProvider = ({ children }: ChatProviderProps) => {
       console.error('Failed to create chat:', err);
       return null;
     }
-  };
+  }, [fetchChats, getAuthHeader]);
 
   // WebSocket methods
-  const connectToChat = async (chatId: number) => {
+  const connectToChat = useCallback(async (chatId: number) => {
     setActiveChatId(chatId);
     setMessages([]); // Clear previous messages
     
@@ -189,27 +190,27 @@ export const ChatProvider = ({ children }: ChatProviderProps) => {
     } catch (error) {
       console.error('Failed to connect to chat:', error);
     }
-  };
+  }, []);
 
-  const disconnectFromChat = () => {
+  const disconnectFromChat = useCallback(() => {
     webSocketService.disconnect();
     setActiveChatId(null);
     setMessages([]);
     setIsConnected(false);
-  };
+  }, []);
 
-  const sendMessage = (messageBody: string) => {
+  const sendMessage = useCallback((messageBody: string) => {
     if (messageBody.trim()) {
       webSocketService.sendMessage(messageBody.trim());
     }
-  };
+  }, []);
 
   useEffect(() => {
     if (token) {
       fetchContacts();
       fetchChats();
     }
-  }, [token]);
+  }, [token, fetchContacts, fetchChats]);
 
   return (
     <ChatContext.Provider

@@ -11,8 +11,9 @@ from django.utils.encoding import force_bytes, force_str
 from django.contrib.sites.shortcuts import get_current_site
 from django.middleware.csrf import get_token
 from django.views.decorators.csrf import ensure_csrf_cookie
-from .serializers import UserRegistrationSerializer, UserLoginSerializer, NotificationSerializer, UserSerializer
-from .models import Notification
+from .serializers import UserRegistrationSerializer, UserLoginSerializer, ContactSubmissionSerializer, NotificationSerializer, UserSerializer
+from .models import Notification, ContactSubmission
+from django.contrib import admin
 
 
 User = get_user_model()
@@ -320,4 +321,44 @@ def user_settings(request):
         })
 
 
+@api_view(['POST'])
+def contact_submission(request):
+    if request.method == 'POST':
+        serializer = ContactSubmissionSerializer(data=request.data)
+        
+        if serializer.is_valid():
+            # Save the contact submission to database
+            contact = serializer.save()
+            
+            # Return success response
+            return Response({
+                'status': 'success',
+                'message': 'Thank you for your message! We will get back to you soon.',
+                'submission_id': contact.id
+            }, status=status.HTTP_201_CREATED)
+        else:
+            # Return validation errors
+            return Response({
+                'status': 'error',
+                'message': 'Please correct the errors below.',
+                'errors': serializer.errors
+            }, status=status.HTTP_400_BAD_REQUEST)
 
+@admin.register(ContactSubmission)
+class ContactSubmissionAdmin(admin.ModelAdmin):
+    list_display = ['name', 'email', 'subject', 'submitted_at']
+    list_filter = ['submitted_at']
+    search_fields = ['name', 'email', 'subject', 'message']
+    readonly_fields = ['name', 'email', 'subject', 'message', 'submitted_at']
+    
+    # Optional: Add these for better organization
+    list_per_page = 20
+    date_hierarchy = 'submitted_at'
+    
+    def has_add_permission(self, request):
+        # Prevent admin from adding new submissions manually
+        return False
+    
+    def has_change_permission(self, request, obj=None):
+        # Make submissions read-only
+        return False

@@ -5,6 +5,7 @@ import { useTheme } from '../context/ThemeContext';
 import Cookies from '@react-native-cookies/cookies';
 import { useAuth } from '../context/AuthContext';
 import { useNavigation } from '@react-navigation/native';
+import { API_URL } from '@constants/api';
 
 type ThreadProps = {
   forumName: string;
@@ -34,9 +35,9 @@ const Thread = ({ forumName, content, imageUrl, profilePic, username, threadId, 
     // Fetch user's vote status
     const fetchVoteStatus = async () => {
       try {
-        const cookies = await Cookies.get('http://164.90.166.81:8000');
+        const cookies = await Cookies.get(API_URL);
         const csrfToken = cookies.csrftoken?.value;
-        const res = await fetch(`http://164.90.166.81:8000/api/forum/vote/thread/${threadId}/status/`, {
+        const res = await fetch(`${API_URL}forum/vote/thread/${threadId}/status/`, {
           headers: {
             ...getAuthHeader(),
             'Content-Type': 'application/json',
@@ -61,9 +62,9 @@ const Thread = ({ forumName, content, imageUrl, profilePic, username, threadId, 
     const fetchComments = async () => {
       setCommentsLoading(true);
       try {
-        const cookies = await Cookies.get('http://164.90.166.81:8000');
+        const cookies = await Cookies.get(API_URL);
         const csrfToken = cookies.csrftoken?.value;
-        const res = await fetch(`http://164.90.166.81:8000/api/comments/thread/${threadId}/date/`, {
+        const res = await fetch(`${API_URL}comments/thread/${threadId}/date/`, {
           headers: {
             ...getAuthHeader(),
             'Content-Type': 'application/json',
@@ -89,12 +90,12 @@ const Thread = ({ forumName, content, imageUrl, profilePic, username, threadId, 
   const handleVote = async (type: 'UPVOTE' | 'DOWNVOTE') => {
     if (loadingVote) return;
     setLoadingVote(true);
-    const cookies = await Cookies.get('http://164.90.166.81:8000');
+    const cookies = await Cookies.get(API_URL);
     const csrfToken = cookies.csrftoken?.value;
     try {
       if (vote === type) {
         // Remove vote
-        const res = await fetch(`http://164.90.166.81:8000/api/forum/vote/thread/${threadId}/`, {
+        const res = await fetch(`${API_URL}forum/vote/thread/${threadId}/`, {
           method: 'DELETE',
           headers: {
             ...getAuthHeader(),
@@ -109,7 +110,7 @@ const Thread = ({ forumName, content, imageUrl, profilePic, username, threadId, 
         }
       } else {
         // Upvote or downvote
-        const res = await fetch('http://164.90.166.81:8000/api/forum/vote/', {
+        const res = await fetch(`${API_URL}forum/vote/`, {
           method: 'POST',
           headers: {
             ...getAuthHeader(),
@@ -138,10 +139,10 @@ const Thread = ({ forumName, content, imageUrl, profilePic, username, threadId, 
   const handleComment = async () => {
     if (!commentText.trim()) return;
     setCommentLoading(true);
-    const cookies = await Cookies.get('http://164.90.166.81:8000');
+    const cookies = await Cookies.get(API_URL);
     const csrfToken = cookies.csrftoken?.value;
     try {
-      const res = await fetch(`http://164.90.166.81:8000/api/comments/add/${threadId}/`, {
+      const res = await fetch(`${API_URL}comments/add/${threadId}/`, {
         method: 'POST',
         headers: {
           ...getAuthHeader(),
@@ -158,9 +159,9 @@ const Thread = ({ forumName, content, imageUrl, profilePic, username, threadId, 
         const fetchComments = async () => {
           setCommentsLoading(true);
           try {
-            const cookies = await Cookies.get('http://164.90.166.81:8000');
+            const cookies = await Cookies.get(API_URL);
             const csrfToken = cookies.csrftoken?.value;
-            const res = await fetch(`http://164.90.166.81:8000/api/comments/thread/${threadId}/date/`, {
+            const res = await fetch(`${API_URL}comments/thread/${threadId}/date/`, {
               headers: {
                 ...getAuthHeader(),
                 'Content-Type': 'application/json',
@@ -217,9 +218,9 @@ const Thread = ({ forumName, content, imageUrl, profilePic, username, threadId, 
     });
   };
 
-  const handleUsernamePress = () => {
-    // @ts-ignore - Navigation typing can be complex in React Native
-    navigation.navigate('Profile', { username });
+  const handleUsernamePress = (usernameToNavigate: string) => {
+    // @ts-ignore
+    navigation.navigate('Profile', { username: usernameToNavigate });
   };
 
   return (
@@ -233,11 +234,13 @@ const Thread = ({ forumName, content, imageUrl, profilePic, username, threadId, 
       </View>
 
       <View style={styles.profileSection}>
-        <Image 
-          source={profilePic} 
-          style={[styles.profilePic, { borderColor: colors.border }]} 
-        />
-        <TouchableOpacity onPress={handleUsernamePress} activeOpacity={0.7}>
+        <TouchableOpacity onPress={() => handleUsernamePress(username)} activeOpacity={0.7}>
+          <Image 
+            source={profilePic} 
+            style={[styles.profilePic, { borderColor: colors.border }]} 
+          />
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => handleUsernamePress(username)} activeOpacity={0.7}>
           <CustomText style={[styles.username, { color: colors.subText }]}>
             @{username}
           </CustomText>
@@ -310,7 +313,11 @@ const Thread = ({ forumName, content, imageUrl, profilePic, username, threadId, 
         ) : (
           commentList.map((c, idx) => (
             <View key={c.id || idx} style={{ marginBottom: 4, padding: 6, backgroundColor: isDark ? '#555555' : '#f7f7f7', borderRadius: 6 }}>
-              <CustomText style={{ fontWeight: 'bold', color: colors.mentionText }}>@{c.author_username || c.author || 'user'}</CustomText>
+              <TouchableOpacity onPress={() => handleUsernamePress(c.author_username || c.author || 'user')} activeOpacity={0.7}>
+                <CustomText style={{ fontWeight: 'bold', color: colors.mentionText }}>
+                  @{c.author_username || c.author || 'user'}
+                </CustomText>
+              </TouchableOpacity>
               <CustomText style={{ color: colors.text }}>{c.content}</CustomText>
             </View>
           ))
@@ -433,6 +440,33 @@ const styles = StyleSheet.create({
   commentCount: {
     fontSize: 16,
     fontWeight: '500',
+  },
+  commentsTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginBottom: 4,
+  },
+  commentItem: {
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderTopWidth: 1,
+  },
+  commentHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  commentAuthor: {
+    fontSize: 14,
+    fontWeight: 'bold',
+  },
+  commentTime: {
+    fontSize: 12,
+    color: '#888',
+  },
+  commentContent: {
+    fontSize: 14,
   },
 });
 

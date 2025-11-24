@@ -42,3 +42,14 @@ export function sleep(ms: number): Promise<void> {
 export function getEnvVar(key: string, fallback?: string): string {
   return import.meta.env[key] || fallback || '';
 }
+
+/**
+ * Chat Link Parser Utilities
+ * Export utilities for parsing and rendering challenge links in chat messages
+ */
+export {
+  parseMessageForChallengeLinks,
+  renderMessageWithChallengeLinks,
+  hasChallengeLinks,
+  extractChallengeIds
+} from './chatLinkParser';

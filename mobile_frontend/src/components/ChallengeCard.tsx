@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import Cookies from '@react-native-cookies/cookies';
 import { useAuth } from '../context/AuthContext';
+import { API_URL } from '@constants/api';
 
 type Challenge = {
   id: number;
@@ -38,7 +39,7 @@ const ChallengeCard: React.FC<Props> = ({
   onMembershipChange,
 }) => {
   const { getAuthHeader } = useAuth();
-  const API = baseUrl ?? 'http://164.90.166.81:8000/api';
+  const API = baseUrl ?? `${API_URL}challenges/`;
   const cookieOrigin = API.replace(/\/api\/?$/, '');
 
   const [loading, setLoading] = useState(true);
@@ -193,16 +194,14 @@ const ChallengeCard: React.FC<Props> = ({
         <Text style={styles.metaText}>
           🏆 {challenge.target_value ?? '-'} {challenge.unit ?? ''}
         </Text>
-        {challenge.difficulty_level && (
-          <View style={[
-            styles.difficultyBadge,
-            challenge.difficulty_level === 'Beginner' && styles.difficultyBeginner,
-            challenge.difficulty_level === 'Intermediate' && styles.difficultyIntermediate,
-            challenge.difficulty_level === 'Advanced' && styles.difficultyAdvanced,
-          ]}>
-            <Text style={styles.difficultyText}>{challenge.difficulty_level}</Text>
-          </View>
-        )}
+        <View style={[
+          styles.difficultyBadge,
+          challenge.difficulty_level === 'Beginner' && styles.difficultyBeginner,
+          challenge.difficulty_level === 'Intermediate' && styles.difficultyIntermediate,
+          challenge.difficulty_level === 'Advanced' && styles.difficultyAdvanced,
+        ]}>
+          <Text style={styles.difficultyText}>Difficulty: {challenge.difficulty_level || 'Not set'}</Text>
+        </View>
         <Text style={styles.metaText}>👥 {participants} participants</Text>
       </View>
 

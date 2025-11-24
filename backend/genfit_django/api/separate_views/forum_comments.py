@@ -30,6 +30,8 @@ def add_comment(request, thread_id):
 @permission_classes([IsAuthenticated])
 def delete_comment(request, comment_id):
     comment = get_object_or_404(Comment, pk=comment_id)
+    if comment.author != request.user:
+        return Response({'error': 'You do not have permission to perform this action.'}, status=status.HTTP_403_FORBIDDEN)
 
     # Use serializer's delete logic
     serializer = CommentSerializer()
@@ -43,6 +45,8 @@ def delete_comment(request, comment_id):
 @permission_classes([IsAuthenticated])
 def update_comment(request, comment_id):
     comment = get_object_or_404(Comment, pk=comment_id)
+    if comment.author != request.user:
+        return Response({'error': 'You do not have permission to perform this action.'}, status=status.HTTP_403_FORBIDDEN)
     serializer = CommentSerializer(comment, data=request.data, partial=False)  # Full update
     if serializer.is_valid():
         serializer.save()
@@ -99,6 +103,8 @@ def add_subcomment(request, comment_id):
 @permission_classes([IsAuthenticated])
 def delete_subcomment(request, subcomment_id):
     subcomment = get_object_or_404(Subcomment, pk=subcomment_id)
+    if subcomment.author != request.user:
+        return Response({'error': 'You do not have permission to perform this action.'}, status=status.HTTP_403_FORBIDDEN)
 
     # Use serializer's custom delete method
     serializer = SubcommentSerializer()
@@ -111,6 +117,8 @@ def delete_subcomment(request, subcomment_id):
 @permission_classes([IsAuthenticated])
 def update_subcomment(request, subcomment_id):
     subcomment = get_object_or_404(Subcomment, pk=subcomment_id)
+    if subcomment.author != request.user:
+        return Response({'error': 'You do not have permission to perform this action.'}, status=status.HTTP_403_FORBIDDEN)
     serializer = SubcommentSerializer(subcomment, data=request.data, partial=False)  # Full update
     if serializer.is_valid():
         serializer.save()

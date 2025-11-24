@@ -6,7 +6,7 @@ import { Button } from '../../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import GFapi from '../../lib/api/GFapi';
 import type { Goal } from '../../lib/types/api';
-import { Plus, Edit, Save, Target, TrendingUp, Trash2, Calendar, RefreshCw } from 'lucide-react';
+import { Plus, Edit, Save, Target, TrendingUp, Trash2, Calendar, RefreshCw, UserCheck } from 'lucide-react';
 import GoalFormDialog from './GoalFormDialog';
 import ProgressUpdateDialog from './ProgressUpdateDialog';
 import './goal_page.css';
@@ -261,7 +261,15 @@ const GoalPage = () => {
                                 <Card key={goal.id} className="goal-card">
                                     <CardHeader className="goal-card-header">
                                         <div className="goal-title-section">
-                                            <div className="goal-title">{goal.title}</div>
+                                            <div className="goal-title-wrapper">
+                                                <div className="goal-title">{goal.title}</div>
+                                                {goal.mentor && (
+                                                    <div className="mentor-badge" title="Goal assigned by your mentor">
+                                                        <UserCheck className="w-4 h-4" />
+                                                        <span className="mentor-badge-text">Mentor Goal</span>
+                                                    </div>
+                                                )}
+                                            </div>
                                             <span className={`goal-status-badge ${goal.status?.toLowerCase()}`}>
                                                 {goal.status}
                                             </span>

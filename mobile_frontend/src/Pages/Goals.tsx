@@ -16,6 +16,7 @@ import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import CookieManager from '@react-native-cookies/cookies';
 import { useRoute, useFocusEffect } from '@react-navigation/native';
+import { API_URL } from '../constants/api';
 
 // ──────────────────────────────────────────────────────────────────────────────
 // 📋 TYPE DEFINITIONS
@@ -92,17 +93,16 @@ interface GoalSuggestionResponse {
 // 🌐 API CONFIGURATION
 // ──────────────────────────────────────────────────────────────────────────────
 
-const API_BASE_URL = 'http://164.90.166.81:8000/api';
 // Note: Trailing slash required for Django's APPEND_SLASH=True configuration
-const GOALS_ENDPOINT = `${API_BASE_URL}/goals/`;
-const GOAL_SUGGESTIONS_ENDPOINT = `${API_BASE_URL}/goals/suggestions/`;
+const GOALS_ENDPOINT = `${API_URL}goals/`;
+const GOAL_SUGGESTIONS_ENDPOINT = `${API_URL}/goals/suggestions/`;
 
 /**
  * Fetches CSRF token from cookies for authenticated requests
  */
 const getCSRFToken = async (): Promise<string> => {
   try {
-    const cookies = await CookieManager.get('http://164.90.166.81:8000');
+    const cookies = await CookieManager.get(API_URL);
     return cookies?.csrftoken?.value || '';
   } catch (error) {
     console.error('Failed to get CSRF token:', error);

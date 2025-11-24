@@ -30,8 +30,7 @@ interface Notification {
 // 🌐 API Configuration
 // ──────────────────────────────────────────────────────────────────────────────
 
-const API_BASE_URL = "http://164.90.166.81:8000/api"; // Android emulator localhost
-
+import { API_URL } from '../constants/api';
 /**
  * Retrieves CSRF token stored locally if available.
  */
@@ -68,7 +67,7 @@ const getCsrfToken = async (): Promise<string | null> => {
   // 2) From cookie jar (if @react-native-cookies/cookies is installed)
   try {
     const CookieManager = require('@react-native-cookies/cookies');
-    const cookies = await CookieManager.get('http://164.90.166.81:8000');
+    const cookies = await CookieManager.get(API_URL);
     const cookieVal = cookies?.csrftoken?.value ?? cookies?.csrftoken;
     if (cookieVal && String(cookieVal).length >= MIN_CSRF_LEN) {
       return String(cookieVal);
@@ -88,10 +87,10 @@ const ensureCsrfToken = async (): Promise<string> => {
 
   // Attempt to prime the cookie jar (choose one that sets csrftoken):
   const bootstrapCandidates = [
-    `${API_BASE_URL}/csrf/`,
-    `${API_BASE_URL}/auth/session/`,
-    `${API_BASE_URL}/auth/user/`,
-    `${API_BASE_URL}/`,
+    `${API_URL}csrf/`,
+    `${API_URL}auth/session/`,
+    `${API_URL}auth/user/`,
+    `${API_URL}`,
   ];
 
   for (const url of bootstrapCandidates) {
@@ -137,7 +136,7 @@ const throwDetailed = async (res: Response, method: string, url: string, label: 
  */
 const fetchNotifications = async (): Promise<Notification[]> => {
   const csrfToken = await getCSRFToken();
-  const res = await fetch(`${API_BASE_URL}/notifications/`, {
+  const res = await fetch(`${API_URL}notifications/`, {
     method: 'GET',
     credentials: 'include',
     headers: {
@@ -161,10 +160,10 @@ const fetchNotifications = async (): Promise<Notification[]> => {
  */
 const markAsRead = async (id: number) => {
   const paths = [
-    `${API_BASE_URL}/notifications/${id}/mark-as-read/`,
-    `${API_BASE_URL}/notifications/${id}/mark_as_read/`,
-    `${API_BASE_URL}/notifications/${id}/mark-read/`,
-    `${API_BASE_URL}/notifications/${id}/read/`,
+    `${API_URL}notifications/${id}/mark-as-read/`,
+    `${API_URL}notifications/${id}/mark_as_read/`,
+    `${API_URL}notifications/${id}/mark-read/`,
+    `${API_URL}notifications/${id}/read/`,
   ];
   const methods: Array<'PATCH' | 'POST'> = ['PATCH', 'POST'];
 
@@ -191,16 +190,16 @@ const markAsRead = async (id: number) => {
 const markAllAsRead = async () => {
   const paths = [
     // Common hyphen/underscore variants
-    `${API_BASE_URL}/notifications/mark-all-as-read/`,
-    `${API_BASE_URL}/notifications/mark_all_as_read/`,
-    `${API_BASE_URL}/notifications/mark_all_read/`,
+    `${API_URL}notifications/mark-all-as-read/`,
+    `${API_URL}notifications/mark_all_as_read/`,
+    `${API_URL}notifications/mark_all_read/`,
     // Additional real-world variants observed across codebases
-    `${API_BASE_URL}/notifications/mark-all-read/`,
-    `${API_BASE_URL}/notifications/mark_all_read/`,
-    `${API_BASE_URL}/notifications/mark-read-all/`,
-    `${API_BASE_URL}/notifications/mark_read_all/`,
-    `${API_BASE_URL}/notifications/read-all/`,
-    `${API_BASE_URL}/notifications/read_all/`,
+    `${API_URL}notifications/mark-all-read/`,
+    `${API_URL}notifications/mark_all_read/`,
+    `${API_URL}notifications/mark-read-all/`,
+    `${API_URL}notifications/mark_read_all/`,
+    `${API_URL}notifications/read-all/`,
+    `${API_URL}notifications/read_all/`,
   ];
   const methods: Array<'POST' | 'PATCH'> = ['POST', 'PATCH'];
 
