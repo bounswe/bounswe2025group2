@@ -99,11 +99,11 @@ const TopBar = () => {
         <CustomText style={[styles.appTitle, { color: colors.border }]}>GenFit</CustomText>
       </View>
       <View style={styles.rightSection}>
-        <Pressable onPress={() => navigation.navigate('Exercises')}>
-          <View style={[styles.infoButton, { borderColor: colors.border }]}>
-            <Text style={[styles.infoIcon, { color: colors.border }]}>İ</Text>
-          </View>
-        </Pressable>
+          <Pressable onPress={() => navigation.navigate('Exercises')}>
+            <View style={[styles.infoButton, { borderColor: colors.border }]}>
+              <Text style={[styles.infoIcon, { color: colors.border }]}>𝑖</Text>
+            </View>
+          </Pressable>
         <Pressable onPress={() => navigation.navigate('Notifications')}>
           <NotificationsIcon width={36} height={36} color={colors.border} />
         </Pressable>
