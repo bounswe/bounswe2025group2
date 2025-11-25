@@ -40,10 +40,6 @@ const Settings = () => {
     navigation.push('Profile' as never);
   };
 
-  const handleNotifications = () => {
-    navigation.push('NotificationPreferences' as never);
-  };
-
   const handleLogout = async () => {
     try {
       await fetch(`${API_URL}logout/`, {
@@ -68,11 +64,6 @@ const Settings = () => {
         label: 'Edit Profile',
         subtitle: 'Update your personal details',
         onPress: handleEditProfile,
-      },
-      {
-        label: 'Notification Preferences',
-        subtitle: 'Manage alerts and reminders',
-        onPress: handleNotifications,
       },
       {
         label: 'Log Out',
