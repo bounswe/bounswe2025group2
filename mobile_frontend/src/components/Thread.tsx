@@ -23,75 +23,109 @@ const Thread = ({ forumName, content, imageUrl, profilePic, username, threadId, 
   const { getAuthHeader } = useAuth();
   const navigation = useNavigation();
   const [vote, setVote] = useState<null | 'UPVOTE' | 'DOWNVOTE'>(null);
-  const [likes, setLikes] = useState(likeCount);
+  const [likes, setLikes] = useState(0);
   const [loadingVote, setLoadingVote] = useState(false);
   const [commentText, setCommentText] = useState('');
   const [commentLoading, setCommentLoading] = useState(false);
-  const [comments, setComments] = useState(commentCount);
+  const [comments, setComments] = useState(0);
   const [commentList, setCommentList] = useState<any[]>([]);
   const [commentsLoading, setCommentsLoading] = useState(true);
 
-  useEffect(() => {
+  // Fetch data function
+  const fetchData = async () => {
     // Fetch user's vote status
-    const fetchVoteStatus = async () => {
-      try {
-        const cookies = await Cookies.get(API_URL);
-        const csrfToken = cookies.csrftoken?.value;
-        const res = await fetch(`${API_URL}forum/vote/thread/${threadId}/status/`, {
-          headers: {
-            ...getAuthHeader(),
-            'Content-Type': 'application/json',
-            ...(csrfToken ? { 'X-CSRFToken': csrfToken } : {}),
-          },
-          credentials: 'include',
-        });
-        if (res.ok) {
-          const data = await res.json();
-          setVote(data.vote_type);
-        } else {
-          setVote(null);
-        }
-      } catch (e) {
+    try {
+      const cookies = await Cookies.get(API_URL);
+      const csrfToken = cookies.csrftoken?.value;
+      const res = await fetch(`${API_URL}forum/vote/thread/${threadId}/status/`, {
+        headers: {
+          ...getAuthHeader(),
+          'Content-Type': 'application/json',
+          ...(csrfToken ? { 'X-CSRFToken': csrfToken } : {}),
+        },
+        credentials: 'include',
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setVote(data.vote_type || null);
+      } else {
         setVote(null);
       }
-    };
-    fetchVoteStatus();
-    setLikes(likeCount);
-    setComments(commentCount);
-    // Fetch comments
-    const fetchComments = async () => {
-      setCommentsLoading(true);
-      try {
-        const cookies = await Cookies.get(API_URL);
-        const csrfToken = cookies.csrftoken?.value;
-        const res = await fetch(`${API_URL}comments/thread/${threadId}/date/`, {
-          headers: {
-            ...getAuthHeader(),
-            'Content-Type': 'application/json',
-            ...(csrfToken ? { 'X-CSRFToken': csrfToken } : {}),
-          },
-          credentials: 'include',
-        });
-        if (res.ok) {
-          const data = await res.json();
-          setCommentList(data);
-        } else {
-          setCommentList([]);
-        }
-      } catch (e) {
-        setCommentList([]);
-      } finally {
-        setCommentsLoading(false);
+    } catch (e) {
+      console.error('Failed to fetch vote status', e);
+      setVote(null);
+    }
+
+    // Fetch fresh thread data to get accurate like count
+    try {
+      const cookies = await Cookies.get(API_URL);
+      const csrfToken = cookies.csrftoken?.value;
+      const res = await fetch(`${API_URL}threads/${threadId}/`, {
+        headers: {
+          ...getAuthHeader(),
+          'Content-Type': 'application/json',
+          ...(csrfToken ? { 'X-CSRFToken': csrfToken } : {}),
+        },
+        credentials: 'include',
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setLikes(data.like_count);
+        setComments(data.comment_count);
       }
-    };
-    fetchComments();
-  }, [threadId, likeCount, commentCount]);
+    } catch (e) {
+      console.error('Failed to fetch thread data', e);
+      // Fallback to prop values
+      setLikes(likeCount);
+      setComments(commentCount);
+    }
+    
+    // Fetch comments
+    try {
+      setCommentsLoading(true);
+      const cookies = await Cookies.get(API_URL);
+      const csrfToken = cookies.csrftoken?.value;
+      const res = await fetch(`${API_URL}comments/thread/${threadId}/date/`, {
+        headers: {
+          ...getAuthHeader(),
+          'Content-Type': 'application/json',
+          ...(csrfToken ? { 'X-CSRFToken': csrfToken } : {}),
+        },
+        credentials: 'include',
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setCommentList(data);
+      } else {
+        setCommentList([]);
+      }
+    } catch (e) {
+      setCommentList([]);
+    } finally {
+      setCommentsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, [threadId]);
+
+  // Refetch when screen comes back into focus
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('focus', () => {
+      fetchData();
+    });
+
+    return unsubscribe;
+  }, [navigation, threadId]);
 
   const handleVote = async (type: 'UPVOTE' | 'DOWNVOTE') => {
     if (loadingVote) return;
     setLoadingVote(true);
     const cookies = await Cookies.get(API_URL);
     const csrfToken = cookies.csrftoken?.value;
+    const origin = API_URL.replace(/\/api\/?$/, '');
+    
     try {
       if (vote === type) {
         // Remove vote
@@ -100,13 +134,14 @@ const Thread = ({ forumName, content, imageUrl, profilePic, username, threadId, 
           headers: {
             ...getAuthHeader(),
             'Content-Type': 'application/json',
+            'Referer': origin,
             ...(csrfToken ? { 'X-CSRFToken': csrfToken } : {}),
           },
           credentials: 'include',
         });
         if (res.ok) {
           setVote(null);
-          setLikes(likes + (type === 'UPVOTE' ? -1 : 1));
+          setLikes(prev => prev + (type === 'UPVOTE' ? -1 : 1));
         }
       } else {
         // Upvote or downvote
@@ -115,6 +150,7 @@ const Thread = ({ forumName, content, imageUrl, profilePic, username, threadId, 
           headers: {
             ...getAuthHeader(),
             'Content-Type': 'application/json',
+            'Referer': origin,
             ...(csrfToken ? { 'X-CSRFToken': csrfToken } : {}),
           },
           credentials: 'include',
@@ -125,11 +161,23 @@ const Thread = ({ forumName, content, imageUrl, profilePic, username, threadId, 
           }),
         });
         if (res.ok) {
+          const previousVote = vote;
           setVote(type);
-          setLikes(likes + (type === 'UPVOTE' ? (vote === 'DOWNVOTE' ? 2 : 1) : (vote === 'UPVOTE' ? -2 : -1)));
+          // Calculate like count change based on previous state
+          if (previousVote === null) {
+            // No previous vote: +1 for upvote, -1 for downvote
+            setLikes(prev => prev + (type === 'UPVOTE' ? 1 : -1));
+          } else if (previousVote === 'UPVOTE' && type === 'DOWNVOTE') {
+            // Changed from upvote to downvote: -2
+            setLikes(prev => prev - 2);
+          } else if (previousVote === 'DOWNVOTE' && type === 'UPVOTE') {
+            // Changed from downvote to upvote: +2
+            setLikes(prev => prev + 2);
+          }
         }
       }
     } catch (e) {
+      console.error('Vote error:', e);
       Alert.alert('Error', 'Failed to vote.');
     } finally {
       setLoadingVote(false);
