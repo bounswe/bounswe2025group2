@@ -167,9 +167,20 @@ const ChatDetail = ({ route, navigation }: any) => {
             ← Back
           </CustomText>
         </TouchableOpacity>
-        <CustomText style={[styles.headerTitle, { color: colors.text }]}>
-          {otherUserName}
-        </CustomText>
+        <TouchableOpacity
+          style={styles.headerTitleContainer}
+          onPress={() => {
+            if (currentChat?.other_user?.username) {
+              navigation.navigate('Profile', { 
+                username: currentChat.other_user.username 
+              });
+            }
+          }}
+        >
+          <CustomText style={[styles.headerTitle, { color: colors.text }]}>
+            {otherUserName}
+          </CustomText>
+        </TouchableOpacity>
       </View>
 
       {/* Messages */}
@@ -262,6 +273,9 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 18,
     fontWeight: 'bold',
+  },
+  headerTitleContainer: {
+    flex: 1,
   },
   chatContainer: {
     flex: 1,
