@@ -1,12 +1,21 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Modal, TextInput, Pressable } from 'react-native';
-import { useTheme } from '../context/ThemeContext';
+import { View, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { 
+  ActivityIndicator, 
+  Button, 
+  Card, 
+  Text, 
+  useTheme,
+  Portal,
+  Dialog,
+  TextInput,
+  FAB,
+  Chip,
+  Snackbar,
+} from 'react-native-paper';
 import { useRoute, useNavigation } from '@react-navigation/native';
-import { RootStackParamList } from '../types/navigation';
 import { useAuth } from '../context/AuthContext';
-import CustomText from '@components/CustomText';
 import { API_URL } from '../constants/api';
-import Toast from 'react-native-toast-message';
 import Cookies from '@react-native-cookies/cookies';
 
 type Thread = {
@@ -18,7 +27,7 @@ type Thread = {
 };
 
 const ForumDetail = () => {
-  const { colors } = useTheme();
+  const theme = useTheme();
   const route = useRoute();
   const navigation = useNavigation();
   const { getAuthHeader } = useAuth();
@@ -33,6 +42,15 @@ const ForumDetail = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [titleError, setTitleError] = useState('');
   const [contentError, setContentError] = useState('');
+  const [snackbarVisible, setSnackbarVisible] = useState(false);
+  const [snackbarMessage, setSnackbarMessage] = useState('');
+  const [snackbarType, setSnackbarType] = useState<'success' | 'error'>('success');
+
+  const showSnackbar = (message: string, type: 'success' | 'error' = 'success') => {
+    setSnackbarMessage(message);
+    setSnackbarType(type);
+    setSnackbarVisible(true);
+  };
 
   useEffect(() => {
     fetchThreads();
@@ -142,11 +160,7 @@ const ForumDetail = () => {
       const responseData = await res.json();
       console.log('Thread created successfully:', responseData);
 
-      Toast.show({
-        type: 'success',
-        text1: 'Thread Created',
-        text2: 'Your thread has been posted successfully',
-      });
+      showSnackbar('Thread created successfully!', 'success');
 
       setIsModalVisible(false);
       setNewThreadTitle('');
@@ -156,11 +170,7 @@ const ForumDetail = () => {
       await fetchThreads();
     } catch (err) {
       console.error('Create thread error:', err);
-      Toast.show({
-        type: 'error',
-        text1: 'Error',
-        text2: err instanceof Error ? err.message : 'Failed to create thread',
-      });
+      showSnackbar(err instanceof Error ? err.message : 'Failed to create thread', 'error');
     } finally {
       setIsSubmitting(false);
     }
@@ -178,315 +188,178 @@ const ForumDetail = () => {
 
   if (isLoading) {
     return (
-      <View style={[styles.container, styles.center, { backgroundColor: colors.background }]}> 
-        <ActivityIndicator size="large" color={colors.active} />
+      <View style={[styles.container, styles.center, { backgroundColor: theme.colors.background }]}> 
+        <ActivityIndicator animating={true} size="large" />
       </View>
     );
   }
 
   if (error) {
     return (
-      <View style={[styles.container, styles.center, { backgroundColor: colors.background }]}> 
-        <CustomText style={[styles.error, { color: colors.text }]}>{error}</CustomText>
-        <TouchableOpacity onPress={fetchThreads} style={[styles.retryButton, { backgroundColor: colors.active }]}> 
-          <CustomText style={[styles.retryText, { color: colors.background }]}>Retry</CustomText>
-        </TouchableOpacity>
+      <View style={[styles.container, styles.center, { backgroundColor: theme.colors.background }]}> 
+        <Text variant="bodyLarge" style={styles.errorText}>{error}</Text>
+        <Button mode="contained" onPress={fetchThreads} style={styles.retryButton}>
+          Retry
+        </Button>
       </View>
     );
   }
 
   return (
-    <View style={{ flex: 1 }}>
-      <ScrollView style={[styles.container, { backgroundColor: colors.background }]}> 
-        <CustomText style={[styles.heading, { color: colors.text }]}>Threads</CustomText>
+    <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
+      <ScrollView style={styles.container}> 
+        <Text variant="headlineMedium" style={styles.heading}>Threads</Text>
         {threads.map(thread => (
-          <TouchableOpacity
+          <Card
             key={thread.id}
-            style={[styles.threadCard, { borderColor: colors.border }]}
+            mode="elevated"
+            style={styles.threadCard}
             onPress={() => navigation.navigate('ThreadDetail', { threadId: thread.id })}
           >
-            <CustomText style={[styles.threadTitle, { color: colors.text }]}>{thread.title}</CustomText>
-            <CustomText style={[styles.threadMeta, { color: colors.subText }]}>By {thread.author} • {thread.comment_count} comments • {new Date(thread.last_activity).toLocaleDateString()}</CustomText>
-          </TouchableOpacity>
+            <Card.Content>
+              <Text variant="titleMedium" style={styles.threadTitle}>{thread.title}</Text>
+              <View style={styles.threadMetaContainer}>
+                <Text variant="bodySmall">By </Text>
+                <TouchableOpacity
+                  onPress={(e) => {
+                    e.stopPropagation();
+                    navigation.navigate('Profile', { username: thread.author });
+                  }}
+                >
+                  <Text variant="bodySmall" style={[styles.threadAuthor, { color: theme.colors.primary }]}
+                    >
+                    {thread.author}
+                  </Text>
+                </TouchableOpacity>
+                <Text variant="bodySmall"> • {thread.comment_count} comments • {new Date(thread.last_activity).toLocaleDateString()}</Text>
+              </View>
+            </Card.Content>
+          </Card>
         ))}
         {threads.length === 0 && (
           <View style={styles.center}>
-            <CustomText style={{ color: colors.text, marginBottom: 16 }}>No threads found.</CustomText>
-            <TouchableOpacity 
-              style={[styles.createButton, { backgroundColor: colors.active }]}
+            <Text variant="bodyLarge" style={styles.emptyText}>No threads found.</Text>
+            <Button 
+              mode="contained"
               onPress={() => setIsModalVisible(true)}
+              style={styles.createButton}
             >
-              <CustomText style={{ color: colors.background, fontWeight: '600' }}>Create First Thread</CustomText>
-            </TouchableOpacity>
+              Create First Thread
+            </Button>
           </View>
         )}
       </ScrollView>
 
       {/* Floating Action Button */}
       {threads.length > 0 && (
-        <TouchableOpacity
-          style={[styles.fab, { backgroundColor: colors.active }]}
+        <FAB
+          icon="plus"
+          style={styles.fab}
           onPress={() => setIsModalVisible(true)}
-        >
-          <CustomText style={[styles.fabText, { color: colors.background }]}>+</CustomText>
-        </TouchableOpacity>
+        />
       )}
 
-      {/* Create Thread Modal */}
-      <Modal
-        visible={isModalVisible}
-        animationType="slide"
-        transparent={true}
-        onRequestClose={closeModal}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={[styles.modalContainer, { backgroundColor: colors.background }]}>
-            {/* Header with icon and close button */}
-            <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
-              <View style={styles.modalTitleRow}>
-                <CustomText style={[styles.modalTitle, { color: colors.text }]}>Create New Thread</CustomText>
-              </View>
-              <TouchableOpacity onPress={closeModal} disabled={isSubmitting} style={styles.closeButtonContainer}>
-                <CustomText style={[styles.closeButton, { color: colors.text }]}>✕</CustomText>
-              </TouchableOpacity>
-            </View>
-
-            <View style={styles.modalContent}>
-              {/* Title Field */}
-              <View style={styles.formGroup}>
-                <CustomText style={[styles.label, { color: colors.text }]}>THREAD TITLE</CustomText>
-                <TextInput
-                  style={[
-                    styles.input,
-                    { 
-                      borderColor: titleError ? '#ff4444' : colors.border,
-                      color: colors.text,
-                      backgroundColor: colors.background,
-                    }
-                  ]}
-                  placeholder="Enter a descriptive title for your thread..."
-                  placeholderTextColor={colors.subText}
-                  value={newThreadTitle}
-                  onChangeText={setNewThreadTitle}
-                  maxLength={200}
-                  editable={!isSubmitting}
-                />
-                {titleError ? (
-                  <CustomText style={styles.errorText}>{titleError}</CustomText>
-                ) : null}
-                <CustomText style={[styles.charCount, { color: colors.subText }]}>
-                  {newThreadTitle.length}/200 characters
-                </CustomText>
-              </View>
-
-              {/* Content Field */}
-              <View style={styles.formGroup}>
-                <CustomText style={[styles.label, { color: colors.text }]}>THREAD CONTENT</CustomText>
-                <TextInput
-                  style={[
-                    styles.textarea,
-                    { 
-                      borderColor: contentError ? '#ff4444' : colors.border,
-                      color: colors.text,
-                      backgroundColor: colors.background,
-                    }
-                  ]}
-                  placeholder="Share your thoughts, ask questions, or start a discussion..."
-                  placeholderTextColor={colors.subText}
-                  value={newThreadContent}
-                  onChangeText={setNewThreadContent}
-                  maxLength={5000}
-                  multiline
-                  numberOfLines={6}
-                  textAlignVertical="top"
-                  editable={!isSubmitting}
-                />
-                {contentError ? (
-                  <CustomText style={styles.errorText}>{contentError}</CustomText>
-                ) : null}
-                <CustomText style={[styles.charCount, { color: colors.subText }]}>
-                  {newThreadContent.length}/5000 characters
-                </CustomText>
-              </View>
-            </View>
-
-            {/* Actions */}
-            <View style={[styles.modalActions, { borderTopColor: colors.border }]}>
-              <TouchableOpacity
-                style={[styles.cancelButton, { borderColor: colors.border, backgroundColor: colors.navBar }]}
-                onPress={closeModal}
+      {/* Create Thread Dialog */}
+      <Portal>
+        <Dialog visible={isModalVisible} onDismiss={closeModal}>
+          <Dialog.Title>Create New Thread</Dialog.Title>
+          <Dialog.ScrollArea>
+            <ScrollView contentContainerStyle={styles.dialogContent}>
+              <TextInput
+                label="Thread Title"
+                value={newThreadTitle}
+                onChangeText={setNewThreadTitle}
+                mode="outlined"
+                error={!!titleError}
+                maxLength={200}
                 disabled={isSubmitting}
-              >
-                <CustomText style={[styles.cancelButtonText, { color: colors.text }]}>Cancel</CustomText>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[
-                  styles.submitButton,
-                  { 
-                    backgroundColor: colors.active,
-                    opacity: (isSubmitting || !newThreadTitle.trim() || !newThreadContent.trim()) ? 0.5 : 1
-                  }
-                ]}
-                onPress={handleCreateThread}
-                disabled={isSubmitting || !newThreadTitle.trim() || !newThreadContent.trim()}
-              >
-                {isSubmitting ? (
-                  <View style={styles.submitContent}>
-                    <ActivityIndicator size="small" color="#FFFFFF" />
-                    <CustomText style={[styles.submitButtonText, { color: '#FFFFFF' }]}>Creating...</CustomText>
-                  </View>
-                ) : (
-                  <View style={styles.submitContent}>
-                    <CustomText style={[styles.submitButtonText, { color: '#FFFFFF' }]}>Create Thread</CustomText>
-                  </View>
-                )}
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
+                style={styles.input}
+              />
+              {titleError ? (
+                <Text variant="bodySmall" style={styles.errorTextSmall}>{titleError}</Text>
+              ) : null}
+              <Text variant="bodySmall" style={styles.charCount}>
+                {newThreadTitle.length}/200 characters
+              </Text>
+
+              <TextInput
+                label="Thread Content"
+                value={newThreadContent}
+                onChangeText={setNewThreadContent}
+                mode="outlined"
+                error={!!contentError}
+                maxLength={5000}
+                multiline
+                numberOfLines={6}
+                disabled={isSubmitting}
+                style={styles.textarea}
+              />
+              {contentError ? (
+                <Text variant="bodySmall" style={styles.errorTextSmall}>{contentError}</Text>
+              ) : null}
+              <Text variant="bodySmall" style={styles.charCount}>
+                {newThreadContent.length}/5000 characters
+              </Text>
+            </ScrollView>
+          </Dialog.ScrollArea>
+          <Dialog.Actions>
+            <Button onPress={closeModal} disabled={isSubmitting}>Cancel</Button>
+            <Button 
+              mode="contained"
+              onPress={handleCreateThread}
+              disabled={isSubmitting || !newThreadTitle.trim() || !newThreadContent.trim()}
+              loading={isSubmitting}
+            >
+              Create
+            </Button>
+          </Dialog.Actions>
+        </Dialog>
+        
+        <Snackbar
+          visible={snackbarVisible}
+          onDismiss={() => setSnackbarVisible(false)}
+          duration={3000}
+          action={{
+            label: 'OK',
+            onPress: () => setSnackbarVisible(false),
+          }}
+          style={snackbarType === 'error' ? { backgroundColor: theme.colors.error } : undefined}
+        >
+          {snackbarMessage}
+        </Snackbar>
+      </Portal>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  center: { justifyContent: 'center', alignItems: 'center', flex: 1 },
-  heading: { fontSize: 24, fontWeight: 'bold', margin: 16 },
-  threadCard: { padding: 16, borderWidth: 1, borderRadius: 10, marginHorizontal: 16, marginBottom: 12 },
-  threadTitle: { fontSize: 18, fontWeight: '600', marginBottom: 4 },
-  threadMeta: { fontSize: 12 },
-  error: { fontSize: 16, marginBottom: 12 },
-  retryButton: { paddingHorizontal: 24, paddingVertical: 12, borderRadius: 8 },
-  retryText: { fontSize: 16, fontWeight: '600' },
-  createButton: { paddingHorizontal: 24, paddingVertical: 12, borderRadius: 8, marginTop: 8 },
+  center: { justifyContent: 'center', alignItems: 'center', flex: 1, padding: 24 },
+  heading: { fontWeight: 'bold', margin: 16 },
+  threadCard: { marginHorizontal: 16, marginBottom: 12 },
+  threadTitle: { fontWeight: '600', marginBottom: 8 },
+  threadMetaContainer: { 
+    flexDirection: 'row', 
+    alignItems: 'center',
+    flexWrap: 'wrap',
+  },
+  threadAuthor: { 
+    fontWeight: '600',
+  },
+  errorText: { marginBottom: 16, textAlign: 'center' },
+  emptyText: { marginBottom: 16, textAlign: 'center' },
+  retryButton: { marginTop: 8 },
+  createButton: { marginTop: 8 },
   fab: {
     position: 'absolute',
-    right: 20,
-    bottom: 20,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    justifyContent: 'center',
-    alignItems: 'center',
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
+    right: 16,
+    bottom: 16,
   },
-  fabText: { fontSize: 32, fontWeight: '300', marginTop: -2 },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  modalContainer: {
-    width: '90%',
-    maxHeight: '85%',
-    borderRadius: 16,
-    padding: 0,
-    elevation: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.3,
-    shadowRadius: 16,
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 18,
-    borderBottomWidth: 1,
-  },
-  modalTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  modalIcon: {
-    fontSize: 24,
-  },
-  modalTitle: { fontSize: 22, fontWeight: 'bold' },
-  closeButtonContainer: {
-    padding: 4,
-  },
-  closeButton: { fontSize: 28, fontWeight: 'bold' },
-  modalContent: { paddingHorizontal: 20, paddingVertical: 20 },
-  formGroup: { marginBottom: 24 },
-  labelRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginBottom: 10,
-  },
-  labelIcon: {
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-  label: { fontSize: 13, fontWeight: '700', letterSpacing: 0.5 },
-  input: {
-    borderWidth: 2,
-    borderRadius: 10,
-    padding: 14,
-    fontSize: 16,
-    elevation: 1,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-  },
-  textarea: {
-    borderWidth: 2,
-    borderRadius: 10,
-    padding: 14,
-    fontSize: 16,
-    minHeight: 140,
-    elevation: 1,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-  },
-  errorText: { color: '#ff4444', fontSize: 12, marginTop: 4 },
-  charCount: { fontSize: 12, marginTop: 4, textAlign: 'right' },
-  modalActions: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 20,
-    borderTopWidth: 1,
-    gap: 12,
-  },
-  cancelButton: {
-    flex: 1,
-    borderWidth: 1,
-    borderRadius: 10,
-    paddingVertical: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  cancelButtonText: { fontSize: 16, fontWeight: '600' },
-  submitButton: {
-    flex: 1,
-    borderRadius: 10,
-    paddingVertical: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-  },
-  submitContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  submitButtonText: { fontSize: 16, fontWeight: '700' },
+  dialogContent: { paddingHorizontal: 24, paddingVertical: 8 },
+  input: { marginBottom: 4 },
+  textarea: { marginBottom: 4, minHeight: 120 },
+  errorTextSmall: { color: '#ff4444', marginBottom: 4 },
+  charCount: { marginBottom: 16, opacity: 0.6, textAlign: 'right' },
 });
 
 export default ForumDetail;

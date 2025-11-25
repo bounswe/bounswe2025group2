@@ -1,9 +1,20 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, ScrollView, ActivityIndicator, Pressable, TextInput, Image } from 'react-native';
-import { useTheme } from '../context/ThemeContext';
-import { useRoute } from '@react-navigation/native';
+import { View, StyleSheet, ScrollView, TouchableOpacity, Image } from 'react-native';
+import { 
+  ActivityIndicator, 
+  Button, 
+  Card, 
+  Text, 
+  TextInput,
+  Chip,
+  Avatar,
+  IconButton,
+  useTheme,
+  Surface,
+  FAB,
+} from 'react-native-paper';
+import { useRoute, useNavigation } from '@react-navigation/native';
 import { useAuth } from '../context/AuthContext';
-import CustomText from '@components/CustomText';
 import Toast from 'react-native-toast-message';
 import Cookies from '@react-native-cookies/cookies';
 import { API_URL } from '@constants/api';
@@ -40,8 +51,9 @@ type ThreadDetailData = {
 };
 
 const ThreadDetail = () => {
-  const { colors } = useTheme();
+  const theme = useTheme();
   const route = useRoute();
+  const navigation = useNavigation();
   const { threadId } = route.params as ThreadParam;
   const { getAuthHeader } = useAuth();
   const [thread, setThread] = useState<ThreadDetailData | null>(null);
@@ -59,6 +71,16 @@ const ThreadDetail = () => {
     fetchComments();
     fetchVoteStatus();
   }, []);
+
+  // Refetch data when screen comes into focus
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('focus', () => {
+      fetchThreadDetail();
+      fetchVoteStatus();
+    });
+
+    return unsubscribe;
+  }, [navigation]);
 
   const fetchVoteStatus = async () => {
     try {
@@ -238,16 +260,16 @@ const ThreadDetail = () => {
 
   if (loading) {
     return (
-      <View style={[styles.center, { flex: 1, backgroundColor: colors.background }]}> 
-        <ActivityIndicator size="large" color={colors.active} />
+      <View style={[styles.center, { flex: 1, backgroundColor: theme.colors.background }]}> 
+        <ActivityIndicator animating={true} size="large" />
       </View>
     );
   }
 
   if (error || !thread) {
     return (
-      <View style={[styles.center, { flex: 1, backgroundColor: colors.background }]}> 
-        <CustomText style={{ color: colors.text }}>{error || 'Thread not found.'}</CustomText>
+      <View style={[styles.center, { flex: 1, backgroundColor: theme.colors.background }]}> 
+        <Text variant="bodyLarge">{error || 'Thread not found.'}</Text>
       </View>
     );
   }
@@ -264,87 +286,126 @@ const ThreadDetail = () => {
   };
 
   return (
-    <ScrollView style={[styles.container, { backgroundColor: colors.background }]}> 
-      {/* Title with badges */}
+    <ScrollView style={[styles.container, { backgroundColor: theme.colors.background }]}> 
+      {/* Title Section */}
       <View style={styles.titleSection}>
-        <CustomText style={[styles.title, { color: colors.text }]}>{thread.title}</CustomText>
+        <Text variant="headlineMedium" style={styles.title}>{thread.title}</Text>
         <View style={styles.badgesContainer}>
           {thread.is_pinned && (
-            <View style={[styles.badge, styles.pinnedBadge]}>
-              <CustomText style={styles.badgeText}>📌 PINNED</CustomText>
-            </View>
+            <Chip icon="pin" compact mode="flat">PINNED</Chip>
           )}
           {thread.is_locked && (
-            <View style={[styles.badge, styles.lockedBadge]}>
-              <CustomText style={styles.badgeText}>🔒 LOCKED</CustomText>
-            </View>
+            <Chip icon="lock" compact mode="flat">LOCKED</Chip>
           )}
         </View>
       </View>
       
-      {/* Thread metadata card */}
-      <View style={[styles.metadataCard, { borderColor: colors.border }]}>
-        <View style={styles.metadataRow}>
-          <Image 
-            source={thread.author_profile_photo ? { uri: thread.author_profile_photo } : DEFAULT_PROFILE_PIC} 
-            style={styles.profilePhoto}
-          />
-          <CustomText style={[styles.metadataText, { color: colors.text }]}>@{thread.author}</CustomText>
-        </View>
-        <View style={styles.metadataRow}>
-          <CustomText style={[styles.metadataIcon, { color: colors.active }]}>📅</CustomText>
-          <CustomText style={[styles.metadataText, { color: colors.text }]}>{formatDate(thread.created_at)}</CustomText>
-        </View>
-        <View style={styles.metadataRow}>
-          <CustomText style={[styles.metadataIcon, { color: colors.active }]}>💬</CustomText>
-          <CustomText style={[styles.metadataText, { color: colors.text }]}>{thread.comment_count} comment{thread.comment_count !== 1 ? 's' : ''}</CustomText>
-        </View>
-      </View>
-
-      <CustomText style={[styles.body, { color: colors.text }]}>{thread.content}</CustomText>
-      <View style={styles.likeSection}>
-        <Pressable 
-          onPress={toggleLike} 
-          style={[
-            styles.likeButton, 
-            { 
-              borderColor: isLiked ? colors.active : colors.border,
-              backgroundColor: isLiked ? `${colors.active}15` : 'transparent'
-            }
-          ]}
-        >
-          <CustomText style={[styles.likeText, { color: isLiked ? colors.active : colors.subText }]}>
-            👍 {likes}
-          </CustomText>
-        </Pressable>
-      </View>
-      <CustomText style={[styles.sectionHeading, { color: colors.text }]}>Comments</CustomText>
-      <View style={styles.commentInputSection}>
-        <TextInput
-          style={[styles.commentInput, { borderColor: colors.border, color: colors.text }]}
-          placeholder="Write a comment..."
-          placeholderTextColor={colors.subText}
-          value={newComment}
-          onChangeText={setNewComment}
-          multiline
-        />
-  <Pressable onPress={submitComment} style={[styles.commentButton, { backgroundColor: colors.active }]} 
-       disabled={isSubmitting || !newComment.trim()}>
-          <CustomText style={[styles.commentButtonText, { color: colors.background }]}>Post</CustomText>
-        </Pressable>
-      </View>
-      {comments.map(comment => (
-        <View key={comment.id} style={[styles.commentCard, { borderColor: colors.border }]}> 
-          <View style={styles.commentHeader}>
-            <Image 
-              source={comment.author_profile_photo ? { uri: comment.author_profile_photo } : DEFAULT_PROFILE_PIC} 
-              style={styles.commentProfilePhoto}
+      {/* Thread Content Card */}
+      <Card mode="elevated" style={styles.contentCard}>
+        <Card.Content>
+          {/* Author Info */}
+          <TouchableOpacity 
+            style={styles.authorSection}
+            onPress={() => navigation.navigate('Profile', { username: thread.author })}
+            activeOpacity={0.6}
+          >
+            <Avatar.Image 
+              size={48}
+              source={thread.author_profile_photo ? { uri: thread.author_profile_photo } : DEFAULT_PROFILE_PIC} 
             />
-            <CustomText style={[styles.commentAuthor, { color: colors.text }]}>@{comment.author_username}</CustomText>
+            <View style={styles.authorInfo}>
+              <Text variant="titleMedium" style={styles.authorName}>
+                @{thread.author}
+              </Text>
+              <View style={styles.metaInfo}>
+                <Text variant="bodySmall" style={styles.metaText}>
+                  {formatDate(thread.created_at)}
+                </Text>
+                <Text variant="bodySmall" style={styles.metaDot}>•</Text>
+                <Text variant="bodySmall" style={styles.metaText}>
+                  {thread.comment_count} {thread.comment_count === 1 ? 'comment' : 'comments'}
+                </Text>
+              </View>
+            </View>
+          </TouchableOpacity>
+
+          {/* Thread Content */}
+          <Text variant="bodyLarge" style={styles.threadContent}>{thread.content}</Text>
+          
+          {/* Like Button */}
+          <View style={styles.actionSection}>
+            <Button
+              mode={isLiked ? "contained" : "outlined"}
+              icon="thumb-up"
+              onPress={toggleLike}
+              compact
+            >
+              {likes} {likes === 1 ? 'Like' : 'Likes'}
+            </Button>
           </View>
-          <CustomText style={[styles.commentContent, { color: colors.text }]}>{comment.content}</CustomText>
+        </Card.Content>
+      </Card>
+
+      {/* Comments Section */}
+      <View style={styles.commentsSection}>
+        <Text variant="titleLarge" style={styles.sectionHeading}>Comments</Text>
+        
+        {/* Comment Input */}
+        <View style={styles.commentInputSection}>
+          <TextInput
+            mode="outlined"
+            placeholder="Write a comment..."
+            value={newComment}
+            onChangeText={setNewComment}
+            multiline
+            maxLength={1000}
+            disabled={isSubmitting}
+            style={styles.commentInput}
+            contentStyle={styles.commentInputContent}
+            outlineStyle={styles.commentInputOutline}
+            right={
+              <TextInput.Icon 
+                icon="send" 
+                onPress={submitComment}
+                disabled={isSubmitting || !newComment.trim()}
+                loading={isSubmitting}
+              />
+            }
+          />
+          {newComment.length > 0 && (
+            <Text variant="labelSmall" style={styles.charCountSmall}>
+              {newComment.length}/1000
+            </Text>
+          )}
         </View>
-      ))}
+
+        {/* Comments List */}
+        {comments.map(comment => (
+          <Card key={comment.id} mode="outlined" style={styles.commentCard}>
+            <Card.Content>
+              <TouchableOpacity 
+                style={styles.commentAuthorSection}
+                onPress={() => navigation.navigate('Profile', { username: comment.author_username })}
+                activeOpacity={0.6}
+              >
+                <Avatar.Image 
+                  size={32}
+                  source={comment.author_profile_photo ? { uri: comment.author_profile_photo } : DEFAULT_PROFILE_PIC} 
+                />
+                <View style={styles.commentAuthorInfo}>
+                  <Text variant="labelLarge" style={[styles.commentAuthorName, { color: theme.colors.primary }]}>
+                    @{comment.author_username}
+                  </Text>
+                  <Text variant="bodySmall" style={styles.commentTime}>
+                    {formatDate(comment.created_at)}
+                  </Text>
+                </View>
+              </TouchableOpacity>
+              <Text variant="bodyMedium" style={styles.commentText}>{comment.content}</Text>
+            </Card.Content>
+          </Card>
+        ))}
+      </View>
     </ScrollView>
   );
 };
@@ -352,101 +413,87 @@ const ThreadDetail = () => {
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 16 },
   center: { justifyContent: 'center', alignItems: 'center' },
-  titleSection: {
-    marginBottom: 12,
-  },
-  title: { fontSize: 24, fontWeight: 'bold', marginBottom: 8 },
-  badgesContainer: {
-    flexDirection: 'row',
-    gap: 8,
-    flexWrap: 'wrap',
-  },
-  badge: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  pinnedBadge: {
-    backgroundColor: '#FFD700',
-  },
-  lockedBadge: {
-    backgroundColor: '#FF6B6B',
-  },
-  badgeText: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#000',
-  },
-  metadataCard: {
-    borderWidth: 1,
-    borderRadius: 10,
-    padding: 12,
+  titleSection: { marginBottom: 16 },
+  title: { fontWeight: 'bold', marginBottom: 8 },
+  badgesContainer: { flexDirection: 'row', gap: 8, flexWrap: 'wrap' },
+  contentCard: { marginBottom: 24 },
+  authorSection: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
     marginBottom: 16,
-    gap: 8,
+    gap: 12,
   },
-  metadataRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  profilePhoto: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-  },
-  profilePhotoPlaceholder: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  placeholderText: {
-    fontSize: 16,
-  },
-  metadataIcon: {
-    fontSize: 16,
-  },
-  metadataText: {
-    fontSize: 14,
+  authorInfo: { 
     flex: 1,
+    gap: 4,
   },
-  body: { fontSize: 16, marginBottom: 16, lineHeight: 24 },
-  sectionHeading: { fontSize: 20, fontWeight: '600', marginVertical: 12 },
-  commentCard: { borderWidth: 1, borderRadius: 8, padding: 12, marginBottom: 8, backgroundColor: 'transparent' },
-  commentHeader: {
+  authorName: { 
+    fontWeight: '600',
+  },
+  metaInfo: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    marginBottom: 6,
   },
-  commentProfilePhoto: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+  metaText: {
+    opacity: 0.7,
   },
-  commentProfilePhotoPlaceholder: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    justifyContent: 'center',
-    alignItems: 'center',
+  metaDot: {
+    opacity: 0.5,
   },
-  commentPlaceholderText: {
-    fontSize: 12,
+  threadContent: { 
+    marginBottom: 16, 
+    lineHeight: 24,
   },
-  commentIcon: {
-    fontSize: 14,
+  actionSection: {
+    flexDirection: 'row',
+    paddingTop: 8,
   },
-  commentAuthor: { fontSize: 14, fontWeight: '700' },
-  commentContent: { fontSize: 14, lineHeight: 20 },
-  likeSection: { flexDirection: 'row', justifyContent: 'flex-start', marginBottom: 16 },
-  likeButton: { paddingVertical: 8, paddingHorizontal: 12, borderRadius: 16, borderWidth: 1, marginRight: 8 },
-  likeText: { fontSize: 14 },
-  commentInputSection: { flexDirection: 'row', marginBottom: 16 },
-  commentInput: { flex: 1, borderWidth: 1, borderRadius: 16, padding: 12, maxHeight: 100 },
-  commentButton: { borderRadius: 16, paddingVertical: 12, paddingHorizontal: 16, justifyContent: 'center', alignItems: 'center' },
-  commentButtonText: { fontSize: 14, fontWeight: '600' },
+  commentsSection: {
+    gap: 12,
+  },
+  sectionHeading: { 
+    fontWeight: '600',
+    marginBottom: 8,
+  },
+  commentInputSection: { 
+    marginBottom: 16,
+  },
+  commentInput: { 
+    minHeight: 56,
+  },
+  commentInputContent: {
+    paddingTop: 8,
+    paddingBottom: 8,
+  },
+  commentInputOutline: {
+    borderRadius: 16,
+  },
+  charCountSmall: {
+    textAlign: 'right',
+    marginTop: 4,
+    opacity: 0.6,
+  },
+  commentCard: { marginBottom: 12 },
+  commentAuthorSection: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    marginBottom: 12,
+    gap: 12,
+  },
+  commentAuthorInfo: {
+    flex: 1,
+    gap: 2,
+  },
+  commentAuthorName: { 
+    fontWeight: '600',
+  },
+  commentTime: {
+    opacity: 0.7,
+  },
+  commentText: { 
+    lineHeight: 20,
+  },
 });
 
 export default ThreadDetail;
