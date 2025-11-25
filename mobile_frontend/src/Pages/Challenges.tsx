@@ -22,11 +22,13 @@ import { useAuth } from '../context/AuthContext';
 import ChallengeCard from '../components/ChallengeCard';
 import CustomText from '@components/CustomText';
 import { API_URL } from '../constants/api';
+import { useRoute, useFocusEffect } from '@react-navigation/native';
 
 type ChallengeListItem = { id: number; is_joined?: boolean };
 type BoolParam = '' | 'true' | 'false';
 
 const Challenges: React.FC = () => {
+  const route = useRoute();
   const { currentUser, getAuthHeader } = useAuth();
   const isAuthed = currentUser?.id !== undefined && currentUser?.id !== null;
 
@@ -205,6 +207,23 @@ const Challenges: React.FC = () => {
     fetchChallenges();
     return abortListFetch;
   }, [isAuthed, fetchChallenges]);
+
+  // Open detail modal when navigating with challengeId param
+  useFocusEffect(
+    useCallback(() => {
+      // @ts-ignore
+      const challengeIdParam = route.params?.challengeId;
+      if (challengeIdParam && detailId === null) {
+        setDetailId(challengeIdParam);
+        // Clear the param to prevent reopening on subsequent visits
+        // @ts-ignore
+        if (route.params?.challengeId) {
+          // @ts-ignore
+          delete route.params.challengeId;
+        }
+      }
+    }, [route.params, detailId])
+  );
 
   const onRefresh = () => {
     if (!isAuthed) return;
