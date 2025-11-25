@@ -451,6 +451,7 @@ const Challenges: React.FC = () => {
             baseUrl={API_URL}
             joined={item.is_joined}
             onViewDetails={(id: number) => setDetailId(id)}
+            onMembershipChange={handleMembershipChange}
           />
         )}
         removeClippedSubviews
