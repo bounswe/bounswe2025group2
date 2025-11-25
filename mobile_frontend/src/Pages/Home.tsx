@@ -9,11 +9,12 @@ import {
   Easing,
   ImageSourcePropType,
 } from 'react-native';
+import { Card as PaperCard, Button, useTheme as usePaperTheme } from 'react-native-paper';
 import Thread from '../components/Thread';
 import { useTheme } from '../context/ThemeContext';
 import Cookies from '@react-native-cookies/cookies';
 import { useAuth } from '../context/AuthContext';
-import { useFocusEffect } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { API_URL } from '@constants/api';
 
 const DEFAULT_PROFILE_PIC = require('../assets/temp_images/profile.png');
@@ -37,7 +38,9 @@ const Home = () => {
 
   // Context hooks for theming and authentication
   const { colors } = useTheme();
+  const paperTheme = usePaperTheme();
   const { getAuthHeader } = useAuth();
+  const navigation = useNavigation();
 
   // Animation references
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -264,6 +267,32 @@ const Home = () => {
   );
 
   /**
+   * Renders the exercises info card at the top of the feed
+   */
+  const renderHeader = useCallback(() => {
+    return (
+      <PaperCard mode="elevated" style={{ marginBottom: 16 }}>
+        <PaperCard.Content style={{ paddingVertical: 12 }}>
+          <Text variant="titleMedium" style={{ marginBottom: 8, color: paperTheme.colors.onSurface }}>
+            Exercise Library
+          </Text>
+          <Text variant="bodyMedium" style={{ marginBottom: 12, color: paperTheme.colors.onSurfaceVariant }}>
+            Explore our comprehensive exercise database to plan your workouts
+          </Text>
+          <Button
+            mode="contained"
+            icon="dumbbell"
+            onPress={() => navigation.navigate('Exercises' as never)}
+            contentStyle={{ paddingVertical: 4 }}
+          >
+            Browse Exercises
+          </Button>
+        </PaperCard.Content>
+      </PaperCard>
+    );
+  }, [navigation, paperTheme]);
+
+  /**
    * Renders the empty state component for FlatList.
    * Shows loading spinner, error message, or empty state based on current state.
    * @returns {JSX.Element} Empty state component
@@ -299,6 +328,7 @@ const Home = () => {
         data={threads}
         keyExtractor={(item, index) => String(item?.id ?? index)}
         renderItem={renderItem}
+        ListHeaderComponent={renderHeader}
         ListEmptyComponent={listEmpty}
         refreshing={refreshing}
         onRefresh={onRefresh}

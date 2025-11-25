@@ -48,13 +48,11 @@ const MainTabs = () => {
         headerShown: false,
       }}
     >
-  <Tab.Screen name="Home" component={withLayout(Home)} />
-  <Tab.Screen name="Forum" component={withLayout(Forum)} />
+      <Tab.Screen name="Home" component={withLayout(Home)} />
+      <Tab.Screen name="Forum" component={withLayout(Forum)} />
       <Tab.Screen name="Chats" component={withLayout(Chats)} />
-      <Tab.Screen name="Settings" component={withLayout(Settings)} />
       <Tab.Screen name="Goals" component={withLayout(Goals)} />
       <Tab.Screen name="Challenges" component={withLayout(Challenges)} />
-
     </Tab.Navigator>
   );
 };
@@ -76,6 +74,11 @@ const AppNavigator = () => {
       {/* Main app screens */}
       <Stack.Screen name="Main" component={MainTabs} />
       <Stack.Screen name="Profile" component={Profile} />
+      <Stack.Screen 
+        name="Settings" 
+        component={Settings}
+        options={{ title: 'Settings', headerShown: true }}
+      />
       <Stack.Screen 
         name="Notifications" 
         component={Notifications}

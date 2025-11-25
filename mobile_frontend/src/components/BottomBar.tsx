@@ -1,118 +1,53 @@
 import React from 'react';
 import { View, StyleSheet, Pressable } from 'react-native';
-// import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
-import CustomText from '../components/CustomText';
-import { useTheme } from '../context/ThemeContext';
-
-// Import SVG icons
-import HomeIcon from '../assets/images/home.svg';
-import CommunitiesIcon from '../assets/images/communities.svg';
-import MentorsIcon from '../assets/images/mentors.svg';
-import ChatsIcon from '../assets/images/chats.svg';
-import GoalsIcon from '../assets/images/target.svg';
-import ChallengesIcon from '../assets/images/challenge.svg';
+import { useTheme, Text } from 'react-native-paper';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const BottomBar = ({ state, navigation }: any) => {
-  const { colors } = useTheme();
+  const theme = useTheme();
+  const insets = useSafeAreaInsets();
 
-  const navigateToScreen = (name: string) => {
-    navigation.navigate(name);
-  };
-
-  const isActiveRoute = (routeName: string) => state.routeNames[state.index] === routeName;
+  const routes = [
+    { key: 'Home', title: 'Home', focusedIcon: 'home', unfocusedIcon: 'home-outline' },
+    { key: 'Forum', title: 'Forum', focusedIcon: 'forum', unfocusedIcon: 'forum-outline' },
+    { key: 'Chats', title: 'Chats', focusedIcon: 'message', unfocusedIcon: 'message-outline' },
+    { key: 'Goals', title: 'Goals', focusedIcon: 'flag-checkered', unfocusedIcon: 'flag-outline' },
+    { key: 'Challenges', title: 'Challenges', focusedIcon: 'medal', unfocusedIcon: 'medal-outline' },
+  ];
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.navBar }]}>
-      <Pressable style={styles.tab} onPress={() => navigateToScreen('Home')}>
-        <HomeIcon 
-          width={32} 
-          height={32} 
-          fill={isActiveRoute('Home') ? colors.active : colors.passive} 
-        />
-        <CustomText 
-          style={[
-            styles.label, 
-            { 
-              color: isActiveRoute('Home') ? colors.active : colors.passive,
-              fontWeight: isActiveRoute('Home') ? 'bold' : 'normal'
-            }
-          ]}
-        >
-          Home
-        </CustomText>
-      </Pressable>
-      <Pressable style={styles.tab} onPress={() => navigateToScreen('Forum')}>
-        <CommunitiesIcon
-          width={32}
-          height={32}
-          fill={isActiveRoute('Forum') ? colors.active : colors.passive}
-        />
-        <CustomText
-          style={[
-            styles.label,
-            {
-              color: isActiveRoute('Forum') ? colors.active : colors.passive,
-              fontWeight: isActiveRoute('Forum') ? 'bold' : 'normal'
-            }
-          ]}
-        >
-          Forum
-        </CustomText>
-      </Pressable>
-      <Pressable style={styles.tab} onPress={() => navigateToScreen('Chats')}>
-        <ChatsIcon 
-          width={32} 
-          height={32} 
-          fill={isActiveRoute('Chats') ? colors.active : colors.passive} 
-        />
-        <CustomText 
-          style={[
-            styles.label, 
-            { 
-              color: isActiveRoute('Chats') ? colors.active : colors.passive,
-              fontWeight: isActiveRoute('Chats') ? 'bold' : 'normal'
-            }
-          ]}
-        >
-          Chats
-        </CustomText>
-      </Pressable>
-      <Pressable style={styles.tab} onPress={() => navigateToScreen('Goals')}>
-        <GoalsIcon 
-          width={32} 
-          height={32} 
-          color={isActiveRoute('Goals') ? colors.active : colors.passive} 
-        />
-        <CustomText 
-          style={[
-            styles.label, 
-            { 
-              color: isActiveRoute('Goals') ? colors.active : colors.passive,
-              fontWeight: isActiveRoute('Goals') ? 'bold' : 'normal'
-            }
-          ]}
-        >
-          Goals
-        </CustomText>
-      </Pressable>
-      <Pressable style={styles.tab} onPress={() => navigateToScreen('Challenges')}>
-        <ChallengesIcon 
-          width={36} 
-          height={40} 
-          fill={isActiveRoute('Challenges') ? colors.active : colors.passive} 
-        />
-        <CustomText 
-          style={[
-            styles.label, 
-            { 
-              color: isActiveRoute('Challenges') ? colors.active : colors.passive,
-              fontWeight: isActiveRoute('Challenges') ? 'bold' : 'normal'
-            }
-          ]}
-        >
-          Challenges
-        </CustomText>
-      </Pressable>
+    <View 
+      style={[
+        styles.container, 
+        { 
+          backgroundColor: theme.colors.surface,
+          paddingBottom: insets.bottom,
+          borderTopColor: theme.colors.outlineVariant,
+        }
+      ]}
+    >
+      {routes.map((route, index) => {
+        const isActive = state.index === index;
+        const iconName = isActive ? route.focusedIcon : route.unfocusedIcon;
+        const color = isActive ? theme.colors.primary : theme.colors.onSurfaceVariant;
+
+        return (
+          <Pressable
+            key={route.key}
+            style={styles.tab}
+            onPress={() => navigation.navigate(route.key)}
+          >
+            <Icon name={iconName} size={24} color={color} />
+            <Text 
+              variant="labelSmall" 
+              style={[styles.label, { color }]}
+            >
+              {route.title}
+            </Text>
+          </Pressable>
+        );
+      })}
     </View>
   );
 };
@@ -120,21 +55,23 @@ const BottomBar = ({ state, navigation }: any) => {
 const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
-    height: 65,
+    height: 80,
     borderTopWidth: 1,
-    justifyContent: 'space-around',
-    alignItems: 'center',
-    paddingBottom: 10,
+    elevation: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
   },
   tab: {
-    alignItems: 'center',
-    justifyContent: 'flex-start',
     flex: 1,
-    paddingTop: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingTop: 12,
+    paddingBottom: 8,
   },
   label: {
-    fontSize: 12,
-    marginTop: 6,
+    marginTop: 4,
   },
 });
 
