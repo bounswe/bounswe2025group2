@@ -56,6 +56,9 @@ const Home = () => {
   // Animation references
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(16)).current;
+  
+  // Exercise card visibility
+  const [isExerciseCardVisible, setIsExerciseCardVisible] = useState(false);
 
   // Profile image cache helpers
   const profilePicCache = useRef<Record<string, string>>({});
@@ -431,39 +434,76 @@ const Home = () => {
   );
 
   /**
+   * Toggle exercise card visibility
+   */
+  const toggleExerciseCard = useCallback(() => {
+    setIsExerciseCardVisible(prev => !prev);
+  }, []);
+
+  /**
    * Renders the exercises info card at the top of the feed
    */
-  const renderHeader = useCallback(() => {
+  const renderHeader = () => {
     return (
       <>
-        <Card mode="elevated" style={styles.headerCard}>
-          <Card.Content>
-            <View style={styles.headerContent}>
-              <IconButton
-                icon="dumbbell"
-                size={32}
-                iconColor={theme.colors.primary}
-                containerColor={theme.colors.primaryContainer}
-              />
-              <View style={styles.headerText}>
-                <Text variant="titleMedium" style={{ color: theme.colors.onSurface, marginBottom: 4 }}>
-                  Exercise Library
-                </Text>
-                <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>
-                  Explore our comprehensive exercise database
-                </Text>
+        {/* Tap indicator - visible when card is hidden */}
+        {!isExerciseCardVisible && (
+          <TouchableOpacity onPress={toggleExerciseCard} style={styles.pullIndicator} activeOpacity={0.7}>
+            <IconButton
+              icon="dumbbell"
+              size={16}
+              iconColor={theme.colors.primary}
+              style={{ margin: 0 }}
+            />
+            <Text variant="labelSmall" style={{ color: theme.colors.primary }}>
+              Exercise Library
+            </Text>
+            <IconButton
+              icon="chevron-down"
+              size={16}
+              iconColor={theme.colors.primary}
+              style={{ margin: 0 }}
+            />
+          </TouchableOpacity>
+        )}
+
+        {/* Exercise Library Card */}
+        {isExerciseCardVisible && (
+          <Card mode="elevated" style={styles.headerCard}>
+            <Card.Content>
+              <View style={styles.headerContent}>
+                <IconButton
+                  icon="dumbbell"
+                  size={32}
+                  iconColor={theme.colors.primary}
+                  containerColor={theme.colors.primaryContainer}
+                />
+                <View style={styles.headerText}>
+                  <Text variant="titleMedium" style={{ color: theme.colors.onSurface, marginBottom: 4 }}>
+                    Exercise Library
+                  </Text>
+                  <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>
+                    Explore our comprehensive exercise database
+                  </Text>
+                </View>
+                <IconButton
+                  icon="chevron-up"
+                  size={24}
+                  onPress={toggleExerciseCard}
+                  iconColor={theme.colors.onSurfaceVariant}
+                />
               </View>
-            </View>
-            <Button
-              mode="contained"
-              icon="arrow-right"
-              onPress={() => navigation.navigate('Exercises' as never)}
-              style={{ marginTop: 12 }}
-            >
-              Browse Exercises
-            </Button>
-          </Card.Content>
-        </Card>
+              <Button
+                mode="contained"
+                icon="arrow-right"
+                onPress={() => navigation.navigate('Exercises' as never)}
+                style={{ marginTop: 12 }}
+              >
+                Browse Exercises
+              </Button>
+            </Card.Content>
+          </Card>
+        )}
 
         {/* Sort Filter */}
         <View style={styles.filterContainer}>
@@ -510,7 +550,7 @@ const Home = () => {
         </View>
       </>
     );
-  }, [navigation, theme, sortBy, dropdownVisible]);
+  };
 
   /**
    * Renders the empty state component for FlatList.
@@ -578,8 +618,19 @@ const styles = StyleSheet.create({
   content: {
     padding: 16,
   },
+  pullIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 2,
+    marginBottom: 8,
+    backgroundColor: 'rgba(128, 0, 0, 0.08)',
+    borderRadius: 16,
+    alignSelf: 'center',
+    paddingHorizontal: 8,
+  },
   headerCard: {
-    marginBottom: 16,
+    marginBottom: 12,
   },
   headerContent: {
     flexDirection: 'row',
