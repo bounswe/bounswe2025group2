@@ -37,7 +37,7 @@ def delete_comment(request, comment_id):
     serializer = CommentSerializer()
     serializer.delete(comment)
 
-    return Response({'message': 'Comment deleted successfully'}, status=status.HTTP_204_NO_CONTENT)
+    return Response({'message': 'Comment deleted successfully'}, status=status.HTTP_200_OK)
 
 
 # 3. Update a Comment
@@ -110,7 +110,7 @@ def delete_subcomment(request, subcomment_id):
     serializer = SubcommentSerializer()
     serializer.delete(subcomment)
 
-    return Response({'message': 'Subcomment deleted successfully'}, status=status.HTTP_204_NO_CONTENT)
+    return Response({'message': 'Subcomment deleted successfully'}, status=status.HTTP_200_OK)
 
 # 9. Update a Subcomment
 @api_view(['PUT'])

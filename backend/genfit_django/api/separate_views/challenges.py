@@ -84,7 +84,7 @@ def delete_challenge(request, challenge_id):
         return Response({"detail": "You do not have permission to delete this challenge."}, status=status.HTTP_403_FORBIDDEN)
 
     challenge.delete()
-    return Response({"detail": "Challenge deleted successfully."}, status=status.HTTP_204_NO_CONTENT)
+    return Response({"detail": "Challenge deleted successfully."}, status=status.HTTP_200_OK)
 
 
 @api_view(['POST'])
@@ -109,7 +109,7 @@ def leave_challenge(request, challenge_id):
         return Response({"detail": "You are not a participant of this challenge."}, status=status.HTTP_400_BAD_REQUEST)
 
     participant.delete()
-    return Response({"detail": "Successfully left the challenge."}, status=status.HTTP_204_NO_CONTENT)
+    return Response({"detail": "Successfully left the challenge."}, status=status.HTTP_200_OK)
 
 
 @api_view(['POST'])
