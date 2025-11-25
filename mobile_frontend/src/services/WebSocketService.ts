@@ -86,19 +86,31 @@ export class WebSocketService {
     this.ws.onmessage = (event: any) => {
       // Check if this is still the active connection
       if (!this.ws || this.ws.readyState !== 1) {
-        console.log('Ignoring message from closed/inactive WebSocket');
+        console.log('[WebSocketService] Ignoring message from closed/inactive WebSocket');
         return;
       }
       
       try {
+        console.log('[WebSocketService] ========== RAW MESSAGE RECEIVED ==========');
+        console.log('[WebSocketService] Event data:', event.data);
+        console.log('[WebSocketService] Event data type:', typeof event.data);
+        
         const data = JSON.parse(event.data);
+        console.log('[WebSocketService] Parsed data:', JSON.stringify(data, null, 2));
         
         if (data.error) {
-          console.error('WebSocket error:', data.error);
+          console.error('[WebSocketService] ERROR in message:', data.error);
           if (this.onErrorCallback) {
             this.onErrorCallback(data.error);
           }
         } else if (data.message) {
+          console.log('[WebSocketService] ========== PROCESSING MESSAGE ==========');
+          console.log('[WebSocketService] Message ID:', data.message.id);
+          console.log('[WebSocketService] Sender:', data.message.sender);
+          console.log('[WebSocketService] Body:', data.message.body);
+          console.log('[WebSocketService] Body type:', typeof data.message.body);
+          console.log('[WebSocketService] Is challenge?', /^CHALLENGE:\d+$/.test(data.message.body || ''));
+          
           // Transform the message to match our Message type
           const message: Message = {
             id: data.message.id,
@@ -108,13 +120,21 @@ export class WebSocketService {
             is_read: data.message.is_read
           };
           
+          console.log('[WebSocketService] Transformed message:', JSON.stringify(message, null, 2));
           
           if (this.onMessageCallback) {
+            console.log('[WebSocketService] Calling message callback');
             this.onMessageCallback(message);
+            console.log('[WebSocketService] Message callback completed');
+          } else {
+            console.error('[WebSocketService] No message callback set!');
           }
+        } else {
+          console.warn('[WebSocketService] Message has no error or message field:', data);
         }
       } catch (error) {
-        console.error('Error parsing WebSocket message:', error);
+        console.error('[WebSocketService] ERROR parsing WebSocket message:', error);
+        console.error('[WebSocketService] Event data that failed:', event.data);
         if (this.onErrorCallback) {
           this.onErrorCallback('Failed to parse message');
         }
@@ -138,15 +158,27 @@ export class WebSocketService {
   }
 
   sendMessage(messageBody: string) {
+    console.log('[WebSocketService] ========== SENDING MESSAGE ==========');
+    console.log('[WebSocketService] Message body:', messageBody);
+    console.log('[WebSocketService] Message body type:', typeof messageBody);
+    console.log('[WebSocketService] WebSocket exists:', !!this.ws);
+    console.log('[WebSocketService] WebSocket readyState:', this.ws?.readyState);
+    console.log('[WebSocketService] Is OPEN (readyState === 1):', this.ws?.readyState === 1);
+    
     if (this.ws && this.ws.readyState === 1) { // WebSocket.OPEN = 1
       const message = {
         body: messageBody
       };
-      this.ws.send(JSON.stringify(message));
+      const messageJson = JSON.stringify(message);
+      console.log('[WebSocketService] Sending JSON:', messageJson);
+      this.ws.send(messageJson);
+      console.log('[WebSocketService] Message sent successfully');
     } else {
-      console.error('WebSocket is not connected');
+      const error = 'WebSocket is not connected';
+      console.error('[WebSocketService] ERROR:', error);
+      console.error('[WebSocketService] WebSocket state:', this.ws?.readyState);
       if (this.onErrorCallback) {
-        this.onErrorCallback('Not connected to chat');
+        this.onErrorCallback(error);
       }
     }
   }

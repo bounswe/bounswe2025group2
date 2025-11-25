@@ -12,6 +12,7 @@ import {
   Modal,
   Portal,
   ProgressBar,
+  Surface,
   Text,
   TextInput,
   useTheme,
@@ -36,6 +37,7 @@ interface ProfileDetailsResponse {
   location: string;
   birth_date: string;
   age: number | string;
+  is_coach?: boolean;
 }
 
 interface Goal {
@@ -70,6 +72,8 @@ interface MentorRelationship {
 interface User {
   id: number;
   username: string;
+  is_coach?: boolean;
+  user_type?: string;
 }
 
 
@@ -142,6 +146,40 @@ const Profile = () => {
     retry: false,
   });
 
+  // Fetch user details from /users/ endpoint to get is_coach info
+  const { data: userDetails } = useQuery<User | null>({
+    queryKey: ['userDetails', otherUsername || me?.username],
+    queryFn: async () => {
+      const response = await fetch(`${API_URL}users/`, {
+        headers: {
+          ...getSanitizedAuthHeader(),
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        credentials: 'include',
+      });
+      
+      if (!response.ok) {
+        console.error('Failed to fetch users list for coach info');
+        return null;
+      }
+      
+      const allUsers: User[] = await response.json();
+      const targetUsername = otherUsername || me?.username;
+      const foundUser = allUsers.find(u => u.username === targetUsername);
+      
+      // Compute is_coach from user_type if not present
+      if (foundUser && !foundUser.is_coach && foundUser.user_type) {
+        foundUser.is_coach = foundUser.user_type === 'Coach';
+      }
+      
+      console.log('Found user with coach info:', foundUser);
+      return foundUser || null;
+    },
+    enabled: !!(me?.username || otherUsername),
+    staleTime: 5 * 60_000,
+  });
+
   // Fetch profile details
   const { data: profileDetails, isLoading: isLoadingProfile } = useQuery<ProfileDetailsResponse>({
     queryKey: ['profile', otherUsername || 'me'],
@@ -159,8 +197,17 @@ const Profile = () => {
         throw new Error(`Failed to fetch profile: ${response.status}`);
       }
       
-      return response.json();
+      const profileData = await response.json();
+      
+      // Merge is_coach from userDetails if available
+      if (userDetails?.is_coach !== undefined) {
+        profileData.is_coach = userDetails.is_coach;
+      }
+      
+      console.log('Profile data with coach status:', profileData);
+      return profileData;
     },
+    enabled: !!userDetails || isLoadingProfile === false,
   });
 
   // Fetch profile picture
@@ -818,23 +865,6 @@ const Profile = () => {
   return (
     <>
       <ScrollView style={[styles.container, { backgroundColor: theme.colors.background }]}>
-        {/* Header with Search Button */}
-        {!otherUsername && (
-          <View style={styles.headerButtonContainer}>
-            <Button
-              mode="outlined"
-              icon="magnify"
-              onPress={() => {
-                // @ts-ignore
-                navigation.navigate('MentorSearch');
-              }}
-              style={styles.headerButton}
-            >
-              Find Mentors
-            </Button>
-          </View>
-        )}
-
         {/* Profile Hero Section */}
         <Card mode="contained" style={[styles.heroCard, { backgroundColor: theme.colors.primaryContainer }]}>
           <Card.Content style={styles.heroContent}>
@@ -880,9 +910,22 @@ const Profile = () => {
                   ? `${profileDetails.name} ${profileDetails.surname}` 
                   : profileDetails?.username}
               </Text>
-              <Text variant="titleMedium" style={{ color: theme.colors.onPrimaryContainer }}>
-                @{profileDetails?.username}
-              </Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 4 }}>
+                <Text variant="titleMedium" style={{ color: theme.colors.onPrimaryContainer }}>
+                  @{profileDetails?.username}
+                </Text>
+                {(userDetails?.is_coach || profileDetails?.is_coach) && (
+                  <Chip 
+                    mode="flat" 
+                    compact 
+                    icon="school"
+                    style={{ backgroundColor: theme.colors.tertiaryContainer }}
+                    textStyle={{ color: theme.colors.onTertiaryContainer, fontSize: 12 }}
+                  >
+                    Coach
+                  </Chip>
+                )}
+              </View>
             </View>
           </Card.Content>
         </Card>
@@ -950,127 +993,156 @@ const Profile = () => {
           <Card style={styles.sectionCard}>
             <Card.Title title="Mentorship" />
             <Card.Content>
-              <View>
-                {/* My Mentors */}
-                <Text variant="labelLarge" style={{ marginBottom: 8, color: theme.colors.onSurfaceVariant }}>Your Mentors</Text>
-                {myMentors.length > 0 ? (
-                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginBottom: 16 }}>
-                    {myMentors.map((u) => (
-                      <Pressable 
-                        key={`mentor-${u.id}`}
-                        onPress={() => {
-                          // @ts-ignore
-                          navigation.push('Profile', { username: u.username });
-                        }}
-                        style={{ alignItems: 'center', width: 80 }}
-                      >
-                        {mentorshipPictures[u.username] ? (
-                          <Avatar.Image size={64} source={{ uri: mentorshipPictures[u.username], headers: getAuthHeader() }} />
-                        ) : (
-                          <Avatar.Text size={64} label={u.username?.[0]?.toUpperCase() || 'U'} />
-                        )}
-                        <Text variant="bodySmall" style={{ marginTop: 4, textAlign: 'center' }} numberOfLines={1}>{u.username}</Text>
-                        <Text variant="labelSmall" style={{ color: theme.colors.onSurfaceVariant }}>Mentor</Text>
-                      </Pressable>
-                    ))}
-                  </View>
-                ) : (
-                  <Text variant="bodyMedium" style={{ marginBottom: 16, color: theme.colors.onSurfaceVariant }}>You currently have no mentors.</Text>
-                )}
+              {/* My Mentors */}
+              <Text variant="titleMedium" style={{ marginBottom: 12, fontWeight: '600' }}>Your Mentors</Text>
+              {myMentors.length > 0 ? (
+                <View style={styles.mentorshipGrid}>
+                  {myMentors.map((u) => (
+                    <Pressable 
+                      key={`mentor-${u.id}`}
+                      onPress={() => {
+                        // @ts-ignore
+                        navigation.push('Profile', { username: u.username });
+                      }}
+                    >
+                      <Card mode="outlined" style={styles.mentorCard}>
+                        <Card.Content style={styles.mentorCardContent}>
+                          {mentorshipPictures[u.username] ? (
+                            <Avatar.Image size={48} source={{ uri: mentorshipPictures[u.username], headers: getAuthHeader() }} />
+                          ) : (
+                            <Avatar.Text size={48} label={u.username?.[0]?.toUpperCase() || 'U'} />
+                          )}
+                          <Text variant="bodyMedium" style={styles.mentorName} numberOfLines={1}>{u.username}</Text>
+                          <Chip compact mode="outlined" style={styles.roleChip}>Mentor</Chip>
+                        </Card.Content>
+                      </Card>
+                    </Pressable>
+                  ))}
+                </View>
+              ) : (
+                <Card mode="outlined" style={styles.emptyCard}>
+                  <Card.Content>
+                    <Text variant="bodyMedium" style={{ textAlign: 'center', opacity: 0.7 }}>
+                      You currently have no mentors.
+                    </Text>
+                  </Card.Content>
+                </Card>
+              )}
 
-                {/* My Mentees */}
-                <Text variant="labelLarge" style={{ marginBottom: 8, color: theme.colors.onSurfaceVariant }}>Your Mentees</Text>
-                {myMentees.length > 0 ? (
-                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginBottom: 16 }}>
-                    {myMentees.map((u) => (
-                      <Pressable 
-                        key={`mentee-${u.id}`}
-                        onPress={() => {
-                          // @ts-ignore
-                          navigation.push('Profile', { username: u.username });
-                        }}
-                        style={{ alignItems: 'center', width: 80 }}
-                      >
-                        {mentorshipPictures[u.username] ? (
-                          <Avatar.Image size={64} source={{ uri: mentorshipPictures[u.username], headers: getAuthHeader() }} />
-                        ) : (
-                          <Avatar.Text size={64} label={u.username?.[0]?.toUpperCase() || 'U'} />
-                        )}
-                        <Text variant="bodySmall" style={{ marginTop: 4, textAlign: 'center' }} numberOfLines={1}>{u.username}</Text>
-                        <Text variant="labelSmall" style={{ color: theme.colors.onSurfaceVariant }}>Mentee</Text>
-                      </Pressable>
-                    ))}
-                  </View>
-                ) : (
-                  <Text variant="bodyMedium" style={{ marginBottom: 16, color: theme.colors.onSurfaceVariant }}>You currently have no mentees.</Text>
-                )}
+              <Divider style={styles.sectionDivider} />
 
-                {/* Pending Requests */}
-                <Text variant="labelLarge" style={{ marginBottom: 8, color: theme.colors.onSurfaceVariant }}>Pending Requests</Text>
-                {myPendingRequests.length > 0 ? (
-                  <View style={{ gap: 8 }}>
-                    {myPendingRequests.map((r) => {
-                      const amReceiver = r.receiver === myUserId;
-                      const amMentor = r.mentor === myUserId;
-                      const otherUsernameLabel = amMentor ? r.mentee_username : r.mentor_username;
-                      const roleWord = amMentor ? 'mentee' : 'mentor';
-                      const sentence = amReceiver
-                        ? `${otherUsernameLabel} asked to be your ${roleWord}`
-                        : `You asked ${otherUsernameLabel} to be your ${roleWord}`;
-                      
-                      return (
-                        <Card key={`pending-${r.id}`} mode="outlined" style={{ padding: 8 }}>
-                          <Card.Content style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                            <Pressable 
-                              onPress={() => {
-                                // @ts-ignore
-                                navigation.push('Profile', { username: otherUsernameLabel });
-                              }}
-                              style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}
-                            >
-                              <Avatar.Text size={40} label={otherUsernameLabel?.[0]?.toUpperCase() || 'U'} />
-                              <Text variant="bodyMedium" style={{ marginLeft: 8, flex: 1 }}>{sentence}</Text>
-                            </Pressable>
-                            <View style={{ flexDirection: 'row', gap: 8 }}>
-                              {amReceiver ? (
-                                <>
-                                  <Button 
-                                    mode="contained" 
-                                    compact 
-                                    onPress={() => changeRelationshipStatus.mutate({ relationshipId: r.id, status: 'ACCEPTED' })}
-                                    disabled={changeRelationshipStatus.isPending}
-                                  >
-                                    Accept
-                                  </Button>
-                                  <Button 
-                                    mode="outlined" 
-                                    compact 
-                                    onPress={() => changeRelationshipStatus.mutate({ relationshipId: r.id, status: 'REJECTED' })}
-                                    disabled={changeRelationshipStatus.isPending}
-                                  >
-                                    Reject
-                                  </Button>
-                                </>
-                              ) : (
+              {/* My Mentees */}
+              <Text variant="titleMedium" style={{ marginBottom: 12, fontWeight: '600' }}>Your Mentees</Text>
+              {myMentees.length > 0 ? (
+                <View style={styles.mentorshipGrid}>
+                  {myMentees.map((u) => (
+                    <Pressable 
+                      key={`mentee-${u.id}`}
+                      onPress={() => {
+                        // @ts-ignore
+                        navigation.push('Profile', { username: u.username });
+                      }}
+                    >
+                      <Card mode="outlined" style={styles.mentorCard}>
+                        <Card.Content style={styles.mentorCardContent}>
+                          {mentorshipPictures[u.username] ? (
+                            <Avatar.Image size={48} source={{ uri: mentorshipPictures[u.username], headers: getAuthHeader() }} />
+                          ) : (
+                            <Avatar.Text size={48} label={u.username?.[0]?.toUpperCase() || 'U'} />
+                          )}
+                          <Text variant="bodyMedium" style={styles.mentorName} numberOfLines={1}>{u.username}</Text>
+                          <Chip compact mode="outlined" style={styles.roleChip}>Mentee</Chip>
+                        </Card.Content>
+                      </Card>
+                    </Pressable>
+                  ))}
+                </View>
+              ) : (
+                <Card mode="outlined" style={styles.emptyCard}>
+                  <Card.Content>
+                    <Text variant="bodyMedium" style={{ textAlign: 'center', opacity: 0.7 }}>
+                      You currently have no mentees.
+                    </Text>
+                  </Card.Content>
+                </Card>
+              )}
+
+              <Divider style={styles.sectionDivider} />
+
+              {/* Pending Requests */}
+              <Text variant="titleMedium" style={{ marginBottom: 12, fontWeight: '600' }}>Pending Requests</Text>
+              {myPendingRequests.length > 0 ? (
+                <View style={{ gap: 12 }}>
+                  {myPendingRequests.map((r) => {
+                    const amReceiver = r.receiver === myUserId;
+                    const amMentor = r.mentor === myUserId;
+                    const otherUsernameLabel = amMentor ? r.mentee_username : r.mentor_username;
+                    const roleWord = amMentor ? 'mentee' : 'mentor';
+                    const sentence = amReceiver
+                      ? `${otherUsernameLabel} asked to be your ${roleWord}`
+                      : `You asked ${otherUsernameLabel} to be your ${roleWord}`;
+                    
+                    return (
+                      <Card key={`pending-${r.id}`} mode="elevated" style={styles.pendingRequestCard}>
+                        <Card.Content>
+                          <Pressable 
+                            onPress={() => {
+                              // @ts-ignore
+                              navigation.push('Profile', { username: otherUsernameLabel });
+                            }}
+                            style={styles.pendingRequestHeader}
+                          >
+                            <Avatar.Text size={40} label={otherUsernameLabel?.[0]?.toUpperCase() || 'U'} />
+                            <Text variant="bodyMedium" style={{ flex: 1, marginLeft: 12 }}>{sentence}</Text>
+                          </Pressable>
+                          <View style={styles.pendingRequestActions}>
+                            {amReceiver ? (
+                              <>
+                                <Button 
+                                  mode="contained" 
+                                  compact 
+                                  onPress={() => changeRelationshipStatus.mutate({ relationshipId: r.id, status: 'ACCEPTED' })}
+                                  disabled={changeRelationshipStatus.isPending}
+                                  style={{ flex: 1 }}
+                                >
+                                  Accept
+                                </Button>
                                 <Button 
                                   mode="outlined" 
                                   compact 
                                   onPress={() => changeRelationshipStatus.mutate({ relationshipId: r.id, status: 'REJECTED' })}
                                   disabled={changeRelationshipStatus.isPending}
+                                  style={{ flex: 1 }}
                                 >
-                                  Cancel
+                                  Reject
                                 </Button>
-                              )}
-                            </View>
-                          </Card.Content>
-                        </Card>
-                      );
-                    })}
-                  </View>
-                ) : (
-                  <Text variant="bodyMedium" style={{ color: theme.colors.onSurfaceVariant }}>You have no pending requests.</Text>
-                )}
-              </View>
+                              </>
+                            ) : (
+                              <Button 
+                                mode="outlined" 
+                                compact 
+                                onPress={() => changeRelationshipStatus.mutate({ relationshipId: r.id, status: 'REJECTED' })}
+                                disabled={changeRelationshipStatus.isPending}
+                                style={{ flex: 1 }}
+                              >
+                                Cancel Request
+                              </Button>
+                            )}
+                          </View>
+                        </Card.Content>
+                      </Card>
+                    );
+                  })}
+                </View>
+              ) : (
+                <Card mode="outlined" style={styles.emptyCard}>
+                  <Card.Content>
+                    <Text variant="bodyMedium" style={{ textAlign: 'center', opacity: 0.7 }}>
+                      You have no pending requests.
+                    </Text>
+                  </Card.Content>
+                </Card>
+              )}
             </Card.Content>
           </Card>
         )}
@@ -1080,8 +1152,8 @@ const Profile = () => {
           <Card style={styles.sectionCard}>
             <Card.Title title="Mentorship" />
             <Card.Content>
-              <View style={{ padding: 12, backgroundColor: theme.colors.surfaceVariant, borderRadius: 8 }}>
-                <Text variant="bodyMedium">
+              <Surface style={styles.relationshipStatusSurface} elevation={1}>
+                <Text variant="bodyMedium" style={{ textAlign: 'center' }}>
                   {selectedRel && selectedRel.status === 'ACCEPTED'
                     ? (selectedRel.mentor === myUserId
                         ? `${otherUsername} is your mentee`
@@ -1094,18 +1166,20 @@ const Profile = () => {
                         ? (selectedRel.mentor === otherUserId
                             ? `${otherUsername} has asked to be your mentor`
                             : `${otherUsername} has asked to be your mentee`)
-                        : `You and ${otherUsername} are not connected with a mentor-mentee relationship`}
+                        : `You and ${otherUsername} are not connected`}
                 </Text>
-              </View>
-              <View style={{ marginTop: 16, flexDirection: 'row', gap: 8, justifyContent: 'center' }}>
+              </Surface>
+              <View style={styles.relationshipActions}>
                 {selectedRel && selectedRel.status === 'ACCEPTED' && (
                   <Button 
-                    mode="contained-tonal" 
+                    mode="outlined" 
                     onPress={() => changeRelationshipStatus.mutate({ relationshipId: selectedRel.id, status: 'TERMINATED' })}
                     disabled={changeRelationshipStatus.isPending}
-                    buttonColor={MD3Colors.error50}
+                    icon="link-variant-off"
+                    textColor={theme.colors.error}
+                    style={{ borderColor: theme.colors.error }}
                   >
-                    Terminate Relationship
+                    End Relationship
                   </Button>
                 )}
                 {selectedRel && selectedRel.status === 'PENDING' && isSender && (
@@ -1113,16 +1187,19 @@ const Profile = () => {
                     mode="outlined" 
                     onPress={() => changeRelationshipStatus.mutate({ relationshipId: selectedRel.id, status: 'REJECTED' })}
                     disabled={changeRelationshipStatus.isPending}
+                    icon="close"
                   >
                     Cancel Request
                   </Button>
                 )}
                 {selectedRel && selectedRel.status === 'PENDING' && isReceiver && (
-                  <>
+                  <View style={{ flexDirection: 'row', gap: 12, width: '100%' }}>
                     <Button 
                       mode="contained" 
                       onPress={() => changeRelationshipStatus.mutate({ relationshipId: selectedRel.id, status: 'ACCEPTED' })}
                       disabled={changeRelationshipStatus.isPending}
+                      icon="check"
+                      style={{ flex: 1 }}
                     >
                       Accept
                     </Button>
@@ -1130,17 +1207,21 @@ const Profile = () => {
                       mode="outlined" 
                       onPress={() => changeRelationshipStatus.mutate({ relationshipId: selectedRel.id, status: 'REJECTED' })}
                       disabled={changeRelationshipStatus.isPending}
+                      icon="close"
+                      style={{ flex: 1 }}
                     >
                       Reject
                     </Button>
-                  </>
+                  </View>
                 )}
                 {(!selectedRel || (selectedRel && ['REJECTED', 'TERMINATED'].includes(selectedRel.status))) && (
-                  <>
+                  <View style={{ flexDirection: 'row', gap: 12, width: '100%' }}>
                     <Button 
                       mode="contained" 
                       onPress={() => requestAsMentor.mutate()}
                       disabled={requestAsMentor.isPending || !me || !otherUserId}
+                      icon="account-supervisor"
+                      style={{ flex: 1 }}
                     >
                       Be Their Mentor
                     </Button>
@@ -1148,10 +1229,12 @@ const Profile = () => {
                       mode="contained" 
                       onPress={() => requestAsMentee.mutate()}
                       disabled={requestAsMentee.isPending || !me || !otherUserId}
+                      icon="school"
+                      style={{ flex: 1 }}
                     >
-                      Request Them as Mentor
+                      Request as Mentor
                     </Button>
-                  </>
+                  </View>
                 )}
               </View>
             </Card.Content>
@@ -1159,7 +1242,7 @@ const Profile = () => {
         )}
 
         {/* Goals Section - Show for own profile or when viewing mentee as mentor */}
-        {(!otherUsername || (otherUsername && (goals.length > 0 || (selectedRel && selectedRel.status === 'ACCEPTED' && selectedRel.mentor === myUserId)))) && (
+        {(!otherUsername || (otherUsername && selectedRel && selectedRel.status === 'ACCEPTED' && selectedRel.mentor === myUserId)) && (
           <Card style={styles.sectionCard}>
             <Card.Title
               title="Goals"
@@ -1167,7 +1250,7 @@ const Profile = () => {
                 // Show "New" button for own profile or when viewing mentee as mentor
                 const isMentorOfOther = otherUsername && selectedRel && selectedRel.status === 'ACCEPTED' && selectedRel.mentor === myUserId;
                 
-                if (!otherUsername && goals.length > 0) {
+                if (!otherUsername) {
                   return (
                     <Button {...props} icon="plus" onPress={() => setIsGoalFormOpen(true)}>New</Button>
                   );
@@ -1207,16 +1290,14 @@ const Profile = () => {
                   <Avatar.Icon icon="flag-checkered" size={48} style={{backgroundColor: theme.colors.surfaceVariant}}/>
                   <Text variant="titleMedium" style={styles.emptyStateText}>No Goals Set</Text>
                   <Text variant="bodyMedium" style={styles.emptyStateText}>
-                    {otherUsername ? (
-                      selectedRel && selectedRel.status === 'ACCEPTED' && selectedRel.mentor === myUserId
-                        ? 'No goals set for this mentee yet. Tap "Add for Mentee" to create one.'
-                        : 'This user has not set any goals yet.'
-                    ) : "You haven't set any goals yet."}
+                    {otherUsername 
+                      ? 'No goals set for this mentee yet. Tap "Add for Mentee" to create one.'
+                      : "You haven't set any goals yet."}
                   </Text>
                   {!otherUsername && (
                     <Button mode="contained" style={styles.emptyStateButton} onPress={() => setIsGoalFormOpen(true)}>Set Your First Goal</Button>
                   )}
-                  {otherUsername && selectedRel && selectedRel.status === 'ACCEPTED' && selectedRel.mentor === myUserId && (
+                  {otherUsername && (
                     <Button mode="contained" style={styles.emptyStateButton} onPress={() => {
                       setEditingGoal(null);
                       setIsGoalFormOpen(true);
@@ -1331,15 +1412,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  headerButtonContainer: {
-    flexDirection: 'row',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    gap: 8,
-  },
-  headerButton: {
-    flex: 1,
-  },
   loader: {
     flex: 1,
     justifyContent: 'center',
@@ -1411,6 +1483,53 @@ const styles = StyleSheet.create({
   infoValue: {
     flexShrink: 1,
     textAlign: 'right',
+  },
+  mentorshipGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+    marginBottom: 16,
+  },
+  mentorCard: {
+    width: 100,
+  },
+  mentorCardContent: {
+    alignItems: 'center',
+    padding: 8,
+  },
+  mentorName: {
+    marginTop: 8,
+    textAlign: 'center',
+  },
+  roleChip: {
+    marginTop: 4,
+  },
+  emptyCard: {
+    marginBottom: 16,
+  },
+  sectionDivider: {
+    marginVertical: 16,
+  },
+  pendingRequestCard: {
+    marginBottom: 8,
+  },
+  pendingRequestHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  pendingRequestActions: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  relationshipStatusSurface: {
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 16,
+  },
+  relationshipActions: {
+    gap: 12,
+    alignItems: 'center',
   },
   goalCard: {
     marginBottom: 8,
