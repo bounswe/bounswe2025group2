@@ -47,6 +47,7 @@ const Home = () => {
   const [sortBy, setSortBy] = useState<'newest' | 'top'>('top');
   const [threadComments, setThreadComments] = useState<Record<number, any[]>>({});
   const [dropdownVisible, setDropdownVisible] = useState(false);
+  const [threadVotes, setThreadVotes] = useState<Record<number, 'UPVOTE' | 'DOWNVOTE' | null>>({});
 
   // Context hooks
   const theme = useTheme();
@@ -277,6 +278,115 @@ const Home = () => {
   );
 
   /**
+   * Fetches vote status for a specific thread
+   */
+  const fetchVoteStatus = useCallback(
+    async (threadId: number) => {
+      try {
+        const cookies = await Cookies.get(API_URL);
+        const csrfToken = cookies.csrftoken?.value;
+        const res = await fetch(`${API_URL}forum/vote/thread/${threadId}/status/`, {
+          headers: {
+            ...getAuthHeader(),
+            'Content-Type': 'application/json',
+            ...(csrfToken ? { 'X-CSRFToken': csrfToken } : {}),
+          },
+          credentials: 'include',
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setThreadVotes(prev => ({ ...prev, [threadId]: data.vote_type || null }));
+        } else {
+          setThreadVotes(prev => ({ ...prev, [threadId]: null }));
+        }
+      } catch (e) {
+        // Silently fail
+      }
+    },
+    [getAuthHeader]
+  );
+
+  /**
+   * Handles voting on a thread
+   */
+  const handleVote = useCallback(
+    async (threadId: number) => {
+      try {
+        const cookies = await Cookies.get(API_URL);
+        const csrfToken = cookies.csrftoken?.value;
+        const origin = API_URL.replace(/\/api\/?$/, '');
+        const currentVote = threadVotes[threadId];
+
+        if (currentVote === 'UPVOTE') {
+          // Remove vote
+          const res = await fetch(`${API_URL}forum/vote/thread/${threadId}/`, {
+            method: 'DELETE',
+            headers: {
+              ...getAuthHeader(),
+              'Content-Type': 'application/json',
+              'Referer': origin,
+              ...(csrfToken ? { 'X-CSRFToken': csrfToken } : {}),
+            },
+            credentials: 'include',
+          });
+          if (res.ok) {
+            setThreadVotes(prev => ({ ...prev, [threadId]: null }));
+            // Update like count locally
+            setThreads(prev =>
+              prev.map(t =>
+                t.id === threadId ? { ...t, like_count: Math.max(0, (t.like_count || 0) - 1) } : t
+              )
+            );
+          }
+        } else {
+          // Add upvote
+          const res = await fetch(`${API_URL}forum/vote/`, {
+            method: 'POST',
+            headers: {
+              ...getAuthHeader(),
+              'Content-Type': 'application/json',
+              'Referer': origin,
+              ...(csrfToken ? { 'X-CSRFToken': csrfToken } : {}),
+            },
+            credentials: 'include',
+            body: JSON.stringify({
+              content_type: 'THREAD',
+              object_id: threadId,
+              vote_type: 'UPVOTE',
+            }),
+          });
+          if (res.ok) {
+            const wasDownvoted = currentVote === 'DOWNVOTE';
+            setThreadVotes(prev => ({ ...prev, [threadId]: 'UPVOTE' }));
+            // Update like count locally
+            setThreads(prev =>
+              prev.map(t =>
+                t.id === threadId
+                  ? { ...t, like_count: (t.like_count || 0) + 1 }
+                  : t
+              )
+            );
+          }
+        }
+      } catch (e) {
+        console.error('Vote error:', e);
+      }
+    },
+    [getAuthHeader, threadVotes]
+  );
+
+  /**
+   * Fetch vote statuses when threads change
+   */
+  useEffect(() => {
+    threads.forEach(thread => {
+      if (thread.id && threadVotes[thread.id] === undefined) {
+        fetchVoteStatus(thread.id);
+      }
+    });
+  }, [threads, fetchVoteStatus, threadVotes]);
+
+  /**
    * Re-sort threads when sort option changes
    */
   useEffect(() => {
@@ -398,10 +508,10 @@ const Home = () => {
           <Card.Actions style={styles.cardActions}>
             <View style={styles.statsContainer}>
               <IconButton
-                icon="thumb-up-outline"
+                icon={threadVotes[item.id] === 'UPVOTE' ? 'thumb-up' : 'thumb-up-outline'}
                 size={20}
-                iconColor={theme.colors.primary}
-                onPress={() => {}}
+                iconColor={threadVotes[item.id] === 'UPVOTE' ? theme.colors.primary : theme.colors.onSurfaceVariant}
+                onPress={() => handleVote(item.id)}
               />
               <Text variant="labelMedium" style={{ color: theme.colors.onSurfaceVariant }}>
                 {item.like_count || 0}
@@ -412,7 +522,7 @@ const Home = () => {
                 size={20}
                 iconColor={theme.colors.primary}
                 style={{ marginLeft: 8 }}
-                onPress={() => {}}
+                onPress={() => navigation.navigate('ThreadDetail' as never, { threadId: item.id } as never)}
               />
               <Text variant="labelMedium" style={{ color: theme.colors.onSurfaceVariant }}>
                 {item.comment_count || 0}
@@ -430,7 +540,7 @@ const Home = () => {
         </Card>
       );
     },
-    [profilePics, theme, navigation, threadComments]
+    [profilePics, theme, navigation, threadComments, threadVotes, handleVote]
   );
 
   /**
