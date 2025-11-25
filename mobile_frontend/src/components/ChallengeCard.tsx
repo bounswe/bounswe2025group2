@@ -39,8 +39,9 @@ const ChallengeCard: React.FC<Props> = ({
   onMembershipChange,
 }) => {
   const { getAuthHeader } = useAuth();
-  const API = baseUrl ?? `${API_URL}challenges/`;
-  const cookieOrigin = API.replace(/\/api\/?$/, '');
+  const API_BASE = (baseUrl ?? `${API_URL}challenges/`).replace(/^http:\/\//, 'https://');
+  const API = API_BASE;
+  const cookieOrigin = API_URL.replace(/\/api\/?$/, '');
 
   const [loading, setLoading] = useState(true);
   const [joining, setJoining] = useState(false);
@@ -70,7 +71,7 @@ const ChallengeCard: React.FC<Props> = ({
         const csrf = cookies.csrftoken?.value;
 
         // Detail
-        const response = await fetch(`${API}/challenges/${challengeId}/`, {
+        const response = await fetch(`${API}challenges/${challengeId}/`, {
           headers: {
             ...getAuthHeader(),
             'Content-Type': 'application/json',
@@ -90,7 +91,7 @@ const ChallengeCard: React.FC<Props> = ({
         }
 
         // Participants via leaderboard length
-        const response2 = await fetch(`${API}/challenges/${challengeId}/leaderboard/`, {
+        const response2 = await fetch(`${API}challenges/${challengeId}/leaderboard/`, {
           headers: {
             ...getAuthHeader(),
             'Content-Type': 'application/json',
@@ -123,12 +124,13 @@ const ChallengeCard: React.FC<Props> = ({
       const cookies = await Cookies.get(cookieOrigin);
       const csrf = cookies.csrftoken?.value;
 
-      const response = await fetch(`${API}/challenges/${challengeId}/join/`, {
+      const response = await fetch(`${API}challenges/${challengeId}/join/`, {
         method: 'POST',
         headers: {
           ...getAuthHeader(),
           'Content-Type': 'application/json',
           ...(csrf ? { 'X-CSRFToken': csrf } : {}),
+          Referer: cookieOrigin,
         },
         credentials: 'include',
       });

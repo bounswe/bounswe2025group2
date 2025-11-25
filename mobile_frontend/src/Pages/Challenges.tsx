@@ -70,7 +70,7 @@ const Challenges: React.FC = () => {
       const cookies = await Cookies.get(COOKIE_ORIGIN);
       const csrf = cookies.csrftoken?.value;
 
-      const response = await fetch(`${API_URL}user`, {
+      const response = await fetch(`${API_URL}user/`, {
         method: 'GET',
         headers: {
           ...getAuthHeader(),
@@ -160,6 +160,7 @@ const Challenges: React.FC = () => {
     return `${API_URL}challenges/search/${qs ? `?${qs}` : ''}`;
   };
 
+
   const fetchChallenges = useCallback(async () => {
     if (!isAuthed) return;
     abortListFetch();
@@ -180,7 +181,6 @@ const Challenges: React.FC = () => {
         credentials: 'include',
         signal: ac.signal,
       });
-
       if (!res.ok) throw new Error('search failed');
 
       const json = await res.json();
@@ -368,6 +368,7 @@ const Challenges: React.FC = () => {
           ...getAuthHeader(),
           'Content-Type': 'application/json',
           ...(csrf ? { 'X-CSRFToken': csrf } : {}),
+          Referer: COOKIE_ORIGIN,
         },
         credentials: 'include',
       body: JSON.stringify(body),
@@ -755,7 +756,7 @@ const ChallengeDetailContent: React.FC<{
       const cookies = await Cookies.get(api.replace(/\/api\/?$/, ''));
       const csrf = cookies.csrftoken?.value;
 
-      const response = await fetch(`${api}/user`, {
+      const response = await fetch(`${api}user/`, {
         method: 'GET',
         headers: {
           ...getAuthHeader(),
@@ -831,7 +832,7 @@ const ChallengeDetailContent: React.FC<{
       const csrf = cookies.csrftoken?.value;
 
       const qs = `${sortKey}=${sortReverse ? '-' : ''}`;
-      const r2 = await fetch(`${api}/challenges/${id}/leaderboard/?${qs}`, {
+      const r2 = await fetch(`${api}challenges/${id}/leaderboard/?${qs}`, {
         headers: { ...getAuthHeader(), 'Content-Type': 'application/json', ...(csrf ? { 'X-CSRFToken': csrf } : {}) },
         credentials: 'include',
       });
@@ -875,9 +876,9 @@ const ChallengeDetailContent: React.FC<{
     try {
       const cookies = await Cookies.get(cookieOrigin);
       const csrf = cookies.csrftoken?.value;
-      const res = await fetch(`${api}/challenges/${id}/join/`, {
+      const res = await fetch(`${api}challenges/${id}/join/`, {
         method: 'POST',
-        headers: { ...getAuthHeader(), 'Content-Type': 'application/json', ...(csrf ? { 'X-CSRFToken': csrf } : {}) },
+        headers: { ...getAuthHeader(), 'Content-Type': 'application/json', ...(csrf ? { 'X-CSRFToken': csrf } : {}), Referer: cookieOrigin },
         credentials: 'include',
       });
 
@@ -894,7 +895,7 @@ const ChallengeDetailContent: React.FC<{
       }
     } catch {
       try {
-        const res2 = await fetch(`${api}/challenges/${id}/`, {
+        const res2 = await fetch(`${api}challenges/${id}/`, {
           method: 'GET',
           headers: { ...getAuthHeader(), 'Content-Type': 'application/json' },
           credentials: 'include',
@@ -926,9 +927,9 @@ const ChallengeDetailContent: React.FC<{
     try {
       const cookies = await Cookies.get(cookieOrigin);
       const csrf = cookies.csrftoken?.value;
-      const res = await fetch(`${api}/challenges/${id}/leave/`, {
+      const res = await fetch(`${api}challenges/${id}/leave/`, {
         method: 'POST',
-        headers: { ...getAuthHeader(), 'Content-Type': 'application/json', ...(csrf ? { 'X-CSRFToken': csrf } : {}) },
+        headers: { ...getAuthHeader(), 'Content-Type': 'application/json', ...(csrf ? { 'X-CSRFToken': csrf } : {}), Referer: cookieOrigin },
         credentials: 'include',
       });
 
@@ -945,7 +946,7 @@ const ChallengeDetailContent: React.FC<{
       }
     } catch {
       try {
-        const res2 = await fetch(`${api}/challenges/${id}/`, {
+        const res2 = await fetch(`${api}challenges/${id}/`, {
           method: 'GET',
           headers: { ...getAuthHeader(), 'Content-Type': 'application/json' },
           credentials: 'include',
@@ -999,9 +1000,9 @@ const ChallengeDetailContent: React.FC<{
 
       const body = progressMode === 'add' ? { added_value: v } : { current_value: v };
 
-      const res = await fetch(`${api}/challenges/${id}/update-progress/`, {
+      const res = await fetch(`${api}challenges/${id}/update-progress/`, {
         method: 'POST',
-        headers: { ...getAuthHeader(), 'Content-Type': 'application/json', ...(csrf ? { 'X-CSRFToken': csrf } : {}) },
+        headers: { ...getAuthHeader(), 'Content-Type': 'application/json', ...(csrf ? { 'X-CSRFToken': csrf } : {}), Referer: cookieOrigin },
         credentials: 'include',
         body: JSON.stringify(body),
       });
@@ -1082,9 +1083,9 @@ const ChallengeDetailContent: React.FC<{
       if (editStart && editStart.toISOString() !== challenge.start_date) body.start_date = editStart.toISOString();
       if (editEnd && editEnd.toISOString() !== challenge.end_date) body.end_date = editEnd.toISOString();
 
-      const res = await fetch(`${api}/challenges/${id}/update/`, {
+      const res = await fetch(`${api}challenges/${id}/update/`, {
         method: 'PUT',
-        headers: { ...getAuthHeader(), 'Content-Type': 'application/json', ...(csrf ? { 'X-CSRFToken': csrf } : {}) },
+        headers: { ...getAuthHeader(), 'Content-Type': 'application/json', ...(csrf ? { 'X-CSRFToken': csrf } : {}), Referer: cookieOrigin },
         credentials: 'include',
         body: JSON.stringify(body),
       });
@@ -1116,9 +1117,9 @@ const ChallengeDetailContent: React.FC<{
             const cookies = await Cookies.get(cookieOrigin);
             const csrf = cookies.csrftoken?.value;
 
-            const res = await fetch(`${api}/challenges/${id}/delete/`, {
+            const res = await fetch(`${api}challenges/${id}/delete/`, {
               method: 'DELETE',
-              headers: { ...getAuthHeader(), 'Content-Type': 'application/json', ...(csrf ? { 'X-CSRFToken': csrf } : {}) },
+              headers: { ...getAuthHeader(), 'Content-Type': 'application/json', ...(csrf ? { 'X-CSRFToken': csrf } : {}), Referer: cookieOrigin },
               credentials: 'include',
             });
             if (res.status === 204 || res.ok) {
@@ -1207,7 +1208,7 @@ const ChallengeDetailContent: React.FC<{
         const cookies = await Cookies.get(api.replace(/\/api\/?$/, ''));
         const csrf = cookies.csrftoken?.value;
 
-        const res = await fetch(`${api}/challenges/${id}/`, {
+        const res = await fetch(`${api}challenges/${id}/`, {
           headers: {
             ...getAuthHeader(),
             'Content-Type': 'application/json',
@@ -1223,7 +1224,7 @@ const ChallengeDetailContent: React.FC<{
         setChallenge(data.challenge);
         setParticipant(data.participant ?? null);
 
-        const r2 = await fetch(`${api}/challenges/${id}/leaderboard/`, {
+        const r2 = await fetch(`${api}challenges/${id}/leaderboard/`, {
           headers: {
             ...getAuthHeader(),
             'Content-Type': 'application/json',
