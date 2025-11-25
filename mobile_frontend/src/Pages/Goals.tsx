@@ -17,6 +17,7 @@ import { useAuth } from '../context/AuthContext';
 import CookieManager from '@react-native-cookies/cookies';
 import { useRoute, useFocusEffect } from '@react-navigation/native';
 import { API_URL } from '../constants/api';
+import Toast from 'react-native-toast-message';
 
 // ──────────────────────────────────────────────────────────────────────────────
 // 📋 TYPE DEFINITIONS
@@ -87,6 +88,8 @@ interface GoalSuggestionResponse {
   days_to_complete: number;
   goal_type: 'WALKING_RUNNING' | 'WORKOUT' | 'CYCLING' | 'SWIMMING' | 'SPORTS';
   tips: string[];
+  improved_title?: string;  // Optional: AI-improved title - should be provided by API
+  improved_description?: string;  // Optional: AI-improved description - should be provided by API
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
@@ -95,7 +98,7 @@ interface GoalSuggestionResponse {
 
 // Note: Trailing slash required for Django's APPEND_SLASH=True configuration
 const GOALS_ENDPOINT = `${API_URL}goals/`;
-const GOAL_SUGGESTIONS_ENDPOINT = `${API_URL}/goals/suggestions/`;
+const GOAL_SUGGESTIONS_ENDPOINT = `${API_URL}goals/suggestions/`;
 
 /**
  * Extracts the origin (base URL) for Referer header
@@ -416,6 +419,7 @@ const CreateGoalModal: React.FC<CreateGoalModalProps> = ({
   const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
   const [suggestionError, setSuggestionError] = useState<string | null>(null);
   const [suggestionResult, setSuggestionResult] = useState<GoalSuggestionResponse | null>(null);
+  const [showSuggestionModal, setShowSuggestionModal] = useState(false);
 
   const resetForm = () => {
     setFormData({
@@ -428,6 +432,7 @@ const CreateGoalModal: React.FC<CreateGoalModalProps> = ({
     });
     setSuggestionError(null);
     setSuggestionResult(null);
+    setShowSuggestionModal(false);
   };
 
   // Reset form to default values when modal becomes visible to prevent stale data
@@ -443,8 +448,14 @@ const CreateGoalModal: React.FC<CreateGoalModalProps> = ({
       return;
     }
 
+    // Require both title AND description to be filled
     if (!formData.title.trim()) {
       Alert.alert('Error', 'Please enter a goal title to get suggestions.');
+      return;
+    }
+
+    if (!formData.description.trim()) {
+      Alert.alert('Error', 'Please enter a goal description to get suggestions.');
       return;
     }
 
@@ -455,24 +466,54 @@ const CreateGoalModal: React.FC<CreateGoalModalProps> = ({
 
       const csrfToken = await getCSRFToken();
 
+      const origin = getOrigin();
       const response = await fetch(GOAL_SUGGESTIONS_ENDPOINT, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-CSRFToken': csrfToken,
+          'Referer': origin,
+          ...(csrfToken ? { 'X-CSRFToken': csrfToken } : {}),
           ...getAuthHeader(),
         },
+        credentials: 'include',
         body: JSON.stringify({
           title: formData.title,
           description: formData.description || '',
         }),
       });
 
+      // Handle 400 Bad Request (missing title)
+      if (response.status === 400) {
+        const errorData = await response.json().catch(() => ({ detail: 'Title is required' }));
+        const errorMessage = errorData.detail || errorData.message || 'Title is required';
+        Toast.show({
+          type: 'error',
+          text1: 'Error',
+          text2: errorMessage,
+        });
+        return;
+      }
+
+      // Handle 429 Rate Limit
       if (response.status === 429) {
         const data = await response.json().catch(() => ({}));
         const retryAfter = data.retry_after_seconds || data.detail?.match(/\d+/)?.[0] || 0;
         const waitMinutes = Math.ceil(retryAfter / 60);
-        setSuggestionError(`You've reached the hourly limit for AI suggestions. Please try again in ${waitMinutes} minutes.`);
+        Toast.show({
+          type: 'error',
+          text1: 'Rate Limit Reached',
+          text2: `You've reached the hourly limit for AI suggestions. Try again in ${waitMinutes} minutes.`,
+        });
+        return;
+      }
+
+      // Handle 500 Server Error
+      if (response.status === 500) {
+        Toast.show({
+          type: 'error',
+          text1: 'Service Unavailable',
+          text2: 'Suggestions feature is currently unavailable. Please create your goal manually.',
+        });
         return;
       }
 
@@ -483,15 +524,24 @@ const CreateGoalModal: React.FC<CreateGoalModalProps> = ({
         } catch (jsonError) {
           console.error('Goal suggestions error response:', response.status, 'Failed to parse JSON');
         }
-        setSuggestionError('Suggestions feature is currently unavailable. Please create your goal manually.');
+        Toast.show({
+          type: 'error',
+          text1: 'Error',
+          text2: 'Suggestions feature is currently unavailable. Please create your goal manually.',
+        });
         return;
       }
 
       const data: GoalSuggestionResponse = await response.json();
       setSuggestionResult(data);
+      setShowSuggestionModal(true); // Show modal with suggestions
     } catch (error) {
       console.error('Failed to fetch suggestions:', error);
-      setSuggestionError('Suggestions feature is currently unavailable. Please create your goal manually.');
+      Toast.show({
+        type: 'error',
+        text1: 'Network Error',
+        text2: 'Suggestions feature is currently unavailable. Please create your goal manually.',
+      });
     } finally {
       setIsLoadingSuggestions(false);
     }
@@ -501,14 +551,48 @@ const CreateGoalModal: React.FC<CreateGoalModalProps> = ({
     const now = new Date();
     const targetDate = new Date(now.getTime() + suggestion.days_to_complete * 24 * 60 * 60 * 1000);
     
+    // Always update title and description with AI-improved versions when applying suggestions
+    let improvedTitle = suggestion.improved_title;
+    let improvedDescription = suggestion.improved_description;
+    
+    // If API didn't provide improved versions, generate them based on the safe alternative
+    if (!improvedTitle) {
+      // Create an improved title based on the safe target and timeline
+      const goalTypeLabel = GOAL_TYPES.find(type => type.value === suggestion.goal_type)?.label || suggestion.goal_type;
+      improvedTitle = `${goalTypeLabel}: ${suggestion.target_value} ${suggestion.unit} in ${suggestion.days_to_complete} days`;
+    }
+    
+    if (!improvedDescription) {
+      // Create an improved description incorporating the safe alternative and tips
+      const targetInfo = `Target: ${suggestion.target_value} ${suggestion.unit} over ${suggestion.days_to_complete} days.`;
+      const tipsText = suggestion.tips.length > 0 
+        ? `\n\nKey strategies:\n${suggestion.tips.map((tip, i) => `${i + 1}. ${tip}`).join('\n')}`
+        : '';
+      
+      if (suggestion.warning_message) {
+        // For unrealistic goals, incorporate the warning message context
+        improvedDescription = `${targetInfo}${tipsText}`;
+      } else {
+        // For realistic goals, enhance the original description
+        improvedDescription = formData.description 
+          ? `${formData.description}\n\n${targetInfo}${tipsText}`
+          : `${targetInfo}${tipsText}`;
+      }
+    }
+    
+    // Auto-fill form with all suggested values including improved title and description
     setFormData({
       ...formData,
+      title: improvedTitle,  // Always update with improved title
+      description: improvedDescription,  // Always update with improved description
       goal_type: suggestion.goal_type,
       target_value: suggestion.target_value.toString(),
       unit: suggestion.unit,
       target_date: targetDate,
     });
+    
     setSuggestionResult(null);
+    setShowSuggestionModal(false);
   };
 
   const handleSubmit = () => {
@@ -602,9 +686,16 @@ const CreateGoalModal: React.FC<CreateGoalModalProps> = ({
 
           <View style={styles.inputGroup}>
             <TouchableOpacity
-              style={[styles.suggestionButton, { backgroundColor: colors.active }]}
+              style={[
+                styles.suggestionButton,
+                { backgroundColor: colors.active },
+                (!formData.title.trim() || !formData.description.trim() || isLoadingSuggestions || loading) && {
+                  backgroundColor: colors.border,
+                  opacity: 0.6,
+                },
+              ]}
               onPress={fetchSuggestions}
-              disabled={isLoadingSuggestions || loading}
+              disabled={!formData.title.trim() || !formData.description.trim() || isLoadingSuggestions || loading}
             >
               {isLoadingSuggestions ? (
                 <ActivityIndicator size="small" color={colors.background} />
@@ -615,95 +706,6 @@ const CreateGoalModal: React.FC<CreateGoalModalProps> = ({
               )}
             </TouchableOpacity>
           </View>
-
-          {suggestionError && (
-            <View style={[styles.suggestionErrorContainer, { backgroundColor: 'rgba(255, 0, 0, 0.1)', borderColor: 'rgba(255, 0, 0, 0.3)' }]}>
-              <CustomText style={[styles.suggestionErrorText, { color: '#ff4444' }]}>
-                {suggestionError}
-              </CustomText>
-            </View>
-          )}
-
-          {suggestionResult && (
-            <View style={[styles.suggestionContainer, { backgroundColor: colors.navBar, borderColor: colors.border }]}>
-              {!suggestionResult.is_realistic && (
-                <View style={[styles.suggestionWarning, { backgroundColor: 'rgba(255, 193, 7, 0.2)', borderColor: 'rgba(255, 193, 7, 0.5)' }]}>
-                  <CustomText style={[styles.suggestionWarningTitle, { color: '#ff9800' }]}>
-                    ⚠️ Unrealistic Goal Detected
-                  </CustomText>
-                  {suggestionResult.warning_message && (
-                    <CustomText style={[styles.suggestionWarningMessage, { color: colors.text }]}>
-                      {suggestionResult.warning_message}
-                    </CustomText>
-                  )}
-                </View>
-              )}
-
-              <View style={styles.suggestionInfo}>
-                <CustomText style={[styles.suggestionInfoLabel, { color: colors.text }]}>
-                  Suggested Target:
-                </CustomText>
-                <CustomText style={[styles.suggestionInfoValue, { color: colors.active }]}>
-                  {suggestionResult.target_value} {suggestionResult.unit}
-                </CustomText>
-              </View>
-
-              <View style={styles.suggestionInfo}>
-                <CustomText style={[styles.suggestionInfoLabel, { color: colors.text }]}>
-                  Timeline:
-                </CustomText>
-                <CustomText style={[styles.suggestionInfoValue, { color: colors.active }]}>
-                  {suggestionResult.days_to_complete} days
-                </CustomText>
-              </View>
-
-              <View style={styles.suggestionInfo}>
-                <CustomText style={[styles.suggestionInfoLabel, { color: colors.text }]}>
-                  Goal Type:
-                </CustomText>
-                <CustomText style={[styles.suggestionInfoValue, { color: colors.active }]}>
-                  {GOAL_TYPES.find(type => type.value === suggestionResult.goal_type)?.label || suggestionResult.goal_type}
-                </CustomText>
-              </View>
-
-              <View style={styles.suggestionTips}>
-                <CustomText style={[styles.suggestionTipsTitle, { color: colors.text }]}>
-                  Tips:
-                </CustomText>
-                {suggestionResult.tips.map((tip, index) => (
-                  <View key={index} style={styles.suggestionTipItem}>
-                    <CustomText style={[styles.suggestionTipNumber, { color: colors.active }]}>
-                      {index + 1}.
-                    </CustomText>
-                    <CustomText style={[styles.suggestionTipText, { color: colors.subText }]}>
-                      {tip}
-                    </CustomText>
-                  </View>
-                ))}
-              </View>
-
-              <View style={styles.suggestionActions}>
-                <TouchableOpacity
-                  style={[styles.suggestionActionButton, { backgroundColor: colors.active, flex: 1 }]}
-                  onPress={() => applySuggestion(suggestionResult)}
-                >
-                  <CustomText style={[styles.suggestionActionButtonText, { color: colors.background }]}>
-                    {suggestionResult.is_realistic ? 'Use Suggestion' : 'Use Safe Alternative'}
-                  </CustomText>
-                </TouchableOpacity>
-                {!suggestionResult.is_realistic && (
-                  <TouchableOpacity
-                    style={[styles.suggestionActionButton, { backgroundColor: colors.navBar, borderWidth: 1, borderColor: colors.border, flex: 1, marginLeft: 8 }]}
-                    onPress={() => setSuggestionResult(null)}
-                  >
-                    <CustomText style={[styles.suggestionActionButtonText, { color: colors.text }]}>
-                      Modify My Goal
-                    </CustomText>
-                  </TouchableOpacity>
-                )}
-              </View>
-            </View>
-          )}
 
           <View style={styles.inputGroup}>
             <CustomText style={[styles.inputLabel, { color: colors.text }]}>
@@ -779,6 +781,116 @@ const CreateGoalModal: React.FC<CreateGoalModalProps> = ({
           )}
         </ScrollView>
       </View>
+
+      {/* AI Suggestions Modal */}
+      {showSuggestionModal && suggestionResult && (
+        <Modal
+          visible={showSuggestionModal}
+          animationType="slide"
+          transparent={false}
+          onRequestClose={() => setShowSuggestionModal(false)}
+        >
+          <View style={[styles.suggestionModalContainer, { backgroundColor: colors.background }]}>
+            <View style={[styles.suggestionModalHeader, { borderBottomColor: colors.border }]}>
+              <TouchableOpacity
+                onPress={() => setShowSuggestionModal(false)}
+              >
+                <CustomText style={[styles.modalButton, { color: colors.active }]}>
+                  Close
+                </CustomText>
+              </TouchableOpacity>
+              <CustomText style={[styles.modalTitle, { color: colors.text }]}>
+                AI Suggestions
+              </CustomText>
+              <View style={{ width: 50 }} />
+            </View>
+
+            <ScrollView style={styles.suggestionModalContent}>
+              {!suggestionResult.is_realistic && (
+                <View style={[styles.suggestionWarning, { backgroundColor: 'rgba(255, 193, 7, 0.2)', borderColor: 'rgba(255, 193, 7, 0.5)' }]}>
+                  <CustomText style={[styles.suggestionWarningTitle, { color: '#ff9800' }]}>
+                    ⚠️ Unrealistic Goal Detected
+                  </CustomText>
+                  {suggestionResult.warning_message && (
+                    <CustomText style={[styles.suggestionWarningMessage, { color: colors.text }]}>
+                      {suggestionResult.warning_message}
+                    </CustomText>
+                  )}
+                </View>
+              )}
+
+              <View style={[styles.suggestionContainer, { backgroundColor: colors.navBar, borderColor: colors.border }]}>
+                <View style={styles.suggestionInfo}>
+                  <CustomText style={[styles.suggestionInfoLabel, { color: colors.text }]}>
+                    Suggested Target:
+                  </CustomText>
+                  <CustomText style={[styles.suggestionInfoValue, { color: colors.active }]}>
+                    {suggestionResult.target_value} {suggestionResult.unit}
+                  </CustomText>
+                </View>
+
+                <View style={styles.suggestionInfo}>
+                  <CustomText style={[styles.suggestionInfoLabel, { color: colors.text }]}>
+                    Timeline:
+                  </CustomText>
+                  <CustomText style={[styles.suggestionInfoValue, { color: colors.active }]}>
+                    {suggestionResult.days_to_complete} days
+                  </CustomText>
+                </View>
+
+                <View style={styles.suggestionInfo}>
+                  <CustomText style={[styles.suggestionInfoLabel, { color: colors.text }]}>
+                    Goal Type:
+                  </CustomText>
+                  <CustomText style={[styles.suggestionInfoValue, { color: colors.active }]}>
+                    {GOAL_TYPES.find(type => type.value === suggestionResult.goal_type)?.label || suggestionResult.goal_type}
+                  </CustomText>
+                </View>
+
+                <View style={styles.suggestionTips}>
+                  <CustomText style={[styles.suggestionTipsTitle, { color: colors.text }]}>
+                    Tips:
+                  </CustomText>
+                  {suggestionResult.tips.map((tip, index) => (
+                    <View key={index} style={styles.suggestionTipItem}>
+                      <CustomText style={[styles.suggestionTipNumber, { color: colors.active }]}>
+                        {index + 1}.
+                      </CustomText>
+                      <CustomText style={[styles.suggestionTipText, { color: colors.subText }]}>
+                        {tip}
+                      </CustomText>
+                    </View>
+                  ))}
+                </View>
+
+                <View style={styles.suggestionActions}>
+                  <TouchableOpacity
+                    style={[styles.suggestionActionButton, { backgroundColor: colors.active, flex: 1 }]}
+                    onPress={() => applySuggestion(suggestionResult)}
+                  >
+                    <CustomText style={[styles.suggestionActionButtonText, { color: colors.background }]}>
+                      {suggestionResult.is_realistic ? 'Apply Suggestions' : 'Use Safe Alternative'}
+                    </CustomText>
+                  </TouchableOpacity>
+                  {!suggestionResult.is_realistic && (
+                    <TouchableOpacity
+                      style={[styles.suggestionActionButton, { backgroundColor: colors.navBar, borderWidth: 1, borderColor: colors.border, flex: 1, marginLeft: 8 }]}
+                      onPress={() => {
+                        setShowSuggestionModal(false);
+                        setSuggestionResult(null);
+                      }}
+                    >
+                      <CustomText style={[styles.suggestionActionButtonText, { color: colors.text }]}>
+                        Edit My Goal
+                      </CustomText>
+                    </TouchableOpacity>
+                  )}
+                </View>
+              </View>
+            </ScrollView>
+          </View>
+        </Modal>
+      )}
     </Modal>
   );
 };
@@ -1926,6 +2038,21 @@ const styles = StyleSheet.create({
   suggestionActionButtonText: {
     fontSize: 14,
     fontWeight: 'bold',
+  },
+  suggestionModalContainer: {
+    flex: 1,
+  },
+  suggestionModalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+  },
+  suggestionModalContent: {
+    flex: 1,
+    padding: 16,
   },
 });
 
