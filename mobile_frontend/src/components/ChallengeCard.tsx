@@ -7,10 +7,12 @@ import {
   Pressable,
   ActivityIndicator,
   Alert,
+  TouchableOpacity,
 } from 'react-native';
 import Cookies from '@react-native-cookies/cookies';
 import { useAuth } from '../context/AuthContext';
 import { API_URL } from '@constants/api';
+import { useNavigation } from '@react-navigation/native';
 
 type Challenge = {
   id: number;
@@ -21,6 +23,7 @@ type Challenge = {
   unit?: string;
   start_date?: string; // ISO
   end_date?: string;   // ISO
+  coach_username?: string;
 };
 
 type Props = {
@@ -39,6 +42,7 @@ const ChallengeCard: React.FC<Props> = ({
   onMembershipChange,
 }) => {
   const { getAuthHeader } = useAuth();
+  const navigation = useNavigation();
   // Use API_URL directly (without challenges/) since we add it in the fetch URLs
   // API_URL is 'https://www.genfit.website/api/' - ensure we use it correctly
   const apiBase = baseUrl ?? API_URL;
@@ -244,6 +248,11 @@ const ChallengeCard: React.FC<Props> = ({
     }
   };
 
+  const handleUsernamePress = (username: string) => {
+    // @ts-ignore
+    navigation.navigate('Profile', { username });
+  };
+
   if (loading) {
     return (
       <View style={[styles.card, styles.center]}>
@@ -285,6 +294,18 @@ const ChallengeCard: React.FC<Props> = ({
       </View>
 
       <Text style={styles.title}>{challenge.title}</Text>
+
+      {/* Coach info */}
+      {challenge.coach_username && (
+        <TouchableOpacity 
+          onPress={() => handleUsernamePress(challenge.coach_username!)} 
+          activeOpacity={0.7}
+          style={styles.coachSection}
+        >
+          <Text style={styles.coachLabel}>By: </Text>
+          <Text style={styles.coachName}>@{challenge.coach_username}</Text>
+        </TouchableOpacity>
+      )}
 
       <View style={styles.metaRow}>
         <Text style={styles.metaText}>
@@ -384,6 +405,22 @@ const styles = StyleSheet.create({
   primaryBtnText: { color: '#8a2e2e', fontWeight: '600' },
   linkBtn: { alignItems: 'center', paddingVertical: 6 },
   linkText: { color: '#8a2e2e' },
+  coachSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 4,
+    marginBottom: 8,
+  },
+  coachLabel: {
+    fontSize: 13,
+    color: '#8a2e2e',
+    fontWeight: '500',
+  },
+  coachName: {
+    fontSize: 13,
+    color: '#8a2e2e',
+    fontWeight: '700',
+  },
 });
 
 export default ChallengeCard;

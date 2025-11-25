@@ -1,4 +1,3 @@
-
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   View,
@@ -14,6 +13,7 @@ import {
   StyleSheet,
   Platform,
   Switch,
+  TouchableOpacity,
 } from 'react-native';
 import Toast from 'react-native-toast-message';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
@@ -22,13 +22,14 @@ import { useAuth } from '../context/AuthContext';
 import ChallengeCard from '../components/ChallengeCard';
 import CustomText from '@components/CustomText';
 import { API_URL } from '../constants/api';
-import { useRoute, useFocusEffect } from '@react-navigation/native';
+import { useRoute, useFocusEffect, useNavigation } from '@react-navigation/native';
 
 type ChallengeListItem = { id: number; is_joined?: boolean };
 type BoolParam = '' | 'true' | 'false';
 
 const Challenges: React.FC = () => {
   const route = useRoute();
+  const navigation = useNavigation();
   const { currentUser, getAuthHeader } = useAuth();
   const isAuthed = currentUser?.id !== undefined && currentUser?.id !== null;
 
@@ -722,6 +723,7 @@ const ChallengeDetailContent: React.FC<{
   onClose: () => void;
 }> = ({ id, api, onMembershipChange, onClose }) => {
   const { currentUser, getAuthHeader } = useAuth();
+  const navigation = useNavigation();
   const isAuthed = currentUser?.id !== undefined && currentUser?.id !== null;
 
   const [loading, setLoading] = useState(true);
@@ -1284,12 +1286,30 @@ const ChallengeDetailContent: React.FC<{
     </View>
   );
 
+  const handleUsernamePress = (username: string) => {
+    // @ts-ignore
+    navigation.navigate('Profile', { username });
+  };
+
   return (
     <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 32 }}>
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
         <Text style={{ fontSize: 20, fontWeight: '700', color: '#8a2e2e', flexShrink: 1 }}>{challenge.title}</Text>
         <Pressable onPress={onClose} style={{ padding: 8 }}><Text>Close</Text></Pressable>
       </View>
+
+      {/* Coach info */}
+      {challenge.coach_username && (
+        <TouchableOpacity 
+          onPress={() => handleUsernamePress(challenge.coach_username)} 
+          activeOpacity={0.7}
+          style={{ flexDirection: 'row', alignItems: 'center', marginTop: 8 }}
+        >
+          <Text style={{ fontSize: 14, color: '#8a2e2e', fontWeight: '500' }}>Created by: </Text>
+          <Text style={{ fontSize: 14, color: '#8a2e2e', fontWeight: '700' }}>@{challenge.coach_username}</Text>
+        </TouchableOpacity>
+      )}
+
       { canEditDelete && (
       <View style={{ flexDirection: 'row', gap: 8, marginTop: 12 }}>
         <Pressable onPress={openEdit} style={{ paddingVertical: 8, paddingHorizontal: 12, borderWidth: 1, borderColor: '#b46d6d', borderRadius: 8 }}>
@@ -1520,9 +1540,15 @@ const ChallengeDetailContent: React.FC<{
                     style={{ padding: 8, borderWidth: 1, borderColor: '#eee', borderRadius: 8 }}
                   >
                     <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <CustomText style={{ fontWeight: '700' }}>
-                        {medal(rank)} #{rank} {p.username || `User #${p.user}`}
-                      </CustomText>
+                      <TouchableOpacity 
+                        onPress={() => p.username && handleUsernamePress(p.username)} 
+                        activeOpacity={0.7}
+                        disabled={!p.username}
+                      >
+                        <CustomText style={{ fontWeight: '700' }}>
+                          {medal(rank)} #{rank} <Text style={{ color: '#8a2e2e' }}>@{p.username || `User #${p.user}`}</Text>
+                        </CustomText>
+                      </TouchableOpacity>
                       {p.finish_date && <CustomText style={{ color: '#2e7d32' }}>Finished</CustomText>}
                     </View>
 
