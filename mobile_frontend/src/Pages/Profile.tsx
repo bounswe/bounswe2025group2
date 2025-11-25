@@ -18,6 +18,7 @@ import {
   useTheme,
   MD3Colors,
 } from 'react-native-paper';
+import Toast from 'react-native-toast-message';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../context/AuthContext';
@@ -106,6 +107,18 @@ const Profile = () => {
   const [editingGoal, setEditingGoal] = useState<FitnessGoal | null>(null);
   const [selectedGoalForDetail, setSelectedGoalForDetail] = useState<FitnessGoal | null>(null);
   const [isGoalModalOpen, setIsGoalModalOpen] = useState(false);
+  
+  // Collapsible sections state
+  const [isMentorshipExpanded, setIsMentorshipExpanded] = useState(true);
+
+  // Toast helper functions
+  const showSuccessToast = (message: string) => {
+    Toast.show({ type: 'success', text1: message });
+  };
+  
+  const showErrorToast = (message: string) => {
+    Toast.show({ type: 'error', text1: 'Error', text2: message });
+  };
 
   // Extract origin for Referer header (same pattern as Login.tsx)
   const origin = API_URL.replace(/\/api\/?$/, '');
@@ -444,10 +457,10 @@ const Profile = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['profile', 'me'] });
       setIsEditing(false);
-      Alert.alert('Success', 'Profile updated successfully');
+      showSuccessToast('Profile updated successfully');
     },
     onError: (error: Error) => {
-      Alert.alert('Error', error.message || 'Failed to update profile');
+      showErrorToast(error.message || 'Failed to update profile');
     },
   });
 
@@ -490,10 +503,10 @@ const Profile = () => {
     },
     onSuccess: () => {
       setPictureRefreshKey(Date.now());
-      Alert.alert('Success', 'Profile picture updated');
+      showSuccessToast('Profile picture updated');
     },
     onError: (error: Error) => {
-      Alert.alert('Error', error.message || 'Failed to upload picture');
+      showErrorToast(error.message || 'Failed to upload picture');
     },
   });
 
@@ -528,10 +541,10 @@ const Profile = () => {
     },
     onSuccess: () => {
       setPictureRefreshKey(Date.now());
-      Alert.alert('Success', 'Profile picture deleted');
+      showSuccessToast('Profile picture deleted');
     },
     onError: (error: Error) => {
-      Alert.alert('Error', error.message || 'Failed to delete picture');
+      showErrorToast(error.message || 'Failed to delete picture');
     },
   });
 
@@ -565,10 +578,10 @@ const Profile = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['goals', 'me'] });
       closeGoalDetails();
-      Alert.alert('Success', 'Goal deleted successfully');
+      showSuccessToast('Goal deleted successfully');
     },
     onError: (error: Error) => {
-      Alert.alert('Error', error.message || 'Failed to delete goal');
+      showErrorToast(error.message || 'Failed to delete goal');
     },
   });
 
@@ -642,11 +655,11 @@ const Profile = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['mentor-relationships', 'me'] });
-      Alert.alert('Success', 'Mentor request sent');
+      showSuccessToast('Mentor request sent');
     },
     onError: (error: Error) => {
       console.error('Request as mentor error:', error);
-      Alert.alert('Error', error.message);
+      showErrorToast(error.message);
     },
   });
 
@@ -711,11 +724,11 @@ const Profile = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['mentor-relationships', 'me'] });
-      Alert.alert('Success', 'Mentor request sent');
+      showSuccessToast('Mentor request sent');
     },
     onError: (error: Error) => {
       console.error('Request as mentee error:', error);
-      Alert.alert('Error', error.message);
+      showErrorToast(error.message);
     },
   });
 
@@ -750,10 +763,10 @@ const Profile = () => {
         REJECTED: 'Request rejected',
         TERMINATED: 'Relationship terminated',
       };
-      Alert.alert('Success', statusMessages[variables.status] || 'Relationship updated');
+      showSuccessToast(statusMessages[variables.status] || 'Relationship updated');
     },
     onError: (error: Error) => {
-      Alert.alert('Error', error.message);
+      showErrorToast(error.message);
     },
   });
 
@@ -866,72 +879,87 @@ const Profile = () => {
     <>
       <ScrollView style={[styles.container, { backgroundColor: theme.colors.background }]}>
         {/* Profile Hero Section */}
-        <Card mode="contained" style={[styles.heroCard, { backgroundColor: theme.colors.primaryContainer }]}>
+        <Card mode="elevated" style={styles.heroCard}>
           <Card.Content style={styles.heroContent}>
-            <View style={styles.avatarWrapper}>
-              {profilePictureUri ? (
-                <Avatar.Image
-                  size={120}
-                  source={{ 
-                    uri: profilePictureUri,
-                    headers: getAuthHeader(),
-                  }}
-                  key={pictureRefreshKey}
-                />
-              ) : (
-                <Avatar.Text size={120} label={avatarInitial} />
-              )}
-              {!otherUsername && (
-                <View style={styles.avatarActionsBelow}>
-                  <IconButton 
-                    icon="camera" 
-                    size={20} 
-                    onPress={handleChoosePhoto}
-                    mode="contained-tonal"
-                    disabled={uploadPictureMutation.isPending}
-                    testID="camera-button"
+            {/* Avatar with action overlay */}
+            <View style={styles.avatarSection}>
+              <View style={styles.avatarContainer}>
+                {profilePictureUri ? (
+                  <Avatar.Image
+                    size={140}
+                    source={{ 
+                      uri: profilePictureUri,
+                      headers: getAuthHeader(),
+                    }}
+                    key={pictureRefreshKey}
                   />
-                  {profilePictureUri && (
+                ) : (
+                  <Avatar.Text 
+                    size={140} 
+                    label={avatarInitial}
+                    style={{ backgroundColor: theme.colors.primaryContainer }}
+                    labelStyle={{ color: theme.colors.onPrimaryContainer, fontSize: 48 }}
+                  />
+                )}
+                {/* Photo action buttons overlay */}
+                {!otherUsername && (
+                  <View style={[styles.avatarOverlay, { backgroundColor: theme.colors.surface }]}>
                     <IconButton 
-                      icon="delete" 
-                      size={20} 
-                      onPress={handleDeletePhoto}
-                      mode="contained-tonal"
-                      disabled={deletePictureMutation.isPending}
-                      testID="delete-picture-button"
+                      icon="camera" 
+                      size={18} 
+                      onPress={handleChoosePhoto}
+                      mode="contained"
+                      containerColor={theme.colors.primary}
+                      iconColor={theme.colors.onPrimary}
+                      disabled={uploadPictureMutation.isPending}
+                      testID="camera-button"
+                      style={styles.avatarActionButton}
                     />
-                  )}
-                </View>
-              )}
+                    {profilePictureUri && (
+                      <IconButton 
+                        icon="delete-outline" 
+                        size={18} 
+                        onPress={handleDeletePhoto}
+                        mode="contained"
+                        containerColor={theme.colors.errorContainer}
+                        iconColor={theme.colors.onErrorContainer}
+                        disabled={deletePictureMutation.isPending}
+                        testID="delete-picture-button"
+                        style={styles.avatarActionButton}
+                      />
+                    )}
+                  </View>
+                )}
+              </View>
             </View>
-            <View style={styles.heroTextContainer}>
-              <Text variant="headlineMedium" style={{ color: theme.colors.onPrimaryContainer }}>
+            
+            {/* Name and info section */}
+            <View style={styles.profileInfoSection}>
+              <Text variant="headlineSmall" style={[styles.displayName, { color: theme.colors.onSurface }]}>
                 {profileDetails?.name && profileDetails?.surname 
                   ? `${profileDetails.name} ${profileDetails.surname}` 
                   : profileDetails?.username}
               </Text>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 4 }}>
-                <Text variant="titleMedium" style={{ color: theme.colors.onPrimaryContainer }}>
-                  @{profileDetails?.username}
-                </Text>
-                {(userDetails?.is_coach || profileDetails?.is_coach) && (
-                  <Chip 
-                    mode="flat" 
-                    compact 
-                    icon="school"
-                    style={{ backgroundColor: theme.colors.tertiaryContainer }}
-                    textStyle={{ color: theme.colors.onTertiaryContainer, fontSize: 12 }}
-                  >
-                    Coach
-                  </Chip>
-                )}
-              </View>
+              <Text variant="bodyLarge" style={[styles.username, { color: theme.colors.onSurfaceVariant }]}>
+                @{profileDetails?.username}
+              </Text>
+              {(userDetails?.is_coach || profileDetails?.is_coach) && (
+                <Chip 
+                  mode="flat" 
+                  compact 
+                  icon="school"
+                  style={[styles.coachBadge, { backgroundColor: theme.colors.tertiaryContainer }]}
+                  textStyle={{ color: theme.colors.onTertiaryContainer, fontSize: 12, fontWeight: '600' }}
+                >
+                  Coach
+                </Chip>
+              )}
             </View>
           </Card.Content>
         </Card>
 
         {/* Profile Information Section */}
-        <Card style={styles.sectionCard}>
+        <Card mode="elevated" style={styles.sectionCard}>
           <Card.Title
             title="Profile Information"
             right={(props) => !otherUsername && !isEditing ? (
@@ -988,15 +1016,95 @@ const Profile = () => {
           </Card.Content>
         </Card>
 
+        {/* Goals Section - Show for own profile or when viewing mentee as mentor */}
+        {(!otherUsername || (otherUsername && selectedRel && selectedRel.status === 'ACCEPTED' && selectedRel.mentor === myUserId)) && (
+          <Card mode="elevated" style={styles.sectionCard}>
+            <Card.Title
+              title="Goals"
+              right={(props) => {
+                // Show "New" button for own profile or when viewing mentee as mentor
+                const isMentorOfOther = otherUsername && selectedRel && selectedRel.status === 'ACCEPTED' && selectedRel.mentor === myUserId;
+                
+                if (!otherUsername) {
+                  return (
+                    <Button {...props} icon="plus" onPress={() => setIsGoalFormOpen(true)}>New</Button>
+                  );
+                }
+                if (isMentorOfOther) {
+                  return (
+                    <Button {...props} icon="plus" onPress={() => {
+                      setEditingGoal(null);
+                      setIsGoalFormOpen(true);
+                    }}>Add for Mentee</Button>
+                  );
+                }
+                return null;
+              }}
+            />
+            <Card.Content>
+              {isLoadingGoals ? <ActivityIndicator/> : goals.length > 0 ? (
+                  goals.map((goal: FitnessGoal, index: number) => (
+                    <React.Fragment key={goal.id}>
+                      <Pressable onPress={() => {
+                        setSelectedGoalForDetail(goal);
+                        setIsGoalModalOpen(true);
+                      }}>
+                        <GoalCard 
+                          goal={goal} 
+                          onPress={() => {
+                            setSelectedGoalForDetail(goal);
+                            setIsGoalModalOpen(true);
+                          }}
+                        />
+                      </Pressable>
+                      {index < goals.length - 1 && <Divider style={styles.goalDivider} />}
+                    </React.Fragment>
+                  ))
+              ) : (
+                <View style={styles.emptyStateContainer}>
+                  <Avatar.Icon icon="flag-checkered" size={48} style={{backgroundColor: theme.colors.surfaceVariant}}/>
+                  <Text variant="titleMedium" style={styles.emptyStateText}>No Goals Set</Text>
+                  <Text variant="bodyMedium" style={styles.emptyStateText}>
+                    {otherUsername 
+                      ? 'No goals set for this mentee yet. Tap "Add for Mentee" to create one.'
+                      : "You haven't set any goals yet."}
+                  </Text>
+                  {!otherUsername && (
+                    <Button mode="contained" style={styles.emptyStateButton} onPress={() => setIsGoalFormOpen(true)}>Set Your First Goal</Button>
+                  )}
+                  {otherUsername && (
+                    <Button mode="contained" style={styles.emptyStateButton} onPress={() => {
+                      setEditingGoal(null);
+                      setIsGoalFormOpen(true);
+                    }}>Add Goal for Mentee</Button>
+                  )}
+                </View>
+              )}
+            </Card.Content>
+          </Card>
+        )}
+
         {/* Mentorship Section - Own Profile */}
         {!otherUsername && (
-          <Card style={styles.sectionCard}>
-            <Card.Title title="Mentorship" />
+          <Card mode="elevated" style={styles.sectionCard}>
+            <Pressable onPress={() => setIsMentorshipExpanded(!isMentorshipExpanded)}>
+              <Card.Title 
+                title="Mentorship" 
+                right={(props) => (
+                  <IconButton 
+                    {...props} 
+                    icon={isMentorshipExpanded ? 'chevron-up' : 'chevron-down'} 
+                    onPress={() => setIsMentorshipExpanded(!isMentorshipExpanded)}
+                  />
+                )}
+              />
+            </Pressable>
+            {isMentorshipExpanded && (
             <Card.Content>
               {/* My Mentors */}
               <Text variant="titleMedium" style={{ marginBottom: 12, fontWeight: '600' }}>Your Mentors</Text>
               {myMentors.length > 0 ? (
-                <View style={styles.mentorshipGrid}>
+                <View style={styles.mentorshipList}>
                   {myMentors.map((u) => (
                     <Pressable 
                       key={`mentor-${u.id}`}
@@ -1004,16 +1112,22 @@ const Profile = () => {
                         // @ts-ignore
                         navigation.push('Profile', { username: u.username });
                       }}
+                      style={{ width: '100%' }}
                     >
-                      <Card mode="outlined" style={styles.mentorCard}>
+                      <Card mode="elevated" style={styles.mentorCard}>
                         <Card.Content style={styles.mentorCardContent}>
                           {mentorshipPictures[u.username] ? (
-                            <Avatar.Image size={48} source={{ uri: mentorshipPictures[u.username], headers: getAuthHeader() }} />
+                            <Avatar.Image size={56} source={{ uri: mentorshipPictures[u.username], headers: getAuthHeader() }} />
                           ) : (
-                            <Avatar.Text size={48} label={u.username?.[0]?.toUpperCase() || 'U'} />
+                            <Avatar.Text size={56} label={u.username?.[0]?.toUpperCase() || 'U'} />
                           )}
-                          <Text variant="bodyMedium" style={styles.mentorName} numberOfLines={1}>{u.username}</Text>
-                          <Chip compact mode="outlined" style={styles.roleChip}>Mentor</Chip>
+                          <View style={styles.mentorInfo}>
+                            <Text variant="titleMedium" style={styles.mentorName}>{u.username}</Text>
+                            <Chip compact mode="flat" icon="school" style={[styles.roleChip, { backgroundColor: theme.colors.primaryContainer }]}>
+                              <Text style={{ color: theme.colors.onPrimaryContainer, fontSize: 12 }}>Mentor</Text>
+                            </Chip>
+                          </View>
+                          <IconButton icon="chevron-right" size={24} />
                         </Card.Content>
                       </Card>
                     </Pressable>
@@ -1034,7 +1148,7 @@ const Profile = () => {
               {/* My Mentees */}
               <Text variant="titleMedium" style={{ marginBottom: 12, fontWeight: '600' }}>Your Mentees</Text>
               {myMentees.length > 0 ? (
-                <View style={styles.mentorshipGrid}>
+                <View style={styles.mentorshipList}>
                   {myMentees.map((u) => (
                     <Pressable 
                       key={`mentee-${u.id}`}
@@ -1042,16 +1156,22 @@ const Profile = () => {
                         // @ts-ignore
                         navigation.push('Profile', { username: u.username });
                       }}
+                      style={{ width: '100%' }}
                     >
-                      <Card mode="outlined" style={styles.mentorCard}>
+                      <Card mode="elevated" style={styles.mentorCard}>
                         <Card.Content style={styles.mentorCardContent}>
                           {mentorshipPictures[u.username] ? (
-                            <Avatar.Image size={48} source={{ uri: mentorshipPictures[u.username], headers: getAuthHeader() }} />
+                            <Avatar.Image size={56} source={{ uri: mentorshipPictures[u.username], headers: getAuthHeader() }} />
                           ) : (
-                            <Avatar.Text size={48} label={u.username?.[0]?.toUpperCase() || 'U'} />
+                            <Avatar.Text size={56} label={u.username?.[0]?.toUpperCase() || 'U'} />
                           )}
-                          <Text variant="bodyMedium" style={styles.mentorName} numberOfLines={1}>{u.username}</Text>
-                          <Chip compact mode="outlined" style={styles.roleChip}>Mentee</Chip>
+                          <View style={styles.mentorInfo}>
+                            <Text variant="titleMedium" style={styles.mentorName}>{u.username}</Text>
+                            <Chip compact mode="flat" icon="account" style={[styles.roleChip, { backgroundColor: theme.colors.secondaryContainer }]}>
+                              <Text style={{ color: theme.colors.onSecondaryContainer, fontSize: 12 }}>Mentee</Text>
+                            </Chip>
+                          </View>
+                          <IconButton icon="chevron-right" size={24} />
                         </Card.Content>
                       </Card>
                     </Pressable>
@@ -1144,12 +1264,13 @@ const Profile = () => {
                 </Card>
               )}
             </Card.Content>
+            )}
           </Card>
         )}
 
         {/* Mentorship Section - Other User's Profile */}
         {otherUsername && (
-          <Card style={styles.sectionCard}>
+          <Card mode="elevated" style={styles.sectionCard}>
             <Card.Title title="Mentorship" />
             <Card.Content>
               <Surface style={styles.relationshipStatusSurface} elevation={1}>
@@ -1240,74 +1361,6 @@ const Profile = () => {
             </Card.Content>
           </Card>
         )}
-
-        {/* Goals Section - Show for own profile or when viewing mentee as mentor */}
-        {(!otherUsername || (otherUsername && selectedRel && selectedRel.status === 'ACCEPTED' && selectedRel.mentor === myUserId)) && (
-          <Card style={styles.sectionCard}>
-            <Card.Title
-              title="Goals"
-              right={(props) => {
-                // Show "New" button for own profile or when viewing mentee as mentor
-                const isMentorOfOther = otherUsername && selectedRel && selectedRel.status === 'ACCEPTED' && selectedRel.mentor === myUserId;
-                
-                if (!otherUsername) {
-                  return (
-                    <Button {...props} icon="plus" onPress={() => setIsGoalFormOpen(true)}>New</Button>
-                  );
-                }
-                if (isMentorOfOther) {
-                  return (
-                    <Button {...props} icon="plus" onPress={() => {
-                      setEditingGoal(null);
-                      setIsGoalFormOpen(true);
-                    }}>Add for Mentee</Button>
-                  );
-                }
-                return null;
-              }}
-            />
-            <Card.Content>
-              {isLoadingGoals ? <ActivityIndicator/> : goals.length > 0 ? (
-                  goals.map((goal: FitnessGoal, index: number) => (
-                    <React.Fragment key={goal.id}>
-                      <Pressable onPress={() => {
-                        setSelectedGoalForDetail(goal);
-                        setIsGoalModalOpen(true);
-                      }}>
-                        <GoalCard 
-                          goal={goal} 
-                          onPress={() => {
-                            setSelectedGoalForDetail(goal);
-                            setIsGoalModalOpen(true);
-                          }}
-                        />
-                      </Pressable>
-                      {index < goals.length - 1 && <Divider style={styles.goalDivider} />}
-                    </React.Fragment>
-                  ))
-              ) : (
-                <View style={styles.emptyStateContainer}>
-                  <Avatar.Icon icon="flag-checkered" size={48} style={{backgroundColor: theme.colors.surfaceVariant}}/>
-                  <Text variant="titleMedium" style={styles.emptyStateText}>No Goals Set</Text>
-                  <Text variant="bodyMedium" style={styles.emptyStateText}>
-                    {otherUsername 
-                      ? 'No goals set for this mentee yet. Tap "Add for Mentee" to create one.'
-                      : "You haven't set any goals yet."}
-                  </Text>
-                  {!otherUsername && (
-                    <Button mode="contained" style={styles.emptyStateButton} onPress={() => setIsGoalFormOpen(true)}>Set Your First Goal</Button>
-                  )}
-                  {otherUsername && (
-                    <Button mode="contained" style={styles.emptyStateButton} onPress={() => {
-                      setEditingGoal(null);
-                      setIsGoalFormOpen(true);
-                    }}>Add Goal for Mentee</Button>
-                  )}
-                </View>
-              )}
-            </Card.Content>
-          </Card>
-        )}
       </ScrollView>
 
       {/* Goal Detail Modal */}
@@ -1389,12 +1442,31 @@ const InfoRow = ({ label, value, isLast = false }: { label: string, value: strin
 const GoalCard = ({ goal, onPress }: { goal: any, onPress: () => void }) => {
   const theme = useTheme();
   const progress = (goal.current_value / goal.target_value);
+  
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'ACTIVE': return { bg: theme.colors.primaryContainer, text: theme.colors.onPrimaryContainer };
+      case 'COMPLETED': return { bg: theme.colors.tertiaryContainer, text: theme.colors.onTertiaryContainer };
+      case 'INACTIVE': return { bg: theme.colors.surfaceVariant, text: theme.colors.onSurfaceVariant };
+      default: return { bg: theme.colors.secondaryContainer, text: theme.colors.onSecondaryContainer };
+    }
+  };
+  
+  const statusColors = getStatusColor(goal.status);
+  
   return (
-    <Card mode="outlined" onPress={onPress} style={styles.goalCard}>
+    <Card mode="elevated" onPress={onPress} style={styles.goalCard}>
       <Card.Content>
         <View style={styles.goalHeader}>
-          <Text variant="titleMedium">{goal.title}</Text>
-          <Chip compact>{goal.status}</Chip>
+          <Text variant="titleMedium" style={{ flex: 1 }}>{goal.title}</Text>
+          <Chip 
+            compact 
+            mode="flat"
+            style={{ backgroundColor: statusColors.bg }}
+            textStyle={{ color: statusColors.text, fontSize: 11 }}
+          >
+            {goal.status}
+          </Chip>
         </View>
         <Text variant="bodyMedium" style={styles.goalDescription}>{goal.description}</Text>
         <View style={styles.progressContainer}>
@@ -1419,20 +1491,52 @@ const styles = StyleSheet.create({
   },
   heroCard: {
     margin: 16,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    borderBottomLeftRadius: 20,
-    borderBottomRightRadius: 20,
+    borderRadius: 24,
   },
   heroContent: {
     alignItems: 'center',
-    padding: 16,
+    paddingVertical: 32,
+    paddingHorizontal: 24,
   },
-  avatarWrapper: {
-    alignItems: 'center',
-    marginBottom: 16,
+  avatarSection: {
+    marginBottom: 20,
   },
   avatarContainer: {
+    position: 'relative',
+    alignItems: 'center',
+  },
+  avatarOverlay: {
+    position: 'absolute',
+    bottom: -8,
+    flexDirection: 'row',
+    gap: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 24,
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+  },
+  avatarActionButton: {
+    margin: 0,
+  },
+  profileInfoSection: {
+    alignItems: 'center',
+    gap: 4,
+  },
+  displayName: {
+    fontWeight: '700',
+    textAlign: 'center',
+  },
+  username: {
+    textAlign: 'center',
+  },
+  coachBadge: {
+    marginTop: 8,
+  },
+  avatarWrapper: {
     alignItems: 'center',
     marginBottom: 16,
   },
@@ -1460,6 +1564,7 @@ const styles = StyleSheet.create({
   sectionCard: {
     marginHorizontal: 16,
     marginBottom: 16,
+    borderRadius: 16,
   },
   input: {
     marginBottom: 12,
@@ -1484,25 +1589,30 @@ const styles = StyleSheet.create({
     flexShrink: 1,
     textAlign: 'right',
   },
-  mentorshipGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+  mentorshipList: {
     gap: 12,
     marginBottom: 16,
   },
   mentorCard: {
-    width: 100,
+    width: '100%',
+    marginBottom: 0,
   },
   mentorCardContent: {
+    flexDirection: 'row',
     alignItems: 'center',
-    padding: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+  },
+  mentorInfo: {
+    flex: 1,
+    marginLeft: 16,
   },
   mentorName: {
-    marginTop: 8,
-    textAlign: 'center',
+    fontWeight: '600',
   },
   roleChip: {
     marginTop: 4,
+    alignSelf: 'flex-start',
   },
   emptyCard: {
     marginBottom: 16,
@@ -1533,6 +1643,7 @@ const styles = StyleSheet.create({
   },
   goalCard: {
     marginBottom: 8,
+    borderRadius: 16,
   },
   goalDivider: {
     marginVertical: 4,

@@ -3,17 +3,27 @@ import {
   View,
   StyleSheet,
   FlatList,
-  ActivityIndicator,
-  Text,
   Animated,
   Easing,
   ImageSourcePropType,
+  TouchableOpacity,
 } from 'react-native';
-import Thread from '../components/Thread';
-import { useTheme } from '../context/ThemeContext';
+import { 
+  Card, 
+  Button, 
+  useTheme,
+  Text,
+  ActivityIndicator,
+  Avatar,
+  IconButton,
+  Chip,
+  SegmentedButtons,
+  Divider,
+  Menu,
+} from 'react-native-paper';
 import Cookies from '@react-native-cookies/cookies';
 import { useAuth } from '../context/AuthContext';
-import { useFocusEffect } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { API_URL } from '@constants/api';
 
 const DEFAULT_PROFILE_PIC = require('../assets/temp_images/profile.png');
@@ -29,30 +39,41 @@ const DEFAULT_PROFILE_PIC = require('../assets/temp_images/profile.png');
  */
 const Home = () => {
   // State management for threads data and UI states
-  const [threads, setThreads] = useState<any[]>([]); // Array of thread objects from API
-  const [loading, setLoading] = useState<boolean>(true); // Initial loading state
-  const [refreshing, setRefreshing] = useState<boolean>(false); // Pull-to-refresh state
-  const [error, setError] = useState<string | null>(null); // Error message for failed requests
-  const [profilePics, setProfilePics] = useState<Record<string, string>>({}); // Cached profile images keyed by username
+  const [threads, setThreads] = useState<any[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [refreshing, setRefreshing] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
+  const [profilePics, setProfilePics] = useState<Record<string, string>>({});
+  const [sortBy, setSortBy] = useState<'newest' | 'top'>('top');
+  const [threadComments, setThreadComments] = useState<Record<number, any[]>>({});
+  const [dropdownVisible, setDropdownVisible] = useState(false);
 
-  // Context hooks for theming and authentication
-  const { colors } = useTheme();
+  // Context hooks
+  const theme = useTheme();
   const { getAuthHeader } = useAuth();
+  const navigation = useNavigation();
 
   // Animation references
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(16)).current;
+  
+  // Exercise card visibility
+  const [isExerciseCardVisible, setIsExerciseCardVisible] = useState(false);
 
   // Profile image cache helpers
   const profilePicCache = useRef<Record<string, string>>({});
   const profilePicRequests = useRef<Set<string>>(new Set());
 
   /**
-   * Safely sorts thread list by creation date (newest first).
+   * Safely sorts thread list by creation date (newest first) or likes (top first).
    */
   const sortThreadsByDate = useCallback((items: any[]) => {
     if (!Array.isArray(items)) {
       return [];
+    }
+
+    if (sortBy === 'top') {
+      return [...items].sort((a, b) => (b.like_count || 0) - (a.like_count || 0));
     }
 
     const getTimestamp = (thread: any) => {
@@ -74,7 +95,7 @@ const Home = () => {
     };
 
     return [...items].sort((a, b) => getTimestamp(b) - getTimestamp(a));
-  }, []);
+  }, [sortBy]);
 
   const animateContent = useCallback(() => {
     fadeAnim.setValue(0);
@@ -124,6 +145,11 @@ const Home = () => {
       if (response.ok) {
         const data = await response.json();
         setThreads(sortThreadsByDate(data));
+        
+        // Fetch top 2 comments for each thread
+        data.slice(0, 10).forEach((thread: any) => {
+          fetchThreadComments(thread.id);
+        });
       } else {
         setError('Failed to load threads');
         setThreads([]);
@@ -148,9 +174,10 @@ const Home = () => {
     }, [fetchThreads])
   );
 
+  // Run animation only once on mount
   useEffect(() => {
     animateContent();
-  }, [animateContent, threads]);
+  }, []);
 
   /**
    * Caches profile picture URI for quick lookup.
@@ -217,6 +244,49 @@ const Home = () => {
   }, [fetchProfilePicture, threads]);
 
   /**
+   * Fetches top comments for a thread
+   */
+  const fetchThreadComments = useCallback(
+    async (threadId: number) => {
+      try {
+        const cookies = await Cookies.get(API_URL);
+        const csrfToken = cookies.csrftoken?.value;
+
+        const response = await fetch(`${API_URL}comments/thread/${threadId}/`, {
+          headers: {
+            ...getAuthHeader(),
+            'Content-Type': 'application/json',
+            ...(csrfToken ? { 'X-CSRFToken': csrfToken } : {}),
+          },
+          credentials: 'include',
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          // Store top 2 comments
+          setThreadComments(prev => ({
+            ...prev,
+            [threadId]: data.slice(0, 2)
+          }));
+        }
+      } catch (err) {
+        // Silently fail for comments
+      }
+    },
+    [getAuthHeader]
+  );
+
+  /**
+   * Re-sort threads when sort option changes
+   */
+  useEffect(() => {
+    if (threads.length > 0) {
+      const sorted = sortThreadsByDate(threads);
+      setThreads(sorted);
+    }
+  }, [sortBy, sortThreadsByDate]);
+
+  /**
    * Handles pull-to-refresh functionality.
    * Sets refreshing state and fetches fresh data from API.
    * @async
@@ -229,13 +299,14 @@ const Home = () => {
   }, [fetchThreads]);
 
   /**
-   * Renders individual thread items in the FlatList.
-   * Handles data mapping and fallback values for missing thread properties.
+   * Renders individual thread items as modern cards
    */
   const renderItem = useCallback(
     ({ item, index }: { item: any; index: number }) => {
-      const username =
-        item.author?.username || item.author || item.username || 'User';
+      const username = item.author?.username || item.author || item.username || 'User';
+      const forumName = item.forum?.title || item.forum || 'Forum';
+      const content = `${item.title ? item.title + '\n' : ''}${item.content || ''}`;
+      const comments = threadComments[item.id] || [];
 
       const profilePicSource: ImageSourcePropType = (() => {
         if (username && profilePics[username]) {
@@ -248,49 +319,277 @@ const Home = () => {
       })();
 
       return (
-        <Thread
-          key={item.id || index}
-          forumName={item.forum?.title || item.forum || 'Forum'}
-          content={`${item.title ? item.title + '\n' : ''}${item.content || ''}`}
-          profilePic={profilePicSource}
-          username={username}
-          threadId={item.id}
-          likeCount={item.like_count || 0}
-          commentCount={item.comment_count || 0}
-        />
+        <Card 
+          key={item.id || index} 
+          mode="elevated" 
+          style={styles.threadCard}
+          onPress={() => navigation.navigate('ThreadDetail' as never, { threadId: item.id } as never)}
+        >
+          {/* Forum Badge */}
+          <Card.Content style={styles.cardHeader}>
+            <Chip 
+              icon="forum" 
+              compact 
+              mode="flat"
+              style={styles.forumChip}
+              textStyle={{ fontSize: 12 }}
+            >
+              {forumName}
+            </Chip>
+          </Card.Content>
+
+          {/* Author Section */}
+          <Card.Content style={styles.authorSection}>
+            <Avatar.Image 
+              size={40} 
+              source={profilePicSource}
+            />
+            <View style={styles.authorInfo}>
+              <Text 
+                variant="labelLarge" 
+                style={{ color: theme.colors.onSurface }}
+                onPress={() => navigation.navigate('Profile' as never, { username } as never)}
+              >
+                {username}
+              </Text>
+            </View>
+          </Card.Content>
+
+          {/* Content */}
+          <Card.Content style={styles.contentSection}>
+            <Text 
+              variant="bodyLarge" 
+              style={{ color: theme.colors.onSurface, lineHeight: 24 }}
+              numberOfLines={4}
+            >
+              {content}
+            </Text>
+          </Card.Content>
+
+          {/* Top Comments Preview */}
+          {comments.length > 0 && (
+            <Card.Content style={styles.commentsPreview}>
+              {comments.map((comment, idx) => (
+                <View key={comment.id || idx} style={styles.commentItem}>
+                  <View style={styles.commentHeader}>
+                    <IconButton
+                      icon="comment-outline"
+                      size={14}
+                      iconColor={theme.colors.primary}
+                      style={{ margin: 0 }}
+                    />
+                    <Text variant="labelMedium" style={{ color: theme.colors.primary, fontWeight: '600' }}>
+                      {comment.author_username || 'User'}
+                    </Text>
+                  </View>
+                  <Text 
+                    variant="bodySmall" 
+                    style={{ color: theme.colors.onSurface, marginLeft: 28, marginTop: -4 }}
+                    numberOfLines={2}
+                  >
+                    {comment.content}
+                  </Text>
+                </View>
+              ))}
+            </Card.Content>
+          )}
+
+          {/* Actions */}
+          <Card.Actions style={styles.cardActions}>
+            <View style={styles.statsContainer}>
+              <IconButton
+                icon="thumb-up-outline"
+                size={20}
+                iconColor={theme.colors.primary}
+                onPress={() => {}}
+              />
+              <Text variant="labelMedium" style={{ color: theme.colors.onSurfaceVariant }}>
+                {item.like_count || 0}
+              </Text>
+              
+              <IconButton
+                icon="comment-outline"
+                size={20}
+                iconColor={theme.colors.primary}
+                style={{ marginLeft: 8 }}
+                onPress={() => {}}
+              />
+              <Text variant="labelMedium" style={{ color: theme.colors.onSurfaceVariant }}>
+                {item.comment_count || 0}
+              </Text>
+            </View>
+            
+            <Button 
+              mode="text" 
+              onPress={() => navigation.navigate('ThreadDetail' as never, { threadId: item.id } as never)}
+              compact
+            >
+              View Thread
+            </Button>
+          </Card.Actions>
+        </Card>
       );
     },
-    [profilePics]
+    [profilePics, theme, navigation, threadComments]
   );
 
   /**
+   * Toggle exercise card visibility
+   */
+  const toggleExerciseCard = useCallback(() => {
+    setIsExerciseCardVisible(prev => !prev);
+  }, []);
+
+  /**
+   * Renders the exercises info card at the top of the feed
+   */
+  const renderHeader = () => {
+    return (
+      <>
+        {/* Tap indicator - visible when card is hidden */}
+        {!isExerciseCardVisible && (
+          <TouchableOpacity onPress={toggleExerciseCard} style={styles.pullIndicator} activeOpacity={0.7}>
+            <IconButton
+              icon="dumbbell"
+              size={16}
+              iconColor={theme.colors.primary}
+              style={{ margin: 0 }}
+            />
+            <Text variant="labelSmall" style={{ color: theme.colors.primary }}>
+              Exercise Library
+            </Text>
+            <IconButton
+              icon="chevron-down"
+              size={16}
+              iconColor={theme.colors.primary}
+              style={{ margin: 0 }}
+            />
+          </TouchableOpacity>
+        )}
+
+        {/* Exercise Library Card */}
+        {isExerciseCardVisible && (
+          <Card mode="elevated" style={styles.headerCard}>
+            <Card.Content>
+              <View style={styles.headerContent}>
+                <IconButton
+                  icon="dumbbell"
+                  size={32}
+                  iconColor={theme.colors.primary}
+                  containerColor={theme.colors.primaryContainer}
+                />
+                <View style={styles.headerText}>
+                  <Text variant="titleMedium" style={{ color: theme.colors.onSurface, marginBottom: 4 }}>
+                    Exercise Library
+                  </Text>
+                  <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>
+                    Explore our comprehensive exercise database
+                  </Text>
+                </View>
+                <IconButton
+                  icon="chevron-up"
+                  size={24}
+                  onPress={toggleExerciseCard}
+                  iconColor={theme.colors.onSurfaceVariant}
+                />
+              </View>
+              <Button
+                mode="contained"
+                icon="arrow-right"
+                onPress={() => navigation.navigate('Exercises' as never)}
+                style={{ marginTop: 12 }}
+              >
+                Browse Exercises
+              </Button>
+            </Card.Content>
+          </Card>
+        )}
+
+        {/* Sort Filter */}
+        <View style={styles.filterContainer}>
+          <Text variant="titleSmall" style={{ color: theme.colors.onSurface, flex: 1 }}>
+            Threads
+          </Text>
+          <Menu
+            visible={dropdownVisible}
+            onDismiss={() => setDropdownVisible(false)}
+            anchor={
+              <TouchableOpacity
+                onPress={() => setDropdownVisible(true)}
+                style={styles.dropdownButton}
+              >
+                <IconButton 
+                  icon={sortBy === 'top' ? 'fire' : 'clock-outline'} 
+                  size={20} 
+                  style={{ margin: 0 }}
+                />
+                <Text variant="labelLarge" style={{ marginRight: 4 }}>
+                  {sortBy === 'top' ? 'Top' : 'Newest'}
+                </Text>
+                <IconButton 
+                  icon="chevron-down" 
+                  size={20} 
+                  style={{ margin: 0 }}
+                />
+              </TouchableOpacity>
+            }
+            contentStyle={{ backgroundColor: theme.colors.elevation.level2 }}
+          >
+            <Menu.Item 
+              onPress={() => { setSortBy('top'); setDropdownVisible(false); }} 
+              title="Top"
+              leadingIcon="fire"
+            />
+            <Divider />
+            <Menu.Item 
+              onPress={() => { setSortBy('newest'); setDropdownVisible(false); }} 
+              title="Newest"
+              leadingIcon="clock-outline"
+            />
+          </Menu>
+        </View>
+      </>
+    );
+  };
+
+  /**
    * Renders the empty state component for FlatList.
-   * Shows loading spinner, error message, or empty state based on current state.
-   * @returns {JSX.Element} Empty state component
    */
   const listEmpty = useMemo(() => {
     if (loading) {
       return (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={colors.mentionText} />
+        <View style={styles.centerContainer}>
+          <ActivityIndicator size="large" color={theme.colors.primary} />
         </View>
       );
     }
 
-    const content = error ? 'Failed to load threads. Pull to refresh.' : 'There is no such post.';
-
     return (
-      <View style={styles.emptyContainer}>
-        <Text style={[styles.emptyText, { color: colors.subText }]}>{content}</Text>
+      <View style={styles.centerContainer}>
+        <IconButton
+          icon={error ? "alert-circle-outline" : "post-outline"}
+          size={64}
+          iconColor={theme.colors.onSurfaceVariant}
+        />
+        <Text variant="titleMedium" style={{ color: theme.colors.onSurface, marginTop: 8 }}>
+          {error ? 'Failed to load threads' : 'No threads yet'}
+        </Text>
+        <Text variant="bodyMedium" style={{ color: theme.colors.onSurfaceVariant, marginTop: 4 }}>
+          {error ? 'Pull down to refresh' : 'Be the first to post!'}
+        </Text>
       </View>
     );
-  }, [colors.mentionText, colors.subText, error, loading]);
+  }, [theme, error, loading]);
 
   return (
     <Animated.View
       style={[
         styles.container,
-        { opacity: fadeAnim, transform: [{ translateY: slideAnim }] },
+        { 
+          opacity: fadeAnim, 
+          transform: [{ translateY: slideAnim }],
+          backgroundColor: theme.colors.background,
+        },
       ]}
     >
       <FlatList
@@ -299,38 +598,112 @@ const Home = () => {
         data={threads}
         keyExtractor={(item, index) => String(item?.id ?? index)}
         renderItem={renderItem}
+        ListHeaderComponent={renderHeader}
         ListEmptyComponent={listEmpty}
         refreshing={refreshing}
         onRefresh={onRefresh}
+        showsVerticalScrollIndicator={false}
       />
     </Animated.View>
   );
 };
 
-/**
- * StyleSheet for Home component
- * Defines layout and spacing for the main container and content area
- */
 const styles = StyleSheet.create({
   container: {
-    flex: 1, // Take full available height
+    flex: 1,
   },
   list: {
     flex: 1,
   },
   content: {
-    padding: 16, // Add padding around the content
+    padding: 16,
   },
-  loadingContainer: {
+  pullIndicator: {
+    flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 40,
+    justifyContent: 'center',
+    paddingVertical: 2,
+    marginBottom: 8,
+    backgroundColor: 'rgba(128, 0, 0, 0.08)',
+    borderRadius: 16,
+    alignSelf: 'center',
+    paddingHorizontal: 8,
   },
-  emptyContainer: {
+  headerCard: {
+    marginBottom: 12,
+  },
+  headerContent: {
+    flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 40,
+    gap: 12,
   },
-  emptyText: {
-    fontSize: 16,
+  headerText: {
+    flex: 1,
+  },
+  threadCard: {
+    marginBottom: 16,
+  },
+  cardHeader: {
+    paddingBottom: 8,
+  },
+  forumChip: {
+    alignSelf: 'flex-start',
+  },
+  authorSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingVertical: 8,
+  },
+  authorInfo: {
+    flex: 1,
+  },
+  contentSection: {
+    paddingTop: 8,
+    paddingBottom: 12,
+  },
+  cardActions: {
+    justifyContent: 'space-between',
+    paddingHorizontal: 8,
+  },
+  statsContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  commentsPreview: {
+    paddingTop: 12,
+    paddingBottom: 8,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(0,0,0,0.08)',
+  },
+  commentItem: {
+    marginBottom: 8,
+  },
+  commentHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 2,
+  },
+  filterContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 8,
+    marginBottom: 12,
+  },
+  dropdownButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.1)',
+    borderRadius: 20,
+    paddingRight: 8,
+    backgroundColor: 'transparent',
+  },
+  centerContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 48,
   },
 });
 
