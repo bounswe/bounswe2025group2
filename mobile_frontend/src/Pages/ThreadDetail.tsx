@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, ScrollView, ActivityIndicator, Pressable, TextInput, Image } from 'react-native';
+import { View, StyleSheet, ScrollView, ActivityIndicator, Pressable, TextInput, Image, TouchableOpacity } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
-import { useRoute } from '@react-navigation/native';
+import { useRoute, useNavigation } from '@react-navigation/native';
 import { useAuth } from '../context/AuthContext';
 import CustomText from '@components/CustomText';
 import Toast from 'react-native-toast-message';
@@ -42,6 +42,7 @@ type ThreadDetailData = {
 const ThreadDetail = () => {
   const { colors } = useTheme();
   const route = useRoute();
+  const navigation = useNavigation();
   const { threadId } = route.params as ThreadParam;
   const { getAuthHeader } = useAuth();
   const [thread, setThread] = useState<ThreadDetailData | null>(null);
@@ -284,13 +285,16 @@ const ThreadDetail = () => {
       
       {/* Thread metadata card */}
       <View style={[styles.metadataCard, { borderColor: colors.border }]}>
-        <View style={styles.metadataRow}>
+        <TouchableOpacity 
+          style={styles.metadataRow}
+          onPress={() => navigation.navigate('Profile', { username: thread.author })}
+        >
           <Image 
             source={thread.author_profile_photo ? { uri: thread.author_profile_photo } : DEFAULT_PROFILE_PIC} 
             style={styles.profilePhoto}
           />
-          <CustomText style={[styles.metadataText, { color: colors.text }]}>@{thread.author}</CustomText>
-        </View>
+          <CustomText style={[styles.metadataText, styles.clickableUsername, { color: colors.active }]}>@{thread.author}</CustomText>
+        </TouchableOpacity>
         <View style={styles.metadataRow}>
           <CustomText style={[styles.metadataIcon, { color: colors.active }]}>📅</CustomText>
           <CustomText style={[styles.metadataText, { color: colors.text }]}>{formatDate(thread.created_at)}</CustomText>
@@ -335,13 +339,16 @@ const ThreadDetail = () => {
       </View>
       {comments.map(comment => (
         <View key={comment.id} style={[styles.commentCard, { borderColor: colors.border }]}> 
-          <View style={styles.commentHeader}>
+          <TouchableOpacity 
+            style={styles.commentHeader}
+            onPress={() => navigation.navigate('Profile', { username: comment.author_username })}
+          >
             <Image 
               source={comment.author_profile_photo ? { uri: comment.author_profile_photo } : DEFAULT_PROFILE_PIC} 
               style={styles.commentProfilePhoto}
             />
-            <CustomText style={[styles.commentAuthor, { color: colors.text }]}>@{comment.author_username}</CustomText>
-          </View>
+            <CustomText style={[styles.commentAuthor, styles.clickableUsername, { color: colors.active }]}>@{comment.author_username}</CustomText>
+          </TouchableOpacity>
           <CustomText style={[styles.commentContent, { color: colors.text }]}>{comment.content}</CustomText>
         </View>
       ))}
@@ -410,6 +417,10 @@ const styles = StyleSheet.create({
   metadataText: {
     fontSize: 14,
     flex: 1,
+  },
+  clickableUsername: {
+    textDecorationLine: 'underline',
+    fontWeight: '600',
   },
   body: { fontSize: 16, marginBottom: 16, lineHeight: 24 },
   sectionHeading: { fontSize: 20, fontWeight: '600', marginVertical: 12 },

@@ -206,7 +206,18 @@ const ForumDetail = () => {
             onPress={() => navigation.navigate('ThreadDetail', { threadId: thread.id })}
           >
             <CustomText style={[styles.threadTitle, { color: colors.text }]}>{thread.title}</CustomText>
-            <CustomText style={[styles.threadMeta, { color: colors.subText }]}>By {thread.author} • {thread.comment_count} comments • {new Date(thread.last_activity).toLocaleDateString()}</CustomText>
+            <View style={styles.threadMetaContainer}>
+              <CustomText style={[styles.threadMeta, { color: colors.subText }]}>By </CustomText>
+              <TouchableOpacity
+                onPress={(e) => {
+                  e.stopPropagation();
+                  navigation.navigate('Profile', { username: thread.author });
+                }}
+              >
+                <CustomText style={[styles.threadAuthor, { color: colors.active }]}>{thread.author}</CustomText>
+              </TouchableOpacity>
+              <CustomText style={[styles.threadMeta, { color: colors.subText }]}> • {thread.comment_count} comments • {new Date(thread.last_activity).toLocaleDateString()}</CustomText>
+            </View>
           </TouchableOpacity>
         ))}
         {threads.length === 0 && (
@@ -356,6 +367,16 @@ const styles = StyleSheet.create({
   threadCard: { padding: 16, borderWidth: 1, borderRadius: 10, marginHorizontal: 16, marginBottom: 12 },
   threadTitle: { fontSize: 18, fontWeight: '600', marginBottom: 4 },
   threadMeta: { fontSize: 12 },
+  threadMetaContainer: { 
+    flexDirection: 'row', 
+    alignItems: 'center',
+    flexWrap: 'wrap',
+  },
+  threadAuthor: { 
+    fontSize: 12, 
+    fontWeight: '600',
+    textDecorationLine: 'underline',
+  },
   error: { fontSize: 16, marginBottom: 12 },
   retryButton: { paddingHorizontal: 24, paddingVertical: 12, borderRadius: 8 },
   retryText: { fontSize: 16, fontWeight: '600' },
