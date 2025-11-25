@@ -10,12 +10,12 @@ import {
   Dialog,
   TextInput,
   FAB,
-  Chip
+  Chip,
+  Snackbar,
 } from 'react-native-paper';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { useAuth } from '../context/AuthContext';
 import { API_URL } from '../constants/api';
-import Toast from 'react-native-toast-message';
 import Cookies from '@react-native-cookies/cookies';
 
 type Thread = {
@@ -42,6 +42,15 @@ const ForumDetail = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [titleError, setTitleError] = useState('');
   const [contentError, setContentError] = useState('');
+  const [snackbarVisible, setSnackbarVisible] = useState(false);
+  const [snackbarMessage, setSnackbarMessage] = useState('');
+  const [snackbarType, setSnackbarType] = useState<'success' | 'error'>('success');
+
+  const showSnackbar = (message: string, type: 'success' | 'error' = 'success') => {
+    setSnackbarMessage(message);
+    setSnackbarType(type);
+    setSnackbarVisible(true);
+  };
 
   useEffect(() => {
     fetchThreads();
@@ -151,11 +160,7 @@ const ForumDetail = () => {
       const responseData = await res.json();
       console.log('Thread created successfully:', responseData);
 
-      Toast.show({
-        type: 'success',
-        text1: 'Thread Created',
-        text2: 'Your thread has been posted successfully',
-      });
+      showSnackbar('Thread created successfully!', 'success');
 
       setIsModalVisible(false);
       setNewThreadTitle('');
@@ -165,11 +170,7 @@ const ForumDetail = () => {
       await fetchThreads();
     } catch (err) {
       console.error('Create thread error:', err);
-      Toast.show({
-        type: 'error',
-        text1: 'Error',
-        text2: err instanceof Error ? err.message : 'Failed to create thread',
-      });
+      showSnackbar(err instanceof Error ? err.message : 'Failed to create thread', 'error');
     } finally {
       setIsSubmitting(false);
     }
@@ -313,6 +314,19 @@ const ForumDetail = () => {
             </Button>
           </Dialog.Actions>
         </Dialog>
+        
+        <Snackbar
+          visible={snackbarVisible}
+          onDismiss={() => setSnackbarVisible(false)}
+          duration={3000}
+          action={{
+            label: 'OK',
+            onPress: () => setSnackbarVisible(false),
+          }}
+          style={snackbarType === 'error' ? { backgroundColor: theme.colors.error } : undefined}
+        >
+          {snackbarMessage}
+        </Snackbar>
       </Portal>
     </View>
   );
@@ -331,7 +345,6 @@ const styles = StyleSheet.create({
   },
   threadAuthor: { 
     fontWeight: '600',
-    textDecorationLine: 'underline',
   },
   errorText: { marginBottom: 16, textAlign: 'center' },
   emptyText: { marginBottom: 16, textAlign: 'center' },

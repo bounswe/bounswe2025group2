@@ -1,5 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, Image, Pressable, ImageSourcePropType, Alert, TextInput, Button, ActivityIndicator, TouchableOpacity } from 'react-native';
+import { View, StyleSheet, Image, Pressable, ImageSourcePropType, Alert, TouchableOpacity } from 'react-native';
+import { 
+  ActivityIndicator, 
+  Surface, 
+  TextInput as PaperTextInput,
+  IconButton,
+  Card,
+  Avatar,
+  Text,
+  useTheme as usePaperTheme,
+} from 'react-native-paper';
 import CustomText from './CustomText';
 import { useTheme } from '../context/ThemeContext';
 import Cookies from '@react-native-cookies/cookies';
@@ -33,30 +43,7 @@ const Thread = ({ forumName, content, imageUrl, profilePic, username, threadId, 
 
   // Fetch data function
   const fetchData = async () => {
-    // Fetch user's vote status
-    try {
-      const cookies = await Cookies.get(API_URL);
-      const csrfToken = cookies.csrftoken?.value;
-      const res = await fetch(`${API_URL}forum/vote/thread/${threadId}/status/`, {
-        headers: {
-          ...getAuthHeader(),
-          'Content-Type': 'application/json',
-          ...(csrfToken ? { 'X-CSRFToken': csrfToken } : {}),
-        },
-        credentials: 'include',
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setVote(data.vote_type || null);
-      } else {
-        setVote(null);
-      }
-    } catch (e) {
-      console.error('Failed to fetch vote status', e);
-      setVote(null);
-    }
-
-    // Fetch fresh thread data to get accurate like count
+    // Fetch fresh thread data to get accurate like count FIRST
     try {
       const cookies = await Cookies.get(API_URL);
       const csrfToken = cookies.csrftoken?.value;
@@ -78,6 +65,38 @@ const Thread = ({ forumName, content, imageUrl, profilePic, username, threadId, 
       // Fallback to prop values
       setLikes(likeCount);
       setComments(commentCount);
+    }
+
+    // Fetch user's vote status AFTER getting the like count
+    try {
+      const cookies = await Cookies.get(API_URL);
+      const csrfToken = cookies.csrftoken?.value;
+      const res = await fetch(`${API_URL}forum/vote/thread/${threadId}/status/`, {
+        headers: {
+          ...getAuthHeader(),
+          'Content-Type': 'application/json',
+          ...(csrfToken ? { 'X-CSRFToken': csrfToken } : {}),
+        },
+        credentials: 'include',
+      });
+      
+      console.log(`Vote status for thread ${threadId}:`, res.status);
+      
+      if (res.ok) {
+        const data = await res.json();
+        console.log(`Vote data for thread ${threadId}:`, data);
+        setVote(data.vote_type || null);
+      } else if (res.status === 404) {
+        // No vote exists for this thread by this user
+        console.log(`No vote found for thread ${threadId}`);
+        setVote(null);
+      } else {
+        console.warn(`Unexpected vote status response: ${res.status}`);
+        setVote(null);
+      }
+    } catch (e) {
+      console.error('Failed to fetch vote status', e);
+      setVote(null);
     }
     
     // Fetch comments
@@ -122,13 +141,15 @@ const Thread = ({ forumName, content, imageUrl, profilePic, username, threadId, 
   const handleVote = async (type: 'UPVOTE' | 'DOWNVOTE') => {
     if (loadingVote) return;
     setLoadingVote(true);
-    const cookies = await Cookies.get(API_URL);
-    const csrfToken = cookies.csrftoken?.value;
-    const origin = API_URL.replace(/\/api\/?$/, '');
     
     try {
+      const cookies = await Cookies.get(API_URL);
+      const csrfToken = cookies.csrftoken?.value;
+      const origin = API_URL.replace(/\/api\/?$/, '');
+      
       if (vote === type) {
         // Remove vote
+        console.log(`Removing ${type} for thread:`, threadId);
         const res = await fetch(`${API_URL}forum/vote/thread/${threadId}/`, {
           method: 'DELETE',
           headers: {
@@ -140,11 +161,12 @@ const Thread = ({ forumName, content, imageUrl, profilePic, username, threadId, 
           credentials: 'include',
         });
         if (res.ok) {
+          // Immediately update UI
           setVote(null);
-          setLikes(prev => prev + (type === 'UPVOTE' ? -1 : 1));
         }
       } else {
         // Upvote or downvote
+        console.log(`Adding ${type} for thread:`, threadId);
         const res = await fetch(`${API_URL}forum/vote/`, {
           method: 'POST',
           headers: {
@@ -161,24 +183,18 @@ const Thread = ({ forumName, content, imageUrl, profilePic, username, threadId, 
           }),
         });
         if (res.ok) {
-          const previousVote = vote;
+          // Immediately update UI
           setVote(type);
-          // Calculate like count change based on previous state
-          if (previousVote === null) {
-            // No previous vote: +1 for upvote, -1 for downvote
-            setLikes(prev => prev + (type === 'UPVOTE' ? 1 : -1));
-          } else if (previousVote === 'UPVOTE' && type === 'DOWNVOTE') {
-            // Changed from upvote to downvote: -2
-            setLikes(prev => prev - 2);
-          } else if (previousVote === 'DOWNVOTE' && type === 'UPVOTE') {
-            // Changed from downvote to upvote: +2
-            setLikes(prev => prev + 2);
-          }
         }
       }
+      
+      // Refetch thread data after vote to sync like count
+      await fetchData();
     } catch (e) {
       console.error('Vote error:', e);
       Alert.alert('Error', 'Failed to vote.');
+      // On error, refetch to ensure UI matches server state
+      await fetchData();
     } finally {
       setLoadingVote(false);
     }
@@ -313,7 +329,10 @@ const Thread = ({ forumName, content, imageUrl, profilePic, username, threadId, 
           style={[
             styles.voteButton,
             vote === 'UPVOTE' && styles.voteButtonActive,
-            { borderColor: vote === 'UPVOTE' ? colors.mentionText : colors.border }
+            { 
+              borderColor: vote === 'UPVOTE' ? colors.mentionText : colors.border,
+              backgroundColor: vote === 'UPVOTE' ? colors.mentionText + '20' : 'transparent'
+            }
           ]}
         >
           <CustomText style={[
@@ -335,7 +354,10 @@ const Thread = ({ forumName, content, imageUrl, profilePic, username, threadId, 
           style={[
             styles.voteButton,
             vote === 'DOWNVOTE' && styles.voteButtonActive,
-            { borderColor: vote === 'DOWNVOTE' ? colors.mentionText : colors.border }
+            { 
+              borderColor: vote === 'DOWNVOTE' ? colors.mentionText : colors.border,
+              backgroundColor: vote === 'DOWNVOTE' ? colors.mentionText + '20' : 'transparent'
+            }
           ]}
         >
           <CustomText style={[
@@ -355,34 +377,61 @@ const Thread = ({ forumName, content, imageUrl, profilePic, username, threadId, 
       {/* Comments list */}
       <View style={{ marginBottom: 8 }}>
         {commentsLoading ? (
-          <ActivityIndicator size="small" color={colors.mentionText} />
+          <ActivityIndicator size="small" />
         ) : commentList.length === 0 ? (
-          <CustomText style={{ color: colors.subText, fontStyle: 'italic' }}>No comments yet.</CustomText>
+          <Text variant="bodySmall" style={{ fontStyle: 'italic', opacity: 0.6 }}>
+            No comments yet.
+          </Text>
         ) : (
           commentList.map((c, idx) => (
-            <View key={c.id || idx} style={{ marginBottom: 4, padding: 6, backgroundColor: isDark ? '#555555' : '#f7f7f7', borderRadius: 6 }}>
-              <TouchableOpacity onPress={() => handleUsernamePress(c.author_username || c.author || 'user')} activeOpacity={0.7}>
-                <CustomText style={{ fontWeight: 'bold', color: colors.mentionText }}>
-                  @{c.author_username || c.author || 'user'}
-                </CustomText>
-              </TouchableOpacity>
-              <CustomText style={{ color: colors.text }}>{c.content}</CustomText>
-            </View>
+            <Card key={c.id || idx} mode="outlined" style={{ marginBottom: 8 }}>
+              <Card.Content style={{ paddingVertical: 8 }}>
+                <TouchableOpacity 
+                  onPress={() => handleUsernamePress(c.author_username || c.author || 'user')} 
+                  activeOpacity={0.7}
+                  style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}
+                >
+                  <Avatar.Text 
+                    size={24} 
+                    label={(c.author_username || c.author || 'U')[0].toUpperCase()} 
+                    style={{ marginRight: 8 }}
+                  />
+                  <Text variant="labelLarge" style={{ color: colors.mentionText, fontWeight: '600' }}>
+                    @{c.author_username || c.author || 'user'}
+                  </Text>
+                </TouchableOpacity>
+                <Text variant="bodyMedium">{c.content}</Text>
+              </Card.Content>
+            </Card>
           ))
         )}
       </View>
+      
       {/* Comment input */}
-      <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
-        <TextInput
-          style={{ flex: 1, borderWidth: 1, borderColor: colors.border, borderRadius: 8, padding: 8, color: isDark ? '#333333' : colors.text, backgroundColor: '#fff' }}
+      <View style={{ marginBottom: 8, paddingHorizontal: 4 }}>
+        <PaperTextInput
+          mode="outlined"
           placeholder="Add a comment..."
-          placeholderTextColor={colors.subText}
           value={commentText}
           onChangeText={setCommentText}
-          editable={!commentLoading}
+          disabled={commentLoading}
+          maxLength={500}
+          multiline
+          dense
+          right={
+            <PaperTextInput.Icon 
+              icon="send" 
+              onPress={handleComment}
+              disabled={commentLoading || !commentText.trim()}
+              loading={commentLoading}
+            />
+          }
         />
-        <Button title={commentLoading ? '' : 'Post'} onPress={handleComment} disabled={commentLoading || !commentText.trim()} />
-        {commentLoading && <ActivityIndicator size="small" color={colors.mentionText} style={{ marginLeft: 8 }} />}
+        {commentText.length > 0 && (
+          <Text variant="labelSmall" style={{ textAlign: 'right', marginTop: 4, opacity: 0.6 }}>
+            {commentText.length}/500
+          </Text>
+        )}
       </View>
     </View>
   );
@@ -458,7 +507,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
   },
   voteButtonActive: {
-    backgroundColor: 'rgba(0, 0, 0, 0.1)',
+    // Removed the backgroundColor from here since we're setting it inline now
   },
   voteIcon: {
     fontSize: 18,
