@@ -1,11 +1,13 @@
 import React, { useEffect, useState } from 'react';
-import { Appbar, Avatar, useTheme } from 'react-native-paper';
+import { View, StyleSheet } from 'react-native';
+import { Appbar, Avatar, Text, useTheme } from 'react-native-paper';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { RootStackParamList } from '../types/navigation';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useAuth } from '../context/AuthContext';
 import { API_URL } from '@constants/api';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -76,14 +78,15 @@ const TopBar = () => {
       statusBarHeight={insets.top}
       style={{ backgroundColor: theme.colors.surface }}
     >
-      <Appbar.Content 
-        title="GenFit" 
-        titleStyle={{ 
-          color: theme.colors.primary,
-          fontWeight: '600',
-          fontSize: 20
-        }}
-      />
+      {/* Modern Logo */}
+      <View style={styles.logoContainer}>
+        <View style={[styles.logoIcon, { backgroundColor: theme.colors.primary }]}>
+          <Icon name="dumbbell" size={18} color={theme.colors.onPrimary} />
+        </View>
+        <Text variant="titleLarge" style={[styles.logoText, { color: theme.colors.primary }]}>
+          GenFit
+        </Text>
+      </View>
       <Appbar.Action 
         icon="magnify" 
         onPress={() => navigation.navigate('Search')}
@@ -119,5 +122,26 @@ const TopBar = () => {
     </Appbar.Header>
   );
 };
+
+const styles = StyleSheet.create({
+  logoContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingLeft: 16,
+    flex: 1,
+  },
+  logoIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 10,
+  },
+  logoText: {
+    fontWeight: '700',
+    letterSpacing: 0.5,
+  },
+});
 
 export default TopBar;
