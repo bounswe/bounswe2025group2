@@ -93,7 +93,7 @@ class CommentAPITests(APITestCase):
         
         url = reverse('delete_comment', args=[self.comment.id])
         response = self.client.delete(url)
-        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(Comment.objects.count(), 0)
         self.thread.refresh_from_db()
         self.assertEqual(self.thread.comment_count, 0)
@@ -144,7 +144,7 @@ class CommentAPITests(APITestCase):
         
         url = reverse('delete_subcomment', args=[self.subcomment.id])
         response = self.client.delete(url)
-        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(Subcomment.objects.count(), 0)
         self.comment.refresh_from_db()
         self.assertEqual(self.comment.subcomment_count, 0)
