@@ -39,8 +39,10 @@ const ChallengeCard: React.FC<Props> = ({
   onMembershipChange,
 }) => {
   const { getAuthHeader } = useAuth();
-  const API_BASE = (baseUrl ?? `${API_URL}challenges/`).replace(/^http:\/\//, 'https://');
-  const API = API_BASE;
+  // Use API_URL directly (without challenges/) since we add it in the fetch URLs
+  // API_URL is 'https://www.genfit.website/api/' - ensure we use it correctly
+  const apiBase = baseUrl ?? API_URL;
+  const API = apiBase.replace(/\/+$/, '') + '/'; // Ensure single trailing slash
   const cookieOrigin = API_URL.replace(/\/api\/?$/, '');
 
   const [loading, setLoading] = useState(true);
@@ -65,25 +67,99 @@ const ChallengeCard: React.FC<Props> = ({
   useEffect(() => {
     let mounted = true;
     const load = async () => {
+      console.log('[ChallengeCard] ========== LOADING CHALLENGE ==========');
+      console.log('[ChallengeCard] Challenge ID:', challengeId);
+      console.log('[ChallengeCard] Challenge ID type:', typeof challengeId);
+      console.log('[ChallengeCard] API base:', API);
+      console.log('[ChallengeCard] Cookie origin:', cookieOrigin);
+      
       setLoading(true);
+      
       try {
         const cookies = await Cookies.get(cookieOrigin);
-        const csrf = cookies.csrftoken?.value;
+        const csrf = cookies?.csrftoken?.value;
+        console.log('[ChallengeCard] CSRF token exists:', !!csrf);
+        console.log('[ChallengeCard] Available cookies:', Object.keys(cookies || {}));
 
-        // Detail
-        const response = await fetch(`${API}challenges/${challengeId}/`, {
-          headers: {
-            ...getAuthHeader(),
-            'Content-Type': 'application/json',
-            ...(csrf ? { 'X-CSRFToken': csrf } : {}),
-          },
+        // Detail - API_BASE is API_URL, so we add challenges/ here
+        const url = `${API}challenges/${challengeId}/`;
+        console.log('[ChallengeCard] Full URL:', url);
+        console.log('[ChallengeCard] Making fetch request...');
+        
+        // Build headers exactly like ChallengeDetailContent does in Challenges.tsx
+        const headers = {
+          ...getAuthHeader(),
+          'Content-Type': 'application/json',
+          ...(csrf ? { 'X-CSRFToken': csrf } : {}),
+        };
+        console.log('[ChallengeCard] Request headers:', Object.keys(headers));
+        console.log('[ChallengeCard] Has auth header:', !!(getAuthHeader() as any).Authorization);
+        
+        const response = await fetch(url, {
+          method: 'GET',
+          headers,
           credentials: 'include',
         });
-        if (!response.ok) throw new Error('detail failed');
+        
+        console.log('[ChallengeCard] Response status:', response.status);
+        console.log('[ChallengeCard] Response ok:', response.ok);
+        console.log('[ChallengeCard] Response headers:', Object.fromEntries(response.headers.entries()));
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error('[ChallengeCard] ========== FETCH FAILED ==========');
+          console.error('[ChallengeCard] Status:', response.status);
+          console.error('[ChallengeCard] Status text:', response.statusText);
+          console.error('[ChallengeCard] Error response:', errorText);
+          console.error('[ChallengeCard] Challenge ID:', challengeId);
+          console.error('[ChallengeCard] URL:', url);
+          throw new Error(`HTTP ${response.status}: ${errorText || response.statusText}`);
+        }
+        
+        console.log('[ChallengeCard] Parsing JSON response...');
         const data = await response.json();
-        if (!mounted) return;
+        console.log('[ChallengeCard] Response data keys:', Object.keys(data));
+        console.log('[ChallengeCard] Response data:', JSON.stringify(data, null, 2));
+        
+        if (!mounted) {
+          console.log('[ChallengeCard] Component unmounted, aborting');
+          return;
+        }
 
-        setChallenge(data.challenge);
+        // Handle response format: {challenge: {...}, joined: boolean, participant: {...}}
+        // This matches the format used in Challenges.tsx ChallengeDetailContent
+        if (data.challenge && typeof data.challenge === 'object') {
+          console.log('[ChallengeCard] Using data.challenge format');
+          console.log('[ChallengeCard] Challenge title:', data.challenge.title);
+          console.log('[ChallengeCard] Challenge ID:', data.challenge.id);
+          console.log('[ChallengeCard] Challenge object keys:', Object.keys(data.challenge));
+          setChallenge(data.challenge);
+        } else if (data.id && typeof data.id === 'number') {
+          console.log('[ChallengeCard] Using direct challenge object format');
+          console.log('[ChallengeCard] Challenge title:', data.title);
+          console.log('[ChallengeCard] Challenge ID:', data.id);
+          setChallenge(data);
+        } else {
+          console.error('[ChallengeCard] ========== UNEXPECTED RESPONSE FORMAT ==========');
+          console.error('[ChallengeCard] Response data:', JSON.stringify(data, null, 2));
+          console.error('[ChallengeCard] Has challenge property:', 'challenge' in data);
+          console.error('[ChallengeCard] Has id property:', 'id' in data);
+          console.error('[ChallengeCard] data.challenge type:', typeof data.challenge);
+          console.error('[ChallengeCard] data.id type:', typeof data.id);
+          
+          // Try to extract challenge anyway if possible
+          if (data && typeof data === 'object') {
+            const possibleChallenge = data.challenge || data;
+            if (possibleChallenge && possibleChallenge.id) {
+              console.warn('[ChallengeCard] Attempting to use extracted challenge object');
+              setChallenge(possibleChallenge);
+            } else {
+              throw new Error(`Unexpected response format: ${JSON.stringify(data).substring(0, 200)}`);
+            }
+          } else {
+            throw new Error(`Unexpected response format - data is not an object: ${typeof data}`);
+          }
+        }
 
         // Only set joined from server if parent didn't supply it
         if (typeof joinedProp !== 'boolean') {
@@ -96,6 +172,7 @@ const ChallengeCard: React.FC<Props> = ({
             ...getAuthHeader(),
             'Content-Type': 'application/json',
             ...(csrf ? { 'X-CSRFToken': csrf } : {}),
+            'Referer': cookieOrigin,
           },
           credentials: 'include',
         });
@@ -105,10 +182,27 @@ const ChallengeCard: React.FC<Props> = ({
         } else if (mounted) {
           setParticipants(0);
         }
-      } catch {
-        Alert.alert('Error', 'Could not load challenge.');
+      } catch (error: any) {
+        console.error('[ChallengeCard] ========== ERROR LOADING CHALLENGE ==========');
+        console.error('[ChallengeCard] Error type:', error?.constructor?.name);
+        console.error('[ChallengeCard] Error message:', error?.message);
+        console.error('[ChallengeCard] Error stack:', error?.stack);
+        console.error('[ChallengeCard] Challenge ID:', challengeId);
+        console.error('[ChallengeCard] Challenge ID type:', typeof challengeId);
+        console.error('[ChallengeCard] API URL:', `${API}challenges/${challengeId}/`);
+        console.error('[ChallengeCard] Full error object:', JSON.stringify(error, Object.getOwnPropertyNames(error)));
+        
+        if (mounted) {
+          // Set challenge to null to show "Challenge not found" message
+          // Don't show alert - console has all the debug info
+          setChallenge(null);
+          setLoading(false);
+        }
       } finally {
-        if (mounted) setLoading(false);
+        if (mounted) {
+          console.log('[ChallengeCard] Setting loading to false');
+          setLoading(false);
+        }
       }
     };
     load();
