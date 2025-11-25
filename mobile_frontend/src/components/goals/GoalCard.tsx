@@ -29,7 +29,7 @@ export const GoalCard = ({
 
   return (
     <Pressable onPress={onPress} style={{ flex: 1 }}>
-      <Card style={[styles.card, { backgroundColor: theme.colors.surface }]}>
+      <Card mode="elevated" style={[styles.card, { backgroundColor: theme.colors.surface }]}>
         <Card.Content style={styles.cardContent}>
           {/* Header with Title and Status */}
           <View style={styles.header}>
@@ -131,8 +131,8 @@ const styles = StyleSheet.create({
   card: {
     marginHorizontal: 0,
     marginVertical: 8,
-    borderRadius: 12,
-    elevation: 2,
+    borderRadius: 16,
+    elevation: 3,
   },
   cardContent: {
     padding: 12,
