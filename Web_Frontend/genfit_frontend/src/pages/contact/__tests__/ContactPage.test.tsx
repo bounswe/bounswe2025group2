@@ -1,14 +1,13 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor, act } from '@testing-library/react';
+import { screen, waitFor, act } from '@testing-library/react'; // Remove 'render' import
 import userEvent from '@testing-library/user-event';
 import { renderWithProviders } from '../../../test/test-utils';
 import ContactPage from '../ContactPage';
 
-// Mock the Layout component since it's a dependency
+// Mock the Layout component - remove onSearch since it's not used in tests
 vi.mock('../../../components', () => ({
-  Layout: ({ children, onSearch }: { children: React.ReactNode; onSearch: (term: string) => void }) => (
+  Layout: ({ children }: { children: React.ReactNode }) => ( // Remove onSearch parameter
     <div data-testid="layout">
-      <div data-testid="search-handler">Search handler present</div>
       {children}
     </div>
   ),
