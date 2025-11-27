@@ -4,9 +4,9 @@ import userEvent from '@testing-library/user-event';
 import { renderWithProviders } from '../../../test/test-utils';
 import ContactPage from '../ContactPage';
 
-// Mock the Layout component - remove onSearch since it's not used in tests
+// Mock the Layout component 
 vi.mock('../../../components', () => ({
-  Layout: ({ children }: { children: React.ReactNode }) => ( // Remove onSearch parameter
+  Layout: ({ children }: { children: React.ReactNode }) => ( 
     <div data-testid="layout">
       {children}
     </div>
