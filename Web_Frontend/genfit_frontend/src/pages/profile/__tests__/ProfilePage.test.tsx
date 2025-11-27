@@ -1,5 +1,5 @@
 //minimal test for now
-import React from 'react'
+// import React from 'react'
 import { describe, it, expect } from 'vitest'
 import ProfilePage from '../ProfilePage'
 
