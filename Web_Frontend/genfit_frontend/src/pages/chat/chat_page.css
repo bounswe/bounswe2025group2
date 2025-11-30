@@ -1,9 +1,12 @@
 /* Chat Page Styles */
 
 .chat-page-content {
-  max-width: 1400px;
   margin: 0 auto;
   padding: 0;
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 90px);
+  max-height: calc(100vh - 90px);
 }
 
 .chat-page-loading {
@@ -31,14 +34,14 @@
 }
 
 .page-title {
-  font-size: 2.5rem;
+  font-size: 2rem;
   font-weight: 700;
   color: #1a1a1a;
   margin: 0 0 0.5rem 0;
 }
 
 .page-subtitle {
-  font-size: 1.1rem;
+  font-size: 0.95rem;
   color: #666;
   margin: 0;
 }
@@ -65,23 +68,26 @@
 
 /* Chat Container */
 .chat-container {
-  height: calc(100vh - 280px);
-  min-height: 600px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .chat-layout {
   display: grid;
   grid-template-columns: 350px 1fr;
   gap: 1.5rem;
-  height: 100%;
+  flex: 1;
+  min-height: 0;
 }
 
 /* Chat Sidebar */
 .chat-sidebar {
   height: 100%;
-  min-height: 0; /* Important for flex child to shrink */
-  max-height: calc(100vh - 280px); /* Fixed maximum height */
-  overflow: hidden; /* Prevent expanding */
+  min-height: 0;
+  overflow: hidden;
 }
 
 .chat-list-card {
@@ -105,7 +111,7 @@
 }
 
 .chat-list-title {
-  font-size: 1.25rem;
+  font-size: 1.1rem;
   font-weight: 600;
   margin: 0;
 }
@@ -320,13 +326,13 @@
 
 .chat-item-name {
   font-weight: 600;
-  font-size: 0.95rem;
+  font-size: 0.875rem;
   margin: 0;
   color: #1f2937;
 }
 
 .chat-item-time {
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   color: #6b7280;
   flex-shrink: 0;
 }
@@ -338,7 +344,7 @@
 }
 
 .chat-item-last-message {
-  font-size: 0.875rem;
+  font-size: 0.8rem;
   color: #6b7280;
   margin: 0;
   overflow: hidden;
@@ -361,9 +367,8 @@
 /* Chat Main Area */
 .chat-main {
   height: 100%;
-  min-height: 0; /* Important for flex child to shrink */
-  max-height: calc(100vh - 280px); /* Fixed maximum height */
-  overflow: hidden; /* Prevent expanding */
+  min-height: 0;
+  overflow: hidden;
 }
 
 .chat-main-card {
@@ -410,7 +415,7 @@
 }
 
 .chat-header-name {
-  font-size: 1.25rem;
+  font-size: 1.1rem;
   font-weight: 600;
   margin: 0 0 0.25rem 0;
   color: #1f2937;
@@ -419,7 +424,7 @@
 .chat-header-status {
   display: flex;
   align-items: center;
-  font-size: 0.875rem;
+  font-size: 0.8rem;
   color: #6b7280;
 }
 
@@ -445,8 +450,7 @@
   padding: 1.5rem;
   display: flex;
   flex-direction: column;
-  min-height: 0; /* Important for flex child to shrink */
-  max-height: calc(100vh - 400px); /* Fixed maximum height */
+  min-height: 0;
 }
 
 .chat-empty {
@@ -497,13 +501,40 @@
 }
 
 .message-text {
-  font-size: 0.95rem;
+  font-size: 0.875rem;
   line-height: 1.4;
   word-wrap: break-word;
 }
 
+/* Challenge Link Styles */
+.message-text .challenge-link {
+  color: #3b82f6;
+  text-decoration: underline;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.message-text .challenge-link:hover {
+  color: #2563eb;
+  text-decoration: none;
+  transform: translateY(-1px);
+}
+
+.message.sent .message-text .challenge-link {
+  color: #fbbf24;
+  text-decoration: underline;
+}
+
+.message.sent .message-text .challenge-link:hover {
+  color: #f59e0b;
+}
+
 .message-time {
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   margin-top: 0.25rem;
   opacity: 0.7;
   display: flex;
@@ -570,12 +601,48 @@
   align-items: center;
 }
 
+.challenge-picker-btn {
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  border: none;
+  color: white;
+  box-shadow: 0 4px 15px rgba(245, 158, 11, 0.3);
+  transition: all 0.3s ease;
+}
+
+.challenge-picker-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #d97706, #b45309);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(245, 158, 11, 0.5);
+}
+
+.challenge-picker-btn:disabled {
+  background: linear-gradient(135deg, #9ca3af, #6b7280);
+  box-shadow: none;
+  transform: none;
+  cursor: not-allowed;
+}
+
+.challenge-picker-btn.ai-btn {
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+}
+
+.challenge-picker-btn.ai-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #5a67d8, #6b46c1);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5);
+}
+
 .chat-input {
   flex: 1;
   padding: 0.75rem 1rem;
   border: 1px solid #d1d5db;
   border-radius: 24px;
-  font-size: 0.95rem;
+  font-size: 0.875rem;
   outline: none;
   transition: border-color 0.2s;
 }
@@ -687,6 +754,207 @@
   text-align: center;
 }
 
+/* Challenge Picker Dialog Styles */
+.challenge-picker-dialog {
+  max-width: 700px;
+  width: 90vw;
+  max-height: 85vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.challenge-picker-title {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #1f2937;
+}
+
+.challenge-search {
+  position: relative;
+  margin-bottom: 1rem;
+}
+
+.challenge-search .search-icon {
+  position: absolute;
+  left: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 1.25rem;
+  height: 1.25rem;
+  color: #6b7280;
+  pointer-events: none;
+}
+
+.challenge-search .search-input {
+  width: 100%;
+  padding: 0.75rem 1rem 0.75rem 3rem;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  outline: none;
+  transition: border-color 0.2s;
+  background-color: white;
+  color: #1f2937;
+}
+
+.challenge-search .search-input::placeholder {
+  color: #9ca3af;
+}
+
+.challenge-search .search-input:focus {
+  border-color: #f59e0b;
+  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.1);
+}
+
+.challenge-picker-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  max-height: 60vh;
+  overflow-y: auto;
+  padding: 0.5rem;
+}
+
+.picker-loading,
+.picker-empty {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 3rem;
+  color: #6b7280;
+  text-align: center;
+}
+
+.picker-challenge-item {
+  padding: 1.25rem;
+  border: 2px solid #e5e7eb;
+  border-radius: 12px;
+  background: white;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.picker-challenge-item:hover {
+  border-color: #f59e0b;
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.15);
+  transform: translateY(-2px);
+}
+
+.picker-challenge-header {
+  margin-bottom: 0.75rem;
+}
+
+.picker-challenge-title-section {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.picker-challenge-title {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: #1f2937;
+  margin: 0;
+  line-height: 1.3;
+}
+
+.picker-status-badge {
+  padding: 0.25rem 0.75rem;
+  border-radius: 16px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.picker-status-badge.active {
+  background: linear-gradient(135deg, #d1fae5, #a7f3d0);
+  color: #065f46;
+  border: 1px solid #10b981;
+}
+
+.picker-status-badge.upcoming {
+  background: linear-gradient(135deg, #fef3c7, #fde68a);
+  color: #92400e;
+  border: 1px solid #f59e0b;
+}
+
+.picker-status-badge.inactive {
+  background: linear-gradient(135deg, #fee2e2, #fecaca);
+  color: #991b1b;
+  border: 1px solid #ef4444;
+}
+
+.picker-challenge-type {
+  font-size: 0.875rem;
+  color: #6b7280;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin: 0;
+}
+
+.picker-challenge-description {
+  font-size: 0.875rem;
+  color: #4b5563;
+  line-height: 1.5;
+  margin-bottom: 0.75rem;
+}
+
+.picker-challenge-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.picker-meta-item {
+  font-size: 0.75rem;
+  color: #6b7280;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  background: #f3f4f6;
+  padding: 0.25rem 0.5rem;
+  border-radius: 12px;
+}
+
+.picker-difficulty {
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.25rem 0.5rem;
+  border-radius: 12px;
+  text-transform: capitalize;
+}
+
+.picker-difficulty.beginner {
+  background: linear-gradient(135deg, #d1fae5, #a7f3d0);
+  color: #065f46;
+  border: 1px solid #10b981;
+}
+
+.picker-difficulty.intermediate {
+  background: linear-gradient(135deg, #fef3c7, #fde68a);
+  color: #92400e;
+  border: 1px solid #f59e0b;
+}
+
+.picker-difficulty.advanced {
+  background: linear-gradient(135deg, #fee2e2, #fecaca);
+  color: #991b1b;
+  border: 1px solid #ef4444;
+}
+
 /* Responsive Design */
 @media (max-width: 1024px) {
   .chat-layout {
@@ -780,4 +1048,94 @@
   .user-selection-popup {
     margin: 0.25rem;
   }
+
+  /* Challenge picker mobile adjustments */
+  .challenge-picker-dialog {
+    width: 95vw;
+    max-height: 90vh;
+  }
+
+  .picker-challenge-title-section {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .picker-challenge-meta {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .challenge-picker-btn {
+    width: 40px;
+    height: 40px;
+  }
+
+  .chat-send-btn {
+    width: 40px;
+    height: 40px;
+  }
+}
+
+/* Chat Report Button Styles */
+.chat-report-button {
+  background-color: var(--sidebar-bg-color, #1e293b);
+  color: white;
+  border: 1px solid var(--sidebar-border-color, #334155);
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 0.9em;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.chat-report-button:hover {
+  background-color: var(--sidebar-hover-color, #374151);
+  color: #d32f2f;
+  transform: translateY(-1px);
+}
+
+.chat-header-report-button {
+  margin-left: auto;
+  background-color: var(--sidebar-bg-color, #1e293b);
+  color: white;
+  border: 1px solid var(--sidebar-border-color, #334155);
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-size: 0.8em;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.chat-header-report-button:hover {
+  background-color: var(--sidebar-hover-color, #374151);
+  color: #d32f2f;
+}
+
+/* Header content layout adjustment */
+.header-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+.header-text {
+  flex: 1;
+}
+
+/* Chat Header Layout */
+.chat-header-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+}
+
+.chat-header-info {
+  flex: 1;
+}
+
+/* Section Header Layout */
+.section-header {
+  margin-bottom: 20px;
 }

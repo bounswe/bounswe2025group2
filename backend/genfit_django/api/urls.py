@@ -16,6 +16,9 @@ from .separate_views import fitness_gif
 from .separate_views import ip_location
 from .separate_views import fitness_gif
 from .separate_views import ip_location
+from .separate_views import goal_suggestions
+from .separate_views import daily_advice_views
+from .separate_views import mentor_relationships
 
 
 urlpatterns = [
@@ -24,6 +27,8 @@ urlpatterns = [
     path('login/', views.user_login, name='login'),
     path('logout/', views.user_logout, name='logout'),
     path('user/', views.get_user, name='get_user'),
+    path('user/login-stats/', views.get_login_stats, name='get_login_stats'),
+    path('user/settings/', views.user_settings, name='user_settings'),
     path('users/', views.get_users, name='get_users'),
     path('csrf-token/', views.get_csrf_token, name='get_csrf_token'),
     path('change-password/', views.change_password, name='change_password'),
@@ -40,6 +45,10 @@ urlpatterns = [
     # Quote endpoints
     path('quotes/random/', quote_views.get_random_quote, name='get_random_quote'),
     path('quotes/daily/', quote_views.get_daily_quote, name='get_daily_quote'),
+
+    # Daily Advice endpoints
+    path('daily-advice/', daily_advice_views.get_daily_advice, name='get_daily_advice'),
+    path('daily-advice/regenerate/', daily_advice_views.regenerate_daily_advice, name='regenerate_daily_advice'),
 
     # Nutrition endpoints
     path('parse_food/', parse_food.parse_food, name='parse_food'),
@@ -60,6 +69,7 @@ urlpatterns = [
     path('goals/<int:goal_id>/progress/', fitness_goals.update_goal_progress, name='update_goal_progress'),
     path('goals/<int:goal_id>/restart/', fitness_goals.restart_goal, name='restart_goal'),
     path('goals/check-inactive/', fitness_goals.check_inactive_goals, name='check_inactive_goals'),
+    path('goals/suggestions/', goal_suggestions.get_goal_suggestions, name='get_goal_suggestions'),
 
     # Profile URLs
     path('profile/', profile.profile_detail, name='profile-detail'),
@@ -117,6 +127,14 @@ urlpatterns = [
 
     # Challenge search
     path('challenges/search/', challenges.search_challenges, name='search-challenges'),
+
+    path('contact/', views.contact_submission, name='contact-submission'),
+
+    # Mentor-Mentee Relationship endpoints
+    path('mentor-relationships/', mentor_relationships.create_mentor_relationship, name='create_mentor_relationship'),
+    path('mentor-relationships/user/', mentor_relationships.get_user_mentor_relationships, name='get_user_mentor_relationships'),
+    path('mentor-relationships/<int:relationship_id>/', mentor_relationships.get_mentor_relationship_detail, name='get_mentor_relationship_detail'),
+    path('mentor-relationships/<int:relationship_id>/status/', mentor_relationships.change_mentor_relationship_status, name='change_mentor_relationship_status'),
 ]
 
 # Routers

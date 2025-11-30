@@ -4,7 +4,7 @@
 }
 
 .layout-content {
-  padding: 2rem;
+  padding: 1rem;
   transition: margin-left 0.3s ease;
   min-height: calc(100vh - 70px); /* Subtract header height */
 }

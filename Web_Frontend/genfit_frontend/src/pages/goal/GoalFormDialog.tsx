@@ -3,12 +3,15 @@ import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Textarea } from '../../components/ui/textarea';
 import { Label } from '../../components/ui/label';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../../components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '../../components/ui/dialog';
 import { Select, SelectItem } from '../../components/ui/select';
 import GFapi from '../../lib/api/GFapi';
 import { invalidateQueries } from '../../lib';
+import { queryClient, createQueryKey } from '../../lib';
 import type { Goal } from '../../lib/types/api';
-import { Save, X } from 'lucide-react';
+import { Save, X, Sparkles, Loader2 } from 'lucide-react';
+import { GoalAISuggestions } from '../../components/goals/GoalAISuggestions';
+import { getGoalSuggestions, calculateTargetDate, type GoalSuggestion } from '../../lib/api/goalSuggestionsApi';
 
 // Define suggested units for each goal type
 const GOAL_TYPE_UNITS: Record<string, string[]> = {
@@ -23,9 +26,11 @@ interface GoalFormDialogProps {
     isOpen: boolean;
     onClose: () => void;
     editingGoal: Goal | null;
+    targetUserId?: number;
+    invalidateUsername?: string;
 }
 
-const GoalFormDialog = ({ isOpen, onClose, editingGoal }: GoalFormDialogProps) => {
+const GoalFormDialog = ({ isOpen, onClose, editingGoal, targetUserId, invalidateUsername }: GoalFormDialogProps) => {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [formData, setFormData] = useState({
         title: '',
@@ -35,6 +40,12 @@ const GoalFormDialog = ({ isOpen, onClose, editingGoal }: GoalFormDialogProps) =
         unit: '',
         target_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
     });
+
+    // AI Suggestions state
+    const [aiSuggestion, setAiSuggestion] = useState<GoalSuggestion | null>(null);
+    const [isLoadingSuggestion, setIsLoadingSuggestion] = useState(false);
+    const [suggestionError, setSuggestionError] = useState<string | null>(null);
+    const [showAppliedToast, setShowAppliedToast] = useState(false);
 
     useEffect(() => {
         if (editingGoal) {
@@ -72,17 +83,81 @@ const GoalFormDialog = ({ isOpen, onClose, editingGoal }: GoalFormDialogProps) =
         setFormData(prev => {
             const goalTypeUnits = GOAL_TYPE_UNITS[value] || [];
             const suggestedUnit = goalTypeUnits.length > 0 ? goalTypeUnits[0] : '';
-            return { 
-                ...prev, 
+            return {
+                ...prev,
                 goal_type: value,
                 unit: suggestedUnit
             };
         });
     };
 
+    // AI Suggestions handlers
+    const fetchAISuggestions = async () => {
+        if (!formData.title.trim()) {
+            setSuggestionError('Please enter a goal title first');
+            return;
+        }
+
+        setIsLoadingSuggestion(true);
+        setSuggestionError(null);
+        setAiSuggestion(null);
+
+        // Add timeout to prevent infinite loading (30 seconds)
+        const timeoutId = setTimeout(() => {
+            setIsLoadingSuggestion(false);
+            setSuggestionError('Request timed out. The AI service is taking longer than usual. Please try again.');
+        }, 30000);
+
+        try {
+            const suggestion = await getGoalSuggestions({
+                title: formData.title,
+                description: formData.description,
+            });
+            clearTimeout(timeoutId);
+            setAiSuggestion(suggestion);
+            setSuggestionError(null); // Clear any previous errors on success
+        } catch (error: any) {
+            clearTimeout(timeoutId);
+            setSuggestionError(error.message);
+            setAiSuggestion(null); // Clear suggestions on error
+        } finally {
+            setIsLoadingSuggestion(false);
+        }
+    };
+
+    const handleApplySuggestion = (suggestion: GoalSuggestion) => {
+        setFormData(prev => ({
+            ...prev,
+            goal_type: suggestion.goal_type,
+            target_value: suggestion.target_value,
+            unit: suggestion.unit,
+            target_date: calculateTargetDate(suggestion.days_to_complete),
+        }));
+
+        // Show success toast
+        setShowAppliedToast(true);
+        setTimeout(() => setShowAppliedToast(false), 3000);
+    };
+
+    const handleChatClick = () => {
+        window.open('/chatting', '_blank');
+    };
+
+    // Check if AI suggestions button should be enabled
+    const canGetSuggestions = formData.title.trim().length > 0 && formData.description.trim().length > 0;
+
+    // Reset AI suggestions when title or description changes significantly
+    useEffect(() => {
+        if (aiSuggestion) {
+            setAiSuggestion(null);
+            setSuggestionError(null);
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [formData.title, formData.description]);
+
     const handleFormSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        
+
         // Validation
         if (!formData.title.trim() || !formData.target_value || !formData.unit.trim()) {
             alert('Please fill in all required fields');
@@ -90,7 +165,7 @@ const GoalFormDialog = ({ isOpen, onClose, editingGoal }: GoalFormDialogProps) =
         }
 
         setIsSubmitting(true);
-        
+
         try {
             const payload = {
                 title: formData.title,
@@ -104,10 +179,14 @@ const GoalFormDialog = ({ isOpen, onClose, editingGoal }: GoalFormDialogProps) =
             if (editingGoal) {
                 await GFapi.put(`/api/goals/${editingGoal.id}/`, payload);
             } else {
-                await GFapi.post('/api/goals/', payload);
+                const createPayload = targetUserId ? { ...payload, user: targetUserId } : payload;
+                await GFapi.post('/api/goals/', createPayload);
             }
 
             await invalidateQueries(['/api/goals/']);
+            if (invalidateUsername) {
+                await queryClient.invalidateQueries({ queryKey: createQueryKey('/api/goals/', { username: invalidateUsername }) });
+            }
             onClose();
         } catch (error) {
             console.error('Failed to save goal:', error);
@@ -118,29 +197,48 @@ const GoalFormDialog = ({ isOpen, onClose, editingGoal }: GoalFormDialogProps) =
     };
 
     return (
-        <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent className="goal-dialog">
-                <DialogHeader>
-                    <DialogTitle>{editingGoal ? 'Edit Goal' : 'Add New Goal'}</DialogTitle>
+        <>
+            {/* Success Toast */}
+            {showAppliedToast && (
+                <div className="fixed bottom-4 right-4 z-[200] animate-slide-up">
+                    <div className="bg-emerald-600 text-white px-4 py-3 rounded-lg shadow-lg flex items-center gap-3">
+                        <div className="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center flex-shrink-0">
+                            <span className="text-emerald-600 text-lg font-bold">✓</span>
+                        </div>
+                        <div>
+                            <p className="text-sm font-semibold">Suggestions Applied!</p>
+                            <p className="text-xs opacity-90">Check the form fields below</p>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            <Dialog open={isOpen} onOpenChange={onClose}>
+                <DialogContent className="goal-dialog">
+                    <DialogHeader>
+                        <DialogTitle>{editingGoal ? 'Edit Goal' : 'Add New Goal'}</DialogTitle>
+                    <DialogDescription>
+                        {editingGoal ? 'Update your goal details and progress targets' : 'Create a new fitness goal to track your progress and achievements'}
+                    </DialogDescription>
                 </DialogHeader>
                 <form onSubmit={handleFormSubmit} className="goal-form">
                     <div className="form-grid">
                         <div className="form-group">
                             <Label htmlFor="title" className="form-label">Title *</Label>
-                            <Input 
-                                id="title" 
-                                name="title" 
-                                value={formData.title} 
-                                onChange={handleInputChange} 
+                            <Input
+                                id="title"
+                                name="title"
+                                value={formData.title}
+                                onChange={handleInputChange}
                                 placeholder="e.g., Lose Weight, Run 5K"
-                                required 
+                                required
                             />
                         </div>
                         <div className="form-group">
                             <Label htmlFor="goal_type" className="form-label">Goal Type *</Label>
-                            <Select 
+                            <Select
                                 id="goal_type"
-                                value={formData.goal_type} 
+                                value={formData.goal_type}
                                 onValueChange={handleGoalTypeChange}
                             >
                                 <SelectItem value="WALKING_RUNNING">Walking/Running</SelectItem>
@@ -153,39 +251,136 @@ const GoalFormDialog = ({ isOpen, onClose, editingGoal }: GoalFormDialogProps) =
                     </div>
                     <div className="form-group">
                         <Label htmlFor="description" className="form-label">Description</Label>
-                        <Textarea 
-                            id="description" 
-                            name="description" 
-                            value={formData.description} 
-                            onChange={handleInputChange} 
+                        <Textarea
+                            id="description"
+                            name="description"
+                            value={formData.description}
+                            onChange={handleInputChange}
                             placeholder="Describe your goal and motivation..."
                             rows={3}
                         />
                     </div>
+
+                    {/* AI Suggestions Section */}
+                    <div className="form-group mt-4">
+                        <Button
+                            type="button"
+                            onClick={fetchAISuggestions}
+                            disabled={!canGetSuggestions || isLoadingSuggestion}
+                            className={`
+                                w-full py-3 font-semibold text-sm transition-all duration-200
+                                ${canGetSuggestions && !isLoadingSuggestion
+                                    ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-md hover:shadow-lg hover:from-purple-700 hover:to-indigo-700 active:scale-[0.98]'
+                                    : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                                }
+                            `}
+                        >
+                            {isLoadingSuggestion ? (
+                                <span className="flex items-center justify-center gap-2">
+                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                    <span>Analyzing your goal...</span>
+                                </span>
+                            ) : (
+                                <span className="flex items-center justify-center gap-2">
+                                    <Sparkles className="w-4 h-4" />
+                                    <span>Get AI Suggestions</span>
+                                </span>
+                            )}
+                        </Button>
+                        {!canGetSuggestions && !isLoadingSuggestion && (
+                            <p className="text-xs text-gray-500 mt-2 text-center">
+                                💡 Fill in both title and description to get personalized suggestions
+                            </p>
+                        )}
+                    </div>
+
+                    {/* Loading State */}
+                    {isLoadingSuggestion && (
+                        <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                            <div className="flex items-center gap-3">
+                                <div className="flex-shrink-0">
+                                    <Loader2 className="w-5 h-5 text-blue-600 animate-spin" />
+                                </div>
+                                <div className="flex-1">
+                                    <p className="text-sm font-medium text-blue-900">Getting AI suggestions...</p>
+                                    <p className="text-xs text-blue-600 mt-1">This may take 2-5 seconds</p>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Display AI Suggestions */}
+                    {aiSuggestion && !isLoadingSuggestion && (
+                        <div className="mt-4 mb-4">
+                            <GoalAISuggestions
+                                suggestion={aiSuggestion}
+                                onApply={handleApplySuggestion}
+                                onChatClick={handleChatClick}
+                            />
+                        </div>
+                    )}
+
+                    {/* Display Error */}
+                    {suggestionError && !isLoadingSuggestion && (
+                        <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+                            <div className="flex items-center gap-3">
+                                <div className="flex-shrink-0">
+                                    <span className="text-red-600 text-lg">✕</span>
+                                </div>
+                                <div className="flex-1">
+                                    <p className="text-sm font-medium text-red-900">
+                                        {suggestionError.includes('hourly limit') || suggestionError.includes('try again')
+                                            ? 'Rate Limit Reached'
+                                            : suggestionError.includes('temporarily unavailable') || suggestionError.includes('Failed')
+                                            ? 'Service Unavailable'
+                                            : 'Suggestion Error'}
+                                    </p>
+                                    <p className="text-xs text-red-600 mt-1">{suggestionError}</p>
+                                    <div className="mt-2 flex gap-2">
+                                        <button
+                                            type="button"
+                                            onClick={fetchAISuggestions}
+                                            className="text-xs px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700 transition-colors"
+                                        >
+                                            🔄 Try Again
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setSuggestionError(null)}
+                                            className="text-xs px-3 py-1 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 transition-colors"
+                                        >
+                                            Dismiss
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
                     <div className="form-grid">
                         <div className="form-group">
                             <Label htmlFor="target_value" className="form-label">Target Value *</Label>
-                            <Input 
-                                id="target_value" 
-                                name="target_value" 
-                                type="number" 
-                                min="0" 
+                            <Input
+                                id="target_value"
+                                name="target_value"
+                                type="number"
+                                min="0"
                                 step="0.1"
-                                value={formData.target_value} 
-                                onChange={handleNumericInputChange} 
+                                value={formData.target_value}
+                                onChange={handleNumericInputChange}
                                 placeholder="Enter target number"
-                                required 
+                                required
                             />
                         </div>
                         <div className="form-group">
                             <Label htmlFor="unit" className="form-label">Unit *</Label>
-                            <Input 
-                                id="unit" 
-                                name="unit" 
-                                value={formData.unit} 
-                                onChange={handleInputChange} 
+                            <Input
+                                id="unit"
+                                name="unit"
+                                value={formData.unit}
+                                onChange={handleInputChange}
                                 placeholder="e.g., kg, miles, minutes"
-                                required 
+                                required
                             />
                             {GOAL_TYPE_UNITS[formData.goal_type] && (
                                 <p className="unit-suggestion">
@@ -196,19 +391,19 @@ const GoalFormDialog = ({ isOpen, onClose, editingGoal }: GoalFormDialogProps) =
                     </div>
                     <div className="form-group">
                         <Label htmlFor="target_date" className="form-label">Target Date *</Label>
-                        <Input 
-                            id="target_date" 
-                            name="target_date" 
-                            type="date" 
-                            value={formData.target_date} 
-                            onChange={handleInputChange} 
-                            required 
+                        <Input
+                            id="target_date"
+                            name="target_date"
+                            type="date"
+                            value={formData.target_date}
+                            onChange={handleInputChange}
+                            required
                         />
                     </div>
                     <DialogFooter className="form-actions">
-                        <Button 
-                            type="button" 
-                            variant="outline" 
+                        <Button
+                            type="button"
+                            variant="outline"
                             onClick={onClose}
                             disabled={isSubmitting}
                         >
@@ -223,7 +418,9 @@ const GoalFormDialog = ({ isOpen, onClose, editingGoal }: GoalFormDialogProps) =
                 </form>
             </DialogContent>
         </Dialog>
+        </>
     );
 };
 
 export default GoalFormDialog;
+

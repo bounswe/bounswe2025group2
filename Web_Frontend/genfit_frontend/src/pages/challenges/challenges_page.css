@@ -243,6 +243,32 @@
     border-radius: 12px;
 }
 
+.difficulty-badge {
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 0.25rem 0.5rem;
+    border-radius: 12px;
+    text-transform: capitalize;
+}
+
+.difficulty-badge.difficulty-beginner {
+    background: linear-gradient(135deg, #d1fae5, #a7f3d0);
+    color: #065f46;
+    border: 1px solid #10b981;
+}
+
+.difficulty-badge.difficulty-intermediate {
+    background: linear-gradient(135deg, #fef3c7, #fde68a);
+    color: #92400e;
+    border: 1px solid #f59e0b;
+}
+
+.difficulty-badge.difficulty-advanced {
+    background: linear-gradient(135deg, #fee2e2, #fecaca);
+    color: #991b1b;
+    border: 1px solid #ef4444;
+}
+
 .challenge-description {
     line-height: 1.5;
     margin-bottom: 1rem;
@@ -556,6 +582,26 @@ div[data-state="open"] .detail-modal,
     font-size: 0.75rem;
     color: #6b7280;
     margin-top: 0.25rem;
+}
+
+/* Challenge Highlight Animation (for linked challenges) */
+.challenge-highlighted {
+    animation: challenge-highlight 2s ease-in-out;
+}
+
+@keyframes challenge-highlight {
+    0% {
+        box-shadow: 0 0 0 0 rgba(128, 0, 0, 0.7);
+        transform: scale(1);
+    }
+    50% {
+        box-shadow: 0 0 30px 10px rgba(128, 0, 0, 0.4);
+        transform: scale(1.02);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(128, 0, 0, 0);
+        transform: scale(1);
+    }
 }
 
 /* Progress Form */

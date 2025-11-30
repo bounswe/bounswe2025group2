@@ -11,6 +11,7 @@ import { Picker } from '@react-native-picker/picker';
 import Cookies from '@react-native-cookies/cookies';
 import Toast from 'react-native-toast-message';
 import { useTheme } from '../context/ThemeContext';
+import { API_URL } from '@constants/api';
 
 const Register = ({ navigation }: any) => {
   const [username, setUsername] = useState('');
@@ -56,15 +57,15 @@ const Register = ({ navigation }: any) => {
     }
 
     try {
-      await fetch('http://164.90.166.81:8000/api/quotes/random/', { 
+      await fetch(`${API_URL}quotes/random/`, { 
         method: 'GET',
         credentials: 'include',
       });
 
-      const cookies = await Cookies.get('http://164.90.166.81:8000');
+      const cookies = await Cookies.get(API_URL);
       const csrfToken = cookies.csrftoken?.value;
       
-      const response = await fetch('http://164.90.166.81:8000/api/register/', {
+      const response = await fetch(`${API_URL}register/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

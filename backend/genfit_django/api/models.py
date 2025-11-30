@@ -17,6 +17,50 @@ class UserWithType(AbstractUser):
     )
     user_type = models.CharField(choices=[('Coach', 'Coach'), ('User', 'User')], max_length=10)
     is_verified_coach = models.BooleanField(default=False)
+    
+    # Daily login tracking fields
+    current_streak = models.IntegerField(default=0, help_text='Current consecutive days logged in')
+    longest_streak = models.IntegerField(default=0, help_text='Longest consecutive days logged in')
+    last_login_date = models.DateField(null=True, blank=True, help_text='Last date user logged in')
+    total_login_days = models.IntegerField(default=0, help_text='Total number of unique days logged in')
+    
+    # User preferences
+    daily_advice_enabled = models.BooleanField(default=True, help_text='Enable AI-generated daily advice')
+    
+    def update_login_streak(self):
+        """Update login streak when user logs in"""
+        from datetime import date, timedelta
+        today = date.today()
+        
+        # First time login
+        if self.last_login_date is None:
+            self.current_streak = 1
+            self.longest_streak = 1
+            self.total_login_days = 1
+            self.last_login_date = today
+            self.save()
+            return
+        
+        # Already logged in today
+        if self.last_login_date == today:
+            return
+        
+        # Logged in yesterday - continue streak
+        yesterday = today - timedelta(days=1)
+        if self.last_login_date == yesterday:
+            self.current_streak += 1
+            self.total_login_days += 1
+        # Streak broken - start new streak
+        else:
+            self.current_streak = 1
+            self.total_login_days += 1
+        
+        # Update longest streak if current is longer
+        if self.current_streak > self.longest_streak:
+            self.longest_streak = self.current_streak
+        
+        self.last_login_date = today
+        self.save()
 
 
 class FitnessGoal(models.Model):
@@ -66,10 +110,17 @@ class FitnessGoal(models.Model):
 
 
 class Challenge(models.Model):
+    DIFFICULTY_CHOICES = [
+        ('Beginner', 'Beginner'),
+        ('Intermediate', 'Intermediate'),
+        ('Advanced', 'Advanced'),
+    ]
+    
     coach = models.ForeignKey(UserWithType, on_delete=models.CASCADE, related_name='created_challenges')
     title = models.CharField(max_length=255)
     description = models.TextField(blank=True)
     challenge_type = models.CharField(max_length=50)
+    difficulty_level = models.CharField(max_length=20, choices=DIFFICULTY_CHOICES, default='Beginner')
     target_value = models.FloatField()
     unit = models.CharField(max_length=20)
     location = models.CharField(max_length=255, blank=True, null=True)
@@ -125,6 +176,7 @@ class Notification(models.Model):
         ('SYSTEM', 'System Notification'),
         ('NEW_MESSAGE', 'New Message'),
         ('GOAL_INACTIVE', 'Goal Inactive Warning'),
+        ('MENTOR_REQUEST', 'Mentor Request'),
     ]
 
     recipient = models.ForeignKey(UserWithType, on_delete=models.CASCADE, related_name='notifications')
@@ -143,6 +195,30 @@ class Notification(models.Model):
         ordering = ['-created_at']
 
 
+class MentorMenteeRelationship(models.Model):
+    RELATIONSHIP_STATUS = [
+        ('PENDING', 'Pending'),
+        ('ACCEPTED', 'Accepted'),
+        ('REJECTED', 'Rejected'),
+        ('TERMINATED', 'Terminated'),
+    ]
+    
+    sender = models.ForeignKey(UserWithType, on_delete=models.CASCADE, related_name='sent_mentor_requests')
+    receiver = models.ForeignKey(UserWithType, on_delete=models.CASCADE, related_name='received_mentor_requests')
+    mentor = models.ForeignKey(UserWithType, on_delete=models.CASCADE, related_name='mentor_relationships')
+    mentee = models.ForeignKey(UserWithType, on_delete=models.CASCADE, related_name='mentee_relationships')
+    status = models.CharField(max_length=20, choices=RELATIONSHIP_STATUS, default='PENDING')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        unique_together = ('mentor', 'mentee')
+        ordering = ['-created_at']
+    
+    def __str__(self):
+        return f"{self.mentor.username} -> {self.mentee.username} ({self.status})"
+
+
 class Profile(models.Model):
     user = models.OneToOneField(UserWithType, on_delete=models.CASCADE, related_name='profile')
     name = models.CharField(max_length=50, blank=True)
@@ -150,6 +226,7 @@ class Profile(models.Model):
     bio = models.TextField(max_length=500, blank=True)
     location = models.CharField(max_length=50, blank=True)
     birth_date = models.DateField(null=True, blank=True)
+    preferred_sports = models.TextField(blank=True, null=True, default='')
     profile_picture = models.ImageField(
         upload_to='profile_pictures/',
         null=True,
@@ -373,3 +450,34 @@ class Quote(models.Model):
     
     def __str__(self):
         return f'"{self.text}" - {self.author}'
+
+
+class DailyAdvice(models.Model):
+    user = models.ForeignKey(UserWithType, on_delete=models.CASCADE, related_name='daily_advices')
+    advice_text = models.TextField(help_text='AI-generated daily advice')
+    date = models.DateField(help_text='Date this advice was generated for')
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        ordering = ['-date']
+        unique_together = ('user', 'date')
+        indexes = [
+            models.Index(fields=['user', 'date']),
+        ]
+    
+    def __str__(self):
+        return f"Daily advice for {self.user.username} on {self.date}"
+    
+class ContactSubmission(models.Model):
+    name = models.CharField(max_length=100)
+    email = models.EmailField()
+    subject = models.CharField(max_length=200)
+    message = models.TextField()
+    submitted_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        db_table = 'contact_submissions'
+        ordering = ['-submitted_at']
+    
+    def __str__(self):
+        return f"{self.name} - {self.subject}"    

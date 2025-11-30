@@ -6,7 +6,7 @@ import { Button } from '../../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import GFapi from '../../lib/api/GFapi';
 import type { Goal } from '../../lib/types/api';
-import { Plus, Edit, Save, Target, TrendingUp, Trash2, Calendar, RefreshCw } from 'lucide-react';
+import { Plus, Edit, Save, Target, TrendingUp, Trash2, Calendar, RefreshCw, UserCheck } from 'lucide-react';
 import GoalFormDialog from './GoalFormDialog';
 import ProgressUpdateDialog from './ProgressUpdateDialog';
 import './goal_page.css';
@@ -155,8 +155,8 @@ const GoalPage = () => {
                             <p className="page-subtitle">Track your fitness journey and achieve your targets</p>
                         </div>
                         <Button onClick={handleAddNew} className="add-goal-btn" size={"xl"}>
-                            <Plus className="w-4 h-4 mr-2" />
-                            Add New Goal
+                            <Plus className="w-5 h-5 mr-2 font-bold" /> {/* Increased from w-4 h-4 to w-5 h-5 */}
+                            {goals.length === 0 ? 'Create Your First Goal' : 'Add New Goal'}
                         </Button>
                     </div>
                 </div>
@@ -193,18 +193,22 @@ const GoalPage = () => {
                 </div>
 
                 {/* Create/Edit Goal Dialog */}
-                <GoalFormDialog 
-                    isOpen={isFormOpen}
-                    onClose={handleCloseForm}
-                    editingGoal={editingGoal}
-                />
+                {isFormOpen && (
+                    <GoalFormDialog
+                        isOpen={isFormOpen}
+                        onClose={handleCloseForm}
+                        editingGoal={editingGoal}
+                    />
+                )}
 
                 {/* Progress Update Dialog */}
-                <ProgressUpdateDialog 
-                    isOpen={isProgressDialogOpen}
-                    onClose={handleCloseProgress}
-                    selectedGoal={selectedGoal}
-                />
+                {isProgressDialogOpen && (
+                    <ProgressUpdateDialog
+                        isOpen={isProgressDialogOpen}
+                        onClose={handleCloseProgress}
+                        selectedGoal={selectedGoal}
+                    />
+                )}
 
                 {goalsLoading && <div className="goal-page-loading">Loading goals...</div>}
                 {goalsError && <div className="goal-page-error">Failed to load goals.</div>}
@@ -235,10 +239,6 @@ const GoalPage = () => {
                         <Target className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
                         <h3 className="text-lg font-semibold mb-2">No goals yet</h3>
                         <p className="text-muted-foreground mb-4">Start your fitness journey by creating your first goal!</p>
-                        <Button onClick={handleAddNew}>
-                            <Plus className="w-4 h-4 mr-2" />
-                            Create Your First Goal
-                        </Button>
                     </div>
                 ) : filteredGoals.length === 0 ? (
                     <div className="empty-state">
@@ -247,27 +247,29 @@ const GoalPage = () => {
                             {activeGoalTab === 'ALL' ? 'No goals yet' : `No ${activeGoalTab.toLowerCase()} goals`}
                         </h3>
                         <p className="text-muted-foreground mb-4">
-                            {activeGoalTab === 'ALL' 
-                                ? 'Start your fitness journey by creating your first goal!' 
+                            {activeGoalTab === 'ALL'
+                                ? 'Start your fitness journey by creating your first goal!'
                                 : `No ${activeGoalTab.toLowerCase()} goals found.`
                             }
                         </p>
-                        {activeGoalTab === 'ALL' && (
-                            <Button onClick={handleAddNew}>
-                                <Plus className="w-4 h-4 mr-2" />
-                                Create Your First Goal
-                            </Button>
-                        )}
                     </div>
                 ) : (
                     <div className="goals-page-goals-grid">
                         {filteredGoals.map(goal => {
-                            
+
                             return (
                                 <Card key={goal.id} className="goal-card">
                                     <CardHeader className="goal-card-header">
                                         <div className="goal-title-section">
-                                            <div className="goal-title">{goal.title}</div>
+                                            <div className="goal-title-wrapper">
+                                                <div className="goal-title">{goal.title}</div>
+                                                {goal.mentor && (
+                                                    <div className="mentor-badge" title="Goal assigned by your mentor">
+                                                        <UserCheck className="w-4 h-4" />
+                                                        <span className="mentor-badge-text">Mentor Goal</span>
+                                                    </div>
+                                                )}
+                                            </div>
                                             <span className={`goal-status-badge ${goal.status?.toLowerCase()}`}>
                                                 {goal.status}
                                             </span>
@@ -279,15 +281,15 @@ const GoalPage = () => {
                                                 {goal.description}
                                             </p>
                                         )}
-                                        
+
                                         <div className="goal-progress">
                                             <div className="progress-header">
                                                 <span className="progress-label">Progress</span>
                                                 <span className="progress-percentage">{goal.progress}%</span>
                                             </div>
                                             <div className="progress-bar">
-                                                <div 
-                                                    className="progress-fill" 
+                                                <div
+                                                    className="progress-fill"
                                                     style={{ width: `${goal.progress}%` }}
                                                 ></div>
                                             </div>
@@ -306,7 +308,7 @@ const GoalPage = () => {
                                                 <span>Target: {formatDate(goal.target_date)}</span>
                                             </div>
                                         </div>
-                                        
+
                                         <div className="goal-card-actions">
                                             {goal.status === 'INACTIVE' ? (
                                                 <Button
@@ -318,26 +320,26 @@ const GoalPage = () => {
                                                     Restart Goal
                                                 </Button>
                                             ) : (
-                                                <Button 
+                                                <Button
                                                     variant="positive"
-                                                    size="sm" 
+                                                    size="sm"
                                                     onClick={() => openProgressDialog(goal)}
                                                 >
                                                     <TrendingUp className="w-4 h-4 mr-2" />
                                                     Update Progress
                                                 </Button>
                                             )}
-                                            <Button 
-                                                variant="outline" 
-                                                size="sm" 
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
                                                 onClick={() => handleEdit(goal)}
                                             >
                                                 <Edit className="w-4 h-4 mr-2" />
                                                 Edit
                                             </Button>
-                                            <Button 
-                                                variant="destructive" 
-                                                size="sm" 
+                                            <Button
+                                                variant="destructive"
+                                                size="sm"
                                                 onClick={() => handleDeleteGoal(goal.id)}
                                             >
                                                 <Trash2 className="w-4 h-4 mr-2" />

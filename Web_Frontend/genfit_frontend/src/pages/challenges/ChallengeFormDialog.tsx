@@ -33,6 +33,7 @@ const ChallengeFormDialog = ({ isOpen, onClose, editingChallenge }: ChallengeFor
         title: '',
         description: '',
         challenge_type: 'SPORTS',
+        difficulty_level: 'Beginner' as 'Beginner' | 'Intermediate' | 'Advanced',
         target_value: 100,
         unit: '',
         location: '',
@@ -48,6 +49,7 @@ const ChallengeFormDialog = ({ isOpen, onClose, editingChallenge }: ChallengeFor
                 title: editingChallenge.title,
                 description: editingChallenge.description || '',
                 challenge_type: editingChallenge.challenge_type,
+                difficulty_level: editingChallenge.difficulty_level || 'Beginner',
                 target_value: editingChallenge.target_value,
                 unit: editingChallenge.unit,
                 location: editingChallenge.location || '',
@@ -59,6 +61,7 @@ const ChallengeFormDialog = ({ isOpen, onClose, editingChallenge }: ChallengeFor
                 title: '',
                 description: '',
                 challenge_type: 'SPORTS',
+                difficulty_level: 'Beginner',
                 target_value: 100,
                 unit: '',
                 location: '',
@@ -113,6 +116,7 @@ const ChallengeFormDialog = ({ isOpen, onClose, editingChallenge }: ChallengeFor
                 title: formData.title,
                 description: formData.description,
                 challenge_type: formData.challenge_type,
+                difficulty_level: formData.difficulty_level,
                 target_value: formData.target_value,
                 unit: formData.unit,
                 location: formData.location,
@@ -130,17 +134,18 @@ const ChallengeFormDialog = ({ isOpen, onClose, editingChallenge }: ChallengeFor
             }
 
             onClose();
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error('Failed to save challenge:', error);
             
             // Show more detailed error message
+            const err = error as { response?: { data?: { detail?: string } }; message?: string };
             let errorMessage = 'Failed to save challenge. Please try again.';
-            if (error?.response?.data?.detail) {
-                errorMessage = error.response.data.detail;
-            } else if (error?.response?.data) {
-                errorMessage = JSON.stringify(error.response.data);
-            } else if (error?.message) {
-                errorMessage = error.message;
+            if (err?.response?.data?.detail) {
+                errorMessage = err.response.data.detail;
+            } else if (err?.response?.data) {
+                errorMessage = JSON.stringify(err.response.data);
+            } else if (err?.message) {
+                errorMessage = err.message;
             }
             
             alert(errorMessage);
@@ -157,14 +162,15 @@ const ChallengeFormDialog = ({ isOpen, onClose, editingChallenge }: ChallengeFor
         try {
             await deleteChallengeMutation.mutateAsync(editingChallenge.id);
             onClose();
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error('Failed to delete challenge:', error);
             
+            const err = error as { response?: { data?: { detail?: string } }; message?: string };
             let errorMessage = 'Failed to delete challenge. Please try again.';
-            if (error?.response?.data?.detail) {
-                errorMessage = error.response.data.detail;
-            } else if (error?.message) {
-                errorMessage = error.message;
+            if (err?.response?.data?.detail) {
+                errorMessage = err.response.data.detail;
+            } else if (err?.message) {
+                errorMessage = err.message;
             }
             
             alert(errorMessage);
@@ -202,6 +208,18 @@ const ChallengeFormDialog = ({ isOpen, onClose, editingChallenge }: ChallengeFor
                                 <SelectItem value="CYCLING">Cycling</SelectItem>
                                 <SelectItem value="SWIMMING">Swimming</SelectItem>
                                 <SelectItem value="SPORTS">Sports</SelectItem>
+                            </Select>
+                        </div>
+                        <div className="form-group">
+                            <Label htmlFor="difficulty_level" className="form-label">Difficulty Level *</Label>
+                            <Select 
+                                id="difficulty_level"
+                                value={formData.difficulty_level} 
+                                onValueChange={(value) => setFormData(prev => ({ ...prev, difficulty_level: value as 'Beginner' | 'Intermediate' | 'Advanced' }))}
+                            >
+                                <SelectItem value="Beginner">Beginner</SelectItem>
+                                <SelectItem value="Intermediate">Intermediate</SelectItem>
+                                <SelectItem value="Advanced">Advanced</SelectItem>
                             </Select>
                         </div>
                     </div>

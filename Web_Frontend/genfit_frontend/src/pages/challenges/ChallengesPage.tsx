@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect, useRef } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useIsAuthenticated, useChallenges } from '../../lib';
 import { useJoinChallenge, useLeaveChallenge } from '../../lib/hooks/useChallenges';
 import { Layout } from '../../components';
@@ -51,6 +51,7 @@ const getChallengeTabOptions = (isCoach: boolean) => {
 const ChallengesPage = () => {
     const { isAuthenticated, isLoading: authLoading, user } = useIsAuthenticated();
     const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
     const { data: challenges = [], isLoading: challengesLoading, error: challengesError } = useChallenges();
 
     const joinChallengeMutation = useJoinChallenge();
@@ -63,8 +64,36 @@ const ChallengesPage = () => {
     const [selectedChallenge, setSelectedChallenge] = useState<Challenge | null>(null);
     const [activeChallengeTab, setActiveChallengeTab] = useState('ALL');
 
+    // Ref to store challenge card references for scrolling
+    const challengeRefs = useRef<{ [key: number]: HTMLDivElement | null }>({});
+
     // Check if user is a coach
     const isCoach = Boolean(user?.user_type === 'Coach' || user?.is_verified_coach);
+
+    // Handle scrolling to a specific challenge from URL params
+    useEffect(() => {
+        const challengeIdParam = searchParams.get('challengeId');
+        if (challengeIdParam && challenges.length > 0 && !challengesLoading) {
+            const challengeId = parseInt(challengeIdParam, 10);
+            
+            // Wait a bit for the page to render
+            setTimeout(() => {
+                const challengeElement = challengeRefs.current[challengeId];
+                if (challengeElement) {
+                    challengeElement.scrollIntoView({ 
+                        behavior: 'smooth', 
+                        block: 'center' 
+                    });
+                    
+                    // Add a highlight effect
+                    challengeElement.classList.add('challenge-highlighted');
+                    setTimeout(() => {
+                        challengeElement.classList.remove('challenge-highlighted');
+                    }, 2000);
+                }
+            }, 300);
+        }
+    }, [searchParams, challenges, challengesLoading]);
 
     if (authLoading) {
         return <div className="challenge-page-loading">Loading...</div>;
@@ -107,15 +136,16 @@ const ChallengesPage = () => {
 
         try {
             await joinChallengeMutation.mutateAsync(challengeId);
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error('Failed to join challenge:', error);
             // Extract more detailed error message from the API response
+            const err = error as { response?: { data?: { detail?: string } }; message?: string };
             let errorMessage = 'Failed to join challenge. Please try again.';
 
-            if (error?.response?.data?.detail) {
-                errorMessage = error.response.data.detail;
-            } else if (error?.message) {
-                errorMessage = error.message;
+            if (err?.response?.data?.detail) {
+                errorMessage = err.response.data.detail;
+            } else if (err?.message) {
+                errorMessage = err.message;
             }
 
             alert(errorMessage);
@@ -129,15 +159,16 @@ const ChallengesPage = () => {
 
         try {
             await leaveChallengeMutation.mutateAsync(challengeId);
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error('Failed to leave challenge:', error);
             // Extract more detailed error message from the API response
+            const err = error as { response?: { data?: { detail?: string } }; message?: string };
             let errorMessage = 'Failed to leave challenge. Please try again.';
 
-            if (error?.response?.data?.detail) {
-                errorMessage = error.response.data.detail;
-            } else if (error?.message) {
-                errorMessage = error.message;
+            if (err?.response?.data?.detail) {
+                errorMessage = err.response.data.detail;
+            } else if (err?.message) {
+                errorMessage = err.message;
             }
 
             alert(errorMessage);
@@ -391,16 +422,22 @@ const ChallengesPage = () => {
                 ) : (
                     <div className="challenges-grid">
                         {filteredChallenges.map(challenge => (
-                            <ChallengeCard
+                            <div 
                                 key={challenge.id}
-                                challenge={challenge}
-                                user={user || undefined}
-                                onJoin={handleJoinChallenge}
-                                onLeave={handleLeaveChallenge}
-                                onEdit={handleEdit}
-                                onViewDetails={openDetailModal}
-                                onUpdateProgress={openProgressDialog}
-                            />
+                                ref={(el) => {
+                                    challengeRefs.current[challenge.id] = el;
+                                }}
+                            >
+                                <ChallengeCard
+                                    challenge={challenge}
+                                    user={user || undefined}
+                                    onJoin={handleJoinChallenge}
+                                    onLeave={handleLeaveChallenge}
+                                    onEdit={handleEdit}
+                                    onViewDetails={openDetailModal}
+                                    onUpdateProgress={openProgressDialog}
+                                />
+                            </div>
                         ))}
 
                     </div>

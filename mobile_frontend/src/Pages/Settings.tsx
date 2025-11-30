@@ -12,6 +12,7 @@ import { useTheme } from '../context/ThemeContext';
 import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../context/AuthContext';
 import Cookies from '@react-native-cookies/cookies';
+import { API_URL } from '@constants/api';
 
 type SettingAction = {
   label: string;
@@ -39,13 +40,9 @@ const Settings = () => {
     navigation.push('Profile' as never);
   };
 
-  const handleNotifications = () => {
-    navigation.push('NotificationPreferences' as never);
-  };
-
   const handleLogout = async () => {
     try {
-      await fetch('http://164.90.166.81:8000/api/logout/', {
+      await fetch(`${API_URL}logout/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
       });
@@ -67,11 +64,6 @@ const Settings = () => {
         label: 'Edit Profile',
         subtitle: 'Update your personal details',
         onPress: handleEditProfile,
-      },
-      {
-        label: 'Notification Preferences',
-        subtitle: 'Manage alerts and reminders',
-        onPress: handleNotifications,
       },
       {
         label: 'Log Out',

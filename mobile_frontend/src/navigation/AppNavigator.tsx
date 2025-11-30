@@ -23,6 +23,10 @@ import ChatDetail from '../Pages/ChatDetail';
 import Forum from '../Pages/Forum.tsx';
 import ForumDetail from '../Pages/ForumDetail.tsx';
 import ThreadDetail from '../Pages/ThreadDetail.tsx';
+import AiChatDetail from '../Pages/AiChatDetail';
+import Exercises from '../Pages/Exercises';
+import ExerciseDetail from '../Pages/ExerciseDetail';
+import Search from '../Pages/Search';
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -44,13 +48,11 @@ const MainTabs = () => {
         headerShown: false,
       }}
     >
-  <Tab.Screen name="Home" component={withLayout(Home)} />
-  <Tab.Screen name="Forum" component={withLayout(Forum)} />
+      <Tab.Screen name="Home" component={withLayout(Home)} />
+      <Tab.Screen name="Forum" component={withLayout(Forum)} />
       <Tab.Screen name="Chats" component={withLayout(Chats)} />
-      <Tab.Screen name="Settings" component={withLayout(Settings)} />
       <Tab.Screen name="Goals" component={withLayout(Goals)} />
       <Tab.Screen name="Challenges" component={withLayout(Challenges)} />
-
     </Tab.Navigator>
   );
 };
@@ -73,6 +75,11 @@ const AppNavigator = () => {
       <Stack.Screen name="Main" component={MainTabs} />
       <Stack.Screen name="Profile" component={Profile} />
       <Stack.Screen 
+        name="Settings" 
+        component={Settings}
+        options={{ title: 'Settings', headerShown: true }}
+      />
+      <Stack.Screen 
         name="Notifications" 
         component={Notifications}
         options={{ title: 'Notifications' }}
@@ -88,6 +95,11 @@ const AppNavigator = () => {
         options={{ title: 'Chat' }}
       />
       <Stack.Screen
+        name="AiChatDetail"
+        component={AiChatDetail}
+        options={{ title: 'AI Chat' }}
+      />
+      <Stack.Screen
         name="ForumDetail"
         component={ForumDetail}
         options={{ title: 'Threads' }}
@@ -96,6 +108,21 @@ const AppNavigator = () => {
         name="ThreadDetail"
         component={ThreadDetail}
         options={{ title: 'Thread' }}
+      />
+      <Stack.Screen
+        name="Exercises"
+        component={Exercises}
+        options={{ title: 'Exercises', headerShown: true }}
+      />
+      <Stack.Screen
+        name="ExerciseDetail"
+        component={ExerciseDetail}
+        options={{ title: 'Exercise Details', headerShown: true }}
+      />
+      <Stack.Screen
+        name="Search"
+        component={Search}
+        options={{ title: 'Search Users', headerShown: true }}
       />
     </Stack.Navigator>
   );

@@ -11,8 +11,9 @@ from django.utils.encoding import force_bytes, force_str
 from django.contrib.sites.shortcuts import get_current_site
 from django.middleware.csrf import get_token
 from django.views.decorators.csrf import ensure_csrf_cookie
-from .serializers import UserRegistrationSerializer, UserLoginSerializer, NotificationSerializer, UserSerializer
-from .models import Notification
+from .serializers import UserRegistrationSerializer, UserLoginSerializer, ContactSubmissionSerializer, NotificationSerializer, UserSerializer
+from .models import Notification, ContactSubmission
+from django.contrib import admin
 
 
 User = get_user_model()
@@ -88,6 +89,9 @@ def user_login(request):
                                status=status.HTTP_400_BAD_REQUEST)
             
             login(request, user)
+            
+            # Update login streak
+            user.update_login_streak()
             
             # Handle remember me functionality
             if serializer.validated_data.get('remember_me', False):
@@ -200,6 +204,58 @@ def get_user(request):
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
+def get_login_stats(request):
+    """Get detailed login statistics for the authenticated user"""
+    from datetime import date, timedelta
+    
+    user = request.user
+    today = date.today()
+    
+    # Calculate if streak is still active (logged in today or yesterday)
+    streak_active = False
+    if user.last_login_date:
+        days_since_last_login = (today - user.last_login_date).days
+        streak_active = days_since_last_login <= 1
+    
+    # Calculate days until streak breaks (if active)
+    days_until_break = None
+    if streak_active and user.last_login_date == today:
+        days_until_break = 1  # Will break tomorrow if not logged in
+    elif streak_active and user.last_login_date == (today - timedelta(days=1)):
+        days_until_break = 0  # Will break today if not logged in
+    
+    # Get login calendar data for the last 90 days
+    login_calendar = []
+    if user.last_login_date:
+        # For now, we'll return the last login date and streak info
+        # In a more advanced implementation, you'd track each login date
+        start_date = max(user.last_login_date - timedelta(days=user.current_streak - 1), 
+                        today - timedelta(days=90))
+        
+        current_date = start_date
+        while current_date <= min(user.last_login_date, today):
+            login_calendar.append({
+                'date': current_date.isoformat(),
+                'logged_in': True
+            })
+            current_date += timedelta(days=1)
+    
+    response_data = {
+        'current_streak': user.current_streak,
+        'longest_streak': user.longest_streak,
+        'total_login_days': user.total_login_days,
+        'last_login_date': user.last_login_date.isoformat() if user.last_login_date else None,
+        'streak_active': streak_active,
+        'days_until_break': days_until_break,
+        'login_calendar': login_calendar,
+        'logged_in_today': user.last_login_date == today if user.last_login_date else False,
+    }
+    
+    return Response(response_data)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
 def get_users(request):
     users = User.objects.all()
     serializer = UserSerializer(users, many=True)
@@ -226,4 +282,83 @@ def get_csrf_token(request):
     return Response({'csrfToken': get_token(request)})
 
 
+@api_view(['GET', 'PATCH'])
+@permission_classes([IsAuthenticated])
+def user_settings(request):
+    """
+    Get or update user settings/preferences
+    """
+    user = request.user
+    
+    if request.method == 'GET':
+        try:
+            daily_advice_enabled = getattr(user, 'daily_advice_enabled', True)
+        except AttributeError:
+            # Field doesn't exist yet (migration not run)
+            daily_advice_enabled = True
+        
+        return Response({
+            'daily_advice_enabled': daily_advice_enabled,
+        })
+    
+    elif request.method == 'PATCH':
+        # Update settings
+        if 'daily_advice_enabled' in request.data:
+            try:
+                user.daily_advice_enabled = request.data['daily_advice_enabled']
+                user.save()
+                daily_advice_enabled = user.daily_advice_enabled
+            except AttributeError:
+                # Field doesn't exist yet (migration not run)
+                return Response({
+                    'error': 'Settings feature not available. Please run database migrations.',
+                    'daily_advice_enabled': True,
+                }, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+        
+        return Response({
+            'message': 'Settings updated successfully',
+            'daily_advice_enabled': daily_advice_enabled,
+        })
 
+
+@api_view(['POST'])
+def contact_submission(request):
+    if request.method == 'POST':
+        serializer = ContactSubmissionSerializer(data=request.data)
+        
+        if serializer.is_valid():
+            # Save the contact submission to database
+            contact = serializer.save()
+            
+            # Return success response
+            return Response({
+                'status': 'success',
+                'message': 'Thank you for your message! We will get back to you soon.',
+                'submission_id': contact.id
+            }, status=status.HTTP_201_CREATED)
+        else:
+            # Return validation errors
+            return Response({
+                'status': 'error',
+                'message': 'Please correct the errors below.',
+                'errors': serializer.errors
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+@admin.register(ContactSubmission)
+class ContactSubmissionAdmin(admin.ModelAdmin):
+    list_display = ['name', 'email', 'subject', 'submitted_at']
+    list_filter = ['submitted_at']
+    search_fields = ['name', 'email', 'subject', 'message']
+    readonly_fields = ['name', 'email', 'subject', 'message', 'submitted_at']
+    
+    # Optional: Add these for better organization
+    list_per_page = 20
+    date_hierarchy = 'submitted_at'
+    
+    def has_add_permission(self, request):
+        # Prevent admin from adding new submissions manually
+        return False
+    
+    def has_change_permission(self, request, obj=None):
+        # Make submissions read-only
+        return False

@@ -33,10 +33,13 @@ ALLOWED_HOSTS = ['localhost',
                  '10.0.2.2',
                  '165.232.79.200',
                  '164.90.166.81',
+                 'genfit.website',
+                 'www.genfit.website',
+                 'api.genfit.website',
                 ]
 
-# For now, we are allowing all hosts. In production, we should specify your domain.
-CORS_ALLOW_ALL_ORIGINS = True
+# For development, allow all origins. In production, use specific origins.
+CORS_ALLOW_ALL_ORIGINS = DEBUG  # Allow all origins in development
 # CORS_ALLOWED_ORIGINS = ['http://localhost:3000']
 CORS_ALLOW_CREDENTIALS = True
 
@@ -57,6 +60,12 @@ CSRF_TRUSTED_ORIGINS = [
     'http://178.243.211.99:8000',
     'http://178.243.211.99:3000',
     'http://178.243.211.99:5000',
+    'https://genfit.website',
+    'https://www.genfit.website',
+    'https://api.genfit.website',
+    'http://genfit.website',
+    'http://www.genfit.website',
+    'http://api.genfit.website',
 ]
 
 
@@ -133,13 +142,16 @@ DATABASES = {
     }
 }
 
+
 CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000",  # Frontend in Docker
     "http://localhost:5000",
     "http://localhost:8000",
     "http://localhost:5173",
     "http://10.0.2.2:8000",
     "http://10.0.2.2:5000",
     "http://10.0.2.2:3000",
+    "https://localhost:3000",
     "https://localhost:5000",
     "https://localhost:8000",
     "https://localhost:5173",
@@ -152,6 +164,14 @@ CORS_ALLOWED_ORIGINS = [
     'http://164.90.166.81:8000',
     'http://164.90.166.81:3000',
     'http://164.90.166.81:5000',
+    'https://genfit.website',
+    'https://www.genfit.website',
+    'https://api.genfit.website',
+    'http://genfit.website',
+    'http://www.genfit.website',
+    'http://api.genfit.website',
+    'https://129.212.168.212',
+    'http://129.212.168.212',
 ]
 
 
@@ -205,9 +225,17 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # Session Settings
 SESSION_ENGINE = 'django.contrib.sessions.backends.db'
 SESSION_COOKIE_AGE = 1209600  # 2 weeks in seconds
-SESSION_COOKIE_SECURE = False  # Only send cookie over HTTPS
+SESSION_COOKIE_SECURE = not DEBUG  # Only send cookie over HTTPS in production
 SESSION_COOKIE_HTTPONLY = False  # Allow JavaScript access to session cookie for mobile app
 SESSION_COOKIE_SAMESITE = 'Lax'  # CSRF protection
+CSRF_COOKIE_SECURE = not DEBUG  # Only send CSRF cookie over HTTPS in production
+
+# Security settings for HTTPS
+if not DEBUG:
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+    SECURE_SSL_REDIRECT = False  # Load balancer handles SSL, not Django
+    CSRF_COOKIE_DOMAIN = '.genfit.website'
+    SESSION_COOKIE_DOMAIN = '.genfit.website'
 
 # Email Configuration
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'

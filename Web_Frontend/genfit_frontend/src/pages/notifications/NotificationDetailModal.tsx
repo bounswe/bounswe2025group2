@@ -35,12 +35,12 @@ interface NotificationDetailModalProps {
   notification: {
     id: number;
     notification_type: string;
-    title: string;
+    title?: string;
     message: string;
-    sender_username?: string;
+    sender_username?: string | null;
     recipient_username: string;
-    related_object_id?: number;
-    related_object_type?: string;
+    related_object_id?: number | null;
+    related_object_type?: string | null;
     is_read: boolean;
     is_email_sent: boolean;
     created_at: string;
@@ -63,6 +63,11 @@ const NotificationDetailModal: React.FC<NotificationDetailModalProps> = ({
   const isForumNotification = ['LIKE', 'COMMENT', 'REPLY'].includes(notification.notification_type) && 
     ['Thread', 'Comment', 'Subcomment'].includes(notification.related_object_type || '');
 
+  const isMentorNotification = (
+    notification.notification_type === 'MENTOR_REQUEST' ||
+    (notification.related_object_type === 'MentorMenteeRelationship' && notification.notification_type === 'SYSTEM')
+  );
+
   // Handle navigation to forum content
   const handleGoToForum = () => {
     // Use the backend-computed target_thread_id for correct routing
@@ -82,6 +87,13 @@ const NotificationDetailModal: React.FC<NotificationDetailModalProps> = ({
       navigate(`/threads/${related_object_id}`);
     }
     
+    onClose();
+  };
+
+  const handleGoToProfile = () => {
+    const username = notification.sender_username;
+    if (!username) return;
+    navigate(`/profile/other/${username}`);
     onClose();
   };
 
@@ -132,7 +144,7 @@ const NotificationDetailModal: React.FC<NotificationDetailModalProps> = ({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-3 text-xl">
             {getNotificationIcon(notification.notification_type)}
-            <span>{notification.title}</span>
+            <span>{notification.title || 'Notification'}</span>
           </DialogTitle>
         </DialogHeader>
 
@@ -212,6 +224,17 @@ const NotificationDetailModal: React.FC<NotificationDetailModalProps> = ({
               >
                 <ArrowRight className="w-3 h-3 mr-1" />
                 Go to Forum
+              </Button>
+            )}
+            {isMentorNotification && (
+              <Button 
+                variant="default" 
+                size="sm" 
+                onClick={handleGoToProfile}
+                style={{ marginLeft: isForumNotification ? 8 : 0 }}
+              >
+                <ArrowRight className="w-3 h-3 mr-1" />
+                Go to Profile
               </Button>
             )}
           </div>

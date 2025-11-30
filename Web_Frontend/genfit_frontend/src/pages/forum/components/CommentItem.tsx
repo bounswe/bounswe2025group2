@@ -7,6 +7,7 @@ import CommentActions from './CommentActions';
 import SubcommentItem from './SubcommentItem';
 import SubcommentForm from './SubcommentForm';
 import type { Comment } from '../../../lib/types/api';
+import { useNavigate } from 'react-router-dom';
 
 interface CommentItemProps {
   comment: Comment;
@@ -18,12 +19,13 @@ const CommentItem: React.FC<CommentItemProps> = ({ comment }) => {
   const [showSubcomments, setShowSubcomments] = useState(false);
   const [showReplyForm, setShowReplyForm] = useState(false);
   const updateCommentMutation = useUpdateComment();
-  
+  const navigate = useNavigate();
+
   // Fetch subcomments when they should be shown
-  const { 
-    data: subcomments, 
-    isLoading: subcommentsLoading, 
-    error: subcommentsError 
+  const {
+    data: subcomments,
+    isLoading: subcommentsLoading,
+    error: subcommentsError
   } = useSubcomments(showSubcomments ? comment.id : undefined);
 
   const formatDate = (dateString: string) => {
@@ -34,6 +36,10 @@ const CommentItem: React.FC<CommentItemProps> = ({ comment }) => {
       hour: '2-digit',
       minute: '2-digit'
     });
+  };
+
+  const handleUsernameClick = (username: string) => {
+    navigate(`/profile/other/${username}`);
   };
 
   const handleEdit = () => {
@@ -86,13 +92,18 @@ const CommentItem: React.FC<CommentItemProps> = ({ comment }) => {
         <div className="comment-header">
           <div className="comment-author">
             <User className="w-4 h-4" />
-            <span className="author-name">{comment.author_username}</span>
+            <span
+              onClick={() => handleUsernameClick(comment.author_username)}
+              className="author-name clickable-username"
+            >
+              {comment.author_username}
+            </span>
           </div>
           <div className="comment-date">
             {formatDate(comment.created_at)}
           </div>
         </div>
-        
+
         <div className="comment-body">
           {isEditing ? (
             <div className="edit-mode">
@@ -130,10 +141,10 @@ const CommentItem: React.FC<CommentItemProps> = ({ comment }) => {
             <p>{comment.content}</p>
           )}
         </div>
-        
+
         <div className="flex items-center justify-between mt-4 pt-3 border-t border-slate-100">
           <CommentActions comment={comment} onEdit={handleEdit} />
-          
+
           <div className="flex items-center gap-2">
             <Button
               variant="ghost"
@@ -144,7 +155,7 @@ const CommentItem: React.FC<CommentItemProps> = ({ comment }) => {
             >
               <Reply className="w-4 h-4" />
             </Button>
-            
+
             {comment.subcomment_count > 0 && (
               <Button
                 variant="ghost"
@@ -164,7 +175,7 @@ const CommentItem: React.FC<CommentItemProps> = ({ comment }) => {
             )}
           </div>
         </div>
-        
+
         {/* Reply Form */}
         {showReplyForm && (
           <div className="mt-4 p-4 bg-slate-50/50 rounded-lg border border-slate-200/60">
@@ -175,7 +186,7 @@ const CommentItem: React.FC<CommentItemProps> = ({ comment }) => {
             />
           </div>
         )}
-        
+
         {/* Subcomments Section */}
         {showSubcomments && (
           <div className="mt-4 pt-4 border-t border-slate-100">

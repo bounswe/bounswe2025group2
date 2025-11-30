@@ -10,11 +10,13 @@ import {
   useAiChatHistory,
   useSendAiMessage
 } from '../../lib';
-import { Layout, UserAvatar } from '../../components';
+import { Layout, UserAvatar, ReportButton } from '../../components';
 import { Button } from '../../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import type { Chat, Message, AiTutorChat, AiMessage } from '../../lib/types/api';
-import { Plus, Send, MessageSquare, Bot, Users, X } from 'lucide-react';
+import { Plus, Send, MessageSquare, Bot, Users, X, Trophy } from 'lucide-react';
+import { renderMessageWithChallengeLinks } from '../../lib/utils/chatLinkParser';
+import ChallengePickerDialog from './ChallengePickerDialog';
 import './chat_page.css';
 
 // Helper function to get WebSocket URL
@@ -50,6 +52,7 @@ const ChatPage = () => {
   const [messageInput, setMessageInput] = useState('');
   const [connected, setConnected] = useState(false);
   const [showUserList, setShowUserList] = useState(false);
+  const [showConnectionError, setShowConnectionError] = useState(false);
   
   // State for AI chat
   const [selectedAiChat, setSelectedAiChat] = useState<AiTutorChat | null>(null);
@@ -59,6 +62,7 @@ const ChatPage = () => {
   
   // UI state
   const [showAiChat, setShowAiChat] = useState(false);
+  const [showChallengePicker, setShowChallengePicker] = useState(false);
   
   // Refs
   const websocket = useRef<WebSocket | null>(null);
@@ -75,6 +79,20 @@ const ChatPage = () => {
   useEffect(() => {
     scrollToBottom();
   }, [messages, aiMessages]);
+
+  // Handle connection error display with delay
+  useEffect(() => {
+    if (!connected && selectedChat) {
+      // Wait 2 seconds before showing the error to allow for reconnection
+      const timer = setTimeout(() => {
+        setShowConnectionError(true);
+      }, 2000);
+      
+      return () => clearTimeout(timer);
+    } else {
+      setShowConnectionError(false);
+    }
+  }, [connected, selectedChat]);
 
   // WebSocket connection effect for regular chat
   useEffect(() => {
@@ -126,7 +144,7 @@ const ChatPage = () => {
       setConnected(false);
       setMessages([]); // Clear messages when switching chats
     };
-  }, [selectedChat, user?.username, refetchChats]);
+  }, [selectedChat, user?.username]);
 
   // Update AI messages when chat history changes
   useEffect(() => {
@@ -221,6 +239,20 @@ const ChatPage = () => {
     }
   };
 
+  // Handle challenge selection from picker
+  const handleSelectChallenge = (challengeId: number, challengeTitle: string) => {
+    const challengeLink = `challenge://${challengeId}`;
+    const linkText = `Check out "${challengeTitle}" - ${challengeLink}`;
+    
+    if (showAiChat) {
+      setAiMessageInput((prev) => prev ? `${prev} ${linkText}` : linkText);
+    } else {
+      setMessageInput((prev) => prev ? `${prev} ${linkText}` : linkText);
+    }
+    
+    setShowChallengePicker(false);
+  };
+
   // Handle select AI chat
   const selectAiChat = (chat: AiTutorChat) => {
     setSelectedAiChat(chat);
@@ -248,14 +280,6 @@ const ChatPage = () => {
   return (
     <Layout>
       <div className="chat-page-content">
-        <div className="section-header">
-          <div className="header-content">
-            <div className="header-text">
-              <p className="page-subtitle">Connect with other users or chat with our AI fitness tutor</p>
-            </div>
-          </div>
-        </div>
-
         {/* Chat Type Toggle */}
         <div className="chat-toggle">
           <Button
@@ -407,6 +431,13 @@ const ChatPage = () => {
                               {connected ? 'Online' : 'Offline'}
                             </div>
                           </div>
+                          {/* Add Report Button for specific chat */}
+                          <ReportButton
+                            contentType="CHAT"
+                            objectId={selectedChat.id}
+                            contentTitle={`Chat with ${selectedChat.other_user?.username}`}
+                            className="chat-header-report-button"
+                          />
                         </div>
                       </CardHeader>
 
@@ -425,7 +456,7 @@ const ChatPage = () => {
                               className={`message ${message.sender === user?.username ? 'sent' : 'received'}`}
                             >
                               <div className="message-content">
-                                <div className="message-text">{message.body}</div>
+                                <div className="message-text">{renderMessageWithChallengeLinks(message.body)}</div>
                                 <div className="message-time">
                                   {formatDate(message.created)}
                                   {message.sender === user?.username && (
@@ -444,6 +475,16 @@ const ChatPage = () => {
                       {/* Message input */}
                       <div className="chat-input-container">
                         <form onSubmit={sendMessage} className="chat-input-form">
+                          <Button
+                            type="button"
+                            size="sm"
+                            onClick={() => setShowChallengePicker(true)}
+                            disabled={!connected}
+                            className="challenge-picker-btn"
+                            title="Share a challenge"
+                          >
+                            <Trophy className="w-4 h-4" />
+                          </Button>
                           <input
                             type="text"
                             value={messageInput}
@@ -560,6 +601,13 @@ const ChatPage = () => {
                               Always Online
                             </div>
                           </div>
+                          {/* Add Report Button for AI chat */}
+                          <ReportButton
+                            contentType="CHAT"
+                            objectId={selectedAiChat.id}
+                            contentTitle="AI Fitness Tutor Chat"
+                            className="chat-header-report-button"
+                          />
                         </div>
                       </CardHeader>
 
@@ -578,7 +626,7 @@ const ChatPage = () => {
                               className={`message ${message.sender === 'user' ? 'sent' : 'received ai-message'}`}
                             >
                               <div className="message-content">
-                                <div className="message-text">{message.message}</div>
+                                <div className="message-text">{renderMessageWithChallengeLinks(message.message)}</div>
                                 <div className="message-time">
                                   {formatDate(message.created_at)}
                                 </div>
@@ -605,6 +653,16 @@ const ChatPage = () => {
                       {/* AI Message input */}
                       <div className="chat-input-container">
                         <form onSubmit={sendAiMessage} className="chat-input-form">
+                          <Button
+                            type="button"
+                            size="sm"
+                            onClick={() => setShowChallengePicker(true)}
+                            disabled={isLoadingAiResponse}
+                            className="challenge-picker-btn ai-btn"
+                            title="Share a challenge"
+                          >
+                            <Trophy className="w-4 h-4" />
+                          </Button>
                           <input
                             type="text"
                             value={aiMessageInput}
@@ -643,11 +701,18 @@ const ChatPage = () => {
         </div>
 
         {/* Connection status for regular chat */}
-        {selectedChat && !connected && !showAiChat && (
+        {showConnectionError && !showAiChat && (
           <div className="connection-error">
             Disconnected from chat server. Please refresh or re-select the chat.
           </div>
         )}
+
+        {/* Challenge Picker Dialog */}
+        <ChallengePickerDialog
+          isOpen={showChallengePicker}
+          onClose={() => setShowChallengePicker(false)}
+          onSelectChallenge={handleSelectChallenge}
+        />
       </div>
     </Layout>
   );

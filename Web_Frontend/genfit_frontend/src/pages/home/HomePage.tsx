@@ -1,32 +1,29 @@
-import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useIsAuthenticated, useGoals, useChallenges, useForumThreads, useUserStats, useDailyQuote } from '../../lib';
+import { useState } from 'react';
+import { useIsAuthenticated, useGoals, useChallenges, useUserStats, useDailyQuote, useUserChallenges } from '../../lib';
+import { GFapi } from '../../lib/api/GFapi';
+import type { FoodItem } from '../../lib/types/api';
 
-import { Layout } from '../../components';
+import { Layout, ActivityDashboard, DailyAdvice } from '../../components';
 import { Button } from '../../components/ui/button';
 import './home_page.css';
-
-const GOAL_TAB_OPTIONS = [
-  { key: 'ALL', label: 'All Goals' },
-  { key: 'ACTIVE', label: 'Active' },
-  { key: 'COMPLETED', label: 'Completed' },
-  { key: 'INACTIVE', label: 'Inactive' },
-  { key: 'RESTARTED', label: 'Restarted' }
-];
 
 function HomePage() {
   const { isAuthenticated, isLoading: authLoading } = useIsAuthenticated();
   const navigate = useNavigate();
 
-  // State for goal tab filtering
-  const [activeGoalTab, setActiveGoalTab] = useState('ALL');
-
   // Data hooks
   const { data: goals = [], isLoading: goalsLoading, error: goalsError } = useGoals();
   const { data: challenges = [], isLoading: challengesLoading, error: challengesError } = useChallenges();
-  const { data: threads = [], isLoading: threadsLoading, error: threadsError } = useForumThreads();
   const { data: dailyQuote, error: quoteError } = useDailyQuote();
   const stats = useUserStats();
+  const userChallenges = useUserChallenges();
+
+  // Nutrition analyzer state
+  const [query, setQuery] = useState('');
+  const [foods, setFoods] = useState<FoodItem[]>([]);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [nutritionError, setNutritionError] = useState<string | null>(null);
 
 
 
@@ -45,60 +42,27 @@ function HomePage() {
     // Implement search functionality here
   };
 
+  const handleAnalyzeFood = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!query.trim()) return;
 
+    setIsAnalyzing(true);
+    setNutritionError(null);
 
-  // Calculate progress for goals and group them by status
-  const goalsWithProgress = goals.map(goal => ({
-    ...goal,
-    progress: Math.min(100, Math.max(0, (goal.current_value / goal.target_value) * 100))
-  }));
-
-  const groupedGoals = goalsWithProgress.reduce((acc, goal) => {
-    const status = goal.status || 'INACTIVE';
-    if (!acc[status]) {
-      acc[status] = [];
+    try {
+      const response = await GFapi.post<{ totalHits: number; query: string; foods: FoodItem[] }>('/api/parse_food/', { query });
+      setFoods(response.foods || []);
+    } catch (error) {
+      console.error('Error analyzing food:', error);
+      setNutritionError('Failed to analyze food. Please try again.');
+      setFoods([]);
+    } finally {
+      setIsAnalyzing(false);
     }
-    acc[status].push(goal);
-    return acc;
-  }, {} as { [key: string]: typeof goalsWithProgress });
-
-  // Filter goals based on active tab
-  const getFilteredGoals = () => {
-    if (activeGoalTab === 'ALL') {
-      return goalsWithProgress;
-    }
-    return groupedGoals[activeGoalTab] || [];
   };
 
-  const filteredGoals = getFilteredGoals();
-
-
-  // Get joined challenges first, then other active challenges
-  const joinedChallenges = challenges
-    .filter(challenge => challenge.is_active && challenge.is_joined)
-    .map(challenge => ({
-      ...challenge,
-      daysLeft: Math.max(0, Math.ceil((new Date(challenge.end_date).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))),
-      participants: challenge.participant_count || 0,
-      progress: challenge.user_progress ? Math.min(100, Math.max(0, (challenge.user_progress / challenge.target_value) * 100)) : 0
-    }))
-    .sort((a, b) => (b.participant_count || 0) - (a.participant_count || 0));
-
-  const otherActiveChallenges = challenges
-    .filter(challenge => challenge.is_active && !challenge.is_joined)
-    .map(challenge => ({
-      ...challenge,
-      daysLeft: Math.max(0, Math.ceil((new Date(challenge.end_date).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))),
-      participants: challenge.participant_count || 0,
-      progress: 0 // No progress for non-joined challenges
-    }))
-    .sort((a, b) => (b.participant_count || 0) - (a.participant_count || 0));
-
-  // Combine them: joined first, then others
-  const allActiveChallenges = [...joinedChallenges, ...otherActiveChallenges];
-
   // Show loading state
-  const isLoading = goalsLoading || challengesLoading || threadsLoading;
+  const isLoading = goalsLoading || challengesLoading;
   if (isLoading) {
     return (
       <Layout onSearch={handleSearch}>
@@ -110,7 +74,7 @@ function HomePage() {
   }
 
   // Show error state
-  const hasError = goalsError || challengesError || threadsError;
+  const hasError = goalsError || challengesError;
   if (hasError) {
     return (
       <Layout onSearch={handleSearch}>
@@ -134,172 +98,223 @@ function HomePage() {
         {dailyQuote && !quoteError && (
           <section className="quote-section">
             <blockquote className="quote-text">
-              “{dailyQuote.text}”
+              "{dailyQuote.text}"
             </blockquote>
             <cite className="quote-author">— {dailyQuote.author}</cite>
           </section>
         )}
 
-        {/* Quick Stats */}
-        <section className="stats-section">
-          <h2>Your Stats</h2>
-          <div className="stats-grid">
-            <div className="stat-card">
-              <div className="stat-number">{stats.activeGoals}</div>
-              <div className="stat-label">Active Goals</div>
-            </div>
-            <div className="stat-card">
-              <div className="stat-number">{stats.completedChallenges}</div>
-              <div className="stat-label">Completed Challenges</div>
-            </div>
-          </div>
+        {/* Activity Dashboard with Stats */}
+        <section className="activity-dashboard-section">
+          <ActivityDashboard 
+            goals={goals} 
+            challenges={challenges}
+            activeGoals={stats.activeGoals}
+            joinedChallenges={userChallenges.data?.length || 0}
+          />
         </section>
 
-        {/* Goals Section */}
-        <section className="goals-section">
-          <div className="section-header">
-            <h2>Your Goals</h2>
-            <Button className="action-btn" onClick={() => navigate('/goals')}>View All</Button>
-          </div>
+        {/* Daily AI Advice Section */}
+        <DailyAdvice />
 
-          {/* Goal Status Tabs */}
-          <div className="goal-tabs">
-            {GOAL_TAB_OPTIONS.map(tab => (
-              <button
-                key={tab.key}
-                className={`goal-tab ${activeGoalTab === tab.key ? 'active' : ''}`}
-                onClick={() => setActiveGoalTab(tab.key)}
-              >
-                {tab.label}
-                {tab.key !== 'ALL' && groupedGoals[tab.key] && (
-                  <span className="goal-count">({groupedGoals[tab.key].length})</span>
-                )}
-                {tab.key === 'ALL' && (
-                  <span className="goal-count">({goalsWithProgress.length})</span>
-                )}
-              </button>
-            ))}
+        {/* Nutrition Analyzer */}
+        <section className="nutrition-section">
+          <div className="section-header nutrition-header">
+            <h2>Nutrition Analyzer</h2>
           </div>
+          <form onSubmit={handleAnalyzeFood} className="nutrition-form">
+            <input
+              type="text"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Enter food item"
+              className="nutrition-input"
+              disabled={isAnalyzing}
+            />
+            <Button 
+              type="submit" 
+              className="action-btn"
+              disabled={isAnalyzing || !query.trim()}
+            >
+              {isAnalyzing ? 'Analyzing...' : 'Analyze'}
+            </Button>
+          </form>
 
-          <div className="goals-content">
-            {filteredGoals.length > 0 ? (
-              <div className="home-goals-grid">
-                {filteredGoals.map(goal => (
-                  <div key={goal.id} className="goal-card">
-                    <div className="goal-card-header">
-                      <h4>{goal.title}</h4>
-                      <span className={`goal-status-badge ${goal.status?.toLowerCase()}`}>
-                        {goal.status}
-                      </span>
-                    </div>
-                    <div className="goal-progress">
-                      <div className="progress-bar">
-                        <div
-                          className="progress-fill"
-                          style={{ width: `${goal.progress}%` }}
-                        ></div>
-                      </div>
-                      <div className="progress-text">
-                        {goal.current_value} / {goal.target_value} {goal.unit} ({Math.round(goal.progress)}%)
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="empty-state">
-                <p>
-                  {activeGoalTab === 'ALL'
-                    ? 'No goals yet. Set your first goal to get started!'
-                    : `No ${activeGoalTab.toLowerCase()} goals found.`
-                  }
-                </p>
-                {activeGoalTab === 'ALL' && (
-                  <Button className="action-btn" onClick={() => navigate('/goals')}>Create Goal</Button>
-                )}
-              </div>
-            )}
-          </div>
-        </section>
+          {nutritionError && (
+            <div className="nutrition-error">
+              <p>{nutritionError}</p>
+            </div>
+          )}
 
-        {/* Active Challenges */}
-        <section className="challenges-section">
-          <div className="section-header">
-            <h2>Active Challenges</h2>
-            <Button className="action-btn" onClick={() => navigate('/challenges')}>Browse All</Button>
-          </div>
-          <div className="challenges-grid">
-            {allActiveChallenges.length > 0 ? (
-              allActiveChallenges.slice(0, 3).map(challenge => (
-                <div key={challenge.id} className="home-challenge-card">
-                  <div className="home-challenge-header">
-                    <h4>{challenge.title}</h4>
-                    {challenge.is_joined ? (
-                      <span className="home-challenge-badge joined">Joined</span>
-                    ) : (
-                      <span className="home-challenge-badge available">Available</span>
+          {foods.length > 0 && (
+            <div className="nutrition-results">
+              {foods.map((food, index) => (
+                <div key={food.fdcId || index} className="food-card">
+                  <div className="food-header">
+                    <h3>{food.description}</h3>
+                    {food.brandName && (
+                      <span className="brand-name">{food.brandName}</span>
+                    )}
+                    {!food.brandName && food.brandOwner && (
+                      <span className="brand-owner">{food.brandOwner}</span>
                     )}
                   </div>
-
-                  {/* Show progress only for joined challenges */}
-                  {challenge.is_joined ? (
-                    <div className="home-challenge-progress">
-                      <div className="progress-bar">
-                        <div
-                          className="progress-fill"
-                          style={{ width: `${challenge.progress}%` }}
-                        />
-                      </div>
-                      <div className="progress-text">
-                        {challenge.user_progress || 0} / {challenge.target_value} {challenge.unit} ({Math.round(challenge.progress)}%)
-                      </div>
+                  
+                  {food.servingSize && (
+                    <div className="serving-info">
+                      Serving: {food.servingSize} {food.servingSizeUnit}
                     </div>
-                  ) : (
-                    <div className="home-challenge-spacer"></div>
                   )}
 
-                  {/* Challenge meta info at bottom */}
-                  <div className="home-challenge-meta">
-                    <span>👥 {challenge.participants} participants</span>
-                    <span>⏰ {challenge.daysLeft} days left</span>
-                  </div>
-                </div>
-              ))
-            ) : (
-              <div className="empty-state">
-                <p>No active challenges. Browse challenges to join one!</p>
-                <Button className="action-btn" onClick={() => navigate('/challenges')}>Browse Challenges</Button>
-              </div>
-            )}
-          </div>
-        </section>
+                  <div className="food-details">
+                    {/* Main Macros */}
+                    {food.nutrients['Energy'] && (
+                      <div className="food-detail macro">
+                        <span className="detail-label">Calories:</span>
+                        <span className="detail-value">
+                          {food.nutrients['Energy'].value.toFixed(1)} {food.nutrients['Energy'].unit.toLowerCase()}
+                        </span>
+                      </div>
+                    )}
+                    {food.nutrients['Protein'] && (
+                      <div className="food-detail macro">
+                        <span className="detail-label">Protein:</span>
+                        <span className="detail-value">
+                          {food.nutrients['Protein'].value.toFixed(1)}{food.nutrients['Protein'].unit.toLowerCase()}
+                        </span>
+                      </div>
+                    )}
+                    {food.nutrients['Carbohydrate, by difference'] && (
+                      <div className="food-detail macro">
+                        <span className="detail-label">Carbs:</span>
+                        <span className="detail-value">
+                          {food.nutrients['Carbohydrate, by difference'].value.toFixed(1)}{food.nutrients['Carbohydrate, by difference'].unit.toLowerCase()}
+                        </span>
+                      </div>
+                    )}
+                    {food.nutrients['Total lipid (fat)'] && (
+                      <div className="food-detail macro">
+                        <span className="detail-label">Fat:</span>
+                        <span className="detail-value">
+                          {food.nutrients['Total lipid (fat)'].value.toFixed(1)}{food.nutrients['Total lipid (fat)'].unit.toLowerCase()}
+                        </span>
+                      </div>
+                    )}
 
-        {/* Recent Forum Threads */}
-        <section className="forum-section">
-          <div className="section-header">
-            <h2>Recent Community Discussions</h2>
-            <Button className="action-btn" onClick={() => navigate('/forum')}>View Forum</Button>
-          </div>
-          {threads.length > 0 && (
-            threads.slice(0, 4).map(thread => (
-              <div key={thread.id} className="thread-card">
-                <h3>{thread.title}</h3>
-                <div className="thread-meta">
-                  <span>By {thread.author}</span>
-                  <span>👁 {thread.view_count} views</span>
-                  <span>💬 {thread.comment_count} comments</span>
-                  <span>👍 {thread.like_count} likes</span>
+                    {/* Additional Nutrients */}
+                    <div className="nutrients-grid">
+                      {food.nutrients['Fiber, total dietary'] && (
+                        <div className="food-detail">
+                          <span className="detail-label">Fiber:</span>
+                          <span className="detail-value">
+                            {food.nutrients['Fiber, total dietary'].value.toFixed(1)}{food.nutrients['Fiber, total dietary'].unit.toLowerCase()}
+                          </span>
+                        </div>
+                      )}
+                      {food.nutrients['Total Sugars'] && (
+                        <div className="food-detail">
+                          <span className="detail-label">Sugars:</span>
+                          <span className="detail-value">
+                            {food.nutrients['Total Sugars'].value.toFixed(1)}{food.nutrients['Total Sugars'].unit.toLowerCase()}
+                          </span>
+                        </div>
+                      )}
+                      {food.nutrients['Cholesterol'] && (
+                        <div className="food-detail">
+                          <span className="detail-label">Cholesterol:</span>
+                          <span className="detail-value">
+                            {food.nutrients['Cholesterol'].value.toFixed(1)}{food.nutrients['Cholesterol'].unit.toLowerCase()}
+                          </span>
+                        </div>
+                      )}
+                      {food.nutrients['Sodium, Na'] && (
+                        <div className="food-detail">
+                          <span className="detail-label">Sodium:</span>
+                          <span className="detail-value">
+                            {food.nutrients['Sodium, Na'].value.toFixed(1)}{food.nutrients['Sodium, Na'].unit.toLowerCase()}
+                          </span>
+                        </div>
+                      )}
+                      {food.nutrients['Potassium, K'] && (
+                        <div className="food-detail">
+                          <span className="detail-label">Potassium:</span>
+                          <span className="detail-value">
+                            {food.nutrients['Potassium, K'].value.toFixed(0)}{food.nutrients['Potassium, K'].unit.toLowerCase()}
+                          </span>
+                        </div>
+                      )}
+                      {food.nutrients['Calcium, Ca'] && (
+                        <div className="food-detail">
+                          <span className="detail-label">Calcium:</span>
+                          <span className="detail-value">
+                            {food.nutrients['Calcium, Ca'].value.toFixed(1)}{food.nutrients['Calcium, Ca'].unit.toLowerCase()}
+                          </span>
+                        </div>
+                      )}
+                      {food.nutrients['Iron, Fe'] && (
+                        <div className="food-detail">
+                          <span className="detail-label">Iron:</span>
+                          <span className="detail-value">
+                            {food.nutrients['Iron, Fe'].value.toFixed(2)}{food.nutrients['Iron, Fe'].unit.toLowerCase()}
+                          </span>
+                        </div>
+                      )}
+                      {food.nutrients['Vitamin C, total ascorbic acid'] && (
+                        <div className="food-detail">
+                          <span className="detail-label">Vitamin C:</span>
+                          <span className="detail-value">
+                            {food.nutrients['Vitamin C, total ascorbic acid'].value.toFixed(1)}{food.nutrients['Vitamin C, total ascorbic acid'].unit.toLowerCase()}
+                          </span>
+                        </div>
+                      )}
+                      {food.nutrients['Vitamin D (D2 + D3)'] && food.nutrients['Vitamin D (D2 + D3)'].value > 0 && (
+                        <div className="food-detail">
+                          <span className="detail-label">Vitamin D:</span>
+                          <span className="detail-value">
+                            {food.nutrients['Vitamin D (D2 + D3)'].value.toFixed(1)}{food.nutrients['Vitamin D (D2 + D3)'].unit.toLowerCase()}
+                          </span>
+                        </div>
+                      )}
+                      {food.nutrients['Vitamin E (alpha-tocopherol)'] && food.nutrients['Vitamin E (alpha-tocopherol)'].value > 0 && (
+                        <div className="food-detail">
+                          <span className="detail-label">Vitamin E:</span>
+                          <span className="detail-value">
+                            {food.nutrients['Vitamin E (alpha-tocopherol)'].value.toFixed(2)}{food.nutrients['Vitamin E (alpha-tocopherol)'].unit.toLowerCase()}
+                          </span>
+                        </div>
+                      )}
+                      {food.nutrients['Vitamin B-12'] && food.nutrients['Vitamin B-12'].value > 0 && (
+                        <div className="food-detail">
+                          <span className="detail-label">Vitamin B-12:</span>
+                          <span className="detail-value">
+                            {food.nutrients['Vitamin B-12'].value.toFixed(2)}{food.nutrients['Vitamin B-12'].unit.toLowerCase()}
+                          </span>
+                        </div>
+                      )}
+                      {food.nutrients['Caffeine'] && food.nutrients['Caffeine'].value > 0 && (
+                        <div className="food-detail">
+                          <span className="detail-label">Caffeine:</span>
+                          <span className="detail-value">
+                            {food.nutrients['Caffeine'].value.toFixed(1)}{food.nutrients['Caffeine'].unit.toLowerCase()}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {food.ingredients && (
+                    <div className="ingredients">
+                      <span className="ingredients-label">Ingredients:</span> {food.ingredients}
+                    </div>
+                  )}
                 </div>
-                <div className="thread-date">
-                  {new Date(thread.created_at).toLocaleDateString()}
-                </div>
-              </div>
-            ))
+              ))}
+            </div>
           )}
-          {threads.length <= 0 && (
+
+          {!isAnalyzing && foods.length === 0 && !nutritionError && (
             <div className="empty-state">
-              <p>No forum discussions yet. Start a conversation!</p>
-              <Button className="action-btn" onClick={() => navigate('/forum')}>Start Discussion</Button>
+              <p>Enter food items to analyze their nutritional content</p>
             </div>
           )}
         </section>

@@ -50,6 +50,32 @@ export interface User {
   email: string;
   user_type: string;
   is_verified_coach: boolean;
+  current_streak?: number;
+  longest_streak?: number;
+  last_login_date?: string;
+  total_login_days?: number;
+  daily_advice_enabled?: boolean;
+}
+
+export interface UserSearchResult {
+  id: number;
+  username: string;
+  user_type: string;
+  is_verified_coach: boolean;
+}
+
+export interface LoginStats {
+  current_streak: number;
+  longest_streak: number;
+  total_login_days: number;
+  last_login_date: string | null;
+  streak_active: boolean;
+  days_until_break: number | null;
+  login_calendar: Array<{
+    date: string;
+    logged_in: boolean;
+  }>;
+  logged_in_today: boolean;
 }
 
 // Goal Types
@@ -58,6 +84,7 @@ export interface Goal {
   title: string;
   description: string;
   user: number;
+  mentor?: number | null;
   goal_type: string;
   target_value: number;
   current_value: number;
@@ -66,6 +93,8 @@ export interface Goal {
   target_date: string;
   status: string;
   last_updated: string;
+  progress_percentage?: number;
+  progress?: number; // computed field for compatibility
 }
 
 // Challenge Types
@@ -77,6 +106,7 @@ export interface Challenge {
   end_date: string;
   target_value: number;
   challenge_type: string;
+  difficulty_level: 'Beginner' | 'Intermediate' | 'Advanced';
   unit: string;
   location?: string;
   longitude?: number;
@@ -114,6 +144,7 @@ export interface CreateChallengeData {
   title: string;
   description: string;
   challenge_type: string;
+  difficulty_level: 'Beginner' | 'Intermediate' | 'Advanced';
   target_value: number;
   unit: string;
   start_date: string;
@@ -210,6 +241,22 @@ export interface Quote {
   author: string;
 }
 
+// Daily Advice Types
+export interface DailyAdvice {
+  id?: number;
+  user?: number;
+  advice_text?: string;
+  date?: string;
+  created_at?: string;
+  enabled: boolean;
+  message?: string;
+}
+
+// User Settings Types
+export interface UserSettings {
+  daily_advice_enabled: boolean;
+}
+
 // Chat Types
 export interface ChatUser {
   id: number;
@@ -250,6 +297,47 @@ export interface AiMessage {
   message: string;
   created_at: string;
   sender: string;
+}
+
+// Nutrition Types
+export interface NutrientValue {
+  value: number;
+  unit: string;
+}
+
+export interface FoodItem {
+  fdcId: number;
+  description: string;
+  brandOwner: string;
+  brandName: string;
+  ingredients: string;
+  servingSize: number | null;
+  servingSizeUnit: string;
+  nutrients: {
+    'Energy'?: NutrientValue;
+    'Protein'?: NutrientValue;
+    'Total lipid (fat)'?: NutrientValue;
+    'Carbohydrate, by difference'?: NutrientValue;
+    'Fiber, total dietary'?: NutrientValue;
+    'Total Sugars'?: NutrientValue;
+    'Sodium, Na'?: NutrientValue;
+    'Potassium, K'?: NutrientValue;
+    'Calcium, Ca'?: NutrientValue;
+    'Iron, Fe'?: NutrientValue;
+    'Vitamin C, total ascorbic acid'?: NutrientValue;
+    'Cholesterol'?: NutrientValue;
+    'Fatty acids, total saturated'?: NutrientValue;
+    'Caffeine'?: NutrientValue;
+    'Vitamin D (D2 + D3)'?: NutrientValue;
+    'Vitamin E (alpha-tocopherol)'?: NutrientValue;
+    'Vitamin B-12'?: NutrientValue;
+  };
+}
+
+export interface NutritionResponse {
+  totalHits: number;
+  query: string;
+  foods: FoodItem[];
 }
 
 // Configuration

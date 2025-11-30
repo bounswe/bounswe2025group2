@@ -21,14 +21,14 @@ jobs:
 
       - name: Build and push backend
         run: |
-          docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/genfit-backend ./backend/genfit_django
-          docker push ${{ secrets.DOCKERHUB_USERNAME }}/genfit-backend
+          docker build --no-cache -t ${{ secrets.DOCKERHUB_USERNAME }}/genfit-backend:latest ./backend/genfit_django
+          docker push ${{ secrets.DOCKERHUB_USERNAME }}/genfit-backend:latest
 
       - name: Build and push frontend
         run: |
-          docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/genfit-frontend ./Web_Frontend/genfit_frontend \
-            --build-arg VITE_API_BASE_URL=http://${{ secrets.DROPLET_IP }}:8000
-          docker push ${{ secrets.DOCKERHUB_USERNAME }}/genfit-frontend
+          docker build --no-cache -t ${{ secrets.DOCKERHUB_USERNAME }}/genfit-frontend:latest ./Web_Frontend/genfit_frontend \
+            --build-arg VITE_API_BASE_URL=https://www.genfit.website
+          docker push ${{ secrets.DOCKERHUB_USERNAME }}/genfit-frontend:latest
 
       - name: Deploy on DigitalOcean Droplet
         uses: appleboy/ssh-action@v0.1.10
@@ -49,6 +49,9 @@ jobs:
             echo "DEBUG=False" >> .env
             # Stop and remove existing containers
             docker-compose -f docker-compose.prod.yml down --remove-orphans
+            # Remove old images to force fresh pull
+            docker rmi ${{ secrets.DOCKERHUB_USERNAME }}/genfit-backend:latest || true
+            docker rmi ${{ secrets.DOCKERHUB_USERNAME }}/genfit-frontend:latest || true
             # Clean up any dangling containers and images
             docker system prune -f
             # Pull latest images
