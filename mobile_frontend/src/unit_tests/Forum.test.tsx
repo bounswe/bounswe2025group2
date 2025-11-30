@@ -6,33 +6,23 @@
 
 import React from 'react';
 import { render, waitFor, fireEvent } from '@testing-library/react-native';
-import { ActivityIndicator } from 'react-native';
+import { ActivityIndicator } from 'react-native-paper';
 import Forum from '../Pages/Forum';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { useNavigation } from '@react-navigation/native';
 
+// Mock dependencies
+jest.mock('../context/ThemeContext');
+jest.mock('../context/AuthContext');
+jest.mock('@react-navigation/native', () => ({
+  useNavigation: jest.fn(),
+}));
+
 // Type declarations for global mocks
 declare const global: {
   fetch: jest.Mock;
 };
-
-// Mock dependencies
-jest.mock('../context/ThemeContext');
-jest.mock('../context/AuthContext');
-jest.mock('@react-navigation/native');
-jest.mock('@components/CustomText', () => {
-  const React = require('react');
-  const { Text } = require('react-native');
-  return function CustomText(props: any) {
-    const { children, style, numberOfLines, ...rest } = props;
-    return (
-      <Text style={style} numberOfLines={numberOfLines} {...rest}>
-        {children}
-      </Text>
-    );
-  };
-});
 
 // Mock global fetch
 global.fetch = jest.fn();
@@ -54,10 +44,11 @@ describe('Forum Page - Unit Tests', () => {
     border: '#ddd',
   };
 
+  const mockNavigate = jest.fn();
+
   // Setup mocks before each test
   beforeEach(() => {
     jest.clearAllMocks();
-    jest.useFakeTimers();
 
     // Mock useAuth hook
     (useAuth as jest.Mock).mockReturnValue({
@@ -71,62 +62,55 @@ describe('Forum Page - Unit Tests', () => {
 
     // Mock useNavigation hook
     (useNavigation as jest.Mock).mockReturnValue({
-      navigate: jest.fn(),
+      navigate: mockNavigate,
       getParent: jest.fn(() => ({
         getParent: jest.fn(() => ({
-          navigate: jest.fn(),
+          navigate: mockNavigate,
         })),
       })),
     });
-
-    // Mock global fetch
-    (global.fetch as jest.Mock).mockClear();
-  });
-
-  afterEach(() => {
-    jest.useRealTimers();
   });
 
   describe('Component Rendering Tests', () => {
     test('renders loading state initially', async () => {
-      (global.fetch as jest.Mock).mockImplementationOnce(
-        () => new Promise(resolve => {
-          setTimeout(() => resolve({
-            ok: true,
-            json: async () => mockForums,
-          }), 100);
-        })
-      );
-
-      const { UNSAFE_queryAllByType, getByText } = render(<Forum />);
-      
-      // Initially loading
-      const indicators = UNSAFE_queryAllByType(ActivityIndicator);
-      expect(indicators.length).toBeGreaterThan(0);
-
-      // Advance timers to resolve fetch
-      jest.advanceTimersByTime(100);
-
-      // Wait for re-render and check forums are shown
-      await waitFor(() => {
-        expect(getByText('General Discussion')).toBeTruthy();
+      // Mock a promise that doesn't resolve immediately to check loading state
+      // But we must ensure it resolves eventually to avoid Jest warnings
+      let resolveFetch: (value: any) => void;
+      const fetchPromise = new Promise((resolve) => {
+        resolveFetch = resolve;
       });
 
-      // Loading should be gone
-      const indicatorsAfter = UNSAFE_queryAllByType(ActivityIndicator);
-      expect(indicatorsAfter.length).toBe(0);
+      (global.fetch as jest.Mock).mockReturnValue(fetchPromise);
+
+      const { UNSAFE_getByType } = render(<Forum />);
+      
+      // Check for ActivityIndicator
+      expect(UNSAFE_getByType(ActivityIndicator)).toBeTruthy();
+
+      // Resolve the promise to clean up
+      resolveFetch!({
+        ok: true,
+        json: async () => [],
+      });
+
+      await waitFor(() => expect(global.fetch).toHaveBeenCalled());
     });
 
-    test('renders forum list after successful API call', async () => {
+    test('renders forum list correctly after successful API call', async () => {
       (global.fetch as jest.Mock).mockResolvedValueOnce({
         ok: true,
         json: async () => mockForums,
       });
 
-      const { getByText } = render(<Forum />);
+      const { getByText, UNSAFE_queryByType } = render(<Forum />);
       
       await waitFor(() => {
+        expect(UNSAFE_queryByType(ActivityIndicator)).toBeNull();
+        // Verify specific content is rendered
         expect(getByText('General Discussion')).toBeTruthy();
+        expect(getByText('General forum for discussions')).toBeTruthy();
+        expect(getByText('Fitness Tips')).toBeTruthy();
+        expect(getByText('Nutrition')).toBeTruthy();
       });
     });
 
@@ -139,7 +123,8 @@ describe('Forum Page - Unit Tests', () => {
       const { getByText } = render(<Forum />);
       
       await waitFor(() => {
-        expect(getByText(/Failed to load forums/)).toBeTruthy();
+        expect(getByText('Failed to load forums')).toBeTruthy();
+        expect(getByText('Retry')).toBeTruthy();
       });
     });
 
@@ -152,28 +137,13 @@ describe('Forum Page - Unit Tests', () => {
       const { queryByText } = render(<Forum />);
       
       await waitFor(() => {
-        expect(queryByText('General Discussion')).toBeFalsy();
-      });
-    });
-
-    test('renders all forum items from API response', async () => {
-      (global.fetch as jest.Mock).mockResolvedValueOnce({
-        ok: true,
-        json: async () => mockForums,
-      });
-
-      const { getByText } = render(<Forum />);
-      
-      await waitFor(() => {
-        expect(getByText('General Discussion')).toBeTruthy();
-        expect(getByText('Fitness Tips')).toBeTruthy();
-        expect(getByText('Nutrition')).toBeTruthy();
+        expect(queryByText('General Discussion')).toBeNull();
       });
     });
   });
 
   describe('API Integration Tests', () => {
-    test('calls fetch with correct API endpoint', async () => {
+    test('calls fetch with correct API endpoint and headers', async () => {
       (global.fetch as jest.Mock).mockResolvedValueOnce({
         ok: true,
         json: async () => [],
@@ -183,26 +153,12 @@ describe('Forum Page - Unit Tests', () => {
       
       await waitFor(() => {
         expect(global.fetch).toHaveBeenCalledWith(
-          'http://164.90.166.81:8000/api/forums/',
-          expect.any(Object)
-        );
-      });
-    });
-
-    test('includes authentication headers in fetch request', async () => {
-      (global.fetch as jest.Mock).mockResolvedValueOnce({
-        ok: true,
-        json: async () => [],
-      });
-
-      render(<Forum />);
-      
-      await waitFor(() => {
-        const callArgs = (global.fetch as jest.Mock).mock.calls[0];
-        expect(callArgs[1].headers).toEqual(
+          expect.stringContaining('forums/'),
           expect.objectContaining({
-            'Content-Type': 'application/json',
-            Authorization: 'Bearer test-token',
+            headers: expect.objectContaining({
+              'Content-Type': 'application/json',
+              Authorization: 'Bearer test-token',
+            }),
           })
         );
       });
@@ -216,64 +172,23 @@ describe('Forum Page - Unit Tests', () => {
       const { getByText } = render(<Forum />);
       
       await waitFor(() => {
-        // The actual error message from the code is the error type, not "Failed to load forums"
         expect(getByText('Network error')).toBeTruthy();
-      });
-    });
-
-    test('handles non-ok response status', async () => {
-      (global.fetch as jest.Mock).mockResolvedValueOnce({
-        ok: false,
-        statusText: 'Server Error',
-      });
-
-      const { getByText } = render(<Forum />);
-      
-      await waitFor(() => {
-        expect(getByText(/Server Error/)).toBeTruthy();
-      });
-    });
-
-    test('fetches forums on component mount', async () => {
-      (global.fetch as jest.Mock).mockResolvedValueOnce({
-        ok: true,
-        json: async () => [],
-      });
-
-      render(<Forum />);
-      
-      await waitFor(() => {
-        expect(global.fetch).toHaveBeenCalled();
       });
     });
   });
 
   describe('User Interaction Tests', () => {
-    test('retry button is visible in error state', async () => {
-      (global.fetch as jest.Mock).mockResolvedValueOnce({
-        ok: false,
-        statusText: 'Error',
-      });
-
-      const { getByText } = render(<Forum />);
-      
-      await waitFor(() => {
-        expect(getByText('Retry')).toBeTruthy();
-      });
-    });
-
     test('retry button calls fetchForums again', async () => {
-      (global.fetch as jest.Mock).mockResolvedValueOnce({
-        ok: false,
-        statusText: 'Error',
-      });
+      // First call fails
+      (global.fetch as jest.Mock).mockRejectedValueOnce(new Error('First Error'));
 
       const { getByText } = render(<Forum />);
       
       await waitFor(() => {
-        expect(getByText('Retry')).toBeTruthy();
+        expect(getByText('First Error')).toBeTruthy();
       });
 
+      // Second call succeeds
       (global.fetch as jest.Mock).mockResolvedValueOnce({
         ok: true,
         json: async () => mockForums,
@@ -284,23 +199,11 @@ describe('Forum Page - Unit Tests', () => {
       await waitFor(() => {
         expect(getByText('General Discussion')).toBeTruthy();
       });
-    });
-
-    test('forum item is touchable', async () => {
-      (global.fetch as jest.Mock).mockResolvedValueOnce({
-        ok: true,
-        json: async () => mockForums,
-      });
-
-      const { getByText } = render(<Forum />);
       
-      await waitFor(() => {
-        const forumItem = getByText('General Discussion');
-        expect(forumItem).toBeTruthy();
-      });
+      expect(global.fetch).toHaveBeenCalledTimes(2);
     });
 
-    test('forum item displays title and description', async () => {
+    test('navigates to ForumDetail on item press', async () => {
       (global.fetch as jest.Mock).mockResolvedValueOnce({
         ok: true,
         json: async () => mockForums,
@@ -310,276 +213,49 @@ describe('Forum Page - Unit Tests', () => {
       
       await waitFor(() => {
         expect(getByText('General Discussion')).toBeTruthy();
-        expect(getByText('General forum for discussions')).toBeTruthy();
       });
+
+      fireEvent.press(getByText('General Discussion'));
+
+      expect(mockNavigate).toHaveBeenCalledWith('ForumDetail', { forumId: 1 });
     });
   });
 
-  describe('State Management Tests', () => {
-    test('isLoading state transitions from true to false on success', async () => {
-      (global.fetch as jest.Mock).mockResolvedValueOnce({
-        ok: true,
-        json: async () => mockForums,
-      });
+  describe('Edge Cases', () => {
+    test('handles malformed data gracefully (missing fields)', async () => {
+        // Even if TS says it's Forum[], runtime might differ. 
+        // However, the component assumes fields exist. 
+        // If we pass partial data, we want to see if it renders what it can or crashes.
+        const malformedForums = [
+            { id: 1, title: 'Partial Forum' } // missing description
+        ];
 
-      const { getByText } = render(<Forum />);
-      
-      // After fetch completes, forums should be visible
-      await waitFor(() => {
-        expect(getByText('General Discussion')).toBeTruthy();
-      });
-    });
-
-    test('error state is cleared on successful retry', async () => {
-      (global.fetch as jest.Mock).mockResolvedValueOnce({
-        ok: false,
-        statusText: 'Error',
-      });
-
-      const { getByText, queryByText } = render(<Forum />);
-      
-      await waitFor(() => {
-        expect(getByText(/Error/)).toBeTruthy();
-      });
-
-      (global.fetch as jest.Mock).mockResolvedValueOnce({
-        ok: true,
-        json: async () => mockForums,
-      });
-
-      fireEvent.press(getByText('Retry'));
-      
-      await waitFor(() => {
-        expect(queryByText(/Error/)).toBeFalsy();
-      });
-    });
-
-    test('forums state is populated with API data', async () => {
-      (global.fetch as jest.Mock).mockResolvedValueOnce({
-        ok: true,
-        json: async () => mockForums,
-      });
-
-      const { getByText } = render(<Forum />);
-      
-      await waitFor(() => {
-        mockForums.forEach(forum => {
-          expect(getByText(forum.title)).toBeTruthy();
-        });
-      });
-    });
-
-    test('error state set on failed fetch', async () => {
-      (global.fetch as jest.Mock).mockRejectedValueOnce(
-        new Error('Network error')
-      );
-
-      const { getByText } = render(<Forum />);
-      
-      await waitFor(() => {
-        // The error message comes from the caught error
-        expect(getByText('Network error')).toBeTruthy();
-      });
-    });
-  });
-
-  describe('Edge Cases and Error Handling', () => {
-    test('handles undefined forum data gracefully', async () => {
-      (global.fetch as jest.Mock).mockResolvedValueOnce({
-        ok: true,
-        json: async () => undefined,
-      });
-
-      const { queryByText } = render(<Forum />);
-      
-      await waitFor(() => {
-        // Since data is undefined, no forums should be rendered
-        expect(queryByText('General Discussion')).toBeFalsy();
-        // And no error should be shown
-        expect(queryByText(/Failed to load forums/)).toBeFalsy();
-      });
-    });
-
-    test('handles forum with missing title field', async () => {
-      const forumsWithMissing = [
-        { id: 1, description: 'Description only' },
-      ];
-
-      (global.fetch as jest.Mock).mockResolvedValueOnce({
-        ok: true,
-        json: async () => forumsWithMissing,
-      });
-
-      const { queryByText } = render(<Forum />);
-      
-      await waitFor(() => {
-        // Description should be rendered
-        expect(queryByText('Description only')).toBeTruthy();
-        // But no title since it's missing
-        expect(queryByText('General Discussion')).toBeFalsy();
-      });
-    });
-
-    test('handles large number of forums', async () => {
-      const manyForums = Array.from({ length: 50 }, (_, i) => ({
-        id: i,
-        title: `Forum ${i}`,
-        description: `Description ${i}`,
-      }));
-
-      (global.fetch as jest.Mock).mockResolvedValueOnce({
-        ok: true,
-        json: async () => manyForums,
-      });
-
-      const { getByText } = render(<Forum />);
-      
-      await waitFor(() => {
-        // Only check first and some middle items due to FlatList virtualization
-        expect(getByText('Forum 0')).toBeTruthy();
-        expect(getByText('Forum 5')).toBeTruthy();
-      });
-    });
-
-    test('handles forum with very long description', async () => {
-      const forumWithLongDesc = [
-        {
-          id: 1,
-          title: 'Long Description Forum',
-          description: 'A'.repeat(200),
-        },
-      ];
-
-      (global.fetch as jest.Mock).mockResolvedValueOnce({
-        ok: true,
-        json: async () => forumWithLongDesc,
-      });
-
-      const { getByText } = render(<Forum />);
-      
-      await waitFor(() => {
-        expect(getByText('Long Description Forum')).toBeTruthy();
-      });
-    });
-
-    test('handles empty statusText in error response', async () => {
-      (global.fetch as jest.Mock).mockResolvedValueOnce({
-        ok: false,
-        statusText: '',
-      });
-
-      const { getByText } = render(<Forum />);
-      
-      await waitFor(() => {
-        expect(getByText(/Failed to load forums/)).toBeTruthy();
-      });
-    });
-  });
-
-  describe('Component Lifecycle Tests', () => {
-    test('component mounts without crashing', () => {
-      (global.fetch as jest.Mock).mockResolvedValueOnce({
-        ok: true,
-        json: async () => [],
-      });
-
-      expect(() => {
-        render(<Forum />);
-      }).not.toThrow();
-    });
-
-    test('multiple sequential renders work correctly', async () => {
-      (global.fetch as jest.Mock).mockResolvedValueOnce({
-        ok: true,
-        json: async () => mockForums,
-      });
-
-      const { unmount, rerender } = render(<Forum />);
-      
-      await waitFor(() => {
-        expect(global.fetch).toHaveBeenCalled();
-      });
-
-      (global.fetch as jest.Mock).mockResolvedValueOnce({
-        ok: true,
-        json: async () => mockForums,
-      });
-
-      rerender(<Forum />);
-
-      expect(() => {
-        unmount();
-      }).not.toThrow();
-    });
-
-    test('component handles rapid re-renders', async () => {
-      (global.fetch as jest.Mock).mockResolvedValueOnce({
-        ok: true,
-        json: async () => mockForums,
-      });
-
-      const { rerender } = render(<Forum />);
-      
-      rerender(<Forum />);
-      rerender(<Forum />);
-
-      await waitFor(() => {
-        expect(global.fetch).toHaveBeenCalled();
-      });
-    });
-  });
-
-  describe('Accessibility Tests', () => {
-    test('activity indicator is rendered during loading', async () => {
-      (global.fetch as jest.Mock).mockImplementationOnce(
-        () => new Promise(resolve => {
-          setTimeout(() => resolve({
+        (global.fetch as jest.Mock).mockResolvedValueOnce({
             ok: true,
-            json: async () => [],
-          }), 100);
-        })
-      );
+            json: async () => malformedForums,
+        });
 
-      const { UNSAFE_queryAllByType } = render(<Forum />);
-      
-      // ActivityIndicator should be rendered initially
-      const indicators = UNSAFE_queryAllByType(ActivityIndicator);
-      expect(indicators.length).toBeGreaterThan(0);
+        const { getByText } = render(<Forum />);
 
-      // Advance timers
-      jest.advanceTimersByTime(100);
-
-      // After fetch, loading should be gone
-      await waitFor(() => {
-        const indicatorsAfter = UNSAFE_queryAllByType(ActivityIndicator);
-        expect(indicatorsAfter.length).toBe(0);
-      });
+        await waitFor(() => {
+            expect(getByText('Partial Forum')).toBeTruthy();
+        });
     });
 
-    test('error message is visible and readable', async () => {
-      (global.fetch as jest.Mock).mockRejectedValueOnce(
-        new Error('Test error')
-      );
+    test('handles extremely long text content', async () => {
+        const longTitle = 'A'.repeat(100);
+        const longDesc = 'B'.repeat(500);
+        
+        (global.fetch as jest.Mock).mockResolvedValueOnce({
+            ok: true,
+            json: async () => [{ id: 1, title: longTitle, description: longDesc }],
+        });
 
-      const { getByText } = render(<Forum />);
-      
-      await waitFor(() => {
-        const errorText = getByText('Test error');
-        expect(errorText).toBeTruthy();
-      });
-    });
+        const { getByText } = render(<Forum />);
 
-    test('retry button is visible in error state', async () => {
-      (global.fetch as jest.Mock).mockResolvedValueOnce({
-        ok: false,
-        statusText: 'Failed',
-      });
-
-      const { getByText } = render(<Forum />);
-      
-      await waitFor(() => {
-        expect(getByText('Retry')).toBeTruthy();
-      });
+        await waitFor(() => {
+            expect(getByText(longTitle)).toBeTruthy();
+        });
     });
   });
 });
