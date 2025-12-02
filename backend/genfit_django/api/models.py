@@ -480,4 +480,17 @@ class ContactSubmission(models.Model):
         ordering = ['-submitted_at']
     
     def __str__(self):
-        return f"{self.name} - {self.subject}"    
+        return f"{self.name} - {self.subject}"
+
+
+class ThreadBookmark(models.Model):
+    user = models.ForeignKey(UserWithType, on_delete=models.CASCADE, related_name='bookmarked_threads')
+    thread = models.ForeignKey(Thread, on_delete=models.CASCADE, related_name='bookmarks')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('user', 'thread')
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.user.username} bookmarked {self.thread.title}"

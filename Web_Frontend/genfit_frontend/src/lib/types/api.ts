@@ -197,6 +197,7 @@ export interface ForumThread {
   like_count: number;
   comment_count: number;
   last_activity: string;
+  is_bookmarked?: boolean;
 }
 
 //Comment types

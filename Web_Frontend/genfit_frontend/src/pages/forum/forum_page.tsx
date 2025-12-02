@@ -4,7 +4,7 @@ import { useIsAuthenticated, useForums } from '../../lib';
 import { Layout } from '../../components';
 import { Button } from '../../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
-import { MessageSquare, Clock, Sparkles } from 'lucide-react';
+import { MessageSquare, Clock, Sparkles, BookmarkCheck } from 'lucide-react';
 import './forum.css';
 
 function ForumPage() {
@@ -20,7 +20,7 @@ function ForumPage() {
 
     const handleCardClick = (forumId: number) => {
         setClickedCard(forumId);
-        
+
         // Add a small delay for the animation effect
         setTimeout(() => {
             navigate(`/forums/${forumId}`);
@@ -111,13 +111,21 @@ function ForumPage() {
                             <h1 className="page-title">Forums</h1>
                             <p className="page-subtitle">Join discussions, share experiences, and connect with others</p>
                         </div>
+                        <Button
+                            variant="outline"
+                            className="gap-2"
+                            onClick={() => navigate('/forums/bookmarked')}
+                        >
+                            <BookmarkCheck className="w-4 h-4" />
+                            My Bookmarks
+                        </Button>
                     </div>
                 </div>
 
                 <div className="forums-grid">
                     {forums.map((forum, index) => (
-                        <Card 
-                            key={forum.id} 
+                        <Card
+                            key={forum.id}
                             className={`forum-card ${clickedCard === forum.id ? 'clicked' : ''}`}
                             onClick={() => handleCardClick(forum.id)}
                             onMouseEnter={handleCardMouseEnter}
