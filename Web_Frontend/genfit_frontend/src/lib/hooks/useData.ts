@@ -766,7 +766,7 @@ export function useBookmarkThread() {
   return useMutation({
     mutationFn: (threadId: number) =>
       GFapi.post<{ status: string; is_bookmarked: boolean }>(`/api/threads/${threadId}/bookmark/`, {}),
-    onSuccess: (data, threadId) => {
+    onSuccess: (_data, threadId) => {
       // Invalidate the specific thread to update bookmark status
       queryClient.invalidateQueries({
         queryKey: createQueryKey(`/api/threads/${threadId}/`)
