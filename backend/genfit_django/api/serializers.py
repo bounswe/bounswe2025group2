@@ -5,7 +5,7 @@ from django.contrib.auth import get_user_model
 from django.db.models import Q
 from django.utils import timezone
 from .utils import geocode_location
-from .models import Notification, UserWithType, FitnessGoal, Profile, ContactSubmission, Forum, Thread, Comment, Subcomment, Vote, Challenge, ChallengeParticipant, AiTutorChat, AiTutorResponse, UserAiMessage, DailyAdvice, MentorMenteeRelationship
+from .models import Notification, UserWithType, FitnessGoal, Profile, ContactSubmission, Forum, Thread, Comment, Subcomment, Vote, Challenge, ChallengeParticipant, AiTutorChat, AiTutorResponse, UserAiMessage, DailyAdvice, MentorMenteeRelationship, ThreadBookmark
 from django.utils import timezone
 
 
@@ -201,13 +201,20 @@ class ThreadDetailSerializer(serializers.ModelSerializer):
     author = serializers.StringRelatedField(read_only=True)
     forum = serializers.PrimaryKeyRelatedField(queryset=Forum.objects.all())
     comment_count = serializers.IntegerField(read_only=True)
+    is_bookmarked = serializers.SerializerMethodField()
     
     class Meta:
         model = Thread
         fields = ['id', 'title', 'content', 'author', 'forum', 'created_at', 
                  'updated_at', 'is_pinned', 'is_locked', 'view_count', 
-                 'like_count', 'last_activity', 'comment_count']
-        read_only_fields = ['created_at', 'updated_at', 'view_count', 'like_count', 'last_activity']
+                 'like_count', 'last_activity', 'comment_count', 'is_bookmarked']
+        read_only_fields = ['created_at', 'updated_at', 'view_count', 'like_count', 'last_activity', 'is_bookmarked']
+
+    def get_is_bookmarked(self, obj):
+        request = self.context.get('request')
+        if request and request.user.is_authenticated:
+            return ThreadBookmark.objects.filter(user=request.user, thread=obj).exists()
+        return False
 
     def update(self, instance, validated_data):
         instance.title = validated_data.get('title', instance.title)
@@ -217,7 +224,15 @@ class ThreadDetailSerializer(serializers.ModelSerializer):
         instance.is_locked = validated_data.get('is_locked', instance.is_locked)
         instance.updated_at = timezone.now()
         instance.save()
+        instance.save()
         return instance
+
+class ThreadBookmarkSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ThreadBookmark
+        fields = ['id', 'user', 'thread', 'created_at']
+        read_only_fields = ['id', 'created_at']
+
 
 class CommentSerializer(serializers.ModelSerializer):
     author_id = serializers.IntegerField(source='author.id', read_only=True)
