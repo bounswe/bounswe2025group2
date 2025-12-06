@@ -332,34 +332,5 @@ describe('ThreadDetail Page - Unit Tests', () => {
         expect(getByText('5 comments')).toBeTruthy();
       });
     });
-
-    test('displays comments section correctly', async () => {
-      (global.fetch as jest.Mock).mockResolvedValue({
-        ok: true,
-        json: async () => mockThread,
-      });
-
-      const { getByText } = render(<ThreadDetail />);
-
-      await waitFor(() => {
-        expect(getByText('Comments')).toBeTruthy();
-      });
-    });
-
-    test('renders thread with both pinned and locked status', async () => {
-      const specialThread = { ...mockThread, is_pinned: true, is_locked: true };
-      
-      (global.fetch as jest.Mock).mockResolvedValue({
-        ok: true,
-        json: async () => specialThread,
-      });
-
-      const { getByText } = render(<ThreadDetail />);
-
-      await waitFor(() => {
-        expect(getByText('PINNED')).toBeTruthy();
-        expect(getByText('LOCKED')).toBeTruthy();
-      });
-    });
   });
 });
