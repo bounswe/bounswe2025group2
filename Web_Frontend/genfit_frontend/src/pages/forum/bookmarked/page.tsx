@@ -33,7 +33,7 @@ const BookmarkedThreadsPage: React.FC = () => {
                     <div className="header-content">
                         <Button
                             variant="ghost"
-                            onClick={() => navigate('/forums')}
+                            onClick={() => navigate('/forum')}
                             className="back-button mb-4"
                         >
                             <ArrowLeft className="w-4 h-4 mr-2" />
@@ -62,7 +62,7 @@ const BookmarkedThreadsPage: React.FC = () => {
                             <Card
                                 key={thread.id}
                                 className="forum-card cursor-pointer hover:shadow-lg transition-all"
-                                onClick={() => navigate(`/forums/thread/${thread.id}`)}
+                                onClick={() => navigate(`/threads/${thread.id}`)}
                             >
                                 <CardHeader>
                                     <CardTitle className="forum-card-title text-lg">

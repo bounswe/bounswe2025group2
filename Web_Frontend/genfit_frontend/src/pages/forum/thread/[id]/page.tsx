@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useIsAuthenticated } from '../../../../lib/hooks/useAuth';
 import { useThread, useThreadComments, useUpdateThread, useBookmarkThread } from '../../../../lib/hooks/useData';
@@ -15,7 +15,7 @@ import './thread.css';
 const ThreadPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const isAuthenticated = useIsAuthenticated();
+  const { isLoading: authLoading } = useIsAuthenticated();
 
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
@@ -26,14 +26,14 @@ const ThreadPage: React.FC = () => {
   const updateThreadMutation = useUpdateThread();
   const bookmarkThreadMutation = useBookmarkThread();
 
-  useEffect(() => {
-    if (!isAuthenticated) {
-      navigate('/auth');
-    }
-  }, [isAuthenticated, navigate]);
-
-  if (!isAuthenticated) {
-    return null;
+  if (authLoading) {
+    return (
+      <Layout>
+        <div className="thread-page">
+          <div className="loading">Loading session...</div>
+        </div>
+      </Layout>
+    );
   }
 
   if (threadLoading) {
