@@ -19,6 +19,7 @@ from .separate_views import ip_location
 from .separate_views import goal_suggestions
 from .separate_views import daily_advice_views
 from .separate_views import mentor_relationships
+from .separate_views import exercise_db_view
 
 
 urlpatterns = [
@@ -135,6 +136,12 @@ urlpatterns = [
     path('mentor-relationships/user/', mentor_relationships.get_user_mentor_relationships, name='get_user_mentor_relationships'),
     path('mentor-relationships/<int:relationship_id>/', mentor_relationships.get_mentor_relationship_detail, name='get_mentor_relationship_detail'),
     path('mentor-relationships/<int:relationship_id>/status/', mentor_relationships.change_mentor_relationship_status, name='change_mentor_relationship_status'),
+
+    # ExerciseDB API endpoints
+    path('exercise-database/search/', exercise_db_view.search_exercises, name='search_exercises'),
+    path('exercise-database/filters/', exercise_db_view.get_exercise_filters, name='get_exercise_filters'),
+    path('exercise-database/rate-limit/', exercise_db_view.get_rate_limit_status, name='get_rate_limit_status'),
+    path('exercise-database/exercise/<str:exercise_id>/', exercise_db_view.get_exercise_detail, name='get_exercise_detail'),
 ]
 
 # Routers

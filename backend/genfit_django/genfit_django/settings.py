@@ -245,3 +245,7 @@ EMAIL_USE_TLS = True
 EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER')
 EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD')
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
+
+# ExerciseDB API Configuration
+EXERCISEDB_API_KEY = os.environ.get('EXERCISEDB_API_KEY', '4ad229abc9msh4b910819528d4aap17007bjsncbba8493753d')
+EXERCISEDB_API_HOST = 'exercisedb-api1.p.rapidapi.com'

@@ -109,9 +109,9 @@ const defaultNavigationItems: NavigationItem[] = [
     )
   },
   {
-    id: 'glossary',
-    label: 'Glossary',
-    path: '/glossary',
+    id: 'knowledge-hub',
+    label: 'Knowledge Hub',
+    path: '/knowledge-hub',
     icon: (
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
         <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
