@@ -495,12 +495,13 @@ class Report(models.Model):
         ('dismissed', 'Dismissed'),
     ]
     
-    # Content type choices (matching frontend)
+    # Content type choices 
     CONTENT_TYPE_CHOICES = [
         ('CHAT', 'Chat Message'),
         ('FORUM', 'Forum Post'),
         ('THREAD', 'Forum Thread'),
         ('COMMENT', 'Comment'),
+        ('SUBCOMMENT', 'Subcomment'),  
         ('PROFILE', 'User Profile'),
         ('CHALLENGE', 'Challenge'),
         ('OTHER', 'Other'),
