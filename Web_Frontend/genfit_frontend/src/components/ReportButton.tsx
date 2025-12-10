@@ -1,5 +1,6 @@
-// components/ReportButton.tsx (Fixed with better error handling)
+// components/ReportButton.tsx
 import { useState, useRef, useEffect } from 'react';
+import ReactDOM from 'react-dom';
 import { Flag, X, AlertCircle, Check } from 'lucide-react';
 import './ReportButton.css';
 
@@ -31,6 +32,7 @@ export default function ReportButton({
 
   const modalRef = useRef<HTMLDivElement>(null);
   const formRef = useRef<HTMLFormElement>(null);
+  const [mounted, setMounted] = useState(false);
 
   const reasonOptions = [
     { value: 'spam', label: 'Spam' },
@@ -42,7 +44,13 @@ export default function ReportButton({
     { value: 'other', label: 'Other' },
   ];
 
-  // Close modal on Escape key
+  // Set mounted state for portal
+  useEffect(() => {
+    setMounted(true);
+    return () => setMounted(false);
+  }, []);
+
+  // Close modal on Escape key and outside click
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && showReportModal) {
@@ -98,10 +106,7 @@ export default function ReportButton({
 
     try {
       const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
-      // Ensure proper URL formatting
       const apiUrl = `${baseUrl.replace(/\/$/, '')}/api/reports/`;
-
-      console.log('Submitting report to:', apiUrl);
 
       const response = await fetch(apiUrl, {
         method: 'POST',
@@ -118,10 +123,7 @@ export default function ReportButton({
         credentials: 'include',
       });
 
-      console.log('Response status:', response.status);
-
       const responseText = await response.text();
-      console.log('Response text:', responseText);
 
       let data;
       try {
@@ -181,32 +183,13 @@ export default function ReportButton({
     return typeMap[type] || type;
   };
 
-  // Render the button
-  return (
-    <>
-      <button
-        onClick={() => setShowReportModal(true)}
-        className={`report-button ${variant} ${className}`}
-        title="Report this content"
-        type="button"
-      >
-        {variant === 'icon' ? (
-          <Flag size={18} />
-        ) : variant === 'text' ? (
-          <>
-            <Flag size={16} />
-            <span>Report</span>
-          </>
-        ) : (
-          <>
-            <Flag size={16} />
-            <span>Report Content</span>
-          </>
-        )}
-      </button>
+  // Render modal as portal
+  const renderModal = () => {
+    if (!showReportModal || !mounted) return null;
 
-      {showReportModal && (
-        <div className="report-modal-overlay">
+    return ReactDOM.createPortal(
+      <div className="report-modal-overlay" onClick={handleCancel}>
+        <div className="report-modal-container" onClick={(e) => e.stopPropagation()}>
           <div className="report-modal" ref={modalRef}>
             <div className="report-modal-header">
               <h3 className="report-modal-title">Report Content</h3>
@@ -327,7 +310,36 @@ export default function ReportButton({
             </div>
           </div>
         </div>
-      )}
+      </div>,
+      document.body
+    );
+  };
+
+  // Render the button
+  return (
+    <>
+      <button
+        onClick={() => setShowReportModal(true)}
+        className={`report-button ${variant} ${className}`}
+        title="Report this content"
+        type="button"
+      >
+        {variant === 'icon' ? (
+          <Flag size={18} />
+        ) : variant === 'text' ? (
+          <>
+            <Flag size={16} />
+            <span>Report</span>
+          </>
+        ) : (
+          <>
+            <Flag size={16} />
+            <span>Report Content</span>
+          </>
+        )}
+      </button>
+      
+      {renderModal()}
     </>
   );
 }
