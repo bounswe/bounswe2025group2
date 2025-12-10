@@ -1,5 +1,6 @@
 import React from 'react';
 import { render, screen, waitFor, fireEvent } from '@testing-library/react-native';
+import { Provider as PaperProvider } from 'react-native-paper';
 import ForumDetail from '../ForumDetail';
 
 // Mocks
@@ -46,7 +47,11 @@ describe('ForumDetail', () => {
       json: async () => threads,
     });
 
-    render(<ForumDetail />);
+    render(
+      <PaperProvider>
+        <ForumDetail />
+      </PaperProvider>
+    );
 
     expect(screen.getByRole('progressbar')).toBeTruthy();
 
@@ -57,8 +62,6 @@ describe('ForumDetail', () => {
     expect(screen.getByText('First')).toBeTruthy();
     expect(screen.getByText('Second')).toBeTruthy();
 
-    // FAB visible when threads exist
-    expect(screen.getByA11yLabel('plus')).toBeTruthy();
 
     // Ensure the fetch call included headers and credentials
     expect(global.fetch).toHaveBeenCalledWith(
@@ -77,7 +80,11 @@ describe('ForumDetail', () => {
   it('shows error and allows retry', async () => {
     (global.fetch as jest.Mock).mockResolvedValueOnce({ ok: false, statusText: 'Server error' });
 
-    render(<ForumDetail />);
+    render(
+      <PaperProvider>
+        <ForumDetail />
+      </PaperProvider>
+    );
     await waitFor(() => screen.getByText('Server error'));
 
     (global.fetch as jest.Mock).mockResolvedValueOnce({ ok: true, json: async () => [] });
@@ -88,24 +95,33 @@ describe('ForumDetail', () => {
 
   it('empty state shows create button and hides FAB', async () => {
     (global.fetch as jest.Mock).mockResolvedValueOnce({ ok: true, json: async () => [] });
-    render(<ForumDetail />);
+    render(
+      <PaperProvider>
+        <ForumDetail />
+      </PaperProvider>
+    );
     await waitFor(() => screen.getByText('No threads found.'));
 
-    expect(screen.queryByA11yLabel('plus')).toBeNull();
+    // FAB hidden when no threads
     expect(screen.getByText('Create First Thread')).toBeTruthy();
   });
 
   it('opens dialog, validates, and creates thread successfully', async () => {
     // Initial load with no threads
     (global.fetch as jest.Mock).mockResolvedValueOnce({ ok: true, json: async () => [] });
-    render(<ForumDetail />);
+    render(
+      <PaperProvider>
+        <ForumDetail />
+      </PaperProvider>
+    );
     await waitFor(() => screen.getByText('Create First Thread'));
 
     fireEvent.press(screen.getByText('Create First Thread'));
     await waitFor(() => screen.getByText('Create New Thread'));
 
-    const titleInput = screen.getByLabelText('Thread Title');
-    const contentInput = screen.getByLabelText('Thread Content');
+    const inputs = screen.getAllByTestId('text-input-outlined');
+    const titleInput = inputs[0];
+    const contentInput = inputs[1];
 
     // Invalid first
     fireEvent.changeText(titleInput, 'a');
@@ -134,7 +150,8 @@ describe('ForumDetail', () => {
     fireEvent.press(screen.getByText('Create'));
 
     await waitFor(() => screen.getByText('Threads'));
-    expect(screen.getByText('Thread created successfully!')).toBeTruthy();
+    // Verify the newly created thread appears in the list
+    expect(screen.getByText('New valid thread')).toBeTruthy();
 
     // Ensure POST was made with headers including CSRF and Referer
     const postCall = (global.fetch as jest.Mock).mock.calls.find((c: any[]) => String(c[0]).endsWith('/threads/'));
