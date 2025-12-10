@@ -481,3 +481,105 @@ class ContactSubmission(models.Model):
     
     def __str__(self):
         return f"{self.name} - {self.subject}"    
+    
+
+# Add to api/models.py
+class Report(models.Model):
+    """Model for user reports on various content types"""
+    
+    # Report status choices
+    STATUS_CHOICES = [
+        ('pending', 'Pending'),
+        ('reviewed', 'Reviewed'),
+        ('resolved', 'Resolved'),
+        ('dismissed', 'Dismissed'),
+    ]
+    
+    # Content type choices (matching frontend)
+    CONTENT_TYPE_CHOICES = [
+        ('CHAT', 'Chat Message'),
+        ('FORUM', 'Forum Post'),
+        ('THREAD', 'Forum Thread'),
+        ('COMMENT', 'Comment'),
+        ('PROFILE', 'User Profile'),
+        ('CHALLENGE', 'Challenge'),
+        ('OTHER', 'Other'),
+    ]
+    
+    # Report reason choices
+    REASON_CHOICES = [
+        ('spam', 'Spam'),
+        ('harassment', 'Harassment or Bullying'),
+        ('inappropriate', 'Inappropriate Content'),
+        ('hate_speech', 'Hate Speech'),
+        ('privacy', 'Privacy Violation'),
+        ('impersonation', 'Impersonation'),
+        ('other', 'Other'),
+    ]
+    
+    # Reporter information
+    reporter = models.ForeignKey(
+        UserWithType, 
+        on_delete=models.CASCADE, 
+        related_name='submitted_reports'
+    )
+    
+    # Content being reported
+    content_type = models.CharField(
+        max_length=20, 
+        choices=CONTENT_TYPE_CHOICES,
+        help_text="Type of content being reported"
+    )
+    
+    # Specific object being reported
+    object_id = models.PositiveIntegerField(null=True, blank=True)
+    
+    # Report details
+    reason = models.CharField(
+        max_length=20, 
+        choices=REASON_CHOICES,
+        help_text="Reason for reporting"
+    )
+    
+    description = models.TextField(
+        blank=True,
+        help_text="Additional details about the report"
+    )
+    
+    # Admin fields
+    status = models.CharField(
+        max_length=20, 
+        choices=STATUS_CHOICES, 
+        default='pending'
+    )
+    
+    admin_notes = models.TextField(
+        blank=True,
+        help_text="Notes from admin reviewing the report"
+    )
+    
+    # Timestamps
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    resolved_at = models.DateTimeField(null=True, blank=True)
+    
+    class Meta:
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['status', 'created_at']),
+            models.Index(fields=['content_type', 'object_id']),
+            models.Index(fields=['reporter']),
+        ]
+    
+    def __str__(self):
+        return f"Report #{self.id} - {self.content_type} by {self.reporter.username}"
+    
+    def save(self, *args, **kwargs):
+        # Update resolved_at timestamp when status changes to resolved
+        if self.pk and self.status == 'resolved':
+            original = Report.objects.get(pk=self.pk)
+            if original.status != 'resolved':
+                self.resolved_at = timezone.now()
+        elif self.status != 'resolved':
+            self.resolved_at = None
+        super().save(*args, **kwargs)
