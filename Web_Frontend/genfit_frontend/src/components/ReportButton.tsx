@@ -4,7 +4,7 @@ import { Flag, X, AlertCircle, Check } from 'lucide-react';
 import './ReportButton.css';
 
 interface ReportButtonProps {
-  contentType: 'CHAT' | 'FORUM' | 'THREAD' | 'COMMENT' | 'PROFILE' | 'CHALLENGE' | 'OTHER';
+  contentType: 'CHAT' | 'FORUM' | 'THREAD' | 'COMMENT' | 'SUBCOMMENT' | 'PROFILE' | 'CHALLENGE' | 'OTHER';
   objectId: number;
   contentTitle?: string;
   className?: string;
@@ -12,10 +12,10 @@ interface ReportButtonProps {
   variant?: 'icon' | 'text' | 'full';
 }
 
-export default function ReportButton({ 
-  contentType, 
-  objectId, 
-  contentTitle, 
+export default function ReportButton({
+  contentType,
+  objectId,
+  contentTitle,
   className = '',
   onReportSuccess,
   variant = 'icon'
@@ -28,7 +28,7 @@ export default function ReportButton({
   });
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  
+
   const modalRef = useRef<HTMLDivElement>(null);
   const formRef = useRef<HTMLFormElement>(null);
 
@@ -49,7 +49,7 @@ export default function ReportButton({
         handleCancel();
       }
     };
-    
+
     const handleClickOutside = (e: MouseEvent) => {
       if (modalRef.current && !modalRef.current.contains(e.target as Node)) {
         handleCancel();
@@ -86,7 +86,7 @@ export default function ReportButton({
   const handleSubmitReport = async (e: React.FormEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    
+
     if (!reportData.reason) {
       setError('Please select a reason for reporting');
       return;
@@ -100,9 +100,9 @@ export default function ReportButton({
       const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
       // Ensure proper URL formatting
       const apiUrl = `${baseUrl.replace(/\/$/, '')}/api/reports/`;
-      
+
       console.log('Submitting report to:', apiUrl);
-      
+
       const response = await fetch(apiUrl, {
         method: 'POST',
         headers: {
@@ -119,10 +119,10 @@ export default function ReportButton({
       });
 
       console.log('Response status:', response.status);
-      
+
       const responseText = await response.text();
       console.log('Response text:', responseText);
-      
+
       let data;
       try {
         data = JSON.parse(responseText);
@@ -137,10 +137,10 @@ export default function ReportButton({
       }
 
       setSuccess('Report submitted successfully! We will review it shortly.');
-      
+
       // Reset form
       setReportData({ reason: '', description: '' });
-      
+
       // Close modal after success
       setTimeout(() => {
         setShowReportModal(false);
@@ -173,6 +173,7 @@ export default function ReportButton({
       'FORUM': 'Forum Post',
       'THREAD': 'Forum Thread',
       'COMMENT': 'Comment',
+      'SUBCOMMENT': 'Subcomment',
       'PROFILE': 'Profile',
       'CHALLENGE': 'Challenge',
       'OTHER': 'Other',
@@ -209,7 +210,7 @@ export default function ReportButton({
           <div className="report-modal" ref={modalRef}>
             <div className="report-modal-header">
               <h3 className="report-modal-title">Report Content</h3>
-              <button 
+              <button
                 onClick={handleCancel}
                 className="report-modal-close"
                 type="button"
@@ -226,9 +227,9 @@ export default function ReportButton({
                 <div className="report-info-type">Content Type: {getContentTypeDisplay(contentType)}</div>
               </div>
 
-              <form 
+              <form
                 ref={formRef}
-                onSubmit={handleSubmitReport} 
+                onSubmit={handleSubmitReport}
                 className="report-form"
                 noValidate
               >
