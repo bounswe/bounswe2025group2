@@ -159,4 +159,70 @@ describe('ProfilePage', () => {
     // Check if form fields are pre-filled with mock data
     expect(nameInput).toHaveValue('John');
   });
+
+  it('cancels edit mode and reverts to view mode', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<ProfilePage />);
+
+    // Wait for initial render
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /edit profile/i })).toBeInTheDocument();
+    });
+
+    // Enter edit mode
+    await user.click(screen.getByRole('button', { name: /edit profile/i }));
+    
+    // Verify Save Changes button appears
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /save changes/i })).toBeInTheDocument();
+    });
+
+    // Click Cancel
+    await user.click(screen.getByRole('button', { name: /cancel/i }));
+
+    // Verify we are back to view mode (Edit button visible, Save Changes gone)
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /edit profile/i })).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /save changes/i })).not.toBeInTheDocument();
+    });
+  });
+
+  it('renders empty state when user has no goals', async () => {
+    // Usage of default mock (empty goals array) from beforeEach
+    renderWithProviders(<ProfilePage />);
+
+    await waitFor(() => {
+      expect(screen.getByText('No Goals Set')).toBeInTheDocument();
+    });
+    expect(screen.getByText("You haven't set any fitness goals yet.")).toBeInTheDocument();
+  });
+
+  it('renders goals list when goals data is present', async () => {
+    // Override the useGoals mock specifically for this test
+    vi.mocked(useGoals).mockReturnValue({
+      data: [
+        {
+          id: 99,
+          title: 'Run 5k',
+          description: 'Morning jog',
+          status: 'IN_PROGRESS',
+          current_value: 2,
+          target_value: 5,
+          unit: 'km',
+          start_date: '2023-01-01',
+          target_date: '2023-12-31'
+        }
+      ],
+      isLoading: false,
+    } as any);
+
+    renderWithProviders(<ProfilePage />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Run 5k')).toBeInTheDocument();
+    });
+    
+    // Check for progress text rendering
+    expect(screen.getByText(/2 \/ 5 km/i)).toBeInTheDocument();
+  });
 });
