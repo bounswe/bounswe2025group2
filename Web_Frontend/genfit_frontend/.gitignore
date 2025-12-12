@@ -16,6 +16,11 @@ dist-ssr
 coverage
 .nyc_output
 
+# Playwright
+test-results/
+playwright-report/
+playwright/.cache/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
