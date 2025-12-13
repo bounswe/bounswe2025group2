@@ -75,6 +75,21 @@ interface User {
   username: string;
   is_coach?: boolean;
   user_type?: string;
+  current_streak?: number;
+  longest_streak?: number;
+  last_login_date?: string;
+  total_login_days?: number;
+}
+
+interface LoginStats {
+  current_streak: number;
+  longest_streak: number;
+  total_login_days: number;
+  last_login_date: string | null;
+  streak_active: boolean;
+  days_until_break: number | null;
+  login_calendar: Array<{ date: string; logged_in: boolean }>;
+  logged_in_today: boolean;
 }
 
 
@@ -382,6 +397,25 @@ const Profile = () => {
     },
     enabled: !otherUsername && mentorshipUsernames.length > 0,
     staleTime: 5 * 60_000,
+  });
+
+  // Fetch login stats for own profile
+  const { data: loginStats } = useQuery<LoginStats>({
+    queryKey: ['loginStats'],
+    queryFn: async () => {
+      const response = await fetch(`${API_URL}user/login-stats/`, {
+        headers: {
+          ...getSanitizedAuthHeader(),
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+      });
+      
+      if (!response.ok) throw new Error('Failed to fetch login stats');
+      return response.json();
+    },
+    enabled: !otherUsername && !!me,
+    staleTime: 60_000, // 1 minute
   });
 
   // Fetch goals - using the custom hook
@@ -957,6 +991,90 @@ const Profile = () => {
             </View>
           </Card.Content>
         </Card>
+
+        {/* Login Streak Section - Only show for own profile */}
+        {!otherUsername && loginStats && (
+          <Card mode="elevated" style={styles.sectionCard}>
+            <Card.Title 
+              title="Login Streak" 
+              left={(props) => <Avatar.Icon {...props} icon="fire" size={40} />}
+            />
+            <Card.Content>
+              <View style={styles.streakContainer}>
+                <View style={styles.streakItem}>
+                  <Avatar.Icon 
+                    size={64} 
+                    icon="fire" 
+                    style={{ backgroundColor: theme.colors.primaryContainer }}
+                    color={theme.colors.onPrimaryContainer}
+                  />
+                  <Text variant="headlineMedium" style={[styles.streakNumber, { color: theme.colors.primary }]}>
+                    {loginStats.current_streak}
+                  </Text>
+                  <Text variant="bodyMedium" style={{ color: theme.colors.onSurfaceVariant }}>Current Streak</Text>
+                  <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant, marginTop: 4 }}>days</Text>
+                  
+                  {/* Streak status indicator */}
+                  {loginStats.streak_active ? (
+                    <Chip 
+                      mode="flat" 
+                      compact
+                      icon="check-circle"
+                      style={[styles.streakStatusChip, { backgroundColor: theme.colors.tertiaryContainer }]}
+                      textStyle={{ color: theme.colors.onTertiaryContainer, fontSize: 11 }}
+                    >
+                      {loginStats.logged_in_today 
+                        ? 'Logged in today! 🔥' 
+                        : loginStats.days_until_break === 0 
+                          ? 'Login today to keep streak!'
+                          : 'Streak active'}
+                    </Chip>
+                  ) : (
+                    <Chip 
+                      mode="flat" 
+                      compact
+                      icon="alert-circle"
+                      style={[styles.streakStatusChip, { backgroundColor: theme.colors.errorContainer }]}
+                      textStyle={{ color: theme.colors.onErrorContainer, fontSize: 11 }}
+                    >
+                      Streak inactive
+                    </Chip>
+                  )}
+                </View>
+                
+                <Divider style={styles.streakDivider} />
+                
+                <View style={styles.streakStatsContainer}>
+                  <View style={styles.streakStat}>
+                    <Avatar.Icon 
+                      size={48} 
+                      icon="trophy" 
+                      style={{ backgroundColor: theme.colors.tertiaryContainer }}
+                      color={theme.colors.onTertiaryContainer}
+                    />
+                    <Text variant="titleLarge" style={{ fontWeight: '600', marginTop: 8 }}>
+                      {loginStats.longest_streak}
+                    </Text>
+                    <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>Longest Streak</Text>
+                  </View>
+                  
+                  <View style={styles.streakStat}>
+                    <Avatar.Icon 
+                      size={48} 
+                      icon="calendar-check" 
+                      style={{ backgroundColor: theme.colors.secondaryContainer }}
+                      color={theme.colors.onSecondaryContainer}
+                    />
+                    <Text variant="titleLarge" style={{ fontWeight: '600', marginTop: 8 }}>
+                      {loginStats.total_login_days}
+                    </Text>
+                    <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>Total Days</Text>
+                  </View>
+                </View>
+              </View>
+            </Card.Content>
+          </Card>
+        )}
 
         {/* Profile Information Section */}
         <Card mode="elevated" style={styles.sectionCard}>
@@ -1695,6 +1813,32 @@ const styles = StyleSheet.create({
   dateButtonContent: {
     justifyContent: 'flex-start',
     paddingVertical: 8,
+  },
+  streakContainer: {
+    paddingVertical: 8,
+  },
+  streakItem: {
+    alignItems: 'center',
+    paddingVertical: 16,
+  },
+  streakNumber: {
+    fontWeight: '700',
+    marginTop: 12,
+  },
+  streakDivider: {
+    marginVertical: 16,
+  },
+  streakStatsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    paddingVertical: 8,
+  },
+  streakStat: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  streakStatusChip: {
+    marginTop: 12,
   },
 });
 
