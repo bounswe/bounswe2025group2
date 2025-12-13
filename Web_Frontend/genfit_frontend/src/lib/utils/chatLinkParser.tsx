@@ -1,22 +1,26 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 
 /**
- * Parses message text and converts challenge links to clickable React elements
+ * Parses message text and converts special links (challenges, hashtags) to clickable elements
  * Challenge link format: challenge://{id}
- * Example: "Check out challenge://42 for a great workout!"
+ * Hashtag format: #{term}
  */
 
 interface LinkSegment {
-  type: 'text' | 'challenge';
+  type: 'text' | 'challenge' | 'hashtag';
   content: string;
   challengeId?: number;
+  hashtag?: string;
 }
 
 /**
- * Regular expression to match challenge links
- * Format: challenge://{numeric_id}
+ * Regular expressions
  */
 const CHALLENGE_LINK_REGEX = /challenge:\/\/(\d+)/g;
+
+// Combined regex for tokenization
+const TOKEN_REGEX = /(challenge:\/\/\d+)|(#[a-zA-Z0-9_]+)/g;
 
 /**
  * Parses a message string and returns an array of text and link segments
@@ -25,13 +29,13 @@ export const parseMessageForChallengeLinks = (message: string): LinkSegment[] =>
   const segments: LinkSegment[] = [];
   let lastIndex = 0;
 
-  // Find all challenge links in the message
-  const matches = message.matchAll(CHALLENGE_LINK_REGEX);
+  // Find all tokens in the message
+  const matches = message.matchAll(TOKEN_REGEX);
 
   for (const match of matches) {
     const matchStart = match.index!;
     const matchEnd = matchStart + match[0].length;
-    const challengeId = parseInt(match[1], 10);
+    const fullMatch = match[0];
 
     // Add text before the link (if any)
     if (matchStart > lastIndex) {
@@ -41,12 +45,24 @@ export const parseMessageForChallengeLinks = (message: string): LinkSegment[] =>
       });
     }
 
-    // Add the challenge link
-    segments.push({
-      type: 'challenge',
-      content: match[0],
-      challengeId
-    });
+    if (fullMatch.startsWith('challenge://')) {
+      // It's a challenge link
+      const matchId = fullMatch.match(/challenge:\/\/(\d+)/);
+      const challengeId = matchId ? parseInt(matchId[1], 10) : 0;
+      segments.push({
+        type: 'challenge',
+        content: fullMatch,
+        challengeId
+      });
+    } else if (fullMatch.startsWith('#')) {
+      // It's a hashtag
+      const hashtag = fullMatch.substring(1); // remove #
+      segments.push({
+        type: 'hashtag',
+        content: fullMatch,
+        hashtag
+      });
+    }
 
     lastIndex = matchEnd;
   }
@@ -59,7 +75,7 @@ export const parseMessageForChallengeLinks = (message: string): LinkSegment[] =>
     });
   }
 
-  // If no links were found, return the entire message as text
+  // If no tokens were found, return the entire message as text
   if (segments.length === 0) {
     segments.push({
       type: 'text',
@@ -90,6 +106,17 @@ export const renderMessageWithChallengeLinks = (message: string): React.ReactNod
           Challenge #{segment.challengeId}
         </a>
       );
+    } else if (segment.type === 'hashtag' && segment.hashtag) {
+      return (
+        <Link
+          key={index}
+          to={`/glossary?term=${segment.hashtag}`}
+          className="hashtag-link text-blue-500 hover:underline"
+          title={`Look up "${segment.hashtag}" in Glossary`}
+        >
+          {segment.content}
+        </Link>
+      );
     }
 
     return <span key={index}>{segment.content}</span>;
@@ -111,8 +138,11 @@ export const extractChallengeIds = (message: string): number[] => {
   const matches = message.matchAll(CHALLENGE_LINK_REGEX);
 
   for (const match of matches) {
-    ids.push(parseInt(match[1], 10));
+    if (match[1]) {
+      ids.push(parseInt(match[1], 10));
+    }
   }
 
   return ids;
 };
+

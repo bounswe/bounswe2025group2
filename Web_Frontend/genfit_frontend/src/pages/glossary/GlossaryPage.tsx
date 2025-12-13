@@ -1,4 +1,5 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { Layout } from '../../components';
 import './glossary_page.css';
 
@@ -85,7 +86,7 @@ const glossaryTerms: GlossaryTerm[] = [
     definition: 'A technique where you perform an exercise to failure, then immediately reduce the weight and continue for more reps. Repeated several times to increase muscle fatigue.',
     category: 'Training'
   },
-  
+
   // Nutrition Terms
   {
     term: 'Macronutrients',
@@ -147,7 +148,7 @@ const glossaryTerms: GlossaryTerm[] = [
     definition: 'Minerals in blood and body fluids that carry an electric charge. Include sodium, potassium, calcium, and magnesium. Essential for hydration, muscle function, and nerve signaling.',
     category: 'Nutrition'
   },
-  
+
   // Anatomy Terms
   {
     term: 'Core',
@@ -194,7 +195,7 @@ const glossaryTerms: GlossaryTerm[] = [
     definition: 'The three-headed muscle on the back of the upper arm. Primary function is elbow extension. Makes up about 2/3 of upper arm mass.',
     category: 'Anatomy'
   },
-  
+
   // Wellness Terms
   {
     term: 'Recovery',
@@ -304,8 +305,17 @@ const glossaryTerms: GlossaryTerm[] = [
 ];
 
 export default function GlossaryPage() {
+  const location = useLocation();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const term = params.get('term');
+    if (term) {
+      setSearchTerm(term);
+    }
+  }, [location.search]);
 
   const categories = ['All', 'Exercise', 'Nutrition', 'Wellness', 'Training', 'Anatomy'];
 
@@ -313,7 +323,7 @@ export default function GlossaryPage() {
     return glossaryTerms
       .filter(term => {
         const matchesSearch = term.term.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                            term.definition.toLowerCase().includes(searchTerm.toLowerCase());
+          term.definition.toLowerCase().includes(searchTerm.toLowerCase());
         const matchesCategory = selectedCategory === 'All' || term.category === selectedCategory;
         return matchesSearch && matchesCategory;
       })
