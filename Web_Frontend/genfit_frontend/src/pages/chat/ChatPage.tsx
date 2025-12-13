@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 import {
   useIsAuthenticated,
   useChatUsers,
@@ -35,6 +35,7 @@ const formatDate = (dateString: string) => {
 const ChatPage = () => {
   const { isAuthenticated, isLoading: authLoading, user } = useIsAuthenticated();
   const navigate = useNavigate();
+  const location = useLocation();
 
   // Data hooks
   const { data: users = [], isLoading: usersLoading, error: usersError } = useChatUsers();
@@ -80,6 +81,18 @@ const ChatPage = () => {
   useEffect(() => {
     scrollToBottom();
   }, [messages, aiMessages]);
+
+  // Handle auto-selection of chat from navigation state
+  useEffect(() => {
+    if (location.state?.selectedChatId && chats.length > 0) {
+      const chatToSelect = chats.find(c => c.id === location.state.selectedChatId);
+      if (chatToSelect && (!selectedChat || selectedChat.id !== chatToSelect.id)) {
+        setSelectedChat(chatToSelect);
+        // Clean up state to prevent re-selection issues if needed, 
+        // though strictly not necessary if we check for inequality.
+      }
+    }
+  }, [location.state, chats]);
 
   // Handle connection error display with delay
   useEffect(() => {
