@@ -63,6 +63,7 @@ const ChatPage = () => {
   // UI state
   const [showAiChat, setShowAiChat] = useState(false);
   const [showChallengePicker, setShowChallengePicker] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
   // Refs
   const websocket = useRef<WebSocket | null>(null);
@@ -333,22 +334,35 @@ const ChatPage = () => {
                             <X className="w-4 h-4" />
                           </Button>
                         </div>
+                        <div className="p-4 border-b">
+                          <input
+                            type="text"
+                            placeholder="Search users..."
+                            className="w-full px-3 py-2 text-sm border rounded-md"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                          />
+                        </div>
                         <div className="user-list">
                           {usersLoading ? (
                             <div className="user-list-loading">Loading users...</div>
                           ) : users.length === 0 ? (
                             <div className="user-list-empty">No users found</div>
                           ) : (
-                            users.map((user) => (
-                              <div
-                                key={user.id}
-                                onClick={() => handleCreateChat(user.id)}
-                                className="user-item"
-                              >
-                                <UserAvatar user={user} className="user-avatar" size="md" />
-                                <span className="user-name">{user.username}</span>
-                              </div>
-                            ))
+                            users
+                              .filter(user =>
+                                user.username.toLowerCase().includes(searchQuery.toLowerCase())
+                              )
+                              .map((user) => (
+                                <div
+                                  key={user.id}
+                                  onClick={() => handleCreateChat(user.id)}
+                                  className="user-item"
+                                >
+                                  <UserAvatar user={user} className="user-avatar" size="md" />
+                                  <span className="user-name">{user.username}</span>
+                                </div>
+                              ))
                           )}
                         </div>
                       </div>
