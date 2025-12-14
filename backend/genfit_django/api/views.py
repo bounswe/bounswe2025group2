@@ -12,7 +12,10 @@ from django.contrib.sites.shortcuts import get_current_site
 from django.middleware.csrf import get_token
 from django.views.decorators.csrf import ensure_csrf_cookie
 from .serializers import UserRegistrationSerializer, UserLoginSerializer, ContactSubmissionSerializer, NotificationSerializer, UserSerializer
-from .models import Notification, ContactSubmission
+from .models import Notification, ContactSubmission, FitnessGoal, MentorMenteeRelationship, Thread, Comment, Subcomment, Vote, Challenge, ChallengeParticipant, Profile, AiTutorChat, AiTutorResponse, UserAiMessage
+from chat.models import DirectChat, DirectMessage
+from django.contrib.contenttypes.models import ContentType
+from django.db import transaction
 from django.contrib import admin
 
 
@@ -136,6 +139,58 @@ def delete_account(request):
     user.delete()
     # Return a success message
     return Response({"detail": "Account deleted successfully."}, status=status.HTTP_200_OK)
+
+
+@api_view(['DELETE'])
+@permission_classes([IsAuthenticated])
+def rtbf_delete_user_data(request):
+    user = request.user
+    with transaction.atomic():
+        Notification.objects.filter(recipient=user).delete()
+        Notification.objects.filter(sender=user).delete()
+        MentorMenteeRelationship.objects.filter(sender=user).delete()
+        MentorMenteeRelationship.objects.filter(receiver=user).delete()
+        MentorMenteeRelationship.objects.filter(mentor=user).delete()
+        MentorMenteeRelationship.objects.filter(mentee=user).delete()
+        FitnessGoal.objects.filter(user=user).delete()
+        FitnessGoal.objects.filter(mentor=user).delete()
+        Vote.objects.filter(user=user).delete()
+        thread_ct = ContentType.objects.get_for_model(Thread)
+        comment_ct = ContentType.objects.get_for_model(Comment)
+        subcomment_ct = ContentType.objects.get_for_model(Subcomment)
+        threads = list(Thread.objects.filter(author=user).values_list('id', flat=True))
+        if threads:
+            Vote.objects.filter(content_type=thread_ct, object_id__in=threads).delete()
+            comment_ids = list(Comment.objects.filter(thread_id__in=threads).values_list('id', flat=True))
+            if comment_ids:
+                Vote.objects.filter(content_type=comment_ct, object_id__in=comment_ids).delete()
+                sub_ids = list(Subcomment.objects.filter(comment_id__in=comment_ids).values_list('id', flat=True))
+                if sub_ids:
+                    Vote.objects.filter(content_type=subcomment_ct, object_id__in=sub_ids).delete()
+                Subcomment.objects.filter(comment_id__in=comment_ids).delete()
+            Comment.objects.filter(thread_id__in=threads).delete()
+            Thread.objects.filter(id__in=threads).delete()
+        user_comment_ids = list(Comment.objects.filter(author=user).values_list('id', flat=True))
+        if user_comment_ids:
+            Vote.objects.filter(content_type=comment_ct, object_id__in=user_comment_ids).delete()
+            Subcomment.objects.filter(comment_id__in=user_comment_ids).delete()
+            Comment.objects.filter(id__in=user_comment_ids).delete()
+        user_sub_ids = list(Subcomment.objects.filter(author=user).values_list('id', flat=True))
+        if user_sub_ids:
+            Vote.objects.filter(content_type=subcomment_ct, object_id__in=user_sub_ids).delete()
+            Subcomment.objects.filter(id__in=user_sub_ids).delete()
+        DirectMessage.objects.filter(sender=user).delete()
+        DirectChat.objects.filter(participants__id=user.id).delete()
+        UserAiMessage.objects.filter(user=user).delete()
+        AiTutorResponse.objects.filter(chat__user=user).delete()
+        AiTutorChat.objects.filter(user=user).delete()
+        ChallengeParticipant.objects.filter(user=user).delete()
+        ChallengeParticipant.objects.filter(challenge__coach=user).delete()
+        Challenge.objects.filter(coach=user).delete()
+        Profile.objects.filter(user=user).delete()
+        u = user
+        u.delete()
+    return Response({"detail": "User data deleted"}, status=status.HTTP_200_OK)
 
 
 # NOTIFICATION VIEWS

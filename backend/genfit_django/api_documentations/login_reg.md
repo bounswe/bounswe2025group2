@@ -165,3 +165,34 @@ Logs out the currently authenticated user.
     "message": "Logged out successfully"
   }
   ```
+
+### Delete Personal Data (RTBF) 🔒
+
+Permanently deletes all personal data and the user account (Right to be Forgotten).
+
+- **URL**: `/user/rtbf/`
+- **Method**: `DELETE`
+- **Auth Required**: Yes
+- **Permissions**: IsAuthenticated
+
+**Description**:
+
+Deletes goals, forum content (threads, comments, subcomments, votes and their children), direct chats and messages, AI tutor chats/responses/messages, notifications, mentor relationships, challenges and participation progress, profile information that belongs to user; and the user account itself. This action is irreversible.
+
+**Request Body**: None
+
+**Response**:
+
+- **Success (200 OK)**
+  ```json
+  {
+    "detail": "User data deleted"
+  }
+  ```
+
+- **Error (403 Forbidden)**
+  ```json
+  {
+    "error": "Authentication required"
+  }
+  ```
