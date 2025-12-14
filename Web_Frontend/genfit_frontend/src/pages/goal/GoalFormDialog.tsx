@@ -19,7 +19,15 @@ const GOAL_TYPE_UNITS: Record<string, string[]> = {
     "WORKOUT": ["minutes", "hours", "sets", "reps"],
     "CYCLING": ["km", "miles", "minutes", "hours"],
     "SWIMMING": ["laps", "meters", "km", "minutes"],
-    "SPORTS": ["matches", "points", "goals", "minutes", "hours"]
+    "SPORTS": ["matches", "points", "goals", "minutes", "hours"],
+    "YOGA": ["minutes", "sessions", "hours"],
+    "WEIGHTLIFTING": ["kg", "lbs", "reps", "sets"],
+    "HIKING": ["km", "miles", "hours", "elevation"],
+    "STEP_COUNT": ["steps", "km", "miles"],
+    "MEDITATION": ["minutes", "sessions"],
+    "BASKETBALL": ["games", "points", "minutes"],
+    "FOOTBALL": ["games", "goals", "minutes"],
+    "TENNIS": ["matches", "sets", "minutes"]
 };
 
 interface GoalFormDialogProps {
@@ -246,6 +254,14 @@ const GoalFormDialog = ({ isOpen, onClose, editingGoal, targetUserId, invalidate
                                 <SelectItem value="CYCLING">Cycling</SelectItem>
                                 <SelectItem value="SWIMMING">Swimming</SelectItem>
                                 <SelectItem value="SPORTS">Sports</SelectItem>
+                                <SelectItem value="YOGA">Yoga</SelectItem>
+                                <SelectItem value="WEIGHTLIFTING">Weightlifting</SelectItem>
+                                <SelectItem value="HIKING">Hiking</SelectItem>
+                                <SelectItem value="STEP_COUNT">Daily Steps</SelectItem>
+                                <SelectItem value="MEDITATION">Meditation</SelectItem>
+                                <SelectItem value="BASKETBALL">Basketball</SelectItem>
+                                <SelectItem value="FOOTBALL">Football/Soccer</SelectItem>
+                                <SelectItem value="TENNIS">Tennis</SelectItem>
                             </Select>
                         </div>
                     </div>
