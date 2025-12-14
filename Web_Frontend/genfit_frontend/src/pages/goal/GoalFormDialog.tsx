@@ -400,17 +400,13 @@ const GoalFormDialog = ({ isOpen, onClose, editingGoal, targetUserId, invalidate
                                     required
                                 />
                                 {GOAL_TYPE_UNITS[formData.goal_type] && (
-                                    <div className="flex flex-wrap gap-1">
+                                    <div className="unit-buttons-container">
                                         {GOAL_TYPE_UNITS[formData.goal_type].map((unit) => (
                                             <button
                                                 key={unit}
                                                 type="button"
                                                 onClick={() => setFormData(prev => ({ ...prev, unit }))}
-                                                className={`text-xs px-2.5 py-1 rounded border transition-colors ${
-                                                    formData.unit === unit 
-                                                        ? 'bg-blue-600 text-white border-blue-600' 
-                                                        : 'bg-white text-gray-700 border-gray-300 hover:border-blue-500 hover:text-blue-600'
-                                                }`}
+                                                className={`unit-button ${formData.unit === unit ? 'selected' : ''}`}
                                             >
                                                 {unit}
                                             </button>
