@@ -390,19 +390,34 @@ const GoalFormDialog = ({ isOpen, onClose, editingGoal, targetUserId, invalidate
                         </div>
                         <div className="form-group">
                             <Label htmlFor="unit" className="form-label">Unit *</Label>
-                            <Input
-                                id="unit"
-                                name="unit"
-                                value={formData.unit}
-                                onChange={handleInputChange}
-                                placeholder="e.g., kg, miles, minutes"
-                                required
-                            />
-                            {GOAL_TYPE_UNITS[formData.goal_type] && (
-                                <p className="unit-suggestion">
-                                    Suggested: {GOAL_TYPE_UNITS[formData.goal_type].join(', ')}
-                                </p>
-                            )}
+                            <div className="flex flex-col gap-2">
+                                <Input
+                                    id="unit"
+                                    name="unit"
+                                    value={formData.unit}
+                                    onChange={handleInputChange}
+                                    placeholder="e.g., kg, miles, minutes or select below"
+                                    required
+                                />
+                                {GOAL_TYPE_UNITS[formData.goal_type] && (
+                                    <div className="flex flex-wrap gap-1">
+                                        {GOAL_TYPE_UNITS[formData.goal_type].map((unit) => (
+                                            <button
+                                                key={unit}
+                                                type="button"
+                                                onClick={() => setFormData(prev => ({ ...prev, unit }))}
+                                                className={`text-xs px-2.5 py-1 rounded border transition-colors ${
+                                                    formData.unit === unit 
+                                                        ? 'bg-blue-600 text-white border-blue-600' 
+                                                        : 'bg-white text-gray-700 border-gray-300 hover:border-blue-500 hover:text-blue-600'
+                                                }`}
+                                            >
+                                                {unit}
+                                            </button>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     </div>
                     <div className="form-group">
