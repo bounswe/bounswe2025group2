@@ -86,7 +86,7 @@ interface GoalSuggestionResponse {
   target_value: number;
   unit: string;
   days_to_complete: number;
-  goal_type: 'WALKING_RUNNING' | 'WORKOUT' | 'CYCLING' | 'SWIMMING' | 'SPORTS';
+  goal_type: 'WALKING_RUNNING' | 'WORKOUT' | 'CYCLING' | 'SWIMMING' | 'SPORTS' | 'YOGA' | 'WEIGHTLIFTING' | 'HIKING' | 'STEP_COUNT' | 'MEDITATION' | 'BASKETBALL' | 'FOOTBALL' | 'TENNIS';
   tips: string[];
   improved_title?: string;  // Optional: AI-improved title - should be provided by API
   improved_description?: string;  // Optional: AI-improved description - should be provided by API
