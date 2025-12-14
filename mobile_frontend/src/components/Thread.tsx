@@ -40,6 +40,17 @@ const Thread = ({ forumName, content, imageUrl, profilePic, username, threadId, 
   const [comments, setComments] = useState(0);
   const [commentList, setCommentList] = useState<any[]>([]);
   const [commentsLoading, setCommentsLoading] = useState(true);
+  const [commentProfilePics, setCommentProfilePics] = useState<Record<string, string>>({});
+
+  // Sanitize auth header helper (same as Profile page)
+  const getSanitizedAuthHeader = (): Record<string, string> => {
+    const header = getAuthHeader() as { Authorization?: string };
+    const authValue = header?.Authorization;
+    if (authValue && authValue.trim().length > 0) {
+      return { Authorization: authValue };
+    }
+    return {};
+  };
 
   // Fetch data function
   const fetchData = async () => {
@@ -115,6 +126,8 @@ const Thread = ({ forumName, content, imageUrl, profilePic, username, threadId, 
       if (res.ok) {
         const data = await res.json();
         setCommentList(data);
+        // Fetch profile pictures for comment authors
+        fetchCommentProfilePictures(data);
       } else {
         setCommentList([]);
       }
@@ -123,6 +136,42 @@ const Thread = ({ forumName, content, imageUrl, profilePic, username, threadId, 
     } finally {
       setCommentsLoading(false);
     }
+  };
+
+  // Fetch profile pictures for comment authors
+  const fetchCommentProfilePictures = async (comments: any[]) => {
+    const usernames = new Set<string>();
+    comments.forEach((comment) => {
+      const username = comment?.author_username || comment?.author;
+      if (username) {
+        usernames.add(String(username));
+      }
+    });
+
+    const pics: Record<string, string> = {};
+    for (const username of usernames) {
+      try {
+        const endpoint = `profile/other/picture/${username}/`;
+        const cacheBuster = `?t=${Date.now()}`;
+        
+        const response = await fetch(`${API_URL}${endpoint}${cacheBuster}`, {
+          headers: {
+            ...getSanitizedAuthHeader(),
+          },
+          credentials: 'include',
+        });
+
+        if (response.ok) {
+          const contentType = response.headers.get('Content-Type') || '';
+          if (contentType.startsWith('image/')) {
+            pics[username] = `${API_URL}${endpoint}${cacheBuster}`;
+          }
+        }
+      } catch (err) {
+        // Silently fail - will use default avatar
+      }
+    }
+    setCommentProfilePics(pics);
   };
 
   useEffect(() => {
@@ -383,27 +432,40 @@ const Thread = ({ forumName, content, imageUrl, profilePic, username, threadId, 
             No comments yet.
           </Text>
         ) : (
-          commentList.map((c, idx) => (
-            <Card key={c.id || idx} mode="outlined" style={{ marginBottom: 8 }}>
-              <Card.Content style={{ paddingVertical: 8 }}>
-                <TouchableOpacity 
-                  onPress={() => handleUsernamePress(c.author_username || c.author || 'user')} 
-                  activeOpacity={0.7}
-                  style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}
-                >
-                  <Avatar.Text 
-                    size={24} 
-                    label={(c.author_username || c.author || 'U')[0].toUpperCase()} 
-                    style={{ marginRight: 8 }}
-                  />
-                  <Text variant="labelLarge" style={{ color: colors.mentionText, fontWeight: '600' }}>
-                    @{c.author_username || c.author || 'user'}
-                  </Text>
-                </TouchableOpacity>
-                <Text variant="bodyMedium">{c.content}</Text>
-              </Card.Content>
-            </Card>
-          ))
+          commentList.map((c, idx) => {
+            const commentAuthor = c.author_username || c.author || 'user';
+            const profilePicUri = commentProfilePics[commentAuthor];
+            
+            return (
+              <Card key={c.id || idx} mode="outlined" style={{ marginBottom: 8 }}>
+                <Card.Content style={{ paddingVertical: 8 }}>
+                  <TouchableOpacity 
+                    onPress={() => handleUsernamePress(commentAuthor)} 
+                    activeOpacity={0.7}
+                    style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}
+                  >
+                    {profilePicUri ? (
+                      <Avatar.Image 
+                        size={24} 
+                        source={{ uri: profilePicUri }} 
+                        style={{ marginRight: 8 }}
+                      />
+                    ) : (
+                      <Avatar.Text 
+                        size={24} 
+                        label={commentAuthor[0].toUpperCase()} 
+                        style={{ marginRight: 8 }}
+                      />
+                    )}
+                    <Text variant="labelLarge" style={{ color: colors.mentionText, fontWeight: '600' }}>
+                      @{commentAuthor}
+                    </Text>
+                  </TouchableOpacity>
+                  <Text variant="bodyMedium">{c.content}</Text>
+                </Card.Content>
+              </Card>
+            );
+          })
         )}
       </View>
       
