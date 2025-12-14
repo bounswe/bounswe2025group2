@@ -32,7 +32,7 @@ interface Goal {
   description: string;
   user: number;
   mentor: number | null;
-  goal_type: 'WALKING_RUNNING' | 'WORKOUT' | 'CYCLING' | 'SPORTS' | 'SWIMMING';
+  goal_type: 'WALKING_RUNNING' | 'WORKOUT' | 'CYCLING' | 'SPORTS' | 'SWIMMING' | 'YOGA' | 'WEIGHTLIFTING' | 'HIKING' | 'STEP_COUNT' | 'MEDITATION' | 'BASKETBALL' | 'FOOTBALL' | 'TENNIS';
   target_value: number;
   current_value: number;
   unit: string;
@@ -86,7 +86,7 @@ interface GoalSuggestionResponse {
   target_value: number;
   unit: string;
   days_to_complete: number;
-  goal_type: 'WALKING_RUNNING' | 'WORKOUT' | 'CYCLING' | 'SWIMMING' | 'SPORTS';
+  goal_type: 'WALKING_RUNNING' | 'WORKOUT' | 'CYCLING' | 'SWIMMING' | 'SPORTS' | 'YOGA' | 'WEIGHTLIFTING' | 'HIKING' | 'STEP_COUNT' | 'MEDITATION' | 'BASKETBALL' | 'FOOTBALL' | 'TENNIS';
   tips: string[];
   improved_title?: string;  // Optional: AI-improved title - should be provided by API
   improved_description?: string;  // Optional: AI-improved description - should be provided by API
@@ -160,6 +160,14 @@ const GOAL_TYPES: { label: string; value: Goal['goal_type'] }[] = [
   { label: 'Cycling', value: 'CYCLING' },
   { label: 'Sports', value: 'SPORTS' },
   { label: 'Swimming', value: 'SWIMMING' },
+  { label: 'Yoga', value: 'YOGA' },
+  { label: 'Weightlifting', value: 'WEIGHTLIFTING' },
+  { label: 'Hiking', value: 'HIKING' },
+  { label: 'Daily Steps', value: 'STEP_COUNT' },
+  { label: 'Meditation', value: 'MEDITATION' },
+  { label: 'Basketball', value: 'BASKETBALL' },
+  { label: 'Football/Soccer', value: 'FOOTBALL' },
+  { label: 'Tennis', value: 'TENNIS' },
 ];
 
 // ──────────────────────────────────────────────────────────────────────────────
