@@ -88,6 +88,11 @@ const TopBar = () => {
         </Text>
       </View>
       <Appbar.Action 
+        icon="book-open-variant" 
+        onPress={() => navigation.navigate('Exercises')}
+        iconColor={theme.colors.primary}
+      />
+      <Appbar.Action 
         icon="magnify" 
         onPress={() => navigation.navigate('Search')}
         iconColor={theme.colors.primary}
