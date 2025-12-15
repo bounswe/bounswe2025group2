@@ -895,9 +895,12 @@ const Home = () => {
                 Login Streak
               </CustomText>
               {loginStats?.streak_active && (
-                <Chip mode="flat" compact style={styles.activeBadge}>
-                  Active
-                </Chip>
+                <View style={[styles.activeBadge, { backgroundColor: customTheme.colors.active + '15' }]}>
+                  <View style={[styles.activeBadgeDot, { backgroundColor: customTheme.colors.active }]} />
+                  <CustomText style={[styles.activeBadgeText, { color: customTheme.colors.active }]}>
+                    Active
+                  </CustomText>
+                </View>
               )}
             </View>
             {loadingStats ? (
@@ -1134,7 +1137,7 @@ const Home = () => {
               style={{ margin: 0 }}
             />
             <CustomText variant="labelSmall" style={{ color: theme.colors.primary }}>
-              Exercise Library
+              Glossary
             </CustomText>
             <IconButton
               icon="chevron-down"
@@ -1145,7 +1148,7 @@ const Home = () => {
           </TouchableOpacity>
         )}
 
-        {/* Exercise Library Card */}
+        {/* Glossary Card */}
         {isExerciseCardVisible && (
           <Card mode="elevated" style={styles.headerCard}>
             <Card.Content>
@@ -1158,10 +1161,10 @@ const Home = () => {
                 />
                 <View style={styles.headerText}>
                   <CustomText variant="titleMedium" style={{ color: theme.colors.onSurface, marginBottom: 4 }}>
-                    Exercise Library
+                    Glossary
                   </CustomText>
                   <CustomText variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>
-                    Explore our comprehensive exercise database
+                    Explore our comprehensive fitness database
                   </CustomText>
                 </View>
                 <IconButton
@@ -1177,7 +1180,7 @@ const Home = () => {
                 onPress={() => navigation.navigate('Exercises' as never)}
                 style={{ marginTop: 12 }}
               >
-                Browse Exercises
+                Learn More
               </Button>
             </Card.Content>
           </Card>
@@ -1400,7 +1403,23 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   activeBadge: {
-    height: 24,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    marginLeft: 8,
+  },
+  activeBadgeDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    marginRight: 6,
+  },
+  activeBadgeText: {
+    fontSize: 11,
+    fontWeight: '600',
+    letterSpacing: 0.3,
   },
   streakNumber: {
     fontSize: 36,
