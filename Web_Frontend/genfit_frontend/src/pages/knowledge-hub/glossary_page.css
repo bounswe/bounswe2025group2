@@ -139,6 +139,24 @@
   border-color: #800000;
 }
 
+/* Highlighted Exercise (when linked from chat) */
+.term-card.exercise-highlighted {
+  animation: highlightPulse 1.5s ease-in-out;
+  border-color: #10b981;
+  border-left-color: #10b981;
+  background: linear-gradient(to right, rgba(16, 185, 129, 0.1) 0%, white 50%);
+}
+
+@keyframes highlightPulse {
+  0%, 100% {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  }
+  50% {
+    box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.3), 0 8px 24px rgba(16, 185, 129, 0.2);
+    transform: scale(1.02);
+  }
+}
+
 .term-header {
   display: flex;
   justify-content: space-between;
