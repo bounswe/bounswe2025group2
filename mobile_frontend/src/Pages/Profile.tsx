@@ -995,82 +995,76 @@ const Profile = () => {
         {/* Login Streak Section - Only show for own profile */}
         {!otherUsername && loginStats && (
           <Card mode="elevated" style={styles.sectionCard}>
-            <Card.Title 
-              title="Login Streak" 
-              left={(props) => <Avatar.Icon {...props} icon="fire" size={40} />}
-            />
-            <Card.Content>
-              <View style={styles.streakContainer}>
-                <View style={styles.streakItem}>
+            <Card.Content style={styles.streakCompactContainer}>
+              {/* Three stats in a row */}
+              <View style={styles.streakCompactRow}>
+                <View style={styles.streakCompactStat}>
                   <Avatar.Icon 
-                    size={64} 
+                    size={32} 
                     icon="fire" 
                     style={{ backgroundColor: theme.colors.primaryContainer }}
                     color={theme.colors.onPrimaryContainer}
                   />
-                  <Text variant="headlineMedium" style={[styles.streakNumber, { color: theme.colors.primary }]}>
+                  <Text variant="titleMedium" style={{ fontWeight: '700', color: theme.colors.primary }}>
                     {loginStats.current_streak}
                   </Text>
-                  <Text variant="bodyMedium" style={{ color: theme.colors.onSurfaceVariant }}>Current Streak</Text>
-                  <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant, marginTop: 4 }}>days</Text>
-                  
-                  {/* Streak status indicator */}
-                  {loginStats.streak_active ? (
-                    <Chip 
-                      mode="flat" 
-                      compact
-                      icon="check-circle"
-                      style={[styles.streakStatusChip, { backgroundColor: theme.colors.tertiaryContainer }]}
-                      textStyle={{ color: theme.colors.onTertiaryContainer, fontSize: 11 }}
-                    >
-                      {loginStats.logged_in_today 
-                        ? 'Logged in today! 🔥' 
-                        : loginStats.days_until_break === 0 
-                          ? 'Login today to keep streak!'
-                          : 'Streak active'}
-                    </Chip>
-                  ) : (
-                    <Chip 
-                      mode="flat" 
-                      compact
-                      icon="alert-circle"
-                      style={[styles.streakStatusChip, { backgroundColor: theme.colors.errorContainer }]}
-                      textStyle={{ color: theme.colors.onErrorContainer, fontSize: 11 }}
-                    >
-                      Streak inactive
-                    </Chip>
-                  )}
+                  <Text variant="labelSmall" style={{ color: theme.colors.onSurfaceVariant }}>Current</Text>
                 </View>
                 
-                <Divider style={styles.streakDivider} />
-                
-                <View style={styles.streakStatsContainer}>
-                  <View style={styles.streakStat}>
-                    <Avatar.Icon 
-                      size={48} 
-                      icon="trophy" 
-                      style={{ backgroundColor: theme.colors.tertiaryContainer }}
-                      color={theme.colors.onTertiaryContainer}
-                    />
-                    <Text variant="titleLarge" style={{ fontWeight: '600', marginTop: 8 }}>
-                      {loginStats.longest_streak}
-                    </Text>
-                    <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>Longest Streak</Text>
-                  </View>
-                  
-                  <View style={styles.streakStat}>
-                    <Avatar.Icon 
-                      size={48} 
-                      icon="calendar-check" 
-                      style={{ backgroundColor: theme.colors.secondaryContainer }}
-                      color={theme.colors.onSecondaryContainer}
-                    />
-                    <Text variant="titleLarge" style={{ fontWeight: '600', marginTop: 8 }}>
-                      {loginStats.total_login_days}
-                    </Text>
-                    <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>Total Days</Text>
-                  </View>
+                <View style={styles.streakCompactStat}>
+                  <Avatar.Icon 
+                    size={32} 
+                    icon="trophy" 
+                    style={{ backgroundColor: theme.colors.tertiaryContainer }}
+                    color={theme.colors.onTertiaryContainer}
+                  />
+                  <Text variant="titleMedium" style={{ fontWeight: '700' }}>
+                    {loginStats.longest_streak}
+                  </Text>
+                  <Text variant="labelSmall" style={{ color: theme.colors.onSurfaceVariant }}>Best</Text>
                 </View>
+                
+                <View style={styles.streakCompactStat}>
+                  <Avatar.Icon 
+                    size={32} 
+                    icon="calendar-check" 
+                    style={{ backgroundColor: theme.colors.secondaryContainer }}
+                    color={theme.colors.onSecondaryContainer}
+                  />
+                  <Text variant="titleMedium" style={{ fontWeight: '700' }}>
+                    {loginStats.total_login_days}
+                  </Text>
+                  <Text variant="labelSmall" style={{ color: theme.colors.onSurfaceVariant }}>Total</Text>
+                </View>
+              </View>
+              
+              {/* Status message */}
+              <View style={styles.streakStatusRow}>
+                {loginStats.streak_active ? (
+                  <Chip 
+                    mode="flat" 
+                    compact
+                    icon={loginStats.logged_in_today ? "fire" : "alert"}
+                    style={{ backgroundColor: loginStats.logged_in_today ? theme.colors.tertiaryContainer : theme.colors.secondaryContainer }}
+                    textStyle={{ fontSize: 11 }}
+                  >
+                    {loginStats.logged_in_today 
+                      ? 'Logged in today! 🔥' 
+                      : loginStats.days_until_break === 0 
+                        ? 'Login today to keep streak!'
+                        : 'Streak active'}
+                  </Chip>
+                ) : (
+                  <Chip 
+                    mode="flat" 
+                    compact
+                    icon="alert-circle"
+                    style={{ backgroundColor: theme.colors.errorContainer }}
+                    textStyle={{ color: theme.colors.onErrorContainer, fontSize: 11 }}
+                  >
+                    Streak inactive
+                  </Chip>
+                )}
               </View>
             </Card.Content>
           </Card>
@@ -1814,30 +1808,21 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-start',
     paddingVertical: 8,
   },
-  streakContainer: {
+  streakCompactContainer: {
     paddingVertical: 8,
   },
-  streakItem: {
-    alignItems: 'center',
-    paddingVertical: 16,
-  },
-  streakNumber: {
-    fontWeight: '700',
-    marginTop: 12,
-  },
-  streakDivider: {
-    marginVertical: 16,
-  },
-  streakStatsContainer: {
+  streakCompactRow: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-    paddingVertical: 8,
+    alignItems: 'center',
   },
-  streakStat: {
+  streakCompactStat: {
     alignItems: 'center',
     flex: 1,
+    gap: 4,
   },
-  streakStatusChip: {
+  streakStatusRow: {
+    alignItems: 'center',
     marginTop: 12,
   },
 });
