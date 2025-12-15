@@ -26,7 +26,7 @@ import { CommonActions } from '@react-navigation/native';
 interface ChallengeSelectorModalProps {
   visible: boolean;
   onClose: () => void;
-  onSelect: (challengeId: number) => void;
+  onSelect: (challengeId: number, challengeTitle: string) => void;  // Updated to include challengeTitle
   colors: any;
   getAuthHeader: () => { Authorization: string } | {};
 }
@@ -134,12 +134,13 @@ const ChallengeSelectorModal: React.FC<ChallengeSelectorModalProps> = ({
     });
   }, [allChallenges, searchQuery]);
 
-  const handleSelect = (challengeId: number) => {
+  const handleSelect = (challengeId: number, challengeTitle: string) => {  // Updated to accept challengeTitle
     console.log('[ChallengeSelectorModal] ========== CHALLENGE SELECTED IN MODAL ==========');
     console.log('[ChallengeSelectorModal] Challenge ID:', challengeId);
+    console.log('[ChallengeSelectorModal] Challenge Title:', challengeTitle);
     console.log('[ChallengeSelectorModal] Challenge ID type:', typeof challengeId);
     console.log('[ChallengeSelectorModal] Is valid:', !isNaN(challengeId) && challengeId > 0);
-    onSelect(challengeId);
+    onSelect(challengeId, challengeTitle);  // Pass both parameters
     setSearchQuery('');
     onClose();
   };
@@ -187,7 +188,7 @@ const ChallengeSelectorModal: React.FC<ChallengeSelectorModalProps> = ({
                   backgroundColor: colors.navBar,
                   borderColor: colors.border 
                 }]}
-                onPress={() => handleSelect(item.id)}
+                onPress={() => handleSelect(item.id, item.title)}  // Pass both id and title
               >
                 <View style={styles.challengeItemContent}>
                   <CustomText style={[styles.challengeTitle, { color: colors.text }]}>
@@ -317,25 +318,34 @@ const ChatDetail = ({ route, navigation }: any) => {
       return null;
     }
     
-    // Format: CHALLENGE:{id}
-    const match = body.match(/^CHALLENGE:(\d+)$/);
-    console.log('[ChatDetail] Regex match result:', match);
+    // New format: challenge://{id} (can appear in text like "Check out 'Title' - challenge://123")
+    const newFormatMatch = body.match(/challenge:\/\/(\d+)/);
+    if (newFormatMatch) {
+      const challengeId = parseInt(newFormatMatch[1], 10);
+      console.log('[ChatDetail] Parsed challenge ID from new format:', challengeId);
+      
+      if (isNaN(challengeId) || challengeId <= 0) {
+        console.error('[ChatDetail] ERROR: Invalid challenge ID parsed:', newFormatMatch[1], '->', challengeId);
+        return null;
+      }
+      console.log('[ChatDetail] Valid challenge ID found (new format):', challengeId);
+      return challengeId;
+    }
     
-    if (match) {
-      const challengeId = parseInt(match[1], 10);
-      console.log('[ChatDetail] Parsed challenge ID:', challengeId);
+    // Old format: CHALLENGE:{id} (for backward compatibility)
+    const oldFormatMatch = body.match(/^CHALLENGE:(\d+)$/);
+    console.log('[ChatDetail] Regex match result (old format):', oldFormatMatch);
+    
+    if (oldFormatMatch) {
+      const challengeId = parseInt(oldFormatMatch[1], 10);
+      console.log('[ChatDetail] Parsed challenge ID from old format:', challengeId);
       console.log('[ChatDetail] Is valid ID:', !isNaN(challengeId) && challengeId > 0);
       
       if (isNaN(challengeId) || challengeId <= 0) {
-        console.error('[ChatDetail] ERROR: Invalid challenge ID parsed:', match[1], '->', challengeId);
-        Toast.show({
-          type: 'error',
-          text1: 'Invalid Challenge ID',
-          text2: `Could not parse challenge ID from: ${body}`,
-        });
+        console.error('[ChatDetail] ERROR: Invalid challenge ID parsed:', oldFormatMatch[1], '->', challengeId);
         return null;
       }
-      console.log('[ChatDetail] Valid challenge ID found:', challengeId);
+      console.log('[ChatDetail] Valid challenge ID found (old format):', challengeId);
       return challengeId;
     }
     
@@ -344,9 +354,10 @@ const ChatDetail = ({ route, navigation }: any) => {
   };
 
   // Handle challenge selection
-  const handleChallengeSelect = (challengeId: number) => {
+  const handleChallengeSelect = (challengeId: number, challengeTitle: string) => {  // Updated to accept challengeTitle
     console.log('[ChatDetail] ========== CHALLENGE SELECTED ==========');
     console.log('[ChatDetail] Challenge ID:', challengeId);
+    console.log('[ChatDetail] Challenge Title:', challengeTitle);
     console.log('[ChatDetail] Challenge ID type:', typeof challengeId);
     console.log('[ChatDetail] Is valid number:', !isNaN(challengeId) && challengeId > 0);
     console.log('[ChatDetail] WebSocket connected:', isConnected);
@@ -364,10 +375,11 @@ const ChatDetail = ({ route, navigation }: any) => {
     }
 
     if (isConnected) {
-      // Send challenge as special message format
-      const messageBody = `CHALLENGE:${challengeId}`;
+      // Send challenge using web frontend format: "Check out "{title}" - challenge://{id}"
+      const challengeLink = `challenge://${challengeId}`;
+      const messageBody = `Check out "${challengeTitle}" - ${challengeLink}`;
       console.log('[ChatDetail] Sending challenge message:', messageBody);
-      console.log('[ChatDetail] Message format check:', /^CHALLENGE:\d+$/.test(messageBody));
+      console.log('[ChatDetail] Message format check:', /challenge:\/\/(\d+)/.test(messageBody));
       
       try {
         sendMessage(messageBody);
@@ -375,7 +387,7 @@ const ChatDetail = ({ route, navigation }: any) => {
         Toast.show({
           type: 'success',
           text1: 'Challenge Sent',
-          text2: `Challenge #${challengeId} sent! Check console for details.`,
+          text2: `Challenge "${challengeTitle}" sent!`,
         });
       } catch (error) {
         console.error('[ChatDetail] ERROR sending message:', error);
@@ -656,7 +668,7 @@ const ChatDetail = ({ route, navigation }: any) => {
       <ChallengeSelectorModal
         visible={showChallengeModal}
         onClose={() => setShowChallengeModal(false)}
-        onSelect={handleChallengeSelect}
+        onSelect={handleChallengeSelect}  // Now passes both challengeId and challengeTitle
         colors={colors}
         getAuthHeader={getAuthHeader}
       />
