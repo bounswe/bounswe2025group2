@@ -22,6 +22,7 @@ import Toast from 'react-native-toast-message';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../context/AuthContext';
+import { useChat } from '../context/ChatContext';
 import Cookies from '@react-native-cookies/cookies';
 import { launchImageLibrary } from 'react-native-image-picker';
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -83,6 +84,7 @@ const Profile = () => {
   const route = useRoute();
   const navigation = useNavigation();
   const { getAuthHeader } = useAuth();
+  const { createChat, chats } = useChat();
   const queryClient = useQueryClient();
   
   // @ts-ignore
@@ -954,6 +956,52 @@ const Profile = () => {
                   Coach
                 </Chip>
               )}
+              {/* Chat Button for other users */}
+              {otherUsername && otherUserId && (
+                <View style={styles.chatButtonContainer}>
+                  <Button
+                    mode="contained"
+                    icon="message-text"
+                    onPress={async () => {
+                      try {
+                        // Check if chat already exists
+                        const existingChat = chats.find(chat => 
+                          chat.other_user?.username === otherUsername || 
+                          chat.other_user?.id === otherUserId
+                        );
+                        
+                        if (existingChat) {
+                          // Navigate to existing chat
+                          navigation.navigate('ChatDetail' as never, { chatId: existingChat.id } as never);
+                        } else {
+                          // Create new chat
+                          const newChat = await createChat(otherUserId);
+                          if (newChat) {
+                            navigation.navigate('ChatDetail' as never, { chatId: newChat.id } as never);
+                          } else {
+                            Toast.show({
+                              type: 'error',
+                              text1: 'Error',
+                              text2: 'Failed to create chat. Please try again.',
+                            });
+                          }
+                        }
+                      } catch (error) {
+                        console.error('Error creating/opening chat:', error);
+                        Toast.show({
+                          type: 'error',
+                          text1: 'Error',
+                          text2: 'Failed to start chat. Please try again.',
+                        });
+                      }
+                    }}
+                    style={styles.chatButton}
+                    contentStyle={styles.chatButtonContent}
+                  >
+                    Chat
+                  </Button>
+                </View>
+              )}
             </View>
           </Card.Content>
         </Card>
@@ -1535,6 +1583,17 @@ const styles = StyleSheet.create({
   },
   coachBadge: {
     marginTop: 8,
+  },
+  chatButtonContainer: {
+    marginTop: 12,
+    width: '100%',
+    alignItems: 'center',
+  },
+  chatButton: {
+    minWidth: 120,
+  },
+  chatButtonContent: {
+    paddingVertical: 4,
   },
   avatarWrapper: {
     alignItems: 'center',

@@ -34,6 +34,7 @@ urlpatterns = [
     path('csrf-token/', views.get_csrf_token, name='get_csrf_token'),
     path('change-password/', views.change_password, name='change_password'),
     path('delete-account/', views.delete_account, name='delete_account'),
+    path('user/rtbf/', views.rtbf_delete_user_data, name='rtbf_delete_user_data'),
 
     # Notifications
     path('notifications/', views.get_user_notifications, name='get_notifications'),

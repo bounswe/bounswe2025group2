@@ -131,14 +131,14 @@ def get_goal_suggestions_from_groq(user, title, description, retry_count=0, max_
         "Expert fitness coach AI. Provide SAFE, REALISTIC goal suggestions. Return ONLY valid JSON.\n\n"
         "SAFETY: Set is_realistic=false ONLY if goal is physically dangerous/impossible OR completely unrealistic for THIS user. IMPORTANT: If user is already elite/professional (world-ranked, champion, pro athlete), their ambitious goals ARE realistic - support them! Only flag unrealistic if truly dangerous or beyond their capability. Include safer alternative in warning_message when unrealistic.\n\n"
         "JSON FORMAT:\n"
-        '{"is_realistic":<bool>,"warning_message":<str|null>,"target_value":<num>,"unit":<str>,"days_to_complete":<1-6000>,"goal_type":<WALKING_RUNNING|WORKOUT|CYCLING|SWIMMING|SPORTS>,"tips":[<str>,<str>,<str>]}\n\n'
+        '{"is_realistic":<bool>,"warning_message":<str|null>,"target_value":<num>,"unit":<str>,"days_to_complete":<1-6000>,"goal_type":<WALKING_RUNNING|WORKOUT|CYCLING|SWIMMING|SPORTS|YOGA|WEIGHTLIFTING|HIKING|STEP_COUNT|MEDITATION|BASKETBALL|FOOTBALL|TENNIS>,"tips":[<str>,<str>,<str>]}\n\n'
         "FIELDS:\n"
         "• is_realistic: false ONLY if dangerous/impossible for this user. Elite athletes pursuing championships = realistic!\n"
         "• warning_message: Why unsafe + safer alternative (null if realistic)\n"
         "• target_value: Realistic number for user's level\n"
-        "• unit: Simple string (km/minutes/reps/kg/sessions/title/championship) - NOT complex descriptions\n"
+        "• unit: Simple string (km/minutes/reps/kg/sessions/title/championship/steps/matches/games/sets/hours/elevation) - NOT complex descriptions\n"
         "• days_to_complete: Realistic timeline (1-6000 days)\n"
-        "• goal_type: One of 5 types above\n"
+        "• goal_type: One of 13 types above (use YOGA for yoga/pilates, WEIGHTLIFTING for strength training, HIKING for outdoor hiking, STEP_COUNT for daily steps, MEDITATION for mindfulness, BASKETBALL/FOOTBALL/TENNIS for specific sports)\n"
         "• tips: Exactly 3 tips (max 150 chars each). CRITICAL: Match user's fitness level from profile. Elite athlete = elite-level advice. Beginner = beginner advice. Cover: technique, progression, recovery. Add reasoning when helpful. Multi-sport goals: include distances.\n\n"
         "EXAMPLES:\n"
         "Beginner/'Run 5K' → {is_realistic:true,warning_message:null,target_value:5,unit:'km',days_to_complete:45,goal_type:'WALKING_RUNNING',tips:['Walk-run intervals','Build gradually','Rest between sessions']}\n"
@@ -211,7 +211,9 @@ def get_goal_suggestions_from_groq(user, title, description, retry_count=0, max_
                 raise ValueError("tips must contain exactly 3 items")
             
             # Validate goal_type
-            valid_goal_types = ['WALKING_RUNNING', 'WORKOUT', 'CYCLING', 'SWIMMING', 'SPORTS']
+            valid_goal_types = ['WALKING_RUNNING', 'WORKOUT', 'CYCLING', 'SWIMMING', 'SPORTS', 
+                              'YOGA', 'WEIGHTLIFTING', 'HIKING', 'STEP_COUNT', 'MEDITATION',
+                              'BASKETBALL', 'FOOTBALL', 'TENNIS']
             if suggestions['goal_type'] not in valid_goal_types:
                 suggestions['goal_type'] = 'WORKOUT'  # Default fallback
             

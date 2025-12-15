@@ -70,6 +70,14 @@ class FitnessGoal(models.Model):
         ('CYCLING', 'Cycling'),
         ('SWIMMING', 'Swimming'),
         ('SPORTS', 'Sports'),
+        ('YOGA', 'Yoga'),
+        ('WEIGHTLIFTING', 'Weightlifting'),
+        ('HIKING', 'Hiking'),
+        ('STEP_COUNT', 'Daily Steps'),
+        ('MEDITATION', 'Meditation'),
+        ('BASKETBALL', 'Basketball'),
+        ('FOOTBALL', 'Football/Soccer'),
+        ('TENNIS', 'Tennis'),
     ]
 
     GOAL_STATUS = [

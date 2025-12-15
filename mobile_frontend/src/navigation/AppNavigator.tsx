@@ -112,7 +112,7 @@ const AppNavigator = () => {
       <Stack.Screen
         name="Exercises"
         component={Exercises}
-        options={{ title: 'Exercises', headerShown: true }}
+        options={{ title: 'Glossary', headerShown: true }}
       />
       <Stack.Screen
         name="ExerciseDetail"
