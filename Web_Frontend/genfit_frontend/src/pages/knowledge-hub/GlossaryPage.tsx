@@ -376,7 +376,7 @@ export default function GlossaryPage() {
     try {
       const response = await searchExercises({
         name: exerciseSearchTerm,
-        limit: 12
+        limit: 20
       });
       
       setExercises(response.data);
@@ -479,13 +479,13 @@ export default function GlossaryPage() {
             className={`glossary-tab ${activeTab === 'glossary' ? 'active' : ''}`}
             onClick={() => setActiveTab('glossary')}
           >
-            📖 Glossary Terms
+            Glossary Terms
           </button>
           <button
             className={`glossary-tab ${activeTab === 'exercises' ? 'active' : ''}`}
             onClick={() => setActiveTab('exercises')}
           >
-            💪 Exercise Database
+            Exercise Database
           </button>
         </div>
 
@@ -543,7 +543,6 @@ export default function GlossaryPage() {
                 </>
               ) : (
                 <div className="no-results">
-                  <div className="no-results-icon">🔍</div>
                   <h3>No terms found</h3>
                   <p>Try adjusting your search or filter to find what you're looking for.</p>
                 </div>
@@ -558,9 +557,6 @@ export default function GlossaryPage() {
             {/* Rate Limit Info */}
             {rateLimitStatus && (
               <div className={`rate-limit-info ${rateLimitStatus.requests_remaining <= 1 ? 'low-requests' : ''}`}>
-                <div className="rate-limit-icon">
-                  {rateLimitStatus.requests_remaining > 1 ? '⚡' : '⚠️'}
-                </div>
                 <div className="rate-limit-text">
                   <h3>
                     {rateLimitStatus.requests_remaining} of {rateLimitStatus.limit} requests remaining
@@ -602,7 +598,7 @@ export default function GlossaryPage() {
                     width: '100%'
                   }}
                 >
-                  {isLoadingExercises ? 'Searching...' : '🔍 Search Exercises'}
+                  {isLoadingExercises ? 'Searching...' : 'Search Exercises'}
                 </button>
               </div>
             </section>
@@ -610,14 +606,14 @@ export default function GlossaryPage() {
             {/* Error Message */}
             {exerciseError && (
               <div className="error-message">
-                <h3>⚠️ Error</h3>
+                <h3>Error</h3>
                 <p>{exerciseError}</p>
               </div>
             )}
 
             {/* Loading State */}
             {isLoadingExercises && (
-              <div className="loading-spinner">
+              <div>
                 <div className="spinner"></div>
               </div>
             )}
@@ -681,7 +677,6 @@ export default function GlossaryPage() {
                           className="view-full-details-btn"
                           onClick={handleViewFullDetails}
                         >
-                          <span className="btn-icon">📖</span>
                           View Full Details
                           <span className="btn-hint">(Uses 1 request)</span>
                         </button>
@@ -689,16 +684,14 @@ export default function GlossaryPage() {
 
                       {/* Loading Detail State */}
                       {isLoadingDetail && (
-                        <div className="detail-loading">
+                        <div>
                           <div className="small-spinner"></div>
-                          <span>Loading full details...</span>
                         </div>
                       )}
 
                       {/* Detail Error */}
                       {detailError && (
                         <div className="detail-error">
-                          <span className="error-icon">⚠️</span>
                           {detailError}
                         </div>
                       )}
@@ -707,16 +700,14 @@ export default function GlossaryPage() {
                       {exerciseDetail?.overview && (
                         <div className="modal-detail-group highlight-section">
                           <h3 className="modal-detail-title">
-                            <span className="detail-icon">📝</span>
                             Overview
                           </h3>
                           <p className="modal-overview">{exerciseDetail.overview}</p>
                         </div>
                       )}
-                      
+
                       <div className="modal-detail-group">
                         <h3 className="modal-detail-title">
-                          <span className="detail-icon">🏋️</span>
                           Exercise Type
                         </h3>
                         <div className="modal-badges">
@@ -728,7 +719,6 @@ export default function GlossaryPage() {
 
                       <div className="modal-detail-group">
                         <h3 className="modal-detail-title">
-                          <span className="detail-icon">💪</span>
                           Target Body Parts
                         </h3>
                         <div className="modal-badges">
@@ -746,7 +736,6 @@ export default function GlossaryPage() {
 
                       <div className="modal-detail-group">
                         <h3 className="modal-detail-title">
-                          <span className="detail-icon">🔧</span>
                           Required Equipment
                         </h3>
                         <div className="modal-badges">
@@ -765,7 +754,6 @@ export default function GlossaryPage() {
                       {selectedExercise.targetMuscles && selectedExercise.targetMuscles.length > 0 && (
                         <div className="modal-detail-group">
                           <h3 className="modal-detail-title">
-                            <span className="detail-icon">🎯</span>
                             Primary Target Muscles
                           </h3>
                           <div className="modal-badges">
@@ -781,7 +769,6 @@ export default function GlossaryPage() {
                       {selectedExercise.secondaryMuscles && selectedExercise.secondaryMuscles.length > 0 && (
                         <div className="modal-detail-group">
                           <h3 className="modal-detail-title">
-                            <span className="detail-icon">📍</span>
                             Secondary Muscles
                           </h3>
                           <div className="modal-badges">
@@ -797,7 +784,6 @@ export default function GlossaryPage() {
                       {(exerciseDetail?.keywords || selectedExercise.keywords) && (exerciseDetail?.keywords || selectedExercise.keywords).length > 0 && (
                         <div className="modal-detail-group">
                           <h3 className="modal-detail-title">
-                            <span className="detail-icon">🔍</span>
                             Keywords & Tags
                           </h3>
                           <div className="modal-keywords">
@@ -814,7 +800,6 @@ export default function GlossaryPage() {
                       {exerciseDetail?.instructions && exerciseDetail.instructions.length > 0 && (
                         <div className="modal-detail-group">
                           <h3 className="modal-detail-title">
-                            <span className="detail-icon">📋</span>
                             Step-by-Step Instructions
                           </h3>
                           <ol className="modal-instructions-list">
@@ -831,7 +816,6 @@ export default function GlossaryPage() {
                       {exerciseDetail?.exerciseTips && exerciseDetail.exerciseTips.length > 0 && (
                         <div className="modal-detail-group">
                           <h3 className="modal-detail-title">
-                            <span className="detail-icon">💡</span>
                             Pro Tips & Safety
                           </h3>
                           <ul className="modal-tips-list">
@@ -848,7 +832,6 @@ export default function GlossaryPage() {
                       {exerciseDetail?.variations && exerciseDetail.variations.length > 0 && (
                         <div className="modal-detail-group">
                           <h3 className="modal-detail-title">
-                            <span className="detail-icon">🔄</span>
                             Exercise Variations
                           </h3>
                           <ul className="modal-variations-list">
@@ -865,7 +848,6 @@ export default function GlossaryPage() {
                       {exerciseDetail?.videoUrl && exerciseDetail.videoUrl !== 'string' && (
                         <div className="modal-detail-group">
                           <h3 className="modal-detail-title">
-                            <span className="detail-icon">🎥</span>
                             Video Tutorial
                           </h3>
                           <a 
@@ -875,7 +857,6 @@ export default function GlossaryPage() {
                             className="modal-video-link"
                           >
                             Watch Video Tutorial
-                            <span className="external-link-icon">↗</span>
                           </a>
                         </div>
                       )}
@@ -888,7 +869,6 @@ export default function GlossaryPage() {
             {/* No Results */}
             {!isLoadingExercises && hasSearched && exercises.length === 0 && !exerciseError && (
               <div className="no-results">
-                <div className="no-results-icon">🔍</div>
                 <h3>No exercises found</h3>
                 <p>Try a different search term. Examples: "bench press", "squat", "push up"</p>
               </div>
@@ -897,7 +877,6 @@ export default function GlossaryPage() {
             {/* Initial State */}
             {!isLoadingExercises && !hasSearched && (
               <div className="no-results">
-                <div className="no-results-icon">🏋️</div>
                 <h3>Ready to explore exercises?</h3>
                 <p>Enter an exercise name above to search our live exercise database. Try "bench press", "squat", or "deadlift".</p>
               </div>
