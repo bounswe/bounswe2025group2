@@ -1,4 +1,5 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Layout } from '../../components';
 import { 
   searchExercises, 
@@ -52,23 +53,6 @@ const glossaryExercises: GlossaryExercise[] = [
       'Push through your heels to return to standing',
     ],
     tips: 'Keep your chest up and back straight. Don\'t let your knees cave inward.',
-  },
-  {
-    id: 3,
-    name: 'Deadlift',
-    description: 'A compound exercise that targets multiple muscle groups including the back, glutes, and hamstrings.',
-    muscleGroups: ['Back', 'Glutes', 'Hamstrings', 'Core'],
-    difficulty: 'Advanced',
-    equipment: 'Barbell and weights',
-    instructions: [
-      'Stand with feet hip-width apart, bar over mid-foot',
-      'Bend at hips and knees to grip the bar',
-      'Keep back straight and chest up',
-      'Drive through heels to lift the bar',
-      'Stand tall with shoulders back',
-      'Lower the bar by pushing hips back',
-    ],
-    tips: 'Maintain a neutral spine throughout. Start with lighter weights to perfect form.',
   },
   {
     id: 4,
@@ -161,22 +145,6 @@ const glossaryExercises: GlossaryExercise[] = [
       'Lower with control to starting position',
     ],
     tips: 'Keep core tight to protect lower back. Don\'t arch excessively.',
-  },
-  {
-    id: 10,
-    name: 'Romanian Deadlift',
-    description: 'A variation of the deadlift that emphasizes the hamstrings and glutes.',
-    muscleGroups: ['Hamstrings', 'Glutes', 'Back'],
-    difficulty: 'Intermediate',
-    equipment: 'Barbell or dumbbells',
-    instructions: [
-      'Hold weight with arms extended',
-      'Hinge at hips, pushing them back',
-      'Lower weight while keeping legs relatively straight',
-      'Feel stretch in hamstrings',
-      'Return to standing by squeezing glutes',
-    ],
-    tips: 'Keep back straight. Don\'t round your back. Focus on hip hinge movement.',
   },
   // Running-Specific
   {
@@ -1441,22 +1409,6 @@ const glossaryExercises: GlossaryExercise[] = [
     tips: 'Keep back straight. Don\'t round your back. Focus on hip hinge, not squatting.',
   },
   {
-    id: 89,
-    name: 'Lunges',
-    description: 'Stepping forward into lunge position to target legs and glutes unilaterally.',
-    muscleGroups: ['Quadriceps', 'Glutes', 'Hamstrings'],
-    difficulty: 'Beginner',
-    equipment: 'None (or dumbbells for added resistance)',
-    instructions: [
-      'Step forward with one leg',
-      'Lower until both knees at 90 degrees',
-      'Push through front heel to return',
-      'Alternate legs',
-      'Repeat 10-12 times per leg',
-    ],
-    tips: 'Keep front knee behind toes. Maintain upright posture. This improves balance and addresses imbalances.',
-  },
-  {
     id: 90,
     name: 'Calf Raises',
     description: 'Rising onto toes to strengthen calves, important for running, jumping, and overall leg strength.',
@@ -1644,6 +1596,10 @@ const glossaryExercises: GlossaryExercise[] = [
 type TabType = 'glossary' | 'exercises';
 
 export default function GlossaryPage() {
+  // URL search params for exercise linking
+  const [searchParams, setSearchParams] = useSearchParams();
+  const highlightedExerciseRef = useRef<HTMLDivElement>(null);
+  
   // Tab state
   const [activeTab, setActiveTab] = useState<TabType>('glossary');
   
@@ -1651,6 +1607,7 @@ export default function GlossaryPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [selectedExerciseItem, setSelectedExerciseItem] = useState<GlossaryExercise | null>(null);
+  const [highlightedExerciseId, setHighlightedExerciseId] = useState<number | null>(null);
 
   // Exercise database state
   const [exerciseSearchTerm, setExerciseSearchTerm] = useState('');
@@ -1803,6 +1760,47 @@ export default function GlossaryPage() {
     };
   }, [selectedExercise, selectedExerciseItem]);
 
+  // Handle exercise parameter from URL (for linking from chat)
+  useEffect(() => {
+    const exerciseName = searchParams.get('exercise');
+    if (exerciseName) {
+      // Switch to glossary tab
+      setActiveTab('glossary');
+      
+      // Find the exercise by name (case-insensitive)
+      const foundExercise = glossaryExercises.find(
+        ex => ex.name.toLowerCase() === exerciseName.toLowerCase()
+      );
+
+      if (foundExercise) {
+        // Highlight the exercise
+        setHighlightedExerciseId(foundExercise.id);
+        
+        // Small delay to allow rendering, then scroll and open
+        setTimeout(() => {
+          if (highlightedExerciseRef.current) {
+            highlightedExerciseRef.current.scrollIntoView({ 
+              behavior: 'smooth', 
+              block: 'center' 
+            });
+          }
+          
+          // Auto-open the exercise modal
+          setTimeout(() => {
+            setSelectedExerciseItem(foundExercise);
+            
+            // Remove the highlight after opening modal
+            setTimeout(() => {
+              setHighlightedExerciseId(null);
+              // Clear the URL parameter
+              setSearchParams({});
+            }, 1000);
+          }, 500);
+        }, 100);
+      }
+    }
+  }, [searchParams, setSearchParams]);
+
   return (
     <Layout onSearch={handleSearch}>
       <div className="glossary-content">
@@ -1869,7 +1867,8 @@ export default function GlossaryPage() {
                     {filteredExercises.map((item) => (
                       <div 
                         key={item.id} 
-                        className="term-card exercise-card-item"
+                        ref={highlightedExerciseId === item.id ? highlightedExerciseRef : null}
+                        className={`term-card exercise-card-item ${highlightedExerciseId === item.id ? 'exercise-highlighted' : ''}`}
                         onClick={() => setSelectedExerciseItem(item)}
                         style={{ cursor: 'pointer' }}
                       >

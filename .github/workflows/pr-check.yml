@@ -60,6 +60,7 @@ jobs:
             -e POSTGRES_PORT=5432 \
             -e SECRET_KEY=django-insecure-test-key \
             -e DEBUG=True \
+            -e EXERCISEDB_API_KEY=${{ secrets.EXERCISEDB_API_KEY }} \
             genfit-backend-test \
             python manage.py test api.tests
 
@@ -156,6 +157,7 @@ jobs:
             -e SECRET_KEY=django-insecure-test-key \
             -e DEBUG=True \
             -e ALLOWED_HOSTS=localhost,127.0.0.1 \
+            -e EXERCISEDB_API_KEY=${{ secrets.EXERCISEDB_API_KEY }} \
             genfit-backend
 
       - name: Wait for backend to be ready
