@@ -13,6 +13,7 @@ import Toast from 'react-native-toast-message';
 import { useTheme } from '../context/ThemeContext';
 import { API_URL } from '@constants/api';
 import TermsModal from '../components/TermsModal';
+import PrivacyPolicyModal from '../components/PrivacyPolicyModal';
 
 const Register = ({ navigation }: any) => {
   const [username, setUsername] = useState('');
@@ -23,6 +24,7 @@ const Register = ({ navigation }: any) => {
   const [verificationFile, setVerificationFile] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
   const [showTermsModal, setShowTermsModal] = useState(false);
+  const [showPrivacyModal, setShowPrivacyModal] = useState(false);
   const { colors, isDark } = useTheme();
 
   const handlePickFile = () => {
@@ -238,17 +240,21 @@ const Register = ({ navigation }: any) => {
 
         <TouchableOpacity 
           style={styles.termsContainer}
-          onPress={() => setShowTermsModal(true)}
+          onPress={() => {}}
         >
           <Text style={[styles.termsText, { color: colors.subText }]}>
             By signing up and signing in, you acknowledge that you have read,
-            understood, and agree to be bound by the <Text style={{textDecorationLine: 'underline', color: colors.primary || (isDark ? '#e18d58' : '#800000')}}>Terms and Conditions</Text>.
+            understood, and agree to be bound by the <Text onPress={() => setShowTermsModal(true)} style={{textDecorationLine: 'underline', color: colors.primary || (isDark ? '#e18d58' : '#800000')}}>Terms and Conditions</Text> and <Text onPress={() => setShowPrivacyModal(true)} style={{textDecorationLine: 'underline', color: colors.primary || (isDark ? '#e18d58' : '#800000')}}>Privacy Policy</Text>.
           </Text>
         </TouchableOpacity>
 
         <TermsModal 
           visible={showTermsModal} 
           onClose={() => setShowTermsModal(false)} 
+        />
+        <PrivacyPolicyModal 
+          visible={showPrivacyModal} 
+          onClose={() => setShowPrivacyModal(false)} 
         />
       </View>
     </SafeAreaView>
