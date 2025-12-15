@@ -12,6 +12,7 @@ import Cookies from '@react-native-cookies/cookies';
 import Toast from 'react-native-toast-message';
 import { useTheme } from '../context/ThemeContext';
 import { API_URL } from '@constants/api';
+import TermsModal from '../components/TermsModal';
 
 const Register = ({ navigation }: any) => {
   const [username, setUsername] = useState('');
@@ -21,6 +22,7 @@ const Register = ({ navigation }: any) => {
   const [userType, setUserType] = useState('User');
   const [verificationFile, setVerificationFile] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
+  const [showTermsModal, setShowTermsModal] = useState(false);
   const { colors, isDark } = useTheme();
 
   const handlePickFile = () => {
@@ -233,6 +235,21 @@ const Register = ({ navigation }: any) => {
             fontWeight: 'bold'
           }]}>Already have an account? Login</Text>
         </TouchableOpacity>
+
+        <TouchableOpacity 
+          style={styles.termsContainer}
+          onPress={() => setShowTermsModal(true)}
+        >
+          <Text style={[styles.termsText, { color: colors.subText }]}>
+            By signing up and signing in, you acknowledge that you have read,
+            understood, and agree to be bound by the <Text style={{textDecorationLine: 'underline', color: colors.primary || (isDark ? '#e18d58' : '#800000')}}>Terms and Conditions</Text>.
+          </Text>
+        </TouchableOpacity>
+
+        <TermsModal 
+          visible={showTermsModal} 
+          onClose={() => setShowTermsModal(false)} 
+        />
       </View>
     </SafeAreaView>
   );
@@ -288,6 +305,15 @@ const styles = StyleSheet.create({
   },
   loginText: {
     fontSize: 16,
+  },
+  termsContainer: {
+    marginTop: 20,
+    paddingHorizontal: 10,
+  },
+  termsText: {
+    fontSize: 12,
+    textAlign: 'center',
+    lineHeight: 18,
   },
 });
 

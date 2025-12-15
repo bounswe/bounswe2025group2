@@ -1,5 +1,13 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Layout } from '../../components';
+import { 
+  searchExercises, 
+  getRateLimitStatus,
+  getExerciseDetail,
+  type Exercise,
+  type ExerciseDetail,
+  type RateLimitStatus 
+} from '../../services/exerciseDbService';
 import './glossary_page.css';
 
 interface GlossaryTerm {
@@ -303,12 +311,31 @@ const glossaryTerms: GlossaryTerm[] = [
   },
 ];
 
+type TabType = 'glossary' | 'exercises';
+
 export default function GlossaryPage() {
+  // Tab state
+  const [activeTab, setActiveTab] = useState<TabType>('glossary');
+  
+  // Glossary state
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
 
+  // Exercise database state
+  const [exerciseSearchTerm, setExerciseSearchTerm] = useState('');
+  const [exercises, setExercises] = useState<Exercise[]>([]);
+  const [rateLimitStatus, setRateLimitStatus] = useState<RateLimitStatus | null>(null);
+  const [isLoadingExercises, setIsLoadingExercises] = useState(false);
+  const [exerciseError, setExerciseError] = useState<string | null>(null);
+  const [hasSearched, setHasSearched] = useState(false);
+  const [selectedExercise, setSelectedExercise] = useState<Exercise | null>(null);
+  const [exerciseDetail, setExerciseDetail] = useState<ExerciseDetail | null>(null);
+  const [isLoadingDetail, setIsLoadingDetail] = useState(false);
+  const [detailError, setDetailError] = useState<string | null>(null);
+
   const categories = ['All', 'Exercise', 'Nutrition', 'Wellness', 'Training', 'Anatomy'];
 
+  // Filter glossary terms
   const filteredTerms = useMemo(() => {
     return glossaryTerms
       .filter(term => {
@@ -320,75 +347,563 @@ export default function GlossaryPage() {
       .sort((a, b) => a.term.localeCompare(b.term));
   }, [searchTerm, selectedCategory]);
 
+  // Load rate limit status when tab changes
+  useEffect(() => {
+    if (activeTab === 'exercises') {
+      loadRateLimitStatus();
+    }
+  }, [activeTab]);
+
+  const loadRateLimitStatus = async () => {
+    try {
+      const status = await getRateLimitStatus();
+      setRateLimitStatus(status);
+    } catch (error) {
+      console.error('Failed to load rate limit status:', error);
+    }
+  };
+
+  const handleExerciseSearch = async () => {
+    if (!exerciseSearchTerm.trim()) {
+      setExerciseError('Please enter a search term');
+      return;
+    }
+
+    setIsLoadingExercises(true);
+    setExerciseError(null);
+    setHasSearched(true);
+
+    try {
+      const response = await searchExercises({
+        name: exerciseSearchTerm,
+        limit: 12
+      });
+      
+      setExercises(response.data);
+      setRateLimitStatus({
+        requests_made: response.rate_limit.remaining_requests,
+        requests_remaining: response.rate_limit.remaining_requests,
+        limit: 5,
+        reset_in_seconds: response.rate_limit.reset_in_seconds,
+        period_hours: 1
+      });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (error: any) {
+      setExerciseError(error.message || 'Failed to search exercises. Please try again.');
+      setExercises([]);
+    } finally {
+      setIsLoadingExercises(false);
+    }
+  };
+
   const handleSearch = (searchValue: string) => {
     console.log('Searching for:', searchValue);
   };
+
+  const formatResetTime = (seconds: number) => {
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    if (minutes > 0) {
+      return `${minutes}m ${remainingSeconds}s`;
+    }
+    return `${remainingSeconds}s`;
+  };
+
+  const handleExerciseClick = (exercise: Exercise) => {
+    setSelectedExercise(exercise);
+    setExerciseDetail(null); // Reset detail view
+    setDetailError(null);
+  };
+
+  const closeModal = () => {
+    setSelectedExercise(null);
+    setExerciseDetail(null);
+    setDetailError(null);
+  };
+
+  const handleViewFullDetails = async () => {
+    if (!selectedExercise) return;
+
+    setIsLoadingDetail(true);
+    setDetailError(null);
+
+    try {
+      const response = await getExerciseDetail(selectedExercise.exerciseId);
+      setExerciseDetail(response.data);
+      setRateLimitStatus({
+        requests_made: response.rate_limit.remaining_requests,
+        requests_remaining: response.rate_limit.remaining_requests,
+        limit: 5,
+        reset_in_seconds: response.rate_limit.reset_in_seconds,
+        period_hours: 1
+      });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (error: any) {
+      setDetailError(error.message || 'Failed to load full details. Please try again.');
+    } finally {
+      setIsLoadingDetail(false);
+    }
+  };
+
+  // Handle keyboard events (ESC to close modal)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && selectedExercise) {
+        closeModal();
+      }
+    };
+
+    if (selectedExercise) {
+      document.addEventListener('keydown', handleKeyDown);
+      // Prevent body scroll when modal is open
+      document.body.style.overflow = 'hidden';
+    }
+
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = 'unset';
+    };
+  }, [selectedExercise]);
 
   return (
     <Layout onSearch={handleSearch}>
       <div className="glossary-content">
         <section className="glossary-hero">
-          <h1>Fitness Glossary</h1>
-          <p>Your comprehensive guide to fitness and physical activity terminology</p>
+          <h1>Fitness Knowledge Hub</h1>
+          <p>Explore fitness terminology and discover exercises from our live database</p>
         </section>
 
-        <section className="glossary-controls">
-          <div className="search-section">
-            <input
-              type="text"
-              placeholder="Search terms or definitions..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="glossary-search"
-            />
-          </div>
+        {/* Tabs Navigation */}
+        <div className="glossary-tabs">
+          <button
+            className={`glossary-tab ${activeTab === 'glossary' ? 'active' : ''}`}
+            onClick={() => setActiveTab('glossary')}
+          >
+            📖 Glossary Terms
+          </button>
+          <button
+            className={`glossary-tab ${activeTab === 'exercises' ? 'active' : ''}`}
+            onClick={() => setActiveTab('exercises')}
+          >
+            💪 Exercise Database
+          </button>
+        </div>
 
-          <div className="category-filters">
-            {categories.map((category) => (
-              <button
-                key={category}
-                className={`category-btn ${selectedCategory === category ? 'active' : ''}`}
-                onClick={() => setSelectedCategory(category)}
-              >
-                {category}
-                <span className="category-count">
-                  {category === 'All'
-                    ? glossaryTerms.length
-                    : glossaryTerms.filter(t => t.category === category).length}
-                </span>
-              </button>
-            ))}
-          </div>
-        </section>
-
-        <section className="glossary-results">
-          {filteredTerms.length > 0 ? (
-            <>
-              <div className="results-count">
-                Showing {filteredTerms.length} {filteredTerms.length === 1 ? 'term' : 'terms'}
+        {/* Glossary Tab Content */}
+        {activeTab === 'glossary' && (
+          <>
+            <section className="glossary-controls">
+              <div className="search-section">
+                <input
+                  type="text"
+                  placeholder="Search terms or definitions..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="glossary-search"
+                />
               </div>
-              <div className="terms-grid">
-                {filteredTerms.map((item, index) => (
-                  <div key={index} className="term-card">
-                    <div className="term-header">
-                      <h3 className="term-title">{item.term}</h3>
-                      <span className={`category-badge ${item.category.toLowerCase()}`}>
-                        {item.category}
-                      </span>
-                    </div>
-                    <p className="term-definition">{item.definition}</p>
-                  </div>
+
+              <div className="category-filters">
+                {categories.map((category) => (
+                  <button
+                    key={category}
+                    className={`category-btn ${selectedCategory === category ? 'active' : ''}`}
+                    onClick={() => setSelectedCategory(category)}
+                  >
+                    {category}
+                    <span className="category-count">
+                      {category === 'All'
+                        ? glossaryTerms.length
+                        : glossaryTerms.filter(t => t.category === category).length}
+                    </span>
+                  </button>
                 ))}
               </div>
-            </>
-          ) : (
-            <div className="no-results">
-              <div className="no-results-icon">🔍</div>
-              <h3>No terms found</h3>
-              <p>Try adjusting your search or filter to find what you're looking for.</p>
-            </div>
-          )}
-        </section>
+            </section>
+
+            <section className="glossary-results">
+              {filteredTerms.length > 0 ? (
+                <>
+                  <div className="results-count">
+                    Showing {filteredTerms.length} {filteredTerms.length === 1 ? 'term' : 'terms'}
+                  </div>
+                  <div className="terms-grid">
+                    {filteredTerms.map((item, index) => (
+                      <div key={index} className="term-card">
+                        <div className="term-header">
+                          <h3 className="term-title">{item.term}</h3>
+                          <span className={`category-badge ${item.category.toLowerCase()}`}>
+                            {item.category}
+                          </span>
+                        </div>
+                        <p className="term-definition">{item.definition}</p>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              ) : (
+                <div className="no-results">
+                  <div className="no-results-icon">🔍</div>
+                  <h3>No terms found</h3>
+                  <p>Try adjusting your search or filter to find what you're looking for.</p>
+                </div>
+              )}
+            </section>
+          </>
+        )}
+
+        {/* Exercise Database Tab Content */}
+        {activeTab === 'exercises' && (
+          <div className="exercise-db-container">
+            {/* Rate Limit Info */}
+            {rateLimitStatus && (
+              <div className={`rate-limit-info ${rateLimitStatus.requests_remaining <= 1 ? 'low-requests' : ''}`}>
+                <div className="rate-limit-icon">
+                  {rateLimitStatus.requests_remaining > 1 ? '⚡' : '⚠️'}
+                </div>
+                <div className="rate-limit-text">
+                  <h3>
+                    {rateLimitStatus.requests_remaining} of {rateLimitStatus.limit} requests remaining
+                  </h3>
+                  <p>
+                    Resets in {formatResetTime(rateLimitStatus.reset_in_seconds)}. 
+                    Search limit: {rateLimitStatus.limit} requests per hour to conserve API usage.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Search Section */}
+            <section className="glossary-controls">
+              <div className="search-section">
+                <input
+                  type="text"
+                  placeholder="Search for exercises (e.g., 'bench press', 'squat', 'deadlift')..."
+                  value={exerciseSearchTerm}
+                  onChange={(e) => setExerciseSearchTerm(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && handleExerciseSearch()}
+                  className="glossary-search"
+                />
+                <button
+                  onClick={handleExerciseSearch}
+                  disabled={isLoadingExercises || !exerciseSearchTerm.trim()}
+                  style={{
+                    marginTop: '12px',
+                    padding: '14px 32px',
+                    background: '#800000',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '8px',
+                    fontSize: '1rem',
+                    fontWeight: '600',
+                    cursor: isLoadingExercises ? 'not-allowed' : 'pointer',
+                    opacity: isLoadingExercises || !exerciseSearchTerm.trim() ? 0.6 : 1,
+                    transition: 'all 0.2s ease',
+                    width: '100%'
+                  }}
+                >
+                  {isLoadingExercises ? 'Searching...' : '🔍 Search Exercises'}
+                </button>
+              </div>
+            </section>
+
+            {/* Error Message */}
+            {exerciseError && (
+              <div className="error-message">
+                <h3>⚠️ Error</h3>
+                <p>{exerciseError}</p>
+              </div>
+            )}
+
+            {/* Loading State */}
+            {isLoadingExercises && (
+              <div className="loading-spinner">
+                <div className="spinner"></div>
+              </div>
+            )}
+
+            {/* Results */}
+            {!isLoadingExercises && hasSearched && exercises.length > 0 && (
+              <section className="glossary-results">
+                <div className="results-count">
+                  Found {exercises.length} {exercises.length === 1 ? 'exercise' : 'exercises'}
+                </div>
+                <div className="exercise-grid">
+                  {exercises.map((exercise) => (
+                    <div 
+                      key={exercise.exerciseId} 
+                      className="exercise-card-simple"
+                      onClick={() => handleExerciseClick(exercise)}
+                    >
+                      <div className="exercise-thumbnail">
+                        <img 
+                          src={exercise.imageUrl} 
+                          alt={exercise.name}
+                          className="exercise-thumbnail-image"
+                          loading="lazy"
+                        />
+                        <div className="exercise-overlay">
+                          <span className="view-details-btn">View Details</span>
+                        </div>
+                      </div>
+                      <div className="exercise-card-footer">
+                        <h3 className="exercise-name-simple">{exercise.name}</h3>
+                        <span className="exercise-type-badge">{exercise.exerciseType}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {/* Exercise Detail Modal */}
+            {selectedExercise && (
+              <div className="exercise-modal-backdrop" onClick={closeModal}>
+                <div className="exercise-modal" onClick={(e) => e.stopPropagation()}>
+                  <button className="modal-close-btn" onClick={closeModal}>×</button>
+                  
+                  <div className="modal-content">
+                    <div className="modal-image-section">
+                      <img 
+                        src={exerciseDetail?.imageUrl || selectedExercise.imageUrl} 
+                        alt={selectedExercise.name}
+                        className="modal-exercise-image"
+                      />
+                    </div>
+                    
+                    <div className="modal-details-section">
+                      <h2 className="modal-exercise-title">{selectedExercise.name}</h2>
+                      <p className="modal-exercise-id">ID: {selectedExercise.exerciseId}</p>
+
+                      {/* View Full Details Button */}
+                      {!exerciseDetail && !isLoadingDetail && (
+                        <button 
+                          className="view-full-details-btn"
+                          onClick={handleViewFullDetails}
+                        >
+                          <span className="btn-icon">📖</span>
+                          View Full Details
+                          <span className="btn-hint">(Uses 1 request)</span>
+                        </button>
+                      )}
+
+                      {/* Loading Detail State */}
+                      {isLoadingDetail && (
+                        <div className="detail-loading">
+                          <div className="small-spinner"></div>
+                          <span>Loading full details...</span>
+                        </div>
+                      )}
+
+                      {/* Detail Error */}
+                      {detailError && (
+                        <div className="detail-error">
+                          <span className="error-icon">⚠️</span>
+                          {detailError}
+                        </div>
+                      )}
+
+                      {/* Overview Section (only in detailed view) */}
+                      {exerciseDetail?.overview && (
+                        <div className="modal-detail-group highlight-section">
+                          <h3 className="modal-detail-title">
+                            <span className="detail-icon">📝</span>
+                            Overview
+                          </h3>
+                          <p className="modal-overview">{exerciseDetail.overview}</p>
+                        </div>
+                      )}
+                      
+                      <div className="modal-detail-group">
+                        <h3 className="modal-detail-title">
+                          <span className="detail-icon">🏋️</span>
+                          Exercise Type
+                        </h3>
+                        <div className="modal-badges">
+                          <span className="modal-badge type-badge">
+                            {selectedExercise.exerciseType}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="modal-detail-group">
+                        <h3 className="modal-detail-title">
+                          <span className="detail-icon">💪</span>
+                          Target Body Parts
+                        </h3>
+                        <div className="modal-badges">
+                          {selectedExercise.bodyParts.length > 0 ? (
+                            selectedExercise.bodyParts.map((part, idx) => (
+                              <span key={idx} className="modal-badge body-part-badge">
+                                {part}
+                              </span>
+                            ))
+                          ) : (
+                            <span className="modal-empty">Not specified</span>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="modal-detail-group">
+                        <h3 className="modal-detail-title">
+                          <span className="detail-icon">🔧</span>
+                          Required Equipment
+                        </h3>
+                        <div className="modal-badges">
+                          {selectedExercise.equipments.length > 0 ? (
+                            selectedExercise.equipments.map((equip, idx) => (
+                              <span key={idx} className="modal-badge equipment-badge">
+                                {equip}
+                              </span>
+                            ))
+                          ) : (
+                            <span className="modal-empty">No equipment needed</span>
+                          )}
+                        </div>
+                      </div>
+
+                      {selectedExercise.targetMuscles && selectedExercise.targetMuscles.length > 0 && (
+                        <div className="modal-detail-group">
+                          <h3 className="modal-detail-title">
+                            <span className="detail-icon">🎯</span>
+                            Primary Target Muscles
+                          </h3>
+                          <div className="modal-badges">
+                            {selectedExercise.targetMuscles.map((muscle, idx) => (
+                              <span key={idx} className="modal-badge muscle-badge">
+                                {muscle}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {selectedExercise.secondaryMuscles && selectedExercise.secondaryMuscles.length > 0 && (
+                        <div className="modal-detail-group">
+                          <h3 className="modal-detail-title">
+                            <span className="detail-icon">📍</span>
+                            Secondary Muscles
+                          </h3>
+                          <div className="modal-badges">
+                            {selectedExercise.secondaryMuscles.map((muscle, idx) => (
+                              <span key={idx} className="modal-badge secondary-muscle-badge">
+                                {muscle}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {(exerciseDetail?.keywords || selectedExercise.keywords) && (exerciseDetail?.keywords || selectedExercise.keywords).length > 0 && (
+                        <div className="modal-detail-group">
+                          <h3 className="modal-detail-title">
+                            <span className="detail-icon">🔍</span>
+                            Keywords & Tags
+                          </h3>
+                          <div className="modal-keywords">
+                            {(exerciseDetail?.keywords || selectedExercise.keywords).slice(0, 6).map((keyword, idx) => (
+                              <span key={idx} className="modal-keyword">
+                                {keyword}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Instructions Section (only in detailed view) */}
+                      {exerciseDetail?.instructions && exerciseDetail.instructions.length > 0 && (
+                        <div className="modal-detail-group">
+                          <h3 className="modal-detail-title">
+                            <span className="detail-icon">📋</span>
+                            Step-by-Step Instructions
+                          </h3>
+                          <ol className="modal-instructions-list">
+                            {exerciseDetail.instructions.map((instruction, idx) => (
+                              <li key={idx} className="modal-instruction-item">
+                                {instruction}
+                              </li>
+                            ))}
+                          </ol>
+                        </div>
+                      )}
+
+                      {/* Exercise Tips Section (only in detailed view) */}
+                      {exerciseDetail?.exerciseTips && exerciseDetail.exerciseTips.length > 0 && (
+                        <div className="modal-detail-group">
+                          <h3 className="modal-detail-title">
+                            <span className="detail-icon">💡</span>
+                            Pro Tips & Safety
+                          </h3>
+                          <ul className="modal-tips-list">
+                            {exerciseDetail.exerciseTips.map((tip, idx) => (
+                              <li key={idx} className="modal-tip-item">
+                                {tip}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+
+                      {/* Variations Section (only in detailed view) */}
+                      {exerciseDetail?.variations && exerciseDetail.variations.length > 0 && (
+                        <div className="modal-detail-group">
+                          <h3 className="modal-detail-title">
+                            <span className="detail-icon">🔄</span>
+                            Exercise Variations
+                          </h3>
+                          <ul className="modal-variations-list">
+                            {exerciseDetail.variations.map((variation, idx) => (
+                              <li key={idx} className="modal-variation-item">
+                                {variation}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+
+                      {/* Video Link (only in detailed view) */}
+                      {exerciseDetail?.videoUrl && exerciseDetail.videoUrl !== 'string' && (
+                        <div className="modal-detail-group">
+                          <h3 className="modal-detail-title">
+                            <span className="detail-icon">🎥</span>
+                            Video Tutorial
+                          </h3>
+                          <a 
+                            href={exerciseDetail.videoUrl} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="modal-video-link"
+                          >
+                            Watch Video Tutorial
+                            <span className="external-link-icon">↗</span>
+                          </a>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* No Results */}
+            {!isLoadingExercises && hasSearched && exercises.length === 0 && !exerciseError && (
+              <div className="no-results">
+                <div className="no-results-icon">🔍</div>
+                <h3>No exercises found</h3>
+                <p>Try a different search term. Examples: "bench press", "squat", "push up"</p>
+              </div>
+            )}
+
+            {/* Initial State */}
+            {!isLoadingExercises && !hasSearched && (
+              <div className="no-results">
+                <div className="no-results-icon">🏋️</div>
+                <h3>Ready to explore exercises?</h3>
+                <p>Enter an exercise name above to search our live exercise database. Try "bench press", "squat", or "deadlift".</p>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </Layout>
   );
