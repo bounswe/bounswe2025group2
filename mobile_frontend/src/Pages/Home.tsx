@@ -7,6 +7,7 @@ import {
   Easing,
   ImageSourcePropType,
   TouchableOpacity,
+  ScrollView,
 } from 'react-native';
 import { 
   Card, 
@@ -25,8 +26,52 @@ import Cookies from '@react-native-cookies/cookies';
 import { useAuth } from '../context/AuthContext';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { API_URL } from '@constants/api';
+import CustomText from '@components/CustomText';
+import { useTheme as useCustomTheme } from '../context/ThemeContext';
 
 const DEFAULT_PROFILE_PIC = require('../assets/temp_images/profile.png');
+
+// Types for calendar and login stats
+interface LoginStats {
+  current_streak: number;
+  longest_streak: number;
+  total_login_days: number;
+  last_login_date: string | null;
+  streak_active: boolean;
+  days_until_break: number | null;
+  login_calendar: Array<{
+    date: string;
+    logged_in: boolean;
+  }>;
+  logged_in_today: boolean;
+}
+
+interface Goal {
+  id: number;
+  title: string;
+  target_date: string;
+  status: 'ACTIVE' | 'COMPLETED' | 'RESTARTED';
+}
+
+interface Challenge {
+  id: number;
+  title: string;
+  end_date: string;
+  is_active: boolean;
+  is_joined: boolean;
+}
+
+interface CalendarDay {
+  date: Date;
+  isCurrentMonth: boolean;
+  hasLogin: boolean;
+  events: Array<{
+    type: 'goal' | 'challenge';
+    title: string;
+    id: number;
+    daysUntil: number;
+  }>;
+}
 
 /**
  * Home component displays a list of forum threads in a scrollable feed.
@@ -49,8 +94,16 @@ const Home = () => {
   const [dropdownVisible, setDropdownVisible] = useState(false);
   const [threadVotes, setThreadVotes] = useState<Record<number, 'UPVOTE' | 'DOWNVOTE' | null>>({});
 
+  // New state for calendar and stats
+  const [loginStats, setLoginStats] = useState<LoginStats | null>(null);
+  const [goals, setGoals] = useState<Goal[]>([]);
+  const [challenges, setChallenges] = useState<Challenge[]>([]);
+  const [loadingStats, setLoadingStats] = useState(true);
+  const [showCalendar, setShowCalendar] = useState(true);
+
   // Context hooks
   const theme = useTheme();
+  const customTheme = useCustomTheme();
   const { getAuthHeader } = useAuth();
   const navigation = useNavigation();
 
@@ -409,6 +462,274 @@ const Home = () => {
   }, [fetchThreads]);
 
   /**
+   * Fetches login stats
+   */
+  const fetchLoginStats = useCallback(async () => {
+    try {
+      const cookies = await Cookies.get(API_URL);
+      const csrfToken = cookies.csrftoken?.value;
+      const origin = API_URL.replace(/\/api\/?$/, '');
+
+      const response = await fetch(`${API_URL}user/login-stats/`, {
+        headers: {
+          ...getAuthHeader(),
+          'Content-Type': 'application/json',
+          ...(csrfToken ? { 'X-CSRFToken': csrfToken } : {}),
+          'Referer': origin,
+        },
+        credentials: 'include',
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setLoginStats(data);
+      }
+    } catch (e) {
+      console.error('Failed to fetch login stats:', e);
+    }
+  }, [getAuthHeader]);
+
+  /**
+   * Fetches goals
+   */
+  const fetchGoals = useCallback(async () => {
+    try {
+      const cookies = await Cookies.get(API_URL);
+      const csrfToken = cookies.csrftoken?.value;
+      const origin = API_URL.replace(/\/api\/?$/, '');
+
+      const response = await fetch(`${API_URL}goals/`, {
+        headers: {
+          ...getAuthHeader(),
+          'Content-Type': 'application/json',
+          ...(csrfToken ? { 'X-CSRFToken': csrfToken } : {}),
+          'Referer': origin,
+        },
+        credentials: 'include',
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setGoals(data);
+      }
+    } catch (e) {
+      console.error('Failed to fetch goals:', e);
+    }
+  }, [getAuthHeader]);
+
+  /**
+   * Fetches challenges
+   */
+  const fetchChallenges = useCallback(async () => {
+    try {
+      const cookies = await Cookies.get(API_URL);
+      const csrfToken = cookies.csrftoken?.value;
+      const origin = API_URL.replace(/\/api\/?$/, '');
+
+      const response = await fetch(`${API_URL}challenges/search/?is_active=true`, {
+        headers: {
+          ...getAuthHeader(),
+          'Content-Type': 'application/json',
+          ...(csrfToken ? { 'X-CSRFToken': csrfToken } : {}),
+          'Referer': origin,
+        },
+        credentials: 'include',
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        const challengesList = Array.isArray(data) ? data : (data.results || []);
+        // Filter to only joined challenges
+        const joinedChallenges = challengesList.filter((c: Challenge) => c.is_joined);
+        setChallenges(joinedChallenges);
+      }
+    } catch (e) {
+      console.error('Failed to fetch challenges:', e);
+    }
+  }, [getAuthHeader]);
+
+  /**
+   * Fetches all stats
+   */
+  const fetchAllStats = useCallback(async () => {
+    setLoadingStats(true);
+    await Promise.all([
+      fetchLoginStats(),
+      fetchGoals(),
+      fetchChallenges(),
+    ]);
+    setLoadingStats(false);
+  }, [fetchLoginStats, fetchGoals, fetchChallenges]);
+
+  // Helper function to format date as YYYY-MM-DD
+  const formatDateLocal = (date: Date): string => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  // Helper function to parse backend date string as local date
+  const parseLocalDate = (dateString: string): Date => {
+    const datePart = dateString.split('T')[0];
+    const [year, month, day] = datePart.split('-').map(Number);
+    return new Date(year, month - 1, day);
+  };
+
+  // Generate calendar for current month
+  const calendarDays = useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const year = today.getFullYear();
+    const month = today.getMonth();
+    
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    const firstDayOfWeek = firstDay.getDay();
+    const daysFromPrevMonth = firstDayOfWeek;
+    const prevMonthLastDay = new Date(year, month, 0).getDate();
+    const totalDays = lastDay.getDate();
+    const totalCells = Math.ceil((daysFromPrevMonth + totalDays) / 7) * 7;
+    const daysFromNextMonth = totalCells - daysFromPrevMonth - totalDays;
+    
+    const days: CalendarDay[] = [];
+    
+    // Add previous month days
+    for (let i = daysFromPrevMonth - 1; i >= 0; i--) {
+      const date = new Date(year, month - 1, prevMonthLastDay - i);
+      days.push({
+        date,
+        isCurrentMonth: false,
+        hasLogin: false,
+        events: []
+      });
+    }
+    
+    // Add current month days
+    for (let i = 1; i <= totalDays; i++) {
+      const date = new Date(year, month, i);
+      const dateStr = formatDateLocal(date);
+      
+      const isPastOrToday = date <= today;
+      const hasLogin = isPastOrToday && (loginStats?.login_calendar.some(
+        cal => cal.date === dateStr && cal.logged_in
+      ) || false);
+      
+      const events: CalendarDay['events'] = [];
+      
+      // Check goals
+      goals.forEach(goal => {
+        const targetDate = parseLocalDate(goal.target_date);
+        const goalDateStr = formatDateLocal(targetDate);
+        if (goalDateStr === dateStr && goal.status === 'ACTIVE') {
+          const daysUntil = Math.ceil((targetDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+          events.push({
+            type: 'goal',
+            title: goal.title,
+            id: goal.id,
+            daysUntil
+          });
+        }
+      });
+      
+      // Check challenges
+      challenges.forEach(challenge => {
+        const endDate = parseLocalDate(challenge.end_date);
+        const challengeDateStr = formatDateLocal(endDate);
+        if (challengeDateStr === dateStr && challenge.is_active && challenge.is_joined) {
+          const daysUntil = Math.ceil((endDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+          events.push({
+            type: 'challenge',
+            title: challenge.title,
+            id: challenge.id,
+            daysUntil
+          });
+        }
+      });
+      
+      days.push({
+        date,
+        isCurrentMonth: true,
+        hasLogin,
+        events
+      });
+    }
+    
+    // Add next month days
+    for (let i = 1; i <= daysFromNextMonth; i++) {
+      const date = new Date(year, month + 1, i);
+      days.push({
+        date,
+        isCurrentMonth: false,
+        hasLogin: false,
+        events: []
+      });
+    }
+    
+    return days;
+  }, [loginStats, goals, challenges]);
+
+  // Get upcoming deadlines (next 7 days)
+  const upcomingDeadlines = useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const sevenDaysFromNow = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
+    
+    const deadlines: Array<{
+      type: 'goal' | 'challenge';
+      title: string;
+      date: Date;
+      daysUntil: number;
+      id: number;
+    }> = [];
+    
+    goals.forEach(goal => {
+      if (goal.status === 'ACTIVE') {
+        const targetDate = parseLocalDate(goal.target_date);
+        if (targetDate >= today && targetDate <= sevenDaysFromNow) {
+          const daysUntil = Math.ceil((targetDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+          deadlines.push({
+            type: 'goal',
+            title: goal.title,
+            date: targetDate,
+            daysUntil,
+            id: goal.id
+          });
+        }
+      }
+    });
+    
+    challenges.forEach(challenge => {
+      if (challenge.is_active && challenge.is_joined) {
+        const endDate = parseLocalDate(challenge.end_date);
+        if (endDate >= today && endDate <= sevenDaysFromNow) {
+          const daysUntil = Math.ceil((endDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+          deadlines.push({
+            type: 'challenge',
+            title: challenge.title,
+            date: endDate,
+            daysUntil,
+            id: challenge.id
+          });
+        }
+      }
+    });
+    
+    return deadlines.sort((a, b) => a.date.getTime() - b.date.getTime());
+  }, [goals, challenges]);
+
+  // Fetch stats on mount and focus
+  useEffect(() => {
+    fetchAllStats();
+  }, [fetchAllStats]);
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchAllStats();
+    }, [fetchAllStats])
+  );
+
+  /**
    * Renders individual thread items as modern cards
    */
   const renderItem = useCallback(
@@ -551,11 +872,258 @@ const Home = () => {
   }, []);
 
   /**
+   * Renders the calendar and stats section
+   */
+  const renderStatsSection = () => {
+    const today = new Date();
+    const monthName = today.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+    const activeGoals = goals.filter(g => g.status === 'ACTIVE').length;
+    const joinedChallengesCount = challenges.length;
+
+    return (
+      <View style={styles.statsContainer}>
+        {/* Login Streak Card */}
+        <Card mode="elevated" style={styles.streakCard}>
+          <Card.Content>
+            <View style={styles.streakHeader}>
+              <IconButton
+                icon="fire"
+                size={24}
+                iconColor={customTheme.colors.active || '#800000'}
+              />
+              <CustomText style={[styles.streakTitle, { color: customTheme.colors.text }]}>
+                Login Streak
+              </CustomText>
+              {loginStats?.streak_active && (
+                <Chip mode="flat" compact style={styles.activeBadge}>
+                  Active
+                </Chip>
+              )}
+            </View>
+            {loadingStats ? (
+              <ActivityIndicator size="small" color={customTheme.colors.active} />
+            ) : (
+              <>
+                <CustomText style={[styles.streakNumber, { color: customTheme.colors.active }]}>
+                  {loginStats?.current_streak || 0}
+                </CustomText>
+                <View style={styles.streakSecondary}>
+                  <CustomText style={[styles.streakText, { color: customTheme.colors.subText }]}>
+                    Best: {loginStats?.longest_streak || 0}
+                  </CustomText>
+                  <CustomText style={[styles.streakText, { color: customTheme.colors.subText }]}>
+                    •
+                  </CustomText>
+                  <CustomText style={[styles.streakText, { color: customTheme.colors.subText }]}>
+                    Total: {loginStats?.total_login_days || 0} days
+                  </CustomText>
+                </View>
+                {loginStats && !loginStats.logged_in_today && (
+                  <View style={styles.streakWarning}>
+                    <IconButton
+                      icon="alert-circle"
+                      size={16}
+                      iconColor="#dc2626"
+                      style={{ margin: 0 }}
+                    />
+                    <CustomText style={[styles.warningText, { color: '#dc2626' }]}>
+                      Log in today to continue your streak!
+                    </CustomText>
+                  </View>
+                )}
+              </>
+            )}
+          </Card.Content>
+        </Card>
+
+        {/* Quick Stats */}
+        <View style={styles.quickStatsRow}>
+          <Card mode="elevated" style={[styles.statCard, { flex: 1 }]}>
+            <Card.Content style={styles.statCardContent}>
+              <CustomText style={[styles.statNumber, { color: customTheme.colors.active }]}>
+                {activeGoals}
+              </CustomText>
+              <CustomText style={[styles.statLabel, { color: customTheme.colors.subText }]}>
+                Active Goals
+              </CustomText>
+            </Card.Content>
+          </Card>
+          <Card mode="elevated" style={[styles.statCard, { flex: 1, marginLeft: 8 }]}>
+            <Card.Content style={styles.statCardContent}>
+              <CustomText style={[styles.statNumber, { color: customTheme.colors.active }]}>
+                {joinedChallengesCount}
+              </CustomText>
+              <CustomText style={[styles.statLabel, { color: customTheme.colors.subText }]}>
+                Challenges
+              </CustomText>
+            </Card.Content>
+          </Card>
+        </View>
+
+        {/* Calendar Card */}
+        <Card mode="elevated" style={styles.calendarCard}>
+          <Card.Content>
+            <View style={styles.calendarHeader}>
+              <IconButton
+                icon="calendar"
+                size={20}
+                iconColor={customTheme.colors.active}
+                style={{ margin: 0 }}
+              />
+              <CustomText style={[styles.calendarTitle, { color: customTheme.colors.text }]}>
+                {monthName}
+              </CustomText>
+              <TouchableOpacity
+                onPress={() => setShowCalendar(!showCalendar)}
+                style={styles.toggleButton}
+              >
+                <IconButton
+                  icon={showCalendar ? "chevron-up" : "chevron-down"}
+                  size={20}
+                  iconColor={customTheme.colors.subText}
+                  style={{ margin: 0 }}
+                />
+              </TouchableOpacity>
+            </View>
+
+            {showCalendar && (
+              <>
+                {/* Legend */}
+                <View style={styles.legend}>
+                  <View style={styles.legendItem}>
+                    <View style={[styles.legendDot, { backgroundColor: '#dc2626' }]} />
+                    <CustomText style={[styles.legendText, { color: customTheme.colors.subText }]}>
+                      Login
+                    </CustomText>
+                  </View>
+                  <View style={styles.legendItem}>
+                    <View style={[styles.legendDot, { backgroundColor: '#10b981' }]} />
+                    <CustomText style={[styles.legendText, { color: customTheme.colors.subText }]}>
+                      Goal
+                    </CustomText>
+                  </View>
+                  <View style={styles.legendItem}>
+                    <View style={[styles.legendDot, { backgroundColor: '#3b82f6' }]} />
+                    <CustomText style={[styles.legendText, { color: customTheme.colors.subText }]}>
+                      Challenge
+                    </CustomText>
+                  </View>
+                </View>
+
+                {/* Calendar Grid */}
+                <View style={styles.calendarGrid}>
+                  {/* Day names */}
+                  <View style={styles.calendarHeaderRow}>
+                    {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, idx) => (
+                      <View key={idx} style={styles.dayName}>
+                        <CustomText style={[styles.dayNameText, { color: customTheme.colors.subText }]}>
+                          {day}
+                        </CustomText>
+                      </View>
+                    ))}
+                  </View>
+
+                  {/* Calendar days */}
+                  <View style={styles.calendarBody}>
+                    {calendarDays.map((day, index) => {
+                      const isToday = day.date.toDateString() === today.toDateString();
+                      return (
+                        <View
+                          key={index}
+                          style={[
+                            styles.calendarDay,
+                            !day.isCurrentMonth && styles.otherMonthDay,
+                            isToday && { borderColor: customTheme.colors.active, borderWidth: 2 },
+                          ]}
+                        >
+                          <CustomText
+                            style={[
+                              styles.dayNumber,
+                              { color: day.isCurrentMonth ? customTheme.colors.text : customTheme.colors.subText },
+                              isToday && { fontWeight: 'bold', color: customTheme.colors.active },
+                            ]}
+                          >
+                            {day.date.getDate()}
+                          </CustomText>
+                          <View style={styles.dayIndicators}>
+                            {day.hasLogin && (
+                              <View style={[styles.indicator, { backgroundColor: '#dc2626' }]} />
+                            )}
+                            {day.events.filter(e => e.type === 'goal').length > 0 && (
+                              <View style={[styles.indicator, { backgroundColor: '#10b981' }]} />
+                            )}
+                            {day.events.filter(e => e.type === 'challenge').length > 0 && (
+                              <View style={[styles.indicator, { backgroundColor: '#3b82f6' }]} />
+                            )}
+                          </View>
+                        </View>
+                      );
+                    })}
+                  </View>
+                </View>
+              </>
+            )}
+          </Card.Content>
+        </Card>
+
+        {/* Upcoming Deadlines */}
+        {upcomingDeadlines.length > 0 && (
+          <Card mode="elevated" style={styles.deadlinesCard}>
+            <Card.Content>
+              <View style={styles.deadlinesHeader}>
+                <IconButton
+                  icon="alert-circle"
+                  size={20}
+                  iconColor={customTheme.colors.active}
+                  style={{ margin: 0 }}
+                />
+                <CustomText style={[styles.deadlinesTitle, { color: customTheme.colors.text }]}>
+                  Upcoming Deadlines
+                </CustomText>
+              </View>
+              {upcomingDeadlines.slice(0, 5).map((deadline) => (
+                <TouchableOpacity
+                  key={`${deadline.type}-${deadline.id}`}
+                  style={styles.deadlineItem}
+                  onPress={() => navigation.navigate(deadline.type === 'goal' ? 'Goals' : 'Challenges' as never)}
+                >
+                  <IconButton
+                    icon={deadline.type === 'goal' ? 'target' : 'trophy'}
+                    size={18}
+                    iconColor={customTheme.colors.active}
+                    style={{ margin: 0 }}
+                  />
+                  <View style={styles.deadlineContent}>
+                    <CustomText style={[styles.deadlineTitle, { color: customTheme.colors.text }]}>
+                      {deadline.title}
+                    </CustomText>
+                    <View style={styles.deadlineMeta}>
+                      <Chip mode="flat" compact style={styles.deadlineTypeChip}>
+                        {deadline.type}
+                      </Chip>
+                      <CustomText style={[styles.deadlineDate, { color: customTheme.colors.subText }]}>
+                        {deadline.daysUntil === 0 ? 'Today' :
+                         deadline.daysUntil === 1 ? 'Tomorrow' :
+                         `${deadline.daysUntil}d`}
+                      </CustomText>
+                    </View>
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </Card.Content>
+          </Card>
+        )}
+      </View>
+    );
+  };
+
+  /**
    * Renders the exercises info card at the top of the feed
    */
   const renderHeader = () => {
     return (
       <>
+        {renderStatsSection()}
         {/* Tap indicator - visible when card is hidden */}
         {!isExerciseCardVisible && (
           <TouchableOpacity onPress={toggleExerciseCard} style={styles.pullIndicator} activeOpacity={0.7}>
@@ -565,9 +1133,9 @@ const Home = () => {
               iconColor={theme.colors.primary}
               style={{ margin: 0 }}
             />
-            <Text variant="labelSmall" style={{ color: theme.colors.primary }}>
+            <CustomText variant="labelSmall" style={{ color: theme.colors.primary }}>
               Exercise Library
-            </Text>
+            </CustomText>
             <IconButton
               icon="chevron-down"
               size={16}
@@ -589,12 +1157,12 @@ const Home = () => {
                   containerColor={theme.colors.primaryContainer}
                 />
                 <View style={styles.headerText}>
-                  <Text variant="titleMedium" style={{ color: theme.colors.onSurface, marginBottom: 4 }}>
+                  <CustomText variant="titleMedium" style={{ color: theme.colors.onSurface, marginBottom: 4 }}>
                     Exercise Library
-                  </Text>
-                  <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>
+                  </CustomText>
+                  <CustomText variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>
                     Explore our comprehensive exercise database
-                  </Text>
+                  </CustomText>
                 </View>
                 <IconButton
                   icon="chevron-up"
@@ -617,9 +1185,9 @@ const Home = () => {
 
         {/* Sort Filter */}
         <View style={styles.filterContainer}>
-          <Text variant="titleSmall" style={{ color: theme.colors.onSurface, flex: 1 }}>
+          <CustomText variant="titleSmall" style={{ color: theme.colors.onSurface, flex: 1 }}>
             Threads
-          </Text>
+          </CustomText>
           <Menu
             visible={dropdownVisible}
             onDismiss={() => setDropdownVisible(false)}
@@ -633,9 +1201,9 @@ const Home = () => {
                   size={20} 
                   style={{ margin: 0 }}
                 />
-                <Text variant="labelLarge" style={{ marginRight: 4 }}>
+                <CustomText variant="labelLarge" style={{ marginRight: 4 }}>
                   {sortBy === 'top' ? 'Top' : 'Newest'}
-                </Text>
+                </CustomText>
                 <IconButton 
                   icon="chevron-down" 
                   size={20} 
@@ -681,12 +1249,12 @@ const Home = () => {
           size={64}
           iconColor={theme.colors.onSurfaceVariant}
         />
-        <Text variant="titleMedium" style={{ color: theme.colors.onSurface, marginTop: 8 }}>
+        <CustomText variant="titleMedium" style={{ color: theme.colors.onSurface, marginTop: 8 }}>
           {error ? 'Failed to load threads' : 'No threads yet'}
-        </Text>
-        <Text variant="bodyMedium" style={{ color: theme.colors.onSurfaceVariant, marginTop: 4 }}>
+        </CustomText>
+        <CustomText variant="bodyMedium" style={{ color: theme.colors.onSurfaceVariant, marginTop: 4 }}>
           {error ? 'Pull down to refresh' : 'Be the first to post!'}
-        </Text>
+        </CustomText>
       </View>
     );
   }, [theme, error, loading]);
@@ -814,6 +1382,192 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 48,
+  },
+  statsContainer: {
+    marginBottom: 16,
+  },
+  streakCard: {
+    marginBottom: 12,
+  },
+  streakHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  streakTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    flex: 1,
+  },
+  activeBadge: {
+    height: 24,
+  },
+  streakNumber: {
+    fontSize: 36,
+    fontWeight: 'bold',
+    marginVertical: 8,
+  },
+  streakSecondary: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 8,
+  },
+  streakText: {
+    fontSize: 14,
+  },
+  streakWarning: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 8,
+    padding: 8,
+    backgroundColor: '#fef2f2',
+    borderRadius: 8,
+  },
+  warningText: {
+    fontSize: 12,
+    flex: 1,
+  },
+  quickStatsRow: {
+    flexDirection: 'row',
+    marginBottom: 12,
+  },
+  statCard: {
+    flex: 1,
+  },
+  statCardContent: {
+    alignItems: 'center',
+    paddingVertical: 16,
+  },
+  statNumber: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    marginBottom: 4,
+  },
+  statLabel: {
+    fontSize: 12,
+  },
+  calendarCard: {
+    marginBottom: 12,
+  },
+  calendarHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  calendarTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    flex: 1,
+  },
+  toggleButton: {
+    marginLeft: 'auto',
+  },
+  legend: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginBottom: 12,
+    paddingVertical: 8,
+  },
+  legendItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  legendDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  legendText: {
+    fontSize: 12,
+  },
+  calendarGrid: {
+    marginTop: 8,
+  },
+  calendarHeaderRow: {
+    flexDirection: 'row',
+    marginBottom: 4,
+  },
+  dayName: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: 4,
+  },
+  dayNameText: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  calendarBody: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+  },
+  calendarDay: {
+    width: '14.28%',
+    aspectRatio: 1,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    borderRadius: 4,
+    padding: 4,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  otherMonthDay: {
+    opacity: 0.3,
+  },
+  dayNumber: {
+    fontSize: 12,
+    marginBottom: 2,
+  },
+  dayIndicators: {
+    flexDirection: 'row',
+    gap: 2,
+    marginTop: 2,
+  },
+  indicator: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  },
+  deadlinesCard: {
+    marginBottom: 12,
+  },
+  deadlinesHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  deadlinesTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    flex: 1,
+  },
+  deadlineItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e5e7eb',
+  },
+  deadlineContent: {
+    flex: 1,
+    marginLeft: 8,
+  },
+  deadlineTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  deadlineMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  deadlineTypeChip: {
+    height: 20,
+  },
+  deadlineDate: {
+    fontSize: 12,
   },
 });
 
