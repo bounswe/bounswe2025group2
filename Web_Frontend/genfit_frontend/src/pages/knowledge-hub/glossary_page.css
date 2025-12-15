@@ -1150,3 +1150,115 @@
   animation: fadeIn 0.3s ease-out;
 }
 
+/* Exercise Card Specific Styles */
+.exercise-card-item {
+  cursor: pointer;
+}
+
+.muscle-groups-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 12px;
+}
+
+.muscle-tag-small {
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #fce7f3 0%, #fbcfe8 100%);
+  color: #9f1239;
+  border: 1px solid #f472b6;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.equipment-text {
+  font-size: 0.85rem;
+  color: #6b7280;
+  margin-top: 8px;
+  margin-bottom: 0;
+}
+
+.equipment-text strong {
+  color: #374151;
+  font-weight: 600;
+}
+
+/* Difficulty Badge Styles */
+.difficulty-beginner {
+  background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+  color: #10b981;
+  border: 1px solid #34d399;
+}
+
+.difficulty-intermediate {
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  color: #f59e0b;
+  border: 1px solid #fbbf24;
+}
+
+.difficulty-advanced {
+  background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+  color: #ef4444;
+  border: 1px solid #f87171;
+}
+
+.difficulty-badge-beginner {
+  background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+  color: #10b981;
+  border: 1px solid #34d399;
+}
+
+.difficulty-badge-intermediate {
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  color: #f59e0b;
+  border: 1px solid #fbbf24;
+}
+
+.difficulty-badge-advanced {
+  background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+  color: #ef4444;
+  border: 1px solid #f87171;
+}
+
+/* Tips Box */
+.tips-box {
+  background: linear-gradient(135deg, #dbeafe 0%, #e0f2fe 100%);
+  border: 2px solid #3b82f6;
+  border-left: 4px solid #3b82f6;
+  border-radius: 10px;
+  padding: 16px 16px 16px 48px;
+  position: relative;
+}
+
+.tips-box::before {
+  content: '💡';
+  position: absolute;
+  left: 16px;
+  top: 16px;
+  font-size: 1.3rem;
+}
+
+.tips-box .tips-text {
+  font-size: 0.9rem;
+  line-height: 1.6;
+  color: #1e3a8a;
+  margin: 0;
+}
+
+/* Narrower Modal for Glossary Exercises */
+.glossary-exercise-modal {
+  max-width: 800px !important;
+}
+
+.glossary-exercise-modal .modal-content {
+  grid-template-columns: 1fr !important;
+}
+
+.glossary-exercise-modal .modal-details-section {
+  width: 100% !important;
+  padding: 40px !important;
+}
+
