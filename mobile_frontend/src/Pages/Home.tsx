@@ -2,25 +2,19 @@ import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react'
 import {
   View,
   StyleSheet,
-  FlatList,
+  ScrollView,
   Animated,
   Easing,
-  ImageSourcePropType,
   TouchableOpacity,
-  ScrollView,
+  RefreshControl,
 } from 'react-native';
 import { 
   Card, 
   Button, 
   useTheme,
-  Text,
   ActivityIndicator,
-  Avatar,
   IconButton,
   Chip,
-  SegmentedButtons,
-  Divider,
-  Menu,
 } from 'react-native-paper';
 import Cookies from '@react-native-cookies/cookies';
 import { useAuth } from '../context/AuthContext';
@@ -28,8 +22,6 @@ import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { API_URL } from '@constants/api';
 import CustomText from '@components/CustomText';
 import { useTheme as useCustomTheme } from '../context/ThemeContext';
-
-const DEFAULT_PROFILE_PIC = require('../assets/temp_images/profile.png');
 
 // Types for calendar and login stats
 interface LoginStats {
@@ -83,23 +75,13 @@ interface CalendarDay {
  * - Individual thread voting and commenting capabilities
  */
 const Home = () => {
-  // State management for threads data and UI states
-  const [threads, setThreads] = useState<any[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [refreshing, setRefreshing] = useState<boolean>(false);
-  const [error, setError] = useState<string | null>(null);
-  const [profilePics, setProfilePics] = useState<Record<string, string>>({});
-  const [sortBy, setSortBy] = useState<'newest' | 'top'>('top');
-  const [threadComments, setThreadComments] = useState<Record<number, any[]>>({});
-  const [dropdownVisible, setDropdownVisible] = useState(false);
-  const [threadVotes, setThreadVotes] = useState<Record<number, 'UPVOTE' | 'DOWNVOTE' | null>>({});
-
-  // New state for calendar and stats
+  // Keep only calendar and stats state
   const [loginStats, setLoginStats] = useState<LoginStats | null>(null);
   const [goals, setGoals] = useState<Goal[]>([]);
   const [challenges, setChallenges] = useState<Challenge[]>([]);
   const [loadingStats, setLoadingStats] = useState(true);
   const [showCalendar, setShowCalendar] = useState(true);
+  const [showDeadlines, setShowDeadlines] = useState(false); // Collapsed by default
 
   // Context hooks
   const theme = useTheme();
@@ -110,46 +92,6 @@ const Home = () => {
   // Animation references
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(16)).current;
-  
-  // Exercise card visibility
-  const [isExerciseCardVisible, setIsExerciseCardVisible] = useState(false);
-
-  // Profile image cache helpers
-  const profilePicCache = useRef<Record<string, string>>({});
-  const profilePicRequests = useRef<Set<string>>(new Set());
-
-  /**
-   * Safely sorts thread list by creation date (newest first) or likes (top first).
-   */
-  const sortThreadsByDate = useCallback((items: any[]) => {
-    if (!Array.isArray(items)) {
-      return [];
-    }
-
-    if (sortBy === 'top') {
-      return [...items].sort((a, b) => (b.like_count || 0) - (a.like_count || 0));
-    }
-
-    const getTimestamp = (thread: any) => {
-      const dateFields = ['created_at', 'createdAt', 'created', 'creation_date', 'date'];
-
-      for (const field of dateFields) {
-        const value = thread?.[field];
-        if (!value) {
-          continue;
-        }
-
-        const timestamp = new Date(value).getTime();
-        if (!Number.isNaN(timestamp)) {
-          return timestamp;
-        }
-      }
-
-      return 0;
-    };
-
-    return [...items].sort((a, b) => getTimestamp(b) - getTimestamp(a));
-  }, [sortBy]);
 
   const animateContent = useCallback(() => {
     fadeAnim.setValue(0);
@@ -169,297 +111,6 @@ const Home = () => {
       }),
     ]).start();
   }, [fadeAnim, slideAnim]);
-
-  /**
-   * Fetches threads from the API endpoint.
-   * Handles CSRF token retrieval, authentication headers, and error states.
-   * @async
-   * @function fetchThreads
-   */
-  const fetchThreads = useCallback(async () => {
-    // If already pulling-to-refresh, avoid toggling the main loading spinner
-    if (!refreshing) setLoading(true);
-    try {
-      setError(null);
-
-      // Get CSRF token from cookies for Django backend security
-      const cookies = await Cookies.get(API_URL);
-      const csrfToken = cookies.csrftoken?.value;
-
-      // Make authenticated request to threads API
-      const response = await fetch(`${API_URL}threads/`, {
-        headers: {
-          ...getAuthHeader(), // Include authentication headers
-          'Content-Type': 'application/json',
-          ...(csrfToken ? { 'X-CSRFToken': csrfToken } : {}), // Include CSRF token if available
-        },
-        credentials: 'include', // Include cookies in request
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setThreads(sortThreadsByDate(data));
-        
-        // Fetch top 2 comments for each thread
-        data.slice(0, 10).forEach((thread: any) => {
-          fetchThreadComments(thread.id);
-        });
-      } else {
-        setError('Failed to load threads');
-        setThreads([]);
-      }
-    } catch (e) {
-      setError('Network error while loading threads');
-      setThreads([]);
-    } finally {
-      setLoading(false);
-    }
-  }, [getAuthHeader, refreshing, sortThreadsByDate]);
-
-  // Fetch threads on component mount
-  useEffect(() => {
-    fetchThreads();
-  }, [fetchThreads]);
-
-  // Refresh threads when screen comes into focus (e.g., returning from another screen)
-  useFocusEffect(
-    useCallback(() => {
-      fetchThreads();
-    }, [fetchThreads])
-  );
-
-  // Run animation only once on mount
-  useEffect(() => {
-    animateContent();
-  }, []);
-
-  /**
-   * Caches profile picture URI for quick lookup.
-   */
-  const cacheProfilePic = useCallback((username: string, uri: string) => {
-    profilePicCache.current[username] = uri;
-    setProfilePics((prev) => ({ ...prev, [username]: uri }));
-  }, []);
-
-  /**
-   * Fetches profile picture for a given username.
-   */
-  const fetchProfilePicture = useCallback(
-    async (username: string) => {
-      if (!username) {
-        return;
-      }
-
-      if (profilePicCache.current[username] || profilePicRequests.current.has(username)) {
-        return;
-      }
-
-      profilePicRequests.current.add(username);
-
-      try {
-        const response = await fetch(`${API_URL}/profile/other/picture/${username}/`, {
-          headers: {
-            ...getAuthHeader(),
-          },
-          credentials: 'include',
-        });
-
-        if (response.ok) {
-          // The backend returns binary image data, so we need to create a blob URL
-          const blob = await response.blob();
-          const imageUrl = URL.createObjectURL(blob);
-          cacheProfilePic(username, imageUrl);
-        }
-      } catch (err) {
-        // Ignore errors and continue with fallback image.
-      } finally {
-        profilePicRequests.current.delete(username);
-      }
-    },
-    [cacheProfilePic, getAuthHeader]
-  );
-
-  /**
-   * Prefetch profile images for all usernames in the thread list.
-   */
-  useEffect(() => {
-    const usernames = new Set<string>();
-    threads.forEach((thread) => {
-      const username =
-        thread?.author?.username || thread?.author || thread?.username || '';
-      if (username) {
-        usernames.add(String(username));
-      }
-    });
-
-    usernames.forEach((username) => {
-      fetchProfilePicture(username);
-    });
-  }, [fetchProfilePicture, threads]);
-
-  /**
-   * Fetches top comments for a thread
-   */
-  const fetchThreadComments = useCallback(
-    async (threadId: number) => {
-      try {
-        const cookies = await Cookies.get(API_URL);
-        const csrfToken = cookies.csrftoken?.value;
-
-        const response = await fetch(`${API_URL}comments/thread/${threadId}/`, {
-          headers: {
-            ...getAuthHeader(),
-            'Content-Type': 'application/json',
-            ...(csrfToken ? { 'X-CSRFToken': csrfToken } : {}),
-          },
-          credentials: 'include',
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          // Store top 2 comments
-          setThreadComments(prev => ({
-            ...prev,
-            [threadId]: data.slice(0, 2)
-          }));
-        }
-      } catch (err) {
-        // Silently fail for comments
-      }
-    },
-    [getAuthHeader]
-  );
-
-  /**
-   * Fetches vote status for a specific thread
-   */
-  const fetchVoteStatus = useCallback(
-    async (threadId: number) => {
-      try {
-        const cookies = await Cookies.get(API_URL);
-        const csrfToken = cookies.csrftoken?.value;
-        const res = await fetch(`${API_URL}forum/vote/thread/${threadId}/status/`, {
-          headers: {
-            ...getAuthHeader(),
-            'Content-Type': 'application/json',
-            ...(csrfToken ? { 'X-CSRFToken': csrfToken } : {}),
-          },
-          credentials: 'include',
-        });
-        if (res.ok) {
-          const data = await res.json();
-          setThreadVotes(prev => ({ ...prev, [threadId]: data.vote_type || null }));
-        } else {
-          setThreadVotes(prev => ({ ...prev, [threadId]: null }));
-        }
-      } catch (e) {
-        // Silently fail
-      }
-    },
-    [getAuthHeader]
-  );
-
-  /**
-   * Handles voting on a thread
-   */
-  const handleVote = useCallback(
-    async (threadId: number) => {
-      try {
-        const cookies = await Cookies.get(API_URL);
-        const csrfToken = cookies.csrftoken?.value;
-        const origin = API_URL.replace(/\/api\/?$/, '');
-        const currentVote = threadVotes[threadId];
-
-        if (currentVote === 'UPVOTE') {
-          // Remove vote
-          const res = await fetch(`${API_URL}forum/vote/thread/${threadId}/`, {
-            method: 'DELETE',
-            headers: {
-              ...getAuthHeader(),
-              'Content-Type': 'application/json',
-              'Referer': origin,
-              ...(csrfToken ? { 'X-CSRFToken': csrfToken } : {}),
-            },
-            credentials: 'include',
-          });
-          if (res.ok) {
-            setThreadVotes(prev => ({ ...prev, [threadId]: null }));
-            // Update like count locally
-            setThreads(prev =>
-              prev.map(t =>
-                t.id === threadId ? { ...t, like_count: Math.max(0, (t.like_count || 0) - 1) } : t
-              )
-            );
-          }
-        } else {
-          // Add upvote
-          const res = await fetch(`${API_URL}forum/vote/`, {
-            method: 'POST',
-            headers: {
-              ...getAuthHeader(),
-              'Content-Type': 'application/json',
-              'Referer': origin,
-              ...(csrfToken ? { 'X-CSRFToken': csrfToken } : {}),
-            },
-            credentials: 'include',
-            body: JSON.stringify({
-              content_type: 'THREAD',
-              object_id: threadId,
-              vote_type: 'UPVOTE',
-            }),
-          });
-          if (res.ok) {
-            const wasDownvoted = currentVote === 'DOWNVOTE';
-            setThreadVotes(prev => ({ ...prev, [threadId]: 'UPVOTE' }));
-            // Update like count locally
-            setThreads(prev =>
-              prev.map(t =>
-                t.id === threadId
-                  ? { ...t, like_count: (t.like_count || 0) + 1 }
-                  : t
-              )
-            );
-          }
-        }
-      } catch (e) {
-        console.error('Vote error:', e);
-      }
-    },
-    [getAuthHeader, threadVotes]
-  );
-
-  /**
-   * Fetch vote statuses when threads change
-   */
-  useEffect(() => {
-    threads.forEach(thread => {
-      if (thread.id && threadVotes[thread.id] === undefined) {
-        fetchVoteStatus(thread.id);
-      }
-    });
-  }, [threads, fetchVoteStatus, threadVotes]);
-
-  /**
-   * Re-sort threads when sort option changes
-   */
-  useEffect(() => {
-    if (threads.length > 0) {
-      const sorted = sortThreadsByDate(threads);
-      setThreads(sorted);
-    }
-  }, [sortBy, sortThreadsByDate]);
-
-  /**
-   * Handles pull-to-refresh functionality.
-   * Sets refreshing state and fetches fresh data from API.
-   * @async
-   * @function onRefresh
-   */
-  const onRefresh = useCallback(async () => {
-    setRefreshing(true);
-    await fetchThreads();
-    setRefreshing(false);
-  }, [fetchThreads]);
 
   /**
    * Fetches login stats
@@ -493,23 +144,23 @@ const Home = () => {
    * Fetches goals
    */
   const fetchGoals = useCallback(async () => {
-    try {
-      const cookies = await Cookies.get(API_URL);
-      const csrfToken = cookies.csrftoken?.value;
+      try {
+        const cookies = await Cookies.get(API_URL);
+        const csrfToken = cookies.csrftoken?.value;
       const origin = API_URL.replace(/\/api\/?$/, '');
 
       const response = await fetch(`${API_URL}goals/`, {
-        headers: {
-          ...getAuthHeader(),
-          'Content-Type': 'application/json',
-          ...(csrfToken ? { 'X-CSRFToken': csrfToken } : {}),
+          headers: {
+            ...getAuthHeader(),
+            'Content-Type': 'application/json',
+            ...(csrfToken ? { 'X-CSRFToken': csrfToken } : {}),
           'Referer': origin,
-        },
-        credentials: 'include',
-      });
+          },
+          credentials: 'include',
+        });
 
-      if (response.ok) {
-        const data = await response.json();
+        if (response.ok) {
+          const data = await response.json();
         setGoals(data);
       }
     } catch (e) {
@@ -521,20 +172,20 @@ const Home = () => {
    * Fetches challenges
    */
   const fetchChallenges = useCallback(async () => {
-    try {
-      const cookies = await Cookies.get(API_URL);
-      const csrfToken = cookies.csrftoken?.value;
+      try {
+        const cookies = await Cookies.get(API_URL);
+        const csrfToken = cookies.csrftoken?.value;
       const origin = API_URL.replace(/\/api\/?$/, '');
 
       const response = await fetch(`${API_URL}challenges/search/?is_active=true`, {
-        headers: {
-          ...getAuthHeader(),
-          'Content-Type': 'application/json',
-          ...(csrfToken ? { 'X-CSRFToken': csrfToken } : {}),
+          headers: {
+            ...getAuthHeader(),
+            'Content-Type': 'application/json',
+            ...(csrfToken ? { 'X-CSRFToken': csrfToken } : {}),
           'Referer': origin,
-        },
-        credentials: 'include',
-      });
+          },
+          credentials: 'include',
+        });
 
       if (response.ok) {
         const data = await response.json();
@@ -542,8 +193,8 @@ const Home = () => {
         // Filter to only joined challenges
         const joinedChallenges = challengesList.filter((c: Challenge) => c.is_joined);
         setChallenges(joinedChallenges);
-      }
-    } catch (e) {
+        }
+      } catch (e) {
       console.error('Failed to fetch challenges:', e);
     }
   }, [getAuthHeader]);
@@ -718,6 +369,11 @@ const Home = () => {
     return deadlines.sort((a, b) => a.date.getTime() - b.date.getTime());
   }, [goals, challenges]);
 
+  // Run animation on mount
+  useEffect(() => {
+    animateContent();
+  }, [animateContent]);
+
   // Fetch stats on mount and focus
   useEffect(() => {
     fetchAllStats();
@@ -730,148 +386,6 @@ const Home = () => {
   );
 
   /**
-   * Renders individual thread items as modern cards
-   */
-  const renderItem = useCallback(
-    ({ item, index }: { item: any; index: number }) => {
-      const username = item.author?.username || item.author || item.username || 'User';
-      const forumName = item.forum?.title || item.forum || 'Forum';
-      const content = `${item.title ? item.title + '\n' : ''}${item.content || ''}`;
-      const comments = threadComments[item.id] || [];
-
-      const profilePicSource: ImageSourcePropType = (() => {
-        if (username && profilePics[username]) {
-          return { uri: profilePics[username] };
-        }
-        if (item.profilePic) {
-          return item.profilePic;
-        }
-        return DEFAULT_PROFILE_PIC;
-      })();
-
-      return (
-        <Card 
-          key={item.id || index} 
-          mode="elevated" 
-          style={styles.threadCard}
-          onPress={() => navigation.navigate('ThreadDetail' as never, { threadId: item.id } as never)}
-        >
-          {/* Forum Badge */}
-          <Card.Content style={styles.cardHeader}>
-            <Chip 
-              icon="forum" 
-              compact 
-              mode="flat"
-              style={styles.forumChip}
-              textStyle={{ fontSize: 12 }}
-            >
-              {forumName}
-            </Chip>
-          </Card.Content>
-
-          {/* Author Section */}
-          <Card.Content style={styles.authorSection}>
-            <Avatar.Image 
-              size={40} 
-              source={profilePicSource}
-            />
-            <View style={styles.authorInfo}>
-              <Text 
-                variant="labelLarge" 
-                style={{ color: theme.colors.onSurface }}
-                onPress={() => navigation.navigate('Profile' as never, { username } as never)}
-              >
-                {username}
-              </Text>
-            </View>
-          </Card.Content>
-
-          {/* Content */}
-          <Card.Content style={styles.contentSection}>
-            <Text 
-              variant="bodyLarge" 
-              style={{ color: theme.colors.onSurface, lineHeight: 24 }}
-              numberOfLines={4}
-            >
-              {content}
-            </Text>
-          </Card.Content>
-
-          {/* Top Comments Preview */}
-          {comments.length > 0 && (
-            <Card.Content style={styles.commentsPreview}>
-              {comments.map((comment, idx) => (
-                <View key={comment.id || idx} style={styles.commentItem}>
-                  <View style={styles.commentHeader}>
-                    <IconButton
-                      icon="comment-outline"
-                      size={14}
-                      iconColor={theme.colors.primary}
-                      style={{ margin: 0 }}
-                    />
-                    <Text variant="labelMedium" style={{ color: theme.colors.primary, fontWeight: '600' }}>
-                      {comment.author_username || 'User'}
-                    </Text>
-                  </View>
-                  <Text 
-                    variant="bodySmall" 
-                    style={{ color: theme.colors.onSurface, marginLeft: 28, marginTop: -4 }}
-                    numberOfLines={2}
-                  >
-                    {comment.content}
-                  </Text>
-                </View>
-              ))}
-            </Card.Content>
-          )}
-
-          {/* Actions */}
-          <Card.Actions style={styles.cardActions}>
-            <View style={styles.statsContainer}>
-              <IconButton
-                icon={threadVotes[item.id] === 'UPVOTE' ? 'thumb-up' : 'thumb-up-outline'}
-                size={20}
-                iconColor={threadVotes[item.id] === 'UPVOTE' ? theme.colors.primary : theme.colors.onSurfaceVariant}
-                onPress={() => handleVote(item.id)}
-              />
-              <Text variant="labelMedium" style={{ color: theme.colors.onSurfaceVariant }}>
-                {item.like_count || 0}
-              </Text>
-              
-              <IconButton
-                icon="comment-outline"
-                size={20}
-                iconColor={theme.colors.primary}
-                style={{ marginLeft: 8 }}
-                onPress={() => navigation.navigate('ThreadDetail' as never, { threadId: item.id } as never)}
-              />
-              <Text variant="labelMedium" style={{ color: theme.colors.onSurfaceVariant }}>
-                {item.comment_count || 0}
-              </Text>
-            </View>
-            
-            <Button 
-              mode="text" 
-              onPress={() => navigation.navigate('ThreadDetail' as never, { threadId: item.id } as never)}
-              compact
-            >
-              View Thread
-            </Button>
-          </Card.Actions>
-        </Card>
-      );
-    },
-    [profilePics, theme, navigation, threadComments, threadVotes, handleVote]
-  );
-
-  /**
-   * Toggle exercise card visibility
-   */
-  const toggleExerciseCard = useCallback(() => {
-    setIsExerciseCardVisible(prev => !prev);
-  }, []);
-
-  /**
    * Renders the calendar and stats section
    */
   const renderStatsSection = () => {
@@ -882,64 +396,61 @@ const Home = () => {
 
     return (
       <View style={styles.statsContainer}>
-        {/* Login Streak Card */}
-        <Card mode="elevated" style={styles.streakCard}>
-          <Card.Content>
-            <View style={styles.streakHeader}>
-              <IconButton
-                icon="fire"
-                size={24}
-                iconColor={customTheme.colors.active || '#800000'}
-              />
-              <CustomText style={[styles.streakTitle, { color: customTheme.colors.text }]}>
-                Login Streak
-              </CustomText>
-              {loginStats?.streak_active && (
-                <View style={[styles.activeBadge, { backgroundColor: customTheme.colors.active + '15' }]}>
-                  <View style={[styles.activeBadgeDot, { backgroundColor: customTheme.colors.active }]} />
-                  <CustomText style={[styles.activeBadgeText, { color: customTheme.colors.active }]}>
-                    Active
-                  </CustomText>
-                </View>
-              )}
-            </View>
-            {loadingStats ? (
-              <ActivityIndicator size="small" color={customTheme.colors.active} />
-            ) : (
-              <>
-                <CustomText style={[styles.streakNumber, { color: customTheme.colors.active }]}>
-                  {loginStats?.current_streak || 0}
-                </CustomText>
-                <View style={styles.streakSecondary}>
-                  <CustomText style={[styles.streakText, { color: customTheme.colors.subText }]}>
-                    Best: {loginStats?.longest_streak || 0}
-                  </CustomText>
-                  <CustomText style={[styles.streakText, { color: customTheme.colors.subText }]}>
-                    •
-                  </CustomText>
-                  <CustomText style={[styles.streakText, { color: customTheme.colors.subText }]}>
-                    Total: {loginStats?.total_login_days || 0} days
-                  </CustomText>
-                </View>
-                {loginStats && !loginStats.logged_in_today && (
-                  <View style={styles.streakWarning}>
+        {/* Login Streak Card - Compact */}
+        <Card mode="elevated" style={styles.streakCardCompact}>
+          <Card.Content style={styles.streakCardContentCompact}>
+            <View style={styles.streakHeaderCompact}>
                     <IconButton
-                      icon="alert-circle"
-                      size={16}
-                      iconColor="#dc2626"
+                icon="fire"
+                size={50}
+                iconColor={customTheme.colors.active || '#800000'}
                       style={{ margin: 0 }}
                     />
-                    <CustomText style={[styles.warningText, { color: '#dc2626' }]}>
-                      Log in today to continue your streak!
+              <View style={styles.streakInfoCompact}>
+                <View style={styles.streakTitleRow}>
+                  <CustomText style={[styles.streakTitleCompact, { color: customTheme.colors.text }]}>
+                    Login Streak
+                  </CustomText>
+                  {loginStats?.streak_active && (
+                    <View style={[styles.activeBadge, { backgroundColor: customTheme.colors.active + '15' }]}>
+                      <View style={[styles.activeBadgeDot, { backgroundColor: customTheme.colors.active }]} />
+                      <CustomText style={[styles.activeBadgeText, { color: customTheme.colors.active }]}>
+                        Active
+                      </CustomText>
+                  </View>
+                  )}
+                </View>
+                {loadingStats ? (
+                  <ActivityIndicator size="small" color={customTheme.colors.active} />
+                ) : (
+                  <View style={styles.streakStatsRow}>
+                    <CustomText style={[styles.streakNumberCompact, { color: customTheme.colors.active }]}>
+                      {loginStats?.current_streak || 0}
+                    </CustomText>
+                    <CustomText style={[styles.streakTextCompact, { color: customTheme.colors.subText }]}>
+                      Best: {loginStats?.longest_streak || 0} • Total: {loginStats?.total_login_days || 0} days
                     </CustomText>
                   </View>
                 )}
-              </>
+              </View>
+            </View>
+            {loginStats && !loginStats.logged_in_today && !loadingStats && (
+              <View style={styles.streakWarningCompact}>
+              <IconButton
+                  icon="alert-circle"
+                  size={14}
+                  iconColor="#dc2626"
+                  style={{ margin: 0 }}
+                />
+                <CustomText style={[styles.warningTextCompact, { color: '#dc2626' }]}>
+                  Log in today to continue your streak!
+                </CustomText>
+            </View>
             )}
           </Card.Content>
         </Card>
 
-        {/* Quick Stats */}
+        {/* Quick Stats - Active Goals and Challenges */}
         <View style={styles.quickStatsRow}>
           <Card mode="elevated" style={[styles.statCard, { flex: 1 }]}>
             <Card.Content style={styles.statCardContent}>
@@ -950,7 +461,7 @@ const Home = () => {
                 Active Goals
               </CustomText>
             </Card.Content>
-          </Card>
+        </Card>
           <Card mode="elevated" style={[styles.statCard, { flex: 1, marginLeft: 8 }]}>
             <Card.Content style={styles.statCardContent}>
               <CustomText style={[styles.statNumber, { color: customTheme.colors.active }]}>
@@ -967,12 +478,12 @@ const Home = () => {
         <Card mode="elevated" style={styles.calendarCard}>
           <Card.Content>
             <View style={styles.calendarHeader}>
-              <IconButton
+            <IconButton
                 icon="calendar"
-                size={20}
+                  size={20} 
                 iconColor={customTheme.colors.active}
-                style={{ margin: 0 }}
-              />
+              style={{ margin: 0 }}
+            />
               <CustomText style={[styles.calendarTitle, { color: customTheme.colors.text }]}>
                 {monthName}
               </CustomText>
@@ -980,13 +491,13 @@ const Home = () => {
                 onPress={() => setShowCalendar(!showCalendar)}
                 style={styles.toggleButton}
               >
-                <IconButton
+            <IconButton
                   icon={showCalendar ? "chevron-up" : "chevron-down"}
-                  size={20}
+                  size={20} 
                   iconColor={customTheme.colors.subText}
-                  style={{ margin: 0 }}
-                />
-              </TouchableOpacity>
+              style={{ margin: 0 }}
+            />
+          </TouchableOpacity>
             </View>
 
             {showCalendar && (
@@ -998,13 +509,13 @@ const Home = () => {
                     <CustomText style={[styles.legendText, { color: customTheme.colors.subText }]}>
                       Login
                     </CustomText>
-                  </View>
+                </View>
                   <View style={styles.legendItem}>
                     <View style={[styles.legendDot, { backgroundColor: '#10b981' }]} />
                     <CustomText style={[styles.legendText, { color: customTheme.colors.subText }]}>
                       Goal
                     </CustomText>
-                  </View>
+              </View>
                   <View style={styles.legendItem}>
                     <View style={[styles.legendDot, { backgroundColor: '#3b82f6' }]} />
                     <CustomText style={[styles.legendText, { color: customTheme.colors.subText }]}>
@@ -1063,56 +574,72 @@ const Home = () => {
                       );
                     })}
                   </View>
-                </View>
-              </>
+        </View>
+      </>
             )}
-          </Card.Content>
-        </Card>
+            </Card.Content>
+          </Card>
 
-        {/* Upcoming Deadlines */}
+        {/* Upcoming Deadlines - Collapsible */}
         {upcomingDeadlines.length > 0 && (
           <Card mode="elevated" style={styles.deadlinesCard}>
             <Card.Content>
-              <View style={styles.deadlinesHeader}>
-                <IconButton
-                  icon="alert-circle"
-                  size={20}
-                  iconColor={customTheme.colors.active}
+              <TouchableOpacity
+                onPress={() => setShowDeadlines(!showDeadlines)}
+                style={[styles.deadlinesHeader, !showDeadlines && styles.deadlinesHeaderCollapsed]}
+                activeOpacity={0.7}
+              >
+                <View style={styles.deadlinesHeaderLeft}>
+                <IconButton 
+                    icon="alert-circle"
+                  size={20} 
+                    iconColor={customTheme.colors.active}
                   style={{ margin: 0 }}
                 />
-                <CustomText style={[styles.deadlinesTitle, { color: customTheme.colors.text }]}>
-                  Upcoming Deadlines
-                </CustomText>
-              </View>
-              {upcomingDeadlines.slice(0, 5).map((deadline) => (
-                <TouchableOpacity
-                  key={`${deadline.type}-${deadline.id}`}
-                  style={styles.deadlineItem}
-                  onPress={() => navigation.navigate(deadline.type === 'goal' ? 'Goals' : 'Challenges' as never)}
-                >
-                  <IconButton
-                    icon={deadline.type === 'goal' ? 'target' : 'trophy'}
-                    size={18}
-                    iconColor={customTheme.colors.active}
-                    style={{ margin: 0 }}
-                  />
-                  <View style={styles.deadlineContent}>
-                    <CustomText style={[styles.deadlineTitle, { color: customTheme.colors.text }]}>
-                      {deadline.title}
-                    </CustomText>
-                    <View style={styles.deadlineMeta}>
-                      <Chip mode="flat" compact style={styles.deadlineTypeChip}>
-                        {deadline.type}
-                      </Chip>
-                      <CustomText style={[styles.deadlineDate, { color: customTheme.colors.subText }]}>
-                        {deadline.daysUntil === 0 ? 'Today' :
-                         deadline.daysUntil === 1 ? 'Tomorrow' :
-                         `${deadline.daysUntil}d`}
-                      </CustomText>
-                    </View>
-                  </View>
-                </TouchableOpacity>
-              ))}
+                  <CustomText style={[styles.deadlinesTitle, { color: customTheme.colors.text }]}>
+                    Upcoming Deadlines ({upcomingDeadlines.length})
+                  </CustomText>
+                </View>
+                <IconButton 
+                  icon={showDeadlines ? "chevron-up" : "chevron-down"}
+                  size={20} 
+                  iconColor={customTheme.colors.subText}
+                  style={{ margin: 0 }}
+                />
+              </TouchableOpacity>
+              {showDeadlines && (
+                <>
+                  {upcomingDeadlines.slice(0, 5).map((deadline) => (
+                  <TouchableOpacity
+                      key={`${deadline.type}-${deadline.id}`}
+                      style={styles.deadlineItem}
+                      onPress={() => navigation.navigate(deadline.type === 'goal' ? 'Goals' : 'Challenges' as never)}
+                  >
+                    <IconButton 
+                        icon={deadline.type === 'goal' ? 'target' : 'trophy'}
+                        size={18}
+                        iconColor={customTheme.colors.active}
+                        style={{ margin: 0 }}
+                      />
+                      <View style={styles.deadlineContent}>
+                        <CustomText style={[styles.deadlineTitle, { color: customTheme.colors.text }]}>
+                          {deadline.title}
+                        </CustomText>
+                        <View style={styles.deadlineMeta}>
+                          <Chip mode="flat" compact style={styles.deadlineTypeChip}>
+                            {deadline.type}
+                          </Chip>
+                          <CustomText style={[styles.deadlineDate, { color: customTheme.colors.subText }]}>
+                            {deadline.daysUntil === 0 ? 'Today' :
+                             deadline.daysUntil === 1 ? 'Tomorrow' :
+                             `${deadline.daysUntil}d`}
+                          </CustomText>
+        </View>
+                      </View>
+                    </TouchableOpacity>
+                  ))}
+      </>
+              )}
             </Card.Content>
           </Card>
         )}
@@ -1123,144 +650,6 @@ const Home = () => {
   /**
    * Renders the exercises info card at the top of the feed
    */
-  const renderHeader = () => {
-    return (
-      <>
-        {renderStatsSection()}
-        {/* Tap indicator - visible when card is hidden */}
-        {!isExerciseCardVisible && (
-          <TouchableOpacity onPress={toggleExerciseCard} style={styles.pullIndicator} activeOpacity={0.7}>
-            <IconButton
-              icon="dumbbell"
-              size={16}
-              iconColor={theme.colors.primary}
-              style={{ margin: 0 }}
-            />
-            <CustomText variant="labelSmall" style={{ color: theme.colors.primary }}>
-              Glossary
-            </CustomText>
-            <IconButton
-              icon="chevron-down"
-              size={16}
-              iconColor={theme.colors.primary}
-              style={{ margin: 0 }}
-            />
-          </TouchableOpacity>
-        )}
-
-        {/* Glossary Card */}
-        {isExerciseCardVisible && (
-          <Card mode="elevated" style={styles.headerCard}>
-            <Card.Content>
-              <View style={styles.headerContent}>
-                <IconButton
-                  icon="dumbbell"
-                  size={32}
-                  iconColor={theme.colors.primary}
-                  containerColor={theme.colors.primaryContainer}
-                />
-                <View style={styles.headerText}>
-                  <CustomText variant="titleMedium" style={{ color: theme.colors.onSurface, marginBottom: 4 }}>
-                    Glossary
-                  </CustomText>
-                  <CustomText variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>
-                    Explore our comprehensive fitness database
-                  </CustomText>
-                </View>
-                <IconButton
-                  icon="chevron-up"
-                  size={24}
-                  onPress={toggleExerciseCard}
-                  iconColor={theme.colors.onSurfaceVariant}
-                />
-              </View>
-              <Button
-                mode="contained"
-                icon="arrow-right"
-                onPress={() => navigation.navigate('Exercises' as never)}
-                style={{ marginTop: 12 }}
-              >
-                Learn More
-              </Button>
-            </Card.Content>
-          </Card>
-        )}
-
-        {/* Sort Filter */}
-        <View style={styles.filterContainer}>
-          <CustomText variant="titleSmall" style={{ color: theme.colors.onSurface, flex: 1 }}>
-            Threads
-          </CustomText>
-          <Menu
-            visible={dropdownVisible}
-            onDismiss={() => setDropdownVisible(false)}
-            anchor={
-              <TouchableOpacity
-                onPress={() => setDropdownVisible(true)}
-                style={styles.dropdownButton}
-              >
-                <IconButton 
-                  icon={sortBy === 'top' ? 'fire' : 'clock-outline'} 
-                  size={20} 
-                  style={{ margin: 0 }}
-                />
-                <CustomText variant="labelLarge" style={{ marginRight: 4 }}>
-                  {sortBy === 'top' ? 'Top' : 'Newest'}
-                </CustomText>
-                <IconButton 
-                  icon="chevron-down" 
-                  size={20} 
-                  style={{ margin: 0 }}
-                />
-              </TouchableOpacity>
-            }
-            contentStyle={{ backgroundColor: theme.colors.elevation.level2 }}
-          >
-            <Menu.Item 
-              onPress={() => { setSortBy('top'); setDropdownVisible(false); }} 
-              title="Top"
-              leadingIcon="fire"
-            />
-            <Divider />
-            <Menu.Item 
-              onPress={() => { setSortBy('newest'); setDropdownVisible(false); }} 
-              title="Newest"
-              leadingIcon="clock-outline"
-            />
-          </Menu>
-        </View>
-      </>
-    );
-  };
-
-  /**
-   * Renders the empty state component for FlatList.
-   */
-  const listEmpty = useMemo(() => {
-    if (loading) {
-      return (
-        <View style={styles.centerContainer}>
-          <ActivityIndicator size="large" color={theme.colors.primary} />
-        </View>
-      );
-    }
-
-    return (
-      <View style={styles.centerContainer}>
-        <IconButton
-          icon={error ? "alert-circle-outline" : "post-outline"}
-          size={64}
-          iconColor={theme.colors.onSurfaceVariant}
-        />
-        <CustomText variant="titleMedium" style={{ color: theme.colors.onSurface, marginTop: 8 }}>
-          {error ? 'Failed to load threads' : 'No threads yet'}
-        </CustomText>
-        <CustomText variant="bodyMedium" style={{ color: theme.colors.onSurfaceVariant, marginTop: 4 }}>
-          {error ? 'Pull down to refresh' : 'Be the first to post!'}
-        </CustomText>
-      </View>
-    );
-  }, [theme, error, loading]);
 
   return (
     <Animated.View
@@ -1273,18 +662,20 @@ const Home = () => {
         },
       ]}
     >
-      <FlatList
-        style={styles.list}
-        contentContainerStyle={styles.content}
-        data={threads}
-        keyExtractor={(item, index) => String(item?.id ?? index)}
-        renderItem={renderItem}
-        ListHeaderComponent={renderHeader}
-        ListEmptyComponent={listEmpty}
-        refreshing={refreshing}
-        onRefresh={onRefresh}
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={[styles.content, { flexGrow: 1 }]}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={loadingStats}
+            onRefresh={fetchAllStats}
+            colors={[customTheme.colors.active || '#800000']}
       />
+        }
+      >
+        {renderStatsSection()}
+      </ScrollView>
     </Animated.View>
   );
 };
@@ -1293,7 +684,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  list: {
+  scrollView: {
     flex: 1,
   },
   content: {
@@ -1348,8 +739,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
   },
   statsContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    marginBottom: 16,
   },
   commentsPreview: {
     paddingTop: 12,
@@ -1386,21 +776,56 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingVertical: 48,
   },
-  statsContainer: {
-    marginBottom: 16,
-  },
   streakCard: {
     marginBottom: 12,
+  },
+  streakCardCompact: {
+    marginBottom: 8,
+  },
+  streakCardContentCompact: {
+    paddingVertical: 8,
+    paddingHorizontal: 12,
   },
   streakHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 8,
   },
+  streakHeaderCompact: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  streakInfoCompact: {
+    flex: 1,
+    marginLeft: 4,
+  },
+  streakTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
   streakTitle: {
     fontSize: 18,
     fontWeight: '600',
     flex: 1,
+  },
+  streakTitleCompact: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginRight: 8,
+  },
+  streakStatsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  streakNumberCompact: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginRight: 8,
+  },
+  streakTextCompact: {
+    fontSize: 12,
   },
   activeBadge: {
     flexDirection: 'row',
@@ -1443,8 +868,20 @@ const styles = StyleSheet.create({
     backgroundColor: '#fef2f2',
     borderRadius: 8,
   },
+  streakWarningCompact: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 6,
+    padding: 6,
+    backgroundColor: '#fef2f2',
+    borderRadius: 6,
+  },
   warningText: {
     fontSize: 12,
+    flex: 1,
+  },
+  warningTextCompact: {
+    fontSize: 11,
     flex: 1,
   },
   quickStatsRow: {
@@ -1554,7 +991,16 @@ const styles = StyleSheet.create({
   deadlinesHeader: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
     marginBottom: 12,
+  },
+  deadlinesHeaderCollapsed: {
+    marginBottom: 0,
+  },
+  deadlinesHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
   },
   deadlinesTitle: {
     fontSize: 18,

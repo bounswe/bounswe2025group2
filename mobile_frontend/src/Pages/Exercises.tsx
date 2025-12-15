@@ -1738,7 +1738,7 @@ const Exercises = () => {
       <View style={[styles.searchContainer, { borderColor: colors.border }]}>
         <TextInput
           style={[styles.searchInput, { color: colors.text }]}
-          placeholder="Search exercises..."
+          placeholder="Search..."
           placeholderTextColor={colors.subText}
           value={searchQuery}
           onChangeText={setSearchQuery}
@@ -1752,7 +1752,7 @@ const Exercises = () => {
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
             <CustomText style={[styles.emptyText, { color: colors.subText }]}>
-              No exercises found matching "{searchQuery}"
+              No item found matching "{searchQuery}"
             </CustomText>
           </View>
         }
