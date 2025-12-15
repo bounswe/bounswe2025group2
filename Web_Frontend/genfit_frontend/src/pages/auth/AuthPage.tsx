@@ -495,7 +495,7 @@ function AuthPage() {
                   We collect information that you provide directly to us, as well as information collected automatically when you use the Platform.
                 </p>
                 <ul>
-                  <li>• Personal Information: Name, email address, username, and date of birth (for age verification).</li>
+                  <li>• Personal Information: Name, email address, and username.</li>
                   <li>• Health and Fitness Data: Fitness goals, workout logs, physical activity data, and body metrics (e.g., weight, height). This is considered sensitive personal data and is processed with your explicit consent.</li>
                   <li>• Usage Data: Information about how you interact with the app, features used, and time spent.</li>
                   <li>• Device Information: Device type, operating system, and unique device identifiers.</li>

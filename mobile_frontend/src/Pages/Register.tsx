@@ -23,6 +23,7 @@ const Register = ({ navigation }: any) => {
   const [userType, setUserType] = useState('User');
   const [verificationFile, setVerificationFile] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [showTermsModal, setShowTermsModal] = useState(false);
   const [showPrivacyModal, setShowPrivacyModal] = useState(false);
   const { colors, isDark } = useTheme();
@@ -47,6 +48,15 @@ const Register = ({ navigation }: any) => {
         type: 'error',
         text1: 'Error',
         text2: 'Passwords do not match',
+      });
+      return;
+    }
+
+    if (!acceptedTerms) {
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'You must accept the Terms and Privacy Policy',
       });
       return;
     }
@@ -238,15 +248,27 @@ const Register = ({ navigation }: any) => {
           }]}>Already have an account? Login</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity 
-          style={styles.termsContainer}
-          onPress={() => {}}
-        >
-          <Text style={[styles.termsText, { color: colors.subText }]}>
-            By signing up and signing in, you acknowledge that you have read,
-            understood, and agree to be bound by the <Text onPress={() => setShowTermsModal(true)} style={{textDecorationLine: 'underline', color: colors.primary || (isDark ? '#e18d58' : '#800000')}}>Terms and Conditions</Text> and <Text onPress={() => setShowPrivacyModal(true)} style={{textDecorationLine: 'underline', color: colors.primary || (isDark ? '#e18d58' : '#800000')}}>Privacy Policy</Text>.
+        <View style={[styles.termsContainer, { flexDirection: 'row', alignItems: 'flex-start' }]}>
+          <TouchableOpacity 
+            onPress={() => setAcceptedTerms(!acceptedTerms)} 
+            style={{ 
+              marginRight: 10, 
+              marginTop: 2,
+              width: 20, 
+              height: 20, 
+              borderWidth: 1, 
+              borderColor: isDark ? '#e18d58' : '#800000', 
+              alignItems: 'center', 
+              justifyContent: 'center', 
+              backgroundColor: acceptedTerms ? (isDark ? '#e18d58' : '#800000') : colors.navBar 
+            }}
+          >
+            {acceptedTerms && <Text style={{ color: '#fff', fontSize: 12, fontWeight: 'bold' }}>✓</Text>}
+          </TouchableOpacity>
+          <Text style={[styles.termsText, { color: colors.subText, flex: 1, textAlign: 'left' }]}>
+            I agree to the <Text onPress={() => setShowTermsModal(true)} style={{textDecorationLine: 'underline', color: colors.primary || (isDark ? '#e18d58' : '#800000')}}>Terms and Conditions</Text> and <Text onPress={() => setShowPrivacyModal(true)} style={{textDecorationLine: 'underline', color: colors.primary || (isDark ? '#e18d58' : '#800000')}}>Privacy Policy</Text>.
           </Text>
-        </TouchableOpacity>
+        </View>
 
         <TermsModal 
           visible={showTermsModal} 

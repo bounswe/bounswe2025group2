@@ -152,7 +152,7 @@ const PrivacyPolicyModal: React.FC<PrivacyPolicyModalProps> = ({ visible, onClos
               </Text>
               <View style={styles.list}>
                 {[
-                  "Personal Information: Name, email address, username, and date of birth (for age verification).",
+                  "Personal Information: Name, email address, and username.",
                   "Health and Fitness Data: Fitness goals, workout logs, physical activity data, and body metrics (e.g., weight, height). This is considered sensitive personal data and is processed with your explicit consent.",
                   "Usage Data: Information about how you interact with the app, features used, and time spent.",
                   "Device Information: Device type, operating system, and unique device identifiers."
