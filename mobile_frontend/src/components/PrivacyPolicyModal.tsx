@@ -208,9 +208,9 @@ const PrivacyPolicyModal: React.FC<PrivacyPolicyModalProps> = ({ visible, onClos
             </View>
 
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>6. Data Sharing and Disclosure</Text>
+              <Text style={styles.sectionTitle}>6. Data Sharing and Tracking</Text>
               <Text style={styles.paragraph}>
-                We do not sell your personal data. We may share your information with:
+                We do not sell your personal data. We do not track you across third-party apps or websites, and we do not use your data for targeted advertising. We may share your information with:
               </Text>
               <View style={styles.list}>
                 {[

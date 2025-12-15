@@ -531,9 +531,9 @@ function AuthPage() {
               </section>
 
               <section className="terms-section">
-                <h3>6. Data Sharing and Disclosure</h3>
+                <h3>6. Data Sharing and Tracking</h3>
                 <p>
-                  We do not sell your personal data. We may share your information with:
+                  We do not sell your personal data. We do not track you across third-party apps or websites, and we do not use your data for targeted advertising. We may share your information with:
                 </p>
                 <ul>
                   <li>• Coaches: If you choose to connect with a coach, they will have access to your fitness data to provide guidance.</li>
