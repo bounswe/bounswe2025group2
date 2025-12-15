@@ -18,6 +18,7 @@ function AuthPage() {
   const [error, setError] = useState('');
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [showTermsModal, setShowTermsModal] = useState(false);
+  const [showPrivacyModal, setShowPrivacyModal] = useState(false);
 
   const navigate = useNavigate();
   const { isAuthenticated, isLoading: authLoading } = useIsAuthenticated();
@@ -237,6 +238,14 @@ function AuthPage() {
                     >
                       Terms and Conditions
                     </button>
+                    {' '}and{' '}
+                    <button
+                      type="button"
+                      onClick={() => setShowPrivacyModal(true)}
+                      className="terms-link"
+                    >
+                      Privacy Policy
+                    </button>
                   </span>
                 </label>
               </div>
@@ -436,6 +445,158 @@ function AuthPage() {
               <Button
                 variant="ghost"
                 onClick={() => setShowTermsModal(false)}
+                className="terms-close-button"
+              >
+                Close
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Privacy Policy Modal */}
+      {showPrivacyModal && (
+        <div className="terms-modal-overlay" onClick={() => setShowPrivacyModal(false)}>
+          <div className="terms-modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="terms-modal-header">
+              <h2>Privacy Policy</h2>
+              <button
+                className="terms-modal-close"
+                onClick={() => setShowPrivacyModal(false)}
+              >
+                ×
+              </button>
+            </div>
+            <div className="terms-modal-body">
+              <p className="terms-effective-date">
+                <strong>Effective Date:</strong> December 15, 2025
+              </p>
+
+              <section className="terms-section">
+                <h3>1. Introduction</h3>
+                <p>
+                  Welcome to GenFit ("the Platform"). We are committed to protecting your privacy and ensuring the security of your personal data. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our mobile application and services.
+                </p>
+                <p>
+                  This policy is designed to comply with the General Data Protection Regulation (GDPR) and the Law on the Protection of Personal Data (KVKK) in Turkey.
+                </p>
+              </section>
+
+              <section className="terms-section">
+                <h3>2. Data Controller</h3>
+                <p>
+                  The data controller for GenFit is the BounSwe Group 2 Team. If you have any questions about this policy, please contact us using the information provided in the "Contact Us" section.
+                </p>
+              </section>
+
+              <section className="terms-section">
+                <h3>3. Information We Collect</h3>
+                <p>
+                  We collect information that you provide directly to us, as well as information collected automatically when you use the Platform.
+                </p>
+                <ul>
+                  <li>• Personal Information: Name, email address, username, and date of birth (for age verification).</li>
+                  <li>• Health and Fitness Data: Fitness goals, workout logs, physical activity data, and body metrics (e.g., weight, height). This is considered sensitive personal data and is processed with your explicit consent.</li>
+                  <li>• Usage Data: Information about how you interact with the app, features used, and time spent.</li>
+                  <li>• Device Information: Device type, operating system, and unique device identifiers.</li>
+                </ul>
+              </section>
+
+              <section className="terms-section">
+                <h3>4. How We Use Your Information</h3>
+                <p>
+                  We use the collected data for the following purposes:
+                </p>
+                <ul>
+                  <li>• To provide, maintain, and improve our services, including fitness tracking and AI-powered suggestions.</li>
+                  <li>• To personalize your experience and provide tailored fitness advice.</li>
+                  <li>• To facilitate community features, such as forums, challenges, and leaderboards.</li>
+                  <li>• To communicate with you about updates, security alerts, and support.</li>
+                  <li>• To ensure the safety and security of our users, particularly minors.</li>
+                  <li>• To comply with legal obligations and enforce our Terms and Conditions.</li>
+                </ul>
+              </section>
+
+              <section className="terms-section">
+                <h3>5. Legal Basis for Processing</h3>
+                <p>
+                  Under GDPR and KVKK, we process your data based on:
+                </p>
+                <ul>
+                  <li>• Consent: You have given clear consent for us to process your personal data for a specific purpose (e.g., health data).</li>
+                  <li>• Contract: Processing is necessary for the performance of a contract (e.g., providing the app services).</li>
+                  <li>• Legitimate Interests: Processing is necessary for our legitimate interests (e.g., security, fraud prevention) unless there is a good reason to protect your personal data which overrides those legitimate interests.</li>
+                  <li>• Legal Obligation: Processing is necessary for compliance with a legal obligation.</li>
+                </ul>
+              </section>
+
+              <section className="terms-section">
+                <h3>6. Data Sharing and Disclosure</h3>
+                <p>
+                  We do not sell your personal data. We may share your information with:
+                </p>
+                <ul>
+                  <li>• Coaches: If you choose to connect with a coach, they will have access to your fitness data to provide guidance.</li>
+                  <li>• Service Providers: Third-party vendors who provide services such as cloud hosting, data analysis, and AI processing. These providers are bound by confidentiality agreements.</li>
+                  <li>• Legal Authorities: If required by law or to protect the rights and safety of GenFit, our users, or others.</li>
+                </ul>
+              </section>
+
+              <section className="terms-section">
+                <h3>7. International Data Transfers</h3>
+                <p>
+                  Your information may be transferred to and maintained on computers located outside of your state, province, country, or other governmental jurisdiction where the data protection laws may differ. We ensure appropriate safeguards, such as Standard Contractual Clauses, are in place for such transfers.
+                </p>
+              </section>
+
+              <section className="terms-section">
+                <h3>8. Data Retention</h3>
+                <p>
+                  We will retain your personal data only for as long as is necessary for the purposes set out in this Privacy Policy. We will retain and use your information to the extent necessary to comply with our legal obligations, resolve disputes, and enforce our legal agreements and policies.
+                </p>
+              </section>
+
+              <section className="terms-section">
+                <h3>9. Your Rights (GDPR & KVKK)</h3>
+                <p>
+                  You have the following rights regarding your personal data:
+                </p>
+                <ul>
+                  <li>• Right to Access: You have the right to request copies of your personal data.</li>
+                  <li>• Right to Rectification: You have the right to request that we correct any information you believe is inaccurate.</li>
+                  <li>• Right to Erasure: You have the right to request that we erase your personal data, under certain conditions.</li>
+                  <li>• Right to Restrict Processing: You have the right to request that we restrict the processing of your personal data.</li>
+                  <li>• Right to Object: You have the right to object to our processing of your personal data.</li>
+                  <li>• Right to Data Portability: You have the right to request that we transfer the data that we have collected to another organization, or directly to you.</li>
+                  <li>• Right to Withdraw Consent: You have the right to withdraw your consent at any time where GenFit relied on your consent to process your personal information.</li>
+                </ul>
+              </section>
+
+              <section className="terms-section">
+                <h3>10. Children's Privacy</h3>
+                <p>
+                  GenFit is designed for youth sports, but we prioritize the safety of minors. We strongly recommend parental supervision for users under 18. We do not knowingly collect personally identifiable information from children under 13 without verifiable parental consent. If you are a parent or guardian and you are aware that your child has provided us with Personal Data, please contact us.
+                </p>
+              </section>
+
+              <section className="terms-section">
+                <h3>11. Contact Us</h3>
+                <p>
+                  If you have any questions about this Privacy Policy, please contact us at:
+                </p>
+                <p>
+                  Email: bounswe.2025.02@gmail.com
+                </p>
+              </section>
+
+              <p className="terms-footer">
+                By using GenFit, you acknowledge that you have read and understood this Privacy Policy.
+              </p>
+            </div>
+            <div className="terms-modal-footer">
+              <Button
+                variant="ghost"
+                onClick={() => setShowPrivacyModal(false)}
                 className="terms-close-button"
               >
                 Close
