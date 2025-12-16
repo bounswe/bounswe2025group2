@@ -19,7 +19,15 @@ const GOAL_TYPE_UNITS: Record<string, string[]> = {
     "WORKOUT": ["minutes", "hours", "sets", "reps"],
     "CYCLING": ["km", "miles", "minutes", "hours"],
     "SWIMMING": ["laps", "meters", "km", "minutes"],
-    "SPORTS": ["matches", "points", "goals", "minutes", "hours"]
+    "SPORTS": ["matches", "points", "goals", "minutes", "hours"],
+    "YOGA": ["minutes", "sessions", "hours"],
+    "WEIGHTLIFTING": ["kg", "lbs", "reps", "sets"],
+    "HIKING": ["km", "miles", "hours", "elevation"],
+    "STEP_COUNT": ["steps", "km", "miles"],
+    "MEDITATION": ["minutes", "sessions"],
+    "BASKETBALL": ["games", "points", "minutes"],
+    "FOOTBALL": ["games", "goals", "minutes"],
+    "TENNIS": ["matches", "sets", "minutes"]
 };
 
 interface GoalFormDialogProps {
@@ -246,6 +254,14 @@ const GoalFormDialog = ({ isOpen, onClose, editingGoal, targetUserId, invalidate
                                 <SelectItem value="CYCLING">Cycling</SelectItem>
                                 <SelectItem value="SWIMMING">Swimming</SelectItem>
                                 <SelectItem value="SPORTS">Sports</SelectItem>
+                                <SelectItem value="YOGA">Yoga</SelectItem>
+                                <SelectItem value="WEIGHTLIFTING">Weightlifting</SelectItem>
+                                <SelectItem value="HIKING">Hiking</SelectItem>
+                                <SelectItem value="STEP_COUNT">Daily Steps</SelectItem>
+                                <SelectItem value="MEDITATION">Meditation</SelectItem>
+                                <SelectItem value="BASKETBALL">Basketball</SelectItem>
+                                <SelectItem value="FOOTBALL">Football/Soccer</SelectItem>
+                                <SelectItem value="TENNIS">Tennis</SelectItem>
                             </Select>
                         </div>
                     </div>
@@ -374,19 +390,30 @@ const GoalFormDialog = ({ isOpen, onClose, editingGoal, targetUserId, invalidate
                         </div>
                         <div className="form-group">
                             <Label htmlFor="unit" className="form-label">Unit *</Label>
-                            <Input
-                                id="unit"
-                                name="unit"
-                                value={formData.unit}
-                                onChange={handleInputChange}
-                                placeholder="e.g., kg, miles, minutes"
-                                required
-                            />
-                            {GOAL_TYPE_UNITS[formData.goal_type] && (
-                                <p className="unit-suggestion">
-                                    Suggested: {GOAL_TYPE_UNITS[formData.goal_type].join(', ')}
-                                </p>
-                            )}
+                            <div className="flex flex-col gap-2">
+                                <Input
+                                    id="unit"
+                                    name="unit"
+                                    value={formData.unit}
+                                    onChange={handleInputChange}
+                                    placeholder="e.g., kg, miles, minutes or select below"
+                                    required
+                                />
+                                {GOAL_TYPE_UNITS[formData.goal_type] && (
+                                    <div className="unit-buttons-container">
+                                        {GOAL_TYPE_UNITS[formData.goal_type].map((unit) => (
+                                            <button
+                                                key={unit}
+                                                type="button"
+                                                onClick={() => setFormData(prev => ({ ...prev, unit }))}
+                                                className={`unit-button ${formData.unit === unit ? 'selected' : ''}`}
+                                            >
+                                                {unit}
+                                            </button>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     </div>
                     <div className="form-group">

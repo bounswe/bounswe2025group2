@@ -533,6 +533,38 @@
   color: #f59e0b;
 }
 
+/* Exercise Link Styles */
+.message-text .exercise-link {
+  color: #10b981;
+  text-decoration: underline;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  background-color: rgba(16, 185, 129, 0.1);
+  padding: 0.125rem 0.375rem;
+  border-radius: 4px;
+}
+
+.message-text .exercise-link:hover {
+  color: #059669;
+  text-decoration: none;
+  background-color: rgba(16, 185, 129, 0.2);
+  transform: translateY(-1px);
+}
+
+.message.sent .message-text .exercise-link {
+  color: #34d399;
+  background-color: rgba(52, 211, 153, 0.15);
+}
+
+.message.sent .message-text .exercise-link:hover {
+  color: #10b981;
+  background-color: rgba(52, 211, 153, 0.25);
+}
+
 .message-time {
   font-size: 0.7rem;
   margin-top: 0.25rem;

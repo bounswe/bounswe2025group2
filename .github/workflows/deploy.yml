@@ -46,6 +46,7 @@ jobs:
             echo "POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}" >> .env
             echo "SECRET_KEY=${{ secrets.SECRET_KEY }}" >> .env
             echo "GROQ_API_KEY=${{ secrets.GROQ_API_KEY }}" >> .env
+            echo "EXERCISEDB_API_KEY=${{ secrets.EXERCISEDB_API_KEY }}" >> .env
             echo "DEBUG=False" >> .env
             # Stop and remove existing containers
             docker-compose -f docker-compose.prod.yml down --remove-orphans

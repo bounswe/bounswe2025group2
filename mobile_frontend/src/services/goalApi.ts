@@ -34,7 +34,15 @@ const GOAL_TYPE_UNITS: Record<string, string[]> = {
   'WORKOUT': ['minutes', 'hours', 'sets', 'reps'],
   'CYCLING': ['km', 'miles', 'minutes', 'hours'],
   'SWIMMING': ['laps', 'meters', 'km', 'minutes'],
-  'SPORTS': ['matches', 'points', 'goals', 'minutes', 'hours']
+  'SPORTS': ['matches', 'points', 'goals', 'minutes', 'hours'],
+  'YOGA': ['minutes', 'sessions', 'hours'],
+  'WEIGHTLIFTING': ['kg', 'lbs', 'reps', 'sets'],
+  'HIKING': ['km', 'miles', 'hours', 'elevation'],
+  'STEP_COUNT': ['steps', 'km', 'miles'],
+  'MEDITATION': ['minutes', 'sessions'],
+  'BASKETBALL': ['games', 'points', 'minutes'],
+  'FOOTBALL': ['games', 'goals', 'minutes'],
+  'TENNIS': ['matches', 'sets', 'minutes']
 };
 
 export const GOAL_TYPES = [
@@ -43,6 +51,14 @@ export const GOAL_TYPES = [
   { label: 'Cycling', value: 'CYCLING' },
   { label: 'Swimming', value: 'SWIMMING' },
   { label: 'Sports', value: 'SPORTS' },
+  { label: 'Yoga', value: 'YOGA' },
+  { label: 'Weightlifting', value: 'WEIGHTLIFTING' },
+  { label: 'Hiking', value: 'HIKING' },
+  { label: 'Daily Steps', value: 'STEP_COUNT' },
+  { label: 'Meditation', value: 'MEDITATION' },
+  { label: 'Basketball', value: 'BASKETBALL' },
+  { label: 'Football/Soccer', value: 'FOOTBALL' },
+  { label: 'Tennis', value: 'TENNIS' },
 ];
 
 export const GOAL_STATUSES = [
