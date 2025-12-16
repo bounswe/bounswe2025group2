@@ -93,6 +93,9 @@ def search_exercises(request):
             'message': 'Exercise database service is not properly configured'
         }, status=status.HTTP_503_SERVICE_UNAVAILABLE)
     
+    # Log API key status for debugging (only first/last chars for security)
+    logger.info(f"Using ExerciseDB API - Key length: {len(api_key)}, First 4: {api_key[:4]}..., Last 4: ...{api_key[-4:]}")
+    
     # Build query parameters from request
     query_params = {}
     
@@ -124,7 +127,15 @@ def search_exercises(request):
     }
     
     try:
+        logger.info(f"Making ExerciseDB API request to: {url}")
         response = requests.get(url, headers=headers, params=query_params, timeout=10)
+        
+        # Log response status for debugging
+        logger.info(f"ExerciseDB API response status: {response.status_code}")
+        
+        if response.status_code != 200:
+            logger.error(f"ExerciseDB API returned status {response.status_code}: {response.text[:500]}")
+        
         response.raise_for_status()
         
         data = response.json()
@@ -148,7 +159,12 @@ def search_exercises(request):
         }, status=status.HTTP_504_GATEWAY_TIMEOUT)
         
     except requests.exceptions.RequestException as e:
-        logger.error(f"ExerciseDB API request failed: {str(e)}")
+        # Enhanced error logging with response details
+        error_msg = f"ExerciseDB API request failed: {str(e)}"
+        if hasattr(e, 'response') and e.response is not None:
+            error_msg += f" | Status: {e.response.status_code} | Response: {e.response.text[:500]}"
+        logger.error(error_msg)
+        
         return Response({
             'error': 'External API error',
             'message': 'Failed to fetch exercises. Please try again later.'
@@ -251,6 +267,9 @@ def get_exercise_detail(request, exercise_id):
             'message': 'Exercise database service is not properly configured'
         }, status=status.HTTP_503_SERVICE_UNAVAILABLE)
     
+    # Log API key status for debugging (only first/last chars for security)
+    logger.info(f"Using ExerciseDB API for detail - Key length: {len(api_key)}, First 4: {api_key[:4]}..., Last 4: ...{api_key[-4:]}")
+    
     # Make request to ExerciseDB API for specific exercise
     url = f"https://exercisedb-api1.p.rapidapi.com/api/v1/exercises/{exercise_id}"
     headers = {
@@ -259,7 +278,15 @@ def get_exercise_detail(request, exercise_id):
     }
     
     try:
+        logger.info(f"Making ExerciseDB API detail request to: {url}")
         response = requests.get(url, headers=headers, timeout=10)
+        
+        # Log response status for debugging
+        logger.info(f"ExerciseDB API detail response status: {response.status_code}")
+        
+        if response.status_code != 200:
+            logger.error(f"ExerciseDB API returned status {response.status_code}: {response.text[:500]}")
+        
         response.raise_for_status()
         
         data = response.json()
@@ -282,7 +309,12 @@ def get_exercise_detail(request, exercise_id):
         }, status=status.HTTP_504_GATEWAY_TIMEOUT)
         
     except requests.exceptions.RequestException as e:
-        logger.error(f"ExerciseDB API request failed: {str(e)}")
+        # Enhanced error logging with response details
+        error_msg = f"ExerciseDB API detail request failed: {str(e)}"
+        if hasattr(e, 'response') and e.response is not None:
+            error_msg += f" | Status: {e.response.status_code} | Response: {e.response.text[:500]}"
+        logger.error(error_msg)
+        
         return Response({
             'error': 'External API error',
             'message': 'Failed to fetch exercise details. Please try again later.'
