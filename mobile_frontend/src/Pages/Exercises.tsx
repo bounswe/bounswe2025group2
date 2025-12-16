@@ -1648,6 +1648,8 @@ const EXERCISES: Exercise[] = [
   },
 ];
 
+export { EXERCISES };
+
 type TabType = 'glossary' | 'exercises';
 
 const Exercises = () => {
@@ -1748,18 +1750,6 @@ const Exercises = () => {
         >
           {item.description}
         </CustomText>
-        <View style={styles.muscleGroupsContainer}>
-          {item.muscleGroups.map((muscle, index) => (
-            <View
-              key={index}
-              style={[styles.muscleTag, { backgroundColor: colors.navBar }]}
-            >
-              <CustomText style={[styles.muscleText, { color: colors.subText }]}>
-                {muscle}
-              </CustomText>
-            </View>
-          ))}
-        </View>
       </TouchableOpacity>
     );
   };
