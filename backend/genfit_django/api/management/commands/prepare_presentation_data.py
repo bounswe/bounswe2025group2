@@ -42,17 +42,17 @@ class Command(BaseCommand):
         # Define realistic user data
         user_data = [
             {
-                'username': 'alexfit92',
+                'username': 'betterselcuk',
                 'email': 'alex.johnson@example.com',
                 'password': 'password123',
                 'user_type': 'User',
                 'profile': {
-                    'name': 'Alex',
-                    'surname': 'Johnson',
+                    'name': 'Selçuk',
+                    'surname': 'Kartal',
                     'bio': 'Marathon runner and fitness enthusiast. Love outdoor activities and helping others achieve their goals! 🏃‍♂️',
-                    'location': 'San Francisco, CA',
+                    'location': 'İstanbul, Türkiye',
                     'birth_date': date(1992, 3, 15),
-                    'preferred_sports': 'Running, Cycling, Swimming'
+                    'preferred_sports': 'Running, Swimming'
                 },
                 'login_streak': {
                     'current_streak': 12,
@@ -307,18 +307,18 @@ class Command(BaseCommand):
         # Coach users
         coach_data = [
             {
-                'username': 'jessicacoach85',
+                'username': 'tahayalcin',
                 'email': 'jessica.coach@example.com',
                 'password': 'password123',
                 'user_type': 'Coach',
                 'is_verified': True,
                 'profile': {
-                    'name': 'Jessica',
-                    'surname': 'Thompson',
+                    'name': 'Taha',
+                    'surname': 'Yalçın',
                     'bio': 'Certified personal trainer with 10+ years experience. Specializing in strength training and nutrition coaching. Let\'s reach your goals together! 💪',
-                    'location': 'Los Angeles, CA',
+                    'location': 'İstanbul, Türkiye',
                     'birth_date': date(1985, 6, 14),
-                    'preferred_sports': 'Strength Training, HIIT, Functional Fitness'
+                    'preferred_sports': 'Strength Training, Cycling, Weightlifting'
                 },
                 'login_streak': {
                     'current_streak': 42,

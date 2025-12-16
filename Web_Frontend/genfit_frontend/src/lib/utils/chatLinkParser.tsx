@@ -1,18 +1,22 @@
 import React from 'react';
+import { glossaryExercises } from '../../pages/knowledge-hub/GlossaryPage';
 
 
 /**
- * Parses message text and converts special links (challenges, hashtags) and exercise mentions to clickable elements.
+ * Parses message text and converts special links to clickable elements.
  * Challenge link format: challenge://{id}
  * Hashtag format: #{term}
- * Exercise mention format: @ExerciseName or @Exercise Name (with spaces)
- * Example: "Check out challenge://42 for a great workout! Try @Push Up and #cardio"
+ * Exercise link formats: 
+ *   - exercise://{id} (direct ID reference)
+ *   - @ExerciseName (name-based reference, converted to ID)
+ * Example: "Check out challenge://42 for a great workout! Try exercise://1 or @Push Up and #cardio"
  */
 
 interface LinkSegment {
   type: 'text' | 'challenge' | 'exercise' | 'hashtag';
   content: string;
   challengeId?: number;
+  exerciseId?: number;
   exerciseName?: string;
   hashtag?: string;
 }
@@ -24,12 +28,16 @@ const CHALLENGE_LINK_REGEX = /challenge:\/\/(\d+)/g;
 const HASHTAG_REGEX = /#[a-zA-Z0-9_]+/g;
 
 /**
- * Regular expression to match exercise mentions
+ * Regular expression to match exercise links (by ID)
+ * Format: exercise://{numeric_id}
+ */
+const EXERCISE_LINK_REGEX = /exercise:\/\/(\d+)/g;
+
+/**
+ * Regular expression to match exercise mentions (by name)
  * Format: @ExerciseName (can include spaces, letters, hyphens, apostrophes, and parentheses)
  * Matches: @Push Up, @Bench Press, @Pull-Up, @Farmer's Carry, @Single-Leg Deadlift, @A-Skip
  * Requires Title Case format (each word starts with capital letter) to avoid false matches
- * Example: "@Push Up" works, "@push up" doesn't (use correct capitalization)
- * Note: For multi-word exercises, use Title Case: @Push Up, @Bench Press
  */
 const EXERCISE_MENTION_REGEX = /@([A-Z]+[a-z]*(?:[\s\-'][A-Z]+[a-z]*)*(?:\s*\([^)]+\))?)/g;
 
@@ -45,6 +53,7 @@ export const parseMessageForChallengeLinks = (message: string): LinkSegment[] =>
     start: number;
     end: number;
     challengeId?: number;
+    exerciseId?: number;
     exerciseName?: string;
     hashtag?: string;
     fullMatch: string;
@@ -62,9 +71,21 @@ export const parseMessageForChallengeLinks = (message: string): LinkSegment[] =>
     });
   }
 
-  // Find exercise mentions
-  const exerciseMatches = message.matchAll(EXERCISE_MENTION_REGEX);
+  // Find exercise links (by ID)
+  const exerciseMatches = message.matchAll(EXERCISE_LINK_REGEX);
   for (const match of exerciseMatches) {
+    allMatches.push({
+      type: 'exercise',
+      start: match.index!,
+      end: match.index! + match[0].length,
+      exerciseId: parseInt(match[1], 10),
+      fullMatch: match[0]
+    });
+  }
+
+  // Find exercise mentions (by name)
+  const exerciseMentionMatches = message.matchAll(EXERCISE_MENTION_REGEX);
+  for (const match of exerciseMentionMatches) {
     const exerciseName = match[1].trim();
     allMatches.push({
       type: 'exercise',
@@ -120,6 +141,7 @@ export const parseMessageForChallengeLinks = (message: string): LinkSegment[] =>
       segments.push({
         type: 'exercise',
         content: match.fullMatch,
+        exerciseId: match.exerciseId,
         exerciseName: match.exerciseName
       });
     } else if (match.type === 'hashtag') {
@@ -150,6 +172,16 @@ export const parseMessageForChallengeLinks = (message: string): LinkSegment[] =>
   }
 
   return segments;
+};
+
+/**
+ * Helper function to find exercise ID by name
+ */
+const findExerciseIdByName = (name: string): number | undefined => {
+  const exercise = glossaryExercises.find(
+    ex => ex.name.toLowerCase() === name.toLowerCase()
+  );
+  return exercise?.id;
 };
 
 /**
@@ -185,19 +217,61 @@ export const renderMessageWithChallengeLinks = (message: string): React.ReactNod
           {segment.content}
         </a>
       );
-    } else if (segment.type === 'exercise' && segment.exerciseName) {
-      return (
-        <a
-          key={index}
-          href={`/knowledge-hub?exercise=${encodeURIComponent(segment.exerciseName)}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="exercise-link"
-          title={`View ${segment.exerciseName} in glossary`}
-        >
-          @{segment.exerciseName}
-        </a>
-      );
+    } else if (segment.type === 'exercise') {
+      // Handle both ID-based and name-based exercise links
+      let exerciseId = segment.exerciseId;
+      let displayText = '';
+      let titleText = '';
+
+      if (segment.exerciseId) {
+        // Direct ID reference (exercise://1)
+        displayText = `Exercise #${segment.exerciseId}`;
+        titleText = `View Exercise #${segment.exerciseId} in glossary`;
+      } else if (segment.exerciseName) {
+        // Name-based reference (@Push Up)
+        const foundId = findExerciseIdByName(segment.exerciseName);
+        if (foundId) {
+          exerciseId = foundId;
+          displayText = `@${segment.exerciseName}`;
+          titleText = `View ${segment.exerciseName} in glossary`;
+        } else {
+          // Fallback if name not found in local glossary, still link to query param
+          displayText = `@${segment.exerciseName}`;
+          titleText = `Search ${segment.exerciseName} in glossary`;
+        }
+      }
+
+      // If we have an ID, allow lookup by ID. If not, allow lookup by name.
+      if (exerciseId) {
+        return (
+          <a
+            key={index}
+            href={`/knowledge-hub?exerciseId=${exerciseId}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="exercise-link"
+            title={titleText}
+          >
+            {displayText}
+          </a>
+        );
+      } else if (segment.exerciseName) {
+        return (
+          <a
+            key={index}
+            href={`/knowledge-hub?exercise=${encodeURIComponent(segment.exerciseName)}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="exercise-link"
+            title={titleText}
+          >
+            {displayText}
+          </a>
+        );
+      } else {
+        // If exercise not found and no name to search, render as plain text
+        return <span key={index}>{segment.content}</span>;
+      }
     }
 
     return <span key={index}>{segment.content}</span>;
@@ -212,7 +286,14 @@ export const hasChallengeLinks = (message: string): boolean => {
 };
 
 /**
- * Checks if a message contains any exercise mentions
+ * Checks if a message contains any exercise links (by ID)
+ */
+export const hasExerciseLinks = (message: string): boolean => {
+  return EXERCISE_LINK_REGEX.test(message);
+};
+
+/**
+ * Checks if a message contains any exercise mentions (by name)
  */
 export const hasExerciseMentions = (message: string): boolean => {
   return EXERCISE_MENTION_REGEX.test(message);
@@ -235,7 +316,21 @@ export const extractChallengeIds = (message: string): number[] => {
 };
 
 /**
- * Extracts all exercise names from a message
+ * Extracts all exercise IDs from a message (from exercise:// links only)
+ */
+export const extractExerciseIds = (message: string): number[] => {
+  const ids: number[] = [];
+  const matches = message.matchAll(EXERCISE_LINK_REGEX);
+
+  for (const match of matches) {
+    ids.push(parseInt(match[1], 10));
+  }
+
+  return ids;
+};
+
+/**
+ * Extracts all exercise names from a message (from @ mentions)
  */
 export const extractExerciseNames = (message: string): string[] => {
   const names: string[] = [];
