@@ -6,7 +6,6 @@ from django.db.models import Q
 from django.utils import timezone
 from .utils import geocode_location
 from .models import Notification, Report, UserWithType, FitnessGoal, Profile, ContactSubmission, Forum, Thread, Comment, Subcomment, Vote, Challenge, ChallengeParticipant, AiTutorChat, AiTutorResponse, UserAiMessage, DailyAdvice, MentorMenteeRelationship, ThreadBookmark
-from django.utils import timezone
 
 
 User = get_user_model()

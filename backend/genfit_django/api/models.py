@@ -503,7 +503,6 @@ class ThreadBookmark(models.Model):
     def __str__(self):
         return f"{self.user.username} bookmarked {self.thread.title}"
 
-
 # Add to api/models.py
 class Report(models.Model):
     """Model for user reports on various content types"""
