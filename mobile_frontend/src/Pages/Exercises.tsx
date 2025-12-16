@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   View,
   StyleSheet,
@@ -11,6 +11,8 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../types/navigation';
 import CustomText from '../components/CustomText';
 import { useTheme } from '../context/ThemeContext';
+import { useExerciseDbApi, type ExerciseDbItem, type ExerciseDbRateLimitStatus } from '../services/exerciseDbApi';
+import { Image, ActivityIndicator } from 'react-native';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -25,7 +27,7 @@ export type Exercise = {
   tips?: string;
 };
 
-// Hard-coded exercise list
+// Hard-coded exercise list (local glossary, matches web \"Exercise Library\" tab)
 const EXERCISES: Exercise[] = [
   {
     id: 1,
@@ -1646,12 +1648,41 @@ const EXERCISES: Exercise[] = [
   },
 ];
 
+type TabType = 'glossary' | 'exercises';
+
 const Exercises = () => {
   const { colors } = useTheme();
   const navigation = useNavigation() as NavigationProp;
   const [searchQuery, setSearchQuery] = useState('');
+  const [activeTab, setActiveTab] = useState<TabType>('glossary');
 
-  // Filter exercises based on search query (partial text match)
+  // ExerciseDB state
+  const { searchExercises, getRateLimitStatus } = useExerciseDbApi();
+  const [exerciseSearchTerm, setExerciseSearchTerm] = useState('');
+  const [dbExercises, setDbExercises] = useState<ExerciseDbItem[]>([]);
+  const [dbRateLimit, setDbRateLimit] = useState<ExerciseDbRateLimitStatus | null>(null);
+  const [isLoadingDbExercises, setIsLoadingDbExercises] = useState(false);
+  const [dbError, setDbError] = useState<string | null>(null);
+  const [hasSearchedDb, setHasSearchedDb] = useState(false);
+
+  // Load rate limit when switching to Exercise Database tab (only if service is available)
+  useEffect(() => {
+    if (activeTab === 'exercises') {
+      (async () => {
+        try {
+          const status = await getRateLimitStatus();
+          setDbRateLimit(status);
+        } catch (error: any) {
+          // Only log, don't show error until user tries to search
+          // This allows the tab to be accessible even if service isn't configured
+          console.warn('Exercise DB service may not be available:', error?.message);
+          // Don't set error here - let it fail gracefully when user searches
+        }
+      })();
+    }
+  }, [activeTab, getRateLimitStatus]);
+
+  // Filter local glossary exercises based on search query (partial text match)
   const filteredExercises = useMemo(() => {
     if (!searchQuery.trim()) {
       return EXERCISES;
@@ -1733,30 +1764,236 @@ const Exercises = () => {
     );
   };
 
+  const formatResetTime = (seconds: number) => {
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    if (minutes > 0) {
+      return `${minutes}m ${remainingSeconds}s`;
+    }
+    return `${remainingSeconds}s`;
+  };
+
+  const handleDbSearch = async () => {
+    if (!exerciseSearchTerm.trim()) {
+      setDbError('Please enter a search term');
+      return;
+    }
+
+    setIsLoadingDbExercises(true);
+    setDbError(null);
+    setHasSearchedDb(true);
+
+    try {
+      const response = await searchExercises({
+        name: exerciseSearchTerm.trim(),
+        limit: 20,
+      });
+      setDbExercises(response.data);
+      // Update rate limit from search response
+      setDbRateLimit((prev) => ({
+        requests_made: prev?.requests_made ?? 0,
+        requests_remaining: response.rate_limit.remaining_requests,
+        limit: prev?.limit ?? 5,
+        reset_in_seconds: response.rate_limit.reset_in_seconds,
+        period_hours: prev?.period_hours ?? 1,
+      }));
+      // Clear error on successful search
+      setDbError(null);
+    } catch (error: any) {
+      const errorMessage = error?.message || 'Failed to search exercises. Please try again.';
+      setDbError(errorMessage);
+      setDbExercises([]);
+      
+      // If service is not configured, provide helpful message
+      if (errorMessage.includes('not properly configured') || errorMessage.includes('503')) {
+        setDbError(
+          'Exercise database service is currently unavailable. Please contact support or try again later.'
+        );
+      }
+    } finally {
+      setIsLoadingDbExercises(false);
+    }
+  };
+
+  const renderDbExerciseItem = ({ item }: { item: ExerciseDbItem }) => {
+    return (
+      <TouchableOpacity
+        style={styles.dbExerciseCard}
+        onPress={() =>
+          navigation.navigate('ExerciseDetail', {
+            exerciseDb: item,
+          })
+        }
+      >
+        <View style={styles.dbExerciseImageWrapper}>
+          <Image
+            source={{ uri: item.imageUrl }}
+            style={styles.dbExerciseImage}
+            resizeMode="cover"
+          />
+        </View>
+        <View style={styles.dbExerciseInfo}>
+          <CustomText style={[styles.dbExerciseName, { color: colors.text }]}>
+            {item.name}
+          </CustomText>
+          <CustomText style={[styles.dbExerciseType, { color: colors.subText }]}>
+            {item.exerciseType}
+          </CustomText>
+        </View>
+      </TouchableOpacity>
+    );
+  };
+
   return (
     <View style={[styles.container, { backgroundColor: '#ffffff' }]}>
-      <View style={[styles.searchContainer, { borderColor: colors.border }]}>
-        <TextInput
-          style={[styles.searchInput, { color: colors.text }]}
-          placeholder="Search..."
-          placeholderTextColor={colors.subText}
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-        />
+      {/* Tabs */}
+      <View style={[styles.tabRow, { borderBottomColor: colors.border }]}>
+        <TouchableOpacity
+          style={[
+            styles.tabButton,
+            activeTab === 'glossary' && { borderBottomColor: '#800000', borderBottomWidth: 2 },
+          ]}
+          onPress={() => setActiveTab('glossary')}
+        >
+          <CustomText
+            style={[
+              styles.tabLabel,
+              { color: activeTab === 'glossary' ? '#800000' : colors.subText },
+            ]}
+          >
+            Exercise Library
+          </CustomText>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[
+            styles.tabButton,
+            activeTab === 'exercises' && { borderBottomColor: '#800000', borderBottomWidth: 2 },
+          ]}
+          onPress={() => setActiveTab('exercises')}
+        >
+          <CustomText
+            style={[
+              styles.tabLabel,
+              { color: activeTab === 'exercises' ? '#800000' : colors.subText },
+            ]}
+          >
+            Exercise Database
+          </CustomText>
+        </TouchableOpacity>
       </View>
-      <FlatList
-        data={filteredExercises}
-        keyExtractor={(item) => item.id.toString()}
-        renderItem={renderExerciseItem}
-        contentContainerStyle={styles.listContent}
-        ListEmptyComponent={
-          <View style={styles.emptyContainer}>
-            <CustomText style={[styles.emptyText, { color: colors.subText }]}>
-              No item found matching "{searchQuery}"
-            </CustomText>
+
+      {/* Glossary tab */}
+      {activeTab === 'glossary' && (
+        <>
+          <View style={[styles.searchContainer, { borderColor: colors.border }]}>
+            <TextInput
+              style={[styles.searchInput, { color: colors.text }]}
+              placeholder="Search exercises by name, muscle group, or equipment..."
+              placeholderTextColor={colors.subText}
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+            />
           </View>
-        }
-      />
+          <FlatList
+            data={filteredExercises}
+            keyExtractor={(item) => item.id.toString()}
+            renderItem={renderExerciseItem}
+            contentContainerStyle={styles.listContent}
+            ListEmptyComponent={
+              <View style={styles.emptyContainer}>
+                <CustomText style={[styles.emptyText, { color: colors.subText }]}>
+                  No item found matching "{searchQuery}"
+                </CustomText>
+              </View>
+            }
+          />
+        </>
+      )}
+
+      {/* Exercise Database tab */}
+      {activeTab === 'exercises' && (
+        <View style={{ flex: 1 }}>
+          {/* Rate limit info */}
+          {dbRateLimit && (
+            <View
+              style={[
+                styles.rateLimitContainer,
+                dbRateLimit.requests_remaining <= 1 && { backgroundColor: '#fef2f2' },
+              ]}
+            >
+              <CustomText style={[styles.rateLimitTitle, { color: colors.text }]}>
+                {dbRateLimit.requests_remaining} of {dbRateLimit.limit} requests remaining
+              </CustomText>
+              <CustomText style={[styles.rateLimitText, { color: colors.subText }]}>
+                Resets in {formatResetTime(dbRateLimit.reset_in_seconds)}. Search limit:{' '}
+                {dbRateLimit.limit} requests per {dbRateLimit.period_hours} hour(s).
+              </CustomText>
+            </View>
+          )}
+
+          {/* Search input */}
+          <View style={[styles.searchContainer, { borderColor: colors.border }]}>
+            <TextInput
+              style={[styles.searchInput, { color: colors.text }]}
+              placeholder="Search for exercises (e.g., 'bench press', 'squat', 'deadlift')..."
+              placeholderTextColor={colors.subText}
+              value={exerciseSearchTerm}
+              onChangeText={setExerciseSearchTerm}
+              onSubmitEditing={handleDbSearch}
+              returnKeyType="search"
+            />
+          </View>
+
+          {/* Error */}
+          {dbError && (
+            <View style={styles.errorContainer}>
+              <CustomText style={[styles.errorTitle, { color: '#b91c1c' }]}>Error</CustomText>
+              <CustomText style={[styles.errorText, { color: colors.subText }]}>
+                {dbError}
+              </CustomText>
+            </View>
+          )}
+
+          {/* Loading */}
+          {isLoadingDbExercises && (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color="#800000" />
+            </View>
+          )}
+
+          {/* Results */}
+          {!isLoadingDbExercises && hasSearchedDb && dbExercises.length > 0 && (
+            <FlatList
+              data={dbExercises}
+              keyExtractor={(item) => item.exerciseId}
+              renderItem={renderDbExerciseItem}
+              contentContainerStyle={styles.listContent}
+            />
+          )}
+
+          {/* No results */}
+          {!isLoadingDbExercises && hasSearchedDb && dbExercises.length === 0 && !dbError && (
+            <View style={styles.emptyContainer}>
+              <CustomText style={[styles.emptyText, { color: colors.subText }]}>
+                No exercises found. Try a different search term.
+              </CustomText>
+            </View>
+          )}
+
+          {/* Initial state */}
+          {!isLoadingDbExercises && !hasSearchedDb && (
+            <View style={styles.emptyContainer}>
+              <CustomText style={[styles.emptyTitle, { color: colors.text }]}>
+                Ready to explore exercises?
+              </CustomText>
+              <CustomText style={[styles.emptyText, { color: colors.subText }]}>
+                Enter an exercise name above to search our live exercise database. Try "bench press",
+                "squat", or "deadlift".
+              </CustomText>
+            </View>
+          )}
+        </View>
+      )}
     </View>
   );
 };
@@ -1764,6 +2001,20 @@ const Exercises = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  tabRow: {
+    flexDirection: 'row',
+    borderBottomWidth: 1,
+  },
+  tabButton: {
+    flex: 1,
+    paddingVertical: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  tabLabel: {
+    fontSize: 16,
+    fontWeight: '600',
   },
   searchContainer: {
     paddingHorizontal: 16,
@@ -1832,6 +2083,75 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 16,
     textAlign: 'center',
+  },
+  emptyTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  dbExerciseCard: {
+    flexDirection: 'row',
+    borderRadius: 12,
+    overflow: 'hidden',
+    backgroundColor: '#ffffff',
+    marginBottom: 12,
+    borderWidth: 1,
+  },
+  dbExerciseImageWrapper: {
+    width: 100,
+    height: 100,
+    backgroundColor: '#f3f4f6',
+  },
+  dbExerciseImage: {
+    width: '100%',
+    height: '100%',
+  },
+  dbExerciseInfo: {
+    flex: 1,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    justifyContent: 'center',
+  },
+  dbExerciseName: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  dbExerciseType: {
+    fontSize: 14,
+  },
+  rateLimitContainer: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: '#eff6ff',
+  },
+  rateLimitTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  rateLimitText: {
+    fontSize: 14,
+  },
+  errorContainer: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: '#fee2e2',
+  },
+  errorTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  errorText: {
+    fontSize: 14,
+  },
+  loadingContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 24,
   },
 });
 
