@@ -296,10 +296,10 @@ const ChatDetail = ({ route, navigation }: any) => {
   const handleMessageTextChange = (text: string) => {
     setMessageText(text);
     
-    // Check if user is typing a mention (starts with &)
-    const lastAtIndex = text.lastIndexOf('&');
+    // Check if user is typing a mention (starts with @)
+    const lastAtIndex = text.lastIndexOf('@');
     if (lastAtIndex !== -1) {
-      // Check if there's a space after & or if it's at the end
+      // Check if there's a space after @ or if it's at the end
       const afterAt = text.substring(lastAtIndex + 1);
       const spaceIndex = afterAt.indexOf(' ');
       
@@ -325,7 +325,7 @@ const ChatDetail = ({ route, navigation }: any) => {
         setShowMentionSuggestions(false);
       }
     } else {
-      // No & found, hide suggestions
+      // No @ found, hide suggestions
       setShowMentionSuggestions(false);
     }
   };
@@ -335,7 +335,7 @@ const ChatDetail = ({ route, navigation }: any) => {
     if (mentionStartIndex !== -1) {
       const beforeMention = messageText.substring(0, mentionStartIndex);
       const afterMention = messageText.substring(mentionStartIndex + 1 + mentionQuery.length);
-      const newText = `${beforeMention}&${username}${afterMention}`;
+      const newText = `${beforeMention}@${username}${afterMention}`;
       setMessageText(newText);
       setShowMentionSuggestions(false);
       setMentionQuery('');
@@ -345,7 +345,7 @@ const ChatDetail = ({ route, navigation }: any) => {
 
   // Parse mentions in message text
   const parseMessageWithMentions = (text: string) => {
-    const mentionRegex = /&(\w+)/g;
+    const mentionRegex = /@(\w+)/g;
     const parts: Array<{ type: 'text' | 'mention'; content: string; username?: string }> = [];
     let lastIndex = 0;
     let match;
