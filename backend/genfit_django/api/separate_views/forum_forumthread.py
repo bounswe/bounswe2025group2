@@ -1,8 +1,8 @@
 from rest_framework import viewsets, permissions, status
 from rest_framework.response import Response
 from rest_framework.decorators import action
-from ..models import Forum, Thread
-from ..serializers import ForumSerializer, ThreadListSerializer, ThreadDetailSerializer
+from ..models import Forum, Thread, ThreadBookmark
+from ..serializers import ForumSerializer, ThreadListSerializer, ThreadDetailSerializer, ThreadBookmarkSerializer
 from ..permissions import IsAuthorOrReadOnly
 
 class ForumViewSet(viewsets.ModelViewSet):
@@ -60,4 +60,33 @@ class ThreadViewSet(viewsets.ModelViewSet):
         return Response(
             {'message': 'Thread deleted successfully'}, 
             status=status.HTTP_204_NO_CONTENT
-        ) 
+        )
+
+    @action(detail=True, methods=['post'], permission_classes=[permissions.IsAuthenticated])
+    def bookmark(self, request, pk=None):
+        """Toggle bookmark status for a thread"""
+        thread = self.get_object()
+        user = request.user
+        
+        bookmark, created = ThreadBookmark.objects.get_or_create(user=user, thread=thread)
+        
+        if not created:
+            bookmark.delete()
+            return Response({'status': 'unbookmarked', 'is_bookmarked': False})
+            
+        return Response({'status': 'bookmarked', 'is_bookmarked': True})
+
+    @action(detail=False, methods=['get'], permission_classes=[permissions.IsAuthenticated])
+    def bookmarked(self, request):
+        """List threads bookmarked by the current user"""
+        user = request.user
+        bookmarked_threads = Thread.objects.filter(bookmarks__user=user)
+        
+        page = self.paginate_queryset(bookmarked_threads)
+        if page is not None:
+            serializer = ThreadListSerializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+            
+        serializer = ThreadListSerializer(bookmarked_threads, many=True)
+        return Response(serializer.data)
+ 
