@@ -1,5 +1,5 @@
 import React from 'react';
-import { glossaryExercises } from '../../pages/knowledge-hub/GlossaryPage';
+import { glossaryExercises } from '../../pages/knowledge-hub/glossaryData';
 
 
 /**
