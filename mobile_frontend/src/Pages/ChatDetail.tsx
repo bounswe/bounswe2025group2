@@ -21,6 +21,7 @@ import ChallengeCard from '@components/ChallengeCard';
 import Cookies from '@react-native-cookies/cookies';
 import { API_URL } from '@constants/api';
 import { CommonActions } from '@react-navigation/native';
+import { EXERCISES, Exercise } from './Exercises';
 
 // Challenge selector modal component
 interface ChallengeSelectorModalProps {
@@ -29,6 +30,14 @@ interface ChallengeSelectorModalProps {
   onSelect: (challengeId: number, challengeTitle: string) => void;  // Updated to include challengeTitle
   colors: any;
   getAuthHeader: () => { Authorization: string } | {};
+}
+
+// Exercise selector modal component
+interface ExerciseSelectorModalProps {
+  visible: boolean;
+  onClose: () => void;
+  onSelect: (exerciseId: number, exerciseName: string) => void;
+  colors: any;
 }
 
 type ChallengeListItem = {
@@ -147,7 +156,7 @@ const ChallengeSelectorModal: React.FC<ChallengeSelectorModalProps> = ({
 
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet">
-      <View style={[styles.modalContainer, { backgroundColor: colors.background }]}>
+      <SafeAreaView style={[styles.modalContainer, { backgroundColor: colors.background }]}>
         <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
           <TouchableOpacity onPress={onClose}>
             <CustomText style={[styles.modalButton, { color: colors.active }]}>
@@ -218,7 +227,126 @@ const ChallengeSelectorModal: React.FC<ChallengeSelectorModalProps> = ({
             }
           />
         )}
-      </View>
+      </SafeAreaView>
+    </Modal>
+  );
+};
+
+const ExerciseSelectorModal: React.FC<ExerciseSelectorModalProps> = ({
+  visible,
+  onClose,
+  onSelect,
+  colors,
+}) => {
+  const [searchQuery, setSearchQuery] = useState('');
+
+  // Filter exercises based on search query
+  const filteredExercises = useMemo(() => {
+    if (!searchQuery.trim()) {
+      return EXERCISES;
+    }
+    
+    const lowerQuery = searchQuery.toLowerCase().trim();
+    return EXERCISES.filter((exercise: Exercise) => {
+      const nameMatch = exercise.name.toLowerCase().includes(lowerQuery);
+      const descriptionMatch = exercise.description.toLowerCase().includes(lowerQuery);
+      const muscleMatch = exercise.muscleGroups.some((mg: string) => 
+        mg.toLowerCase().includes(lowerQuery)
+      );
+      const difficultyMatch = exercise.difficulty.toLowerCase().includes(lowerQuery);
+      const equipmentMatch = exercise.equipment?.toLowerCase().includes(lowerQuery);
+      
+      return nameMatch || descriptionMatch || muscleMatch || difficultyMatch || equipmentMatch;
+    });
+  }, [searchQuery]);
+
+  const handleSelect = (exerciseId: number, exerciseName: string) => {
+    onSelect(exerciseId, exerciseName);
+    setSearchQuery('');
+    onClose();
+  };
+
+  return (
+    <Modal visible={visible} animationType="slide" presentationStyle="pageSheet">
+      <SafeAreaView style={[styles.modalContainer, { backgroundColor: colors.background }]}>
+        <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
+          <TouchableOpacity onPress={onClose}>
+            <CustomText style={[styles.modalButton, { color: colors.active }]}>
+              Cancel
+            </CustomText>
+          </TouchableOpacity>
+          <CustomText style={[styles.modalTitle, { color: colors.text }]}>
+            Send Exercise
+          </CustomText>
+          <View style={{ width: 60 }} />
+        </View>
+
+        <View style={[styles.searchContainer, { borderBottomColor: colors.border }]}>
+          <TextInput
+            style={[styles.searchInput, { 
+              backgroundColor: colors.navBar, 
+              color: colors.text,
+              borderColor: colors.border 
+            }]}
+            placeholder="Search exercises (e.g., 'push', 'squat', 'cardio')..."
+            placeholderTextColor={colors.subText}
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+          />
+        </View>
+
+        <FlatList
+          data={filteredExercises}
+          keyExtractor={(item) => item.id.toString()}
+          renderItem={({ item }) => (
+            <TouchableOpacity
+              style={[styles.exerciseItem, { 
+                backgroundColor: colors.navBar,
+                borderColor: colors.border 
+              }]}
+              onPress={() => handleSelect(item.id, item.name)}
+            >
+              <View style={styles.exerciseItemContent}>
+                <CustomText style={[styles.exerciseTitle, { color: colors.text }]}>
+                  {item.name}
+                </CustomText>
+                <CustomText 
+                  style={[styles.exerciseDescription, { color: colors.subText }]}
+                  numberOfLines={2}
+                >
+                  {item.description}
+                </CustomText>
+                <View style={styles.exerciseMeta}>
+                  <View style={[styles.exerciseBadge, { backgroundColor: colors.border }]}>
+                    <CustomText style={[styles.exerciseBadgeText, { color: colors.subText }]}>
+                      {item.difficulty}
+                    </CustomText>
+                  </View>
+                  {item.muscleGroups.slice(0, 2).map((muscle, index) => (
+                    <View 
+                      key={index}
+                      style={[styles.exerciseBadge, { backgroundColor: colors.border }]}
+                    >
+                      <CustomText style={[styles.exerciseBadgeText, { color: colors.subText }]}>
+                        {muscle}
+                      </CustomText>
+                    </View>
+                  ))}
+                </View>
+              </View>
+            </TouchableOpacity>
+          )}
+          ListEmptyComponent={
+            <View style={styles.emptyContainer}>
+              <CustomText style={[styles.emptyText, { color: colors.subText }]}>
+                {searchQuery.trim() 
+                  ? `No exercises found matching "${searchQuery}"`
+                  : 'No exercises available'}
+              </CustomText>
+            </View>
+          }
+        />
+      </SafeAreaView>
     </Modal>
   );
 };
@@ -239,6 +367,7 @@ const ChatDetail = ({ route, navigation }: any) => {
   const { isAuthenticated, currentUser, getAuthHeader } = useAuth();
   const [messageText, setMessageText] = useState('');
   const [showChallengeModal, setShowChallengeModal] = useState(false);
+  const [showExerciseModal, setShowExerciseModal] = useState(false);
   const [mentionSuggestions, setMentionSuggestions] = useState<Array<{id: number, username: string}>>([]);
   const [showMentionSuggestions, setShowMentionSuggestions] = useState(false);
   const [mentionQuery, setMentionQuery] = useState('');
@@ -411,6 +540,24 @@ const ChatDetail = ({ route, navigation }: any) => {
     });
   };
 
+  // Helper function to check if message is an exercise
+  const isExerciseMessage = (body: string): number | null => {
+    if (!body || typeof body !== 'string') {
+      return null;
+    }
+    
+    // Format: exercise://{id} (can appear in text like "Check out 'Name' - exercise://123")
+    const exerciseMatch = body.match(/exercise:\/\/(\d+)/);
+    if (exerciseMatch) {
+      const exerciseId = parseInt(exerciseMatch[1], 10);
+      if (!isNaN(exerciseId) && exerciseId > 0) {
+        return exerciseId;
+      }
+    }
+    
+    return null;
+  };
+
   // Helper function to check if message is a challenge
   const isChallengeMessage = (body: string): number | null => {
     console.log('[ChatDetail] Checking if message is challenge:', body);
@@ -455,6 +602,50 @@ const ChatDetail = ({ route, navigation }: any) => {
     
     console.log('[ChatDetail] Message is not a challenge message');
     return null;
+  };
+
+  // Handle exercise selection
+  const handleExerciseSelect = (exerciseId: number, exerciseName: string) => {
+    console.log('[ChatDetail] ========== EXERCISE SELECTED ==========');
+    console.log('[ChatDetail] Exercise ID:', exerciseId);
+    console.log('[ChatDetail] Exercise Name:', exerciseName);
+    
+    if (!exerciseId || isNaN(exerciseId) || exerciseId <= 0) {
+      Toast.show({
+        type: 'error',
+        text1: 'Invalid Exercise',
+        text2: `Invalid exercise ID: ${exerciseId}`,
+      });
+      return;
+    }
+
+    if (isConnected) {
+      const exerciseLink = `exercise://${exerciseId}`;
+      const messageBody = `Check out "${exerciseName}" - ${exerciseLink}`;
+      console.log('[ChatDetail] Sending exercise message:', messageBody);
+      
+      try {
+        sendMessage(messageBody);
+        Toast.show({
+          type: 'success',
+          text1: 'Exercise Sent',
+          text2: `Exercise "${exerciseName}" sent!`,
+        });
+      } catch (error) {
+        console.error('[ChatDetail] ERROR sending exercise message:', error);
+        Toast.show({
+          type: 'error',
+          text1: 'Send Failed',
+          text2: `Failed to send exercise: ${error}`,
+        });
+      }
+    } else {
+      Toast.show({
+        type: 'error',
+        text1: 'Connection Error',
+        text2: 'WebSocket not connected',
+      });
+    }
   };
 
   // Handle challenge selection
@@ -570,8 +761,100 @@ const ChatDetail = ({ route, navigation }: any) => {
     const showTime = index === messages.length - 1 || 
       new Date(item.created).getTime() - new Date(messages[index + 1]?.created).getTime() > 300000; // 5 minutes
 
+    // Check if this is an exercise message
+    const exerciseId = isExerciseMessage(item.body);
+    
     // Check if this is a challenge message
     const challengeId = isChallengeMessage(item.body);
+
+    if (exerciseId) {
+      const exercise = EXERCISES.find(e => e.id === exerciseId);
+      if (exercise) {
+        return (
+          <View style={[
+            styles.messageContainer,
+            { alignItems: isMyMessage ? 'flex-end' : 'flex-start' }
+          ]}>
+            <View style={{ maxWidth: '85%' }}>
+              <TouchableOpacity
+                onPress={() => {
+                  navigation.navigate('ExerciseDetail' as never, { exercise } as never);
+                }}
+                activeOpacity={0.7}
+              >
+                <View style={[
+                  styles.exerciseCard,
+                  {
+                    backgroundColor: isMyMessage ? colors.active : colors.navBar,
+                    borderColor: colors.border
+                  }
+                ]}>
+                  <CustomText style={[
+                    styles.exerciseCardTitle,
+                    { color: isMyMessage ? colors.userMessageText : colors.text }
+                  ]}>
+                    💪 {exercise.name}
+                  </CustomText>
+                  <CustomText 
+                    style={[
+                      styles.exerciseCardDescription,
+                      { color: isMyMessage ? colors.userMessageText : colors.subText }
+                    ]}
+                    numberOfLines={2}
+                  >
+                    {exercise.description}
+                  </CustomText>
+                  <View style={styles.exerciseCardMeta}>
+                    <View style={[styles.exerciseCardBadge, { backgroundColor: colors.border }]}>
+                      <CustomText style={[
+                        styles.exerciseCardBadgeText,
+                        { color: isMyMessage ? colors.userMessageText : colors.subText }
+                      ]}>
+                        {exercise.difficulty}
+                      </CustomText>
+                    </View>
+                    {exercise.muscleGroups.slice(0, 2).map((muscle: string, index: number) => (
+                      <View 
+                        key={index}
+                        style={[styles.exerciseCardBadge, { backgroundColor: colors.border }]}
+                      >
+                        <CustomText style={[
+                          styles.exerciseCardBadgeText,
+                          { color: isMyMessage ? colors.userMessageText : colors.subText }
+                        ]}>
+                          {muscle}
+                        </CustomText>
+                      </View>
+                    ))}
+                  </View>
+                  <CustomText style={[
+                    styles.exerciseCardLink,
+                    { color: isMyMessage ? colors.userMessageText : colors.active }
+                  ]}>
+                    Tap to view details →
+                  </CustomText>
+                </View>
+              </TouchableOpacity>
+              {showTime && (
+                <CustomText
+                  style={[
+                    styles.messageTime,
+                    { 
+                      color: colors.subText,
+                      textAlign: isMyMessage ? 'right' : 'left',
+                      marginTop: 4,
+                      fontSize: 12
+                    }
+                  ]}
+                >
+                  {formatMessageTime(item.created)}
+                </CustomText>
+              )}
+            </View>
+          </View>
+        );
+      }
+    }
 
     if (challengeId) {
       console.log('[ChatDetail] ========== RENDERING CHALLENGE CARD ==========');
@@ -726,14 +1009,24 @@ const ChatDetail = ({ route, navigation }: any) => {
             {otherUserName}
           </CustomText>
         </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.sendChallengeButton}
-          onPress={() => setShowChallengeModal(true)}
-        >
-          <CustomText style={[styles.sendChallengeText, { color: colors.active }]}>
-            Send Challenge
-          </CustomText>
-        </TouchableOpacity>
+        <View style={styles.headerButtons}>
+          <TouchableOpacity
+            style={styles.headerSendButton}
+            onPress={() => setShowExerciseModal(true)}
+          >
+            <CustomText style={[styles.headerSendButtonText, { color: colors.active }]}>
+              Send Exercise
+            </CustomText>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.headerSendButton}
+            onPress={() => setShowChallengeModal(true)}
+          >
+            <CustomText style={[styles.headerSendButtonText, { color: colors.active }]}>
+              Send Challenge
+            </CustomText>
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* Messages */}
@@ -826,6 +1119,14 @@ const ChatDetail = ({ route, navigation }: any) => {
         onSelect={handleChallengeSelect}  // Now passes both challengeId and challengeTitle
         colors={colors}
         getAuthHeader={getAuthHeader}
+      />
+      
+      {/* Exercise Selector Modal */}
+      <ExerciseSelectorModal
+        visible={showExerciseModal}
+        onClose={() => setShowExerciseModal(false)}
+        onSelect={handleExerciseSelect}
+        colors={colors}
       />
     </SafeAreaView>
   );
@@ -965,16 +1266,85 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
   },
-  sendChallengeButton: {
-    marginLeft: 8,
-    paddingHorizontal: 12,
+  headerButtons: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  headerSendButton: {
+    paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 8,
     backgroundColor: 'transparent',
   },
-  sendChallengeText: {
-    fontSize: 14,
+  headerSendButtonText: {
+    fontSize: 12,
     fontWeight: '600',
+  },
+  exerciseItem: {
+    padding: 16,
+    borderBottomWidth: 1,
+  },
+  exerciseItemContent: {
+    gap: 8,
+  },
+  exerciseTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  exerciseDescription: {
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  exerciseMeta: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginTop: 4,
+  },
+  exerciseBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  exerciseBadgeText: {
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  exerciseCard: {
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    marginVertical: 4,
+  },
+  exerciseCardTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 8,
+  },
+  exerciseCardDescription: {
+    fontSize: 14,
+    lineHeight: 20,
+    marginBottom: 12,
+  },
+  exerciseCardMeta: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: 8,
+  },
+  exerciseCardBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  exerciseCardBadgeText: {
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  exerciseCardLink: {
+    fontSize: 12,
+    fontStyle: 'italic',
+    marginTop: 4,
   },
   modalContainer: {
     flex: 1,
