@@ -304,18 +304,21 @@ const glossaryTerms: GlossaryTerm[] = [
   },
 ];
 
-export default function GlossaryPage() {
-  const location = useLocation();
-  const [searchTerm, setSearchTerm] = useState('');
+
+export interface GlossaryTermsContentProps {
+  initialSearchTerm?: string;
+}
+
+export const GlossaryTermsContent: React.FC<GlossaryTermsContentProps> = ({ initialSearchTerm = '' }) => {
+  const [searchTerm, setSearchTerm] = useState(initialSearchTerm);
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
 
+  // Update local search term if prop changes
   useEffect(() => {
-    const params = new URLSearchParams(location.search);
-    const term = params.get('term');
-    if (term) {
-      setSearchTerm(term);
+    if (initialSearchTerm) {
+      setSearchTerm(initialSearchTerm);
     }
-  }, [location.search]);
+  }, [initialSearchTerm]);
 
   const categories = ['All', 'Exercise', 'Nutrition', 'Wellness', 'Training', 'Anatomy'];
 
@@ -330,76 +333,89 @@ export default function GlossaryPage() {
       .sort((a, b) => a.term.localeCompare(b.term));
   }, [searchTerm, selectedCategory]);
 
+  return (
+    <div className="glossary-content">
+
+      <section className="glossary-controls">
+        <div className="search-section">
+          <input
+            type="text"
+            placeholder="Search terms or definitions..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="glossary-search"
+          />
+        </div>
+
+        <div className="category-filters">
+          {categories.map((category) => (
+            <button
+              key={category}
+              className={`category-btn ${selectedCategory === category ? 'active' : ''}`}
+              onClick={() => setSelectedCategory(category)}
+            >
+              {category}
+              <span className="category-count">
+                {category === 'All'
+                  ? glossaryTerms.length
+                  : glossaryTerms.filter(t => t.category === category).length}
+              </span>
+            </button>
+          ))}
+        </div>
+      </section>
+
+      <section className="glossary-results">
+        {filteredTerms.length > 0 ? (
+          <>
+            <div className="results-count">
+              Showing {filteredTerms.length} {filteredTerms.length === 1 ? 'term' : 'terms'}
+            </div>
+            <div className="terms-grid">
+              {filteredTerms.map((item, index) => (
+                <div key={index} className="term-card">
+                  <div className="term-header">
+                    <h3 className="term-title">{item.term}</h3>
+                    <span className={`category-badge ${item.category.toLowerCase()}`}>
+                      {item.category}
+                    </span>
+                  </div>
+                  <p className="term-definition">{item.definition}</p>
+                </div>
+              ))}
+            </div>
+          </>
+        ) : (
+          <div className="no-results">
+            <div className="no-results-icon">🔍</div>
+            <h3>No terms found</h3>
+            <p>Try adjusting your search or filter to find what you're looking for.</p>
+          </div>
+        )}
+      </section>
+    </div>
+  );
+};
+
+export default function GlossaryPage() {
+  const location = useLocation();
+  const [initialSearch, setInitialSearch] = useState('');
+
   const handleSearch = (searchValue: string) => {
     console.log('Searching for:', searchValue);
   };
 
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const term = params.get('term');
+    if (term) {
+      setInitialSearch(term);
+    }
+  }, [location.search]);
+
   return (
     <Layout onSearch={handleSearch}>
-      <div className="glossary-content">
-        <section className="glossary-hero">
-          <h1>Fitness Glossary</h1>
-          <p>Your comprehensive guide to fitness and physical activity terminology</p>
-        </section>
-
-        <section className="glossary-controls">
-          <div className="search-section">
-            <input
-              type="text"
-              placeholder="Search terms or definitions..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="glossary-search"
-            />
-          </div>
-
-          <div className="category-filters">
-            {categories.map((category) => (
-              <button
-                key={category}
-                className={`category-btn ${selectedCategory === category ? 'active' : ''}`}
-                onClick={() => setSelectedCategory(category)}
-              >
-                {category}
-                <span className="category-count">
-                  {category === 'All'
-                    ? glossaryTerms.length
-                    : glossaryTerms.filter(t => t.category === category).length}
-                </span>
-              </button>
-            ))}
-          </div>
-        </section>
-
-        <section className="glossary-results">
-          {filteredTerms.length > 0 ? (
-            <>
-              <div className="results-count">
-                Showing {filteredTerms.length} {filteredTerms.length === 1 ? 'term' : 'terms'}
-              </div>
-              <div className="terms-grid">
-                {filteredTerms.map((item, index) => (
-                  <div key={index} className="term-card">
-                    <div className="term-header">
-                      <h3 className="term-title">{item.term}</h3>
-                      <span className={`category-badge ${item.category.toLowerCase()}`}>
-                        {item.category}
-                      </span>
-                    </div>
-                    <p className="term-definition">{item.definition}</p>
-                  </div>
-                ))}
-              </div>
-            </>
-          ) : (
-            <div className="no-results">
-              <div className="no-results-icon">🔍</div>
-              <h3>No terms found</h3>
-              <p>Try adjusting your search or filter to find what you're looking for.</p>
-            </div>
-          )}
-        </section>
-      </div>
+      <GlossaryTermsContent initialSearchTerm={initialSearch} />
     </Layout>
   );
 }

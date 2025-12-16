@@ -1,13 +1,13 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Layout } from '../../components';
-import { 
-  searchExercises, 
+import {
+  searchExercises,
   getRateLimitStatus,
   getExerciseDetail,
   type Exercise,
   type ExerciseDetail,
-  type RateLimitStatus 
+  type RateLimitStatus
 } from '../../services/exerciseDbService';
 import './glossary_page.css';
 
@@ -1593,17 +1593,22 @@ const glossaryExercises: GlossaryExercise[] = [
   },
 ];
 
-type TabType = 'glossary' | 'exercises';
+// ... existing imports ...
+import { GlossaryTermsContent } from '../glossary/GlossaryPage';
 
-export default function GlossaryPage() {
+// ... existing code ...
+
+type TabType = 'glossary' | 'exercises' | 'terms';
+
+export default function GlossaryPage() { // Note: Function name should probably be updated too, but default export handles filename change. Keeping internal name for diff simplicity or renaming if I can. Let's rename it to KnowledgeHubPage for consistency.
   // URL search params for exercise linking
   const [searchParams, setSearchParams] = useSearchParams();
   const highlightedExerciseRef = useRef<HTMLDivElement>(null);
-  
+
   // Tab state
   const [activeTab, setActiveTab] = useState<TabType>('glossary');
-  
-  // Glossary state
+
+  // Glossary state (Existing Exercise Library)
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [selectedExerciseItem, setSelectedExerciseItem] = useState<GlossaryExercise | null>(null);
@@ -1621,16 +1626,19 @@ export default function GlossaryPage() {
   const [isLoadingDetail, setIsLoadingDetail] = useState(false);
   const [detailError, setDetailError] = useState<string | null>(null);
 
+  // Terms Tab State
+  const [termsSearchTerm, setTermsSearchTerm] = useState('');
+
   const categories = ['All', 'Beginner', 'Intermediate', 'Advanced'];
 
-  // Filter glossary exercises
+  // ... existing filter logic ...
   const filteredExercises = useMemo(() => {
     return glossaryExercises
       .filter(exercise => {
         const matchesSearch = exercise.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                            exercise.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                            exercise.muscleGroups.some(mg => mg.toLowerCase().includes(searchTerm.toLowerCase())) ||
-                            exercise.equipment?.toLowerCase().includes(searchTerm.toLowerCase());
+          exercise.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          exercise.muscleGroups.some(mg => mg.toLowerCase().includes(searchTerm.toLowerCase())) ||
+          exercise.equipment?.toLowerCase().includes(searchTerm.toLowerCase());
         const matchesCategory = selectedCategory === 'All' || exercise.difficulty === selectedCategory;
         return matchesSearch && matchesCategory;
       })
@@ -1653,6 +1661,7 @@ export default function GlossaryPage() {
     }
   };
 
+  // ... (handleExerciseSearch, handleSearch, formatResetTime, handleExerciseClick, closeModal, handleViewFullDetails, keydown effect) ...
   const handleExerciseSearch = async () => {
     if (!exerciseSearchTerm.trim()) {
       setExerciseError('Please enter a search term');
@@ -1668,7 +1677,7 @@ export default function GlossaryPage() {
         name: exerciseSearchTerm,
         limit: 20
       });
-      
+
       setExercises(response.data);
       setRateLimitStatus({
         requests_made: response.rate_limit.remaining_requests,
@@ -1677,7 +1686,7 @@ export default function GlossaryPage() {
         reset_in_seconds: response.rate_limit.reset_in_seconds,
         period_hours: 1
       });
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       setExerciseError(error.message || 'Failed to search exercises. Please try again.');
       setExercises([]);
@@ -1727,7 +1736,7 @@ export default function GlossaryPage() {
         reset_in_seconds: response.rate_limit.reset_in_seconds,
         period_hours: 1
       });
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       setDetailError(error.message || 'Failed to load full details. Please try again.');
     } finally {
@@ -1740,7 +1749,7 @@ export default function GlossaryPage() {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         if (selectedExercise) {
-        closeModal();
+          closeModal();
         }
         if (selectedExerciseItem) {
           setSelectedExerciseItem(null);
@@ -1760,13 +1769,15 @@ export default function GlossaryPage() {
     };
   }, [selectedExercise, selectedExerciseItem]);
 
-  // Handle exercise parameter from URL (for linking from chat)
+  // Handle URL params
   useEffect(() => {
     const exerciseName = searchParams.get('exercise');
+    const term = searchParams.get('term');
+
     if (exerciseName) {
-      // Switch to glossary tab
+      // Switch to exercise library tab
       setActiveTab('glossary');
-      
+
       // Find the exercise by name (case-insensitive)
       const foundExercise = glossaryExercises.find(
         ex => ex.name.toLowerCase() === exerciseName.toLowerCase()
@@ -1775,20 +1786,20 @@ export default function GlossaryPage() {
       if (foundExercise) {
         // Highlight the exercise
         setHighlightedExerciseId(foundExercise.id);
-        
+
         // Small delay to allow rendering, then scroll and open
         setTimeout(() => {
           if (highlightedExerciseRef.current) {
-            highlightedExerciseRef.current.scrollIntoView({ 
-              behavior: 'smooth', 
-              block: 'center' 
+            highlightedExerciseRef.current.scrollIntoView({
+              behavior: 'smooth',
+              block: 'center'
             });
           }
-          
+
           // Auto-open the exercise modal
           setTimeout(() => {
             setSelectedExerciseItem(foundExercise);
-            
+
             // Remove the highlight after opening modal
             setTimeout(() => {
               setHighlightedExerciseId(null);
@@ -1798,6 +1809,9 @@ export default function GlossaryPage() {
           }, 500);
         }, 100);
       }
+    } else if (term) {
+      setActiveTab('terms');
+      setTermsSearchTerm(term);
     }
   }, [searchParams, setSearchParams]);
 
@@ -1806,7 +1820,7 @@ export default function GlossaryPage() {
       <div className="glossary-content">
         <section className="glossary-hero">
           <h1>Fitness Knowledge Hub</h1>
-          <p>Explore 100+ exercises with detailed instructions and discover more from our live database</p>
+          <p>Explore exercises, search our database, and master fitness terminology</p>
         </section>
 
         {/* Tabs Navigation */}
@@ -1823,9 +1837,15 @@ export default function GlossaryPage() {
           >
             Exercise Database
           </button>
+          <button
+            className={`glossary-tab ${activeTab === 'terms' ? 'active' : ''}`}
+            onClick={() => setActiveTab('terms')}
+          >
+            Glossary
+          </button>
         </div>
 
-        {/* Glossary Tab Content */}
+        {/* Glossary Tab (Exercise Library) Content */}
         {activeTab === 'glossary' && (
           <>
             <section className="glossary-controls">
@@ -1865,8 +1885,8 @@ export default function GlossaryPage() {
                   </div>
                   <div className="terms-grid">
                     {filteredExercises.map((item) => (
-                      <div 
-                        key={item.id} 
+                      <div
+                        key={item.id}
                         ref={highlightedExerciseId === item.id ? highlightedExerciseRef : null}
                         className={`term-card exercise-card-item ${highlightedExerciseId === item.id ? 'exercise-highlighted' : ''}`}
                         onClick={() => setSelectedExerciseItem(item)}
@@ -1908,11 +1928,11 @@ export default function GlossaryPage() {
               <div className="exercise-modal-backdrop" onClick={() => setSelectedExerciseItem(null)}>
                 <div className="exercise-modal glossary-exercise-modal" onClick={(e) => e.stopPropagation()}>
                   <button className="modal-close-btn" onClick={() => setSelectedExerciseItem(null)}>×</button>
-                  
+
                   <div className="modal-content">
                     <div className="modal-details-section" style={{ width: '100%' }}>
                       <h2 className="modal-exercise-title">{selectedExerciseItem.name}</h2>
-                      
+
                       <div className="modal-detail-group">
                         <h3 className="modal-detail-title">Difficulty Level</h3>
                         <div className="modal-badges">
@@ -1989,7 +2009,7 @@ export default function GlossaryPage() {
                     {rateLimitStatus.requests_remaining} of {rateLimitStatus.limit} requests remaining
                   </h3>
                   <p>
-                    Resets in {formatResetTime(rateLimitStatus.reset_in_seconds)}. 
+                    Resets in {formatResetTime(rateLimitStatus.reset_in_seconds)}.
                     Search limit: {rateLimitStatus.limit} requests per hour to conserve API usage.
                   </p>
                 </div>
@@ -2053,14 +2073,14 @@ export default function GlossaryPage() {
                 </div>
                 <div className="exercise-grid">
                   {exercises.map((exercise) => (
-                    <div 
-                      key={exercise.exerciseId} 
+                    <div
+                      key={exercise.exerciseId}
                       className="exercise-card-simple"
                       onClick={() => handleExerciseClick(exercise)}
                     >
                       <div className="exercise-thumbnail">
-                        <img 
-                          src={exercise.imageUrl} 
+                        <img
+                          src={exercise.imageUrl}
                           alt={exercise.name}
                           className="exercise-thumbnail-image"
                           loading="lazy"
@@ -2084,23 +2104,23 @@ export default function GlossaryPage() {
               <div className="exercise-modal-backdrop" onClick={closeModal}>
                 <div className="exercise-modal" onClick={(e) => e.stopPropagation()}>
                   <button className="modal-close-btn" onClick={closeModal}>×</button>
-                  
+
                   <div className="modal-content">
                     <div className="modal-image-section">
-                      <img 
-                        src={exerciseDetail?.imageUrl || selectedExercise.imageUrl} 
+                      <img
+                        src={exerciseDetail?.imageUrl || selectedExercise.imageUrl}
                         alt={selectedExercise.name}
                         className="modal-exercise-image"
                       />
                     </div>
-                    
+
                     <div className="modal-details-section">
                       <h2 className="modal-exercise-title">{selectedExercise.name}</h2>
                       <p className="modal-exercise-id">ID: {selectedExercise.exerciseId}</p>
 
                       {/* View Full Details Button */}
                       {!exerciseDetail && !isLoadingDetail && (
-                        <button 
+                        <button
                           className="view-full-details-btn"
                           onClick={handleViewFullDetails}
                         >
@@ -2277,9 +2297,9 @@ export default function GlossaryPage() {
                           <h3 className="modal-detail-title">
                             Video Tutorial
                           </h3>
-                          <a 
-                            href={exerciseDetail.videoUrl} 
-                            target="_blank" 
+                          <a
+                            href={exerciseDetail.videoUrl}
+                            target="_blank"
                             rel="noopener noreferrer"
                             className="modal-video-link"
                           >
@@ -2309,6 +2329,11 @@ export default function GlossaryPage() {
               </div>
             )}
           </div>
+        )}
+
+        {/* Terms Tab Content (Newly Incorporated) */}
+        {activeTab === 'terms' && (
+          <GlossaryTermsContent initialSearchTerm={termsSearchTerm} />
         )}
       </div>
     </Layout>

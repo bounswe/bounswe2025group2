@@ -17,7 +17,7 @@ import ProfilePage from "./pages/profile/ProfilePage";
 import SettingsPage from "./pages/settings/SettingsPage";
 import ContactPage from './pages/contact/ContactPage';
 import GlossaryPage from './pages/glossary/GlossaryPage';
-import KnowledgeHubPage from './pages/knowledge-hub/GlossaryPage';
+import KnowledgeHubPage from './pages/knowledge-hub/KnowledgeHubPage';
 import '../index.css';
 
 import ChallengesPage from "./pages/challenges/ChallengesPage";

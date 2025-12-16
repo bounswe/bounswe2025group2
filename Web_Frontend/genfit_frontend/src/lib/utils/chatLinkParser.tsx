@@ -176,7 +176,7 @@ export const renderMessageWithChallengeLinks = (message: string): React.ReactNod
       return (
         <Link
           key={index}
-          to={`/glossary?term=${segment.hashtag}`}
+          to={`/knowledge-hub?term=${segment.hashtag}`}
           className="hashtag-link text-blue-500 hover:underline"
           title={`Look up "${segment.hashtag}" in Glossary`}
         >
