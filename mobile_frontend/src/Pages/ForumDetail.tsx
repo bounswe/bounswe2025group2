@@ -12,16 +12,20 @@ import {
   FAB,
   Chip,
   Snackbar,
+  Avatar,
 } from 'react-native-paper';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { useAuth } from '../context/AuthContext';
 import { API_URL } from '../constants/api';
 import Cookies from '@react-native-cookies/cookies';
 
+const DEFAULT_PROFILE_PIC = require('../assets/temp_images/profile.png');
+
 type Thread = {
   id: number;
   title: string;
   author: string;
+  author_profile_photo?: string;
   comment_count: number;
   last_activity: string;
 };
@@ -45,6 +49,7 @@ const ForumDetail = () => {
   const [snackbarVisible, setSnackbarVisible] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState('');
   const [snackbarType, setSnackbarType] = useState<'success' | 'error'>('success');
+  const [profilePics, setProfilePics] = useState<Record<string, string>>({});
 
   const showSnackbar = (message: string, type: 'success' | 'error' = 'success') => {
     setSnackbarMessage(message);
@@ -55,6 +60,58 @@ const ForumDetail = () => {
   useEffect(() => {
     fetchThreads();
   }, []);
+
+  // Fetch profile pictures for thread authors
+  useEffect(() => {
+    if (threads.length > 0) {
+      fetchProfilePictures();
+    }
+  }, [threads]);
+
+  const fetchProfilePictures = async () => {
+    const usernames = new Set<string>();
+    threads.forEach((thread) => {
+      if (thread.author) {
+        usernames.add(thread.author);
+      }
+    });
+
+    if (usernames.size === 0) {
+      return;
+    }
+
+    const pics: Record<string, string> = {};
+    for (const username of usernames) {
+      try {
+        const endpoint = `profile/other/picture/${username}/`;
+        const cacheBuster = `?t=${Date.now()}`;
+        const fullUrl = `${API_URL}${endpoint}${cacheBuster}`;
+        
+        const response = await fetch(fullUrl, {
+          headers: {
+            ...getAuthHeader(),
+          },
+          credentials: 'include',
+        });
+
+        if (response.ok) {
+          const contentType = response.headers.get('Content-Type') || '';
+          if (contentType.startsWith('image/')) {
+            pics[username] = fullUrl;
+            console.log(`[ForumDetail] Profile picture found for ${username}`);
+          } else {
+            console.log(`[ForumDetail] No image content type for ${username}: ${contentType}`);
+          }
+        } else {
+          console.log(`[ForumDetail] Failed to fetch profile picture for ${username}: ${response.status}`);
+        }
+      } catch (err) {
+        console.error(`[ForumDetail] Error fetching profile picture for ${username}:`, err);
+      }
+    }
+    console.log(`[ForumDetail] Fetched ${Object.keys(pics).length} profile pictures`);
+    setProfilePics(pics);
+  };
 
   const fetchThreads = async () => {
     try {
@@ -209,33 +266,59 @@ const ForumDetail = () => {
     <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
       <ScrollView style={styles.container}> 
         <Text variant="headlineMedium" style={styles.heading}>Threads</Text>
-        {threads.map(thread => (
-          <Card
-            key={thread.id}
-            mode="elevated"
-            style={styles.threadCard}
-            onPress={() => navigation.navigate('ThreadDetail', { threadId: thread.id })}
-          >
-            <Card.Content>
-              <Text variant="titleMedium" style={styles.threadTitle}>{thread.title}</Text>
-              <View style={styles.threadMetaContainer}>
-                <Text variant="bodySmall">By </Text>
-                <TouchableOpacity
-                  onPress={(e) => {
-                    e.stopPropagation();
-                    navigation.navigate('Profile', { username: thread.author });
-                  }}
-                >
-                  <Text variant="bodySmall" style={[styles.threadAuthor, { color: theme.colors.primary }]}
-                    >
-                    {thread.author}
-                  </Text>
-                </TouchableOpacity>
-                <Text variant="bodySmall"> • {thread.comment_count} comments • {new Date(thread.last_activity).toLocaleDateString()}</Text>
-              </View>
-            </Card.Content>
-          </Card>
-        ))}
+        {threads.map(thread => {
+          let profilePicSource;
+          if (thread.author_profile_photo) {
+            profilePicSource = { uri: thread.author_profile_photo };
+          } else if (profilePics[thread.author]) {
+            profilePicSource = { uri: profilePics[thread.author] };
+          } else {
+            profilePicSource = DEFAULT_PROFILE_PIC;
+          }
+
+          return (
+            <Card
+              key={thread.id}
+              mode="elevated"
+              style={styles.threadCard}
+              onPress={() => navigation.navigate('ThreadDetail', { threadId: thread.id })}
+            >
+              <Card.Content style={styles.cardContent}>
+                <View style={styles.threadHeader}>
+                  <TouchableOpacity
+                    style={styles.authorSection}
+                    onPress={(e) => {
+                      e.stopPropagation();
+                      navigation.navigate('Profile', { username: thread.author });
+                    }}
+                    activeOpacity={0.7}
+                  >
+                    <Avatar.Image 
+                      size={40} 
+                      source={profilePicSource}
+                    />
+                  </TouchableOpacity>
+                  <View style={styles.threadContent}>
+                    <Text variant="titleMedium" style={styles.threadTitle}>{thread.title}</Text>
+                    <View style={styles.threadMetaContainer}>
+                      <TouchableOpacity
+                        onPress={(e) => {
+                          e.stopPropagation();
+                          navigation.navigate('Profile', { username: thread.author });
+                        }}
+                      >
+                        <Text variant="bodySmall" style={[styles.threadAuthor, { color: theme.colors.primary }]}>
+                          {thread.author}
+                        </Text>
+                      </TouchableOpacity>
+                      <Text variant="bodySmall"> • {thread.comment_count} comments • {new Date(thread.last_activity).toLocaleDateString()}</Text>
+                    </View>
+                  </View>
+                </View>
+              </Card.Content>
+            </Card>
+          );
+        })}
         {threads.length === 0 && (
           <View style={styles.center}>
             <Text variant="bodyLarge" style={styles.emptyText}>No threads found.</Text>
@@ -337,6 +420,19 @@ const styles = StyleSheet.create({
   center: { justifyContent: 'center', alignItems: 'center', flex: 1, padding: 24 },
   heading: { fontWeight: 'bold', margin: 16 },
   threadCard: { marginHorizontal: 16, marginBottom: 12 },
+  cardContent: {
+    padding: 16,
+  },
+  threadHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+  },
+  authorSection: {
+    marginRight: 12,
+  },
+  threadContent: {
+    flex: 1,
+  },
   threadTitle: { fontWeight: '600', marginBottom: 8 },
   threadMetaContainer: { 
     flexDirection: 'row', 

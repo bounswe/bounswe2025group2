@@ -65,12 +65,21 @@ const ThreadDetail = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [comments, setComments] = useState<Comment[]>([]);
+  const [commentProfilePics, setCommentProfilePics] = useState<Record<string, string>>({});
+  const [threadAuthorProfilePic, setThreadAuthorProfilePic] = useState<string | null>(null);
 
   useEffect(() => {
     fetchThreadDetail();
     fetchComments();
     fetchVoteStatus();
   }, []);
+
+  // Fetch profile pictures for comment authors
+  useEffect(() => {
+    if (comments.length > 0) {
+      fetchCommentProfilePictures();
+    }
+  }, [comments]);
 
   // Refetch data when screen comes into focus
   useEffect(() => {
@@ -81,6 +90,40 @@ const ThreadDetail = () => {
 
     return unsubscribe;
   }, [navigation]);
+
+  // Fetch thread author profile picture
+  useEffect(() => {
+    if (thread?.author) {
+      fetchThreadAuthorProfilePicture();
+    }
+  }, [thread?.author]);
+
+  const fetchThreadAuthorProfilePicture = async () => {
+    if (!thread?.author) return;
+
+    try {
+      const endpoint = `profile/other/picture/${thread.author}/`;
+      const cacheBuster = `?t=${Date.now()}`;
+      const fullUrl = `${API_URL}${endpoint}${cacheBuster}`;
+      
+      const response = await fetch(fullUrl, {
+        headers: {
+          ...getAuthHeader(),
+        },
+        credentials: 'include',
+      });
+
+      if (response.ok) {
+        const contentType = response.headers.get('Content-Type') || '';
+        if (contentType.startsWith('image/')) {
+          setThreadAuthorProfilePic(fullUrl);
+          console.log(`[ThreadDetail] Profile picture found for thread author ${thread.author}`);
+        }
+      }
+    } catch (err) {
+      console.error(`[ThreadDetail] Error fetching profile picture for thread author:`, err);
+    }
+  };
 
   const fetchVoteStatus = async () => {
     try {
@@ -149,6 +192,46 @@ const ThreadDetail = () => {
     } catch (e) {
       console.error('Failed to load comments', e);
     }
+  };
+
+  const fetchCommentProfilePictures = async () => {
+    const usernames = new Set<string>();
+    comments.forEach((comment) => {
+      if (comment.author_username) {
+        usernames.add(comment.author_username);
+      }
+    });
+    if (usernames.size === 0) {
+      return;
+    }
+
+    const pics: Record<string, string> = {};
+    for (const username of usernames) {
+      try {
+        const endpoint = `profile/other/picture/${username}/`;
+        const cacheBuster = `?t=${Date.now()}`;
+        const fullUrl = `${API_URL}${endpoint}${cacheBuster}`;
+        
+        const response = await fetch(fullUrl, {
+          headers: {
+            ...getAuthHeader(),
+          },
+          credentials: 'include',
+        });
+
+        if (response.ok) {
+          const contentType = response.headers.get('Content-Type') || '';
+          if (contentType.startsWith('image/')) {
+            pics[username] = fullUrl;
+            console.log(`[ThreadDetail] Profile picture found for commenter ${username}`);
+          }
+        }
+      } catch (err) {
+        console.error(`[ThreadDetail] Error fetching profile picture for ${username}:`, err);
+      }
+    }
+    console.log(`[ThreadDetail] Fetched ${Object.keys(pics).length} commenter profile pictures`);
+    setCommentProfilePics(pics);
   };
   // Toggle like on thread - matches web implementation
   const toggleLike = async () => {
@@ -311,7 +394,13 @@ const ThreadDetail = () => {
           >
             <Avatar.Image 
               size={48}
-              source={thread.author_profile_photo ? { uri: thread.author_profile_photo } : DEFAULT_PROFILE_PIC} 
+              source={
+                thread.author_profile_photo 
+                  ? { uri: thread.author_profile_photo }
+                  : threadAuthorProfilePic
+                  ? { uri: threadAuthorProfilePic }
+                  : DEFAULT_PROFILE_PIC
+              } 
             />
             <View style={styles.authorInfo}>
               <Text variant="titleMedium" style={styles.authorName}>
@@ -380,31 +469,42 @@ const ThreadDetail = () => {
         </View>
 
         {/* Comments List */}
-        {comments.map(comment => (
-          <Card key={comment.id} mode="outlined" style={styles.commentCard}>
-            <Card.Content>
-              <TouchableOpacity 
-                style={styles.commentAuthorSection}
-                onPress={() => navigation.navigate('Profile', { username: comment.author_username })}
-                activeOpacity={0.6}
-              >
-                <Avatar.Image 
-                  size={32}
-                  source={comment.author_profile_photo ? { uri: comment.author_profile_photo } : DEFAULT_PROFILE_PIC} 
-                />
-                <View style={styles.commentAuthorInfo}>
-                  <Text variant="labelLarge" style={[styles.commentAuthorName, { color: theme.colors.primary }]}>
-                    @{comment.author_username}
-                  </Text>
-                  <Text variant="bodySmall" style={styles.commentTime}>
-                    {formatDate(comment.created_at)}
-                  </Text>
-                </View>
-              </TouchableOpacity>
-              <Text variant="bodyMedium" style={styles.commentText}>{comment.content}</Text>
-            </Card.Content>
-          </Card>
-        ))}
+        {comments.map(comment => {
+          let profilePicSource;
+          if (comment.author_profile_photo) {
+            profilePicSource = { uri: comment.author_profile_photo };
+          } else if (commentProfilePics[comment.author_username]) {
+            profilePicSource = { uri: commentProfilePics[comment.author_username] };
+          } else {
+            profilePicSource = DEFAULT_PROFILE_PIC;
+          }
+
+          return (
+            <Card key={comment.id} mode="outlined" style={styles.commentCard}>
+              <Card.Content>
+                <TouchableOpacity 
+                  style={styles.commentAuthorSection}
+                  onPress={() => navigation.navigate('Profile', { username: comment.author_username })}
+                  activeOpacity={0.6}
+                >
+                  <Avatar.Image 
+                    size={32}
+                    source={profilePicSource} 
+                  />
+                  <View style={styles.commentAuthorInfo}>
+                    <Text variant="labelLarge" style={[styles.commentAuthorName, { color: theme.colors.primary }]}>
+                      @{comment.author_username}
+                    </Text>
+                    <Text variant="bodySmall" style={styles.commentTime}>
+                      {formatDate(comment.created_at)}
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+                <Text variant="bodyMedium" style={styles.commentText}>{comment.content}</Text>
+              </Card.Content>
+            </Card>
+          );
+        })}
       </View>
     </ScrollView>
   );
