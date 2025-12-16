@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useIsAuthenticated } from '../../../../lib/hooks/useAuth';
-import { useThread, useThreadComments, useUpdateThread } from '../../../../lib/hooks/useData';
+import { useThread, useThreadComments, useUpdateThread, useBookmarkThread } from '../../../../lib/hooks/useData';
 import Layout from '../../../../components/Layout';
 import { Card } from '../../../../components/ui/card';
 import { Button } from '../../../../components/ui/button';
@@ -9,30 +9,31 @@ import CommentItem from '../../components/CommentItem';
 import ThreadActions from '../../components/ThreadActions';
 import ThreadEditModal from '../../components/ThreadEditModal';
 import CommentForm from '../../components/CommentForm';
-import { ArrowLeft, MessageCircle, Calendar, User } from 'lucide-react';
+import { ArrowLeft, MessageCircle, Calendar, User, Bookmark, BookmarkCheck } from 'lucide-react';
 import './thread.css';
 
 const ThreadPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const isAuthenticated = useIsAuthenticated();
+  const { isLoading: authLoading } = useIsAuthenticated();
 
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  
+
   const threadId = id ? parseInt(id) : undefined;
 
   const { data: thread, isLoading: threadLoading, error: threadError } = useThread(threadId);
   const { data: comments, isLoading: commentsLoading, error: commentsError } = useThreadComments(threadId);
   const updateThreadMutation = useUpdateThread();
+  const bookmarkThreadMutation = useBookmarkThread();
 
-  useEffect(() => {
-    if (!isAuthenticated) {
-      navigate('/auth');
-    }
-  }, [isAuthenticated, navigate]);
-
-  if (!isAuthenticated) {
-    return null;
+  if (authLoading) {
+    return (
+      <Layout>
+        <div className="thread-page">
+          <div className="loading">Loading session...</div>
+        </div>
+      </Layout>
+    );
   }
 
   if (threadLoading) {
@@ -71,7 +72,7 @@ const ThreadPage: React.FC = () => {
 
   const handleEditThread = async (threadData: { title: string; content: string }) => {
     if (!threadId) return;
-    
+
     try {
       await updateThreadMutation.mutateAsync({
         threadId,
@@ -84,10 +85,15 @@ const ThreadPage: React.FC = () => {
     }
   };
 
+  const handleBookmark = () => {
+    if (!threadId) return;
+    bookmarkThreadMutation.mutate(threadId);
+  };
+
   return (
     <Layout>
       <div className="thread-page">
-        <div className="thread-header">
+        <div className="thread-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <Button
             variant="ghost"
             onClick={() => navigate(-1)}
@@ -95,6 +101,26 @@ const ThreadPage: React.FC = () => {
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
             Back
+          </Button>
+
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleBookmark}
+            disabled={bookmarkThreadMutation.isPending}
+            className={thread.is_bookmarked ? "bg-primary/10 text-primary border-primary/50" : ""}
+          >
+            {thread.is_bookmarked ? (
+              <>
+                <BookmarkCheck className="w-4 h-4 mr-2" />
+                Bookmarked
+              </>
+            ) : (
+              <>
+                <Bookmark className="w-4 h-4 mr-2" />
+                Bookmark
+              </>
+            )}
           </Button>
         </div>
 
@@ -132,11 +158,11 @@ const ThreadPage: React.FC = () => {
             <div className="thread-body">
               <p>{thread.content}</p>
             </div>
-            
+
             {/* Removed the duplicate <ThreadActions thread={thread} /> component */}
 
-            <ThreadActions 
-              thread={thread} 
+            <ThreadActions
+              thread={thread}
               onEdit={() => setIsEditModalOpen(true)}
               onDelete={() => navigate(-1)}
             />

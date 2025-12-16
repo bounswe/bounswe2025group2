@@ -5,8 +5,7 @@ from django.contrib.auth import get_user_model
 from django.db.models import Q
 from django.utils import timezone
 from .utils import geocode_location
-from .models import Notification, UserWithType, FitnessGoal, Profile, ContactSubmission, Forum, Thread, Comment, Subcomment, Vote, Challenge, ChallengeParticipant, AiTutorChat, AiTutorResponse, UserAiMessage, DailyAdvice, MentorMenteeRelationship
-from django.utils import timezone
+from .models import Notification, Report, UserWithType, FitnessGoal, Profile, ContactSubmission, Forum, Thread, Comment, Subcomment, Vote, Challenge, ChallengeParticipant, AiTutorChat, AiTutorResponse, UserAiMessage, DailyAdvice, MentorMenteeRelationship, ThreadBookmark
 
 
 User = get_user_model()
@@ -201,13 +200,20 @@ class ThreadDetailSerializer(serializers.ModelSerializer):
     author = serializers.StringRelatedField(read_only=True)
     forum = serializers.PrimaryKeyRelatedField(queryset=Forum.objects.all())
     comment_count = serializers.IntegerField(read_only=True)
+    is_bookmarked = serializers.SerializerMethodField()
     
     class Meta:
         model = Thread
         fields = ['id', 'title', 'content', 'author', 'forum', 'created_at', 
                  'updated_at', 'is_pinned', 'is_locked', 'view_count', 
-                 'like_count', 'last_activity', 'comment_count']
-        read_only_fields = ['created_at', 'updated_at', 'view_count', 'like_count', 'last_activity']
+                 'like_count', 'last_activity', 'comment_count', 'is_bookmarked']
+        read_only_fields = ['created_at', 'updated_at', 'view_count', 'like_count', 'last_activity', 'is_bookmarked']
+
+    def get_is_bookmarked(self, obj):
+        request = self.context.get('request')
+        if request and request.user.is_authenticated:
+            return ThreadBookmark.objects.filter(user=request.user, thread=obj).exists()
+        return False
 
     def update(self, instance, validated_data):
         instance.title = validated_data.get('title', instance.title)
@@ -217,7 +223,15 @@ class ThreadDetailSerializer(serializers.ModelSerializer):
         instance.is_locked = validated_data.get('is_locked', instance.is_locked)
         instance.updated_at = timezone.now()
         instance.save()
+        instance.save()
         return instance
+
+class ThreadBookmarkSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ThreadBookmark
+        fields = ['id', 'user', 'thread', 'created_at']
+        read_only_fields = ['id', 'created_at']
+
 
 class CommentSerializer(serializers.ModelSerializer):
     author_id = serializers.IntegerField(source='author.id', read_only=True)
@@ -618,3 +632,59 @@ class ContactSubmissionSerializer(serializers.ModelSerializer):
         if len(value.strip()) < 10:
             raise serializers.ValidationError("Message must be at least 10 characters long.")
         return value.strip()
+
+
+class ReportSerializer(serializers.ModelSerializer):
+    reporter_username = serializers.CharField(source='reporter.username', read_only=True)
+    reason_display = serializers.CharField(source='get_reason_display', read_only=True)
+    status_display = serializers.CharField(source='get_status_display', read_only=True)
+    content_type_display = serializers.CharField(source='get_content_type_display', read_only=True)
+    
+    class Meta:
+        model = Report
+        fields = [
+            'id',
+            'reporter',
+            'reporter_username',
+            'content_type',
+            'content_type_display',
+            'object_id',
+            'reason',
+            'reason_display',
+            'description',
+            'status',
+            'status_display',
+            'admin_notes',
+            'created_at',
+            'updated_at',
+            'resolved_at',
+        ]
+        read_only_fields = [
+            'id', 'reporter', 'reporter_username', 'created_at', 
+            'updated_at', 'resolved_at', 'content_type_display',
+            'reason_display', 'status_display'
+        ]
+    
+    def validate(self, data):
+        """Validate the report data"""
+        request = self.context.get('request')
+        if not request or not request.user.is_authenticated:
+            raise serializers.ValidationError("Authentication required")
+        
+        # Validate description if reason is 'other'
+        if data.get('reason') == 'other' and not data.get('description'):
+            raise serializers.ValidationError({
+                'description': 'Please provide details when selecting "Other" as reason'
+            })
+        
+        return data
+    
+    def create(self, validated_data):
+        """Create a new report"""
+        request = self.context.get('request')
+        validated_data['reporter'] = request.user
+        
+        # Create the report
+        report = Report.objects.create(**validated_data)
+        
+        return report

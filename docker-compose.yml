@@ -41,6 +41,7 @@ services:
       - SECRET_KEY=${SECRET_KEY:-django-insecure-p6p*^^1rp!n(^dqu72al_wq^+5v#kw=8lw#)1i9h5qgq42}
       - DEBUG=${DEBUG:-True}
       - GROQ_API_KEY=${GROQ_API_KEY}
+      - EXERCISEDB_API_KEY=${EXERCISEDB_API_KEY}
     depends_on:
       db:
         condition: service_healthy

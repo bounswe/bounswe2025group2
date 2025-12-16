@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
-import { useUserSettings, useUpdateUserSettings } from '../../lib';
+import { useUserSettings, useUpdateUserSettings, useLogout, GFapi } from '../../lib';
+import { useNavigate } from 'react-router-dom';
 import { Layout } from '../../components';
 import { Button } from '../../components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '../../components/ui/dialog';
 import './settings_page.css';
 
 // Icon components
@@ -23,6 +25,8 @@ function SettingsPage() {
 
   const { data: settings, error: settingsError } = useUserSettings();
   const updateSettings = useUpdateUserSettings();
+  const logoutMutation = useLogout();
+  const navigate = useNavigate();
   
   const [dailyAdviceEnabled, setDailyAdviceEnabled] = useState(true);
   const [hasChanges, setHasChanges] = useState(false);
@@ -67,6 +71,28 @@ function SettingsPage() {
       setDailyAdviceEnabled(settings.daily_advice_enabled);
       setHasChanges(false);
       setSaveSuccess(false);
+    }
+  };
+
+  const [rtbfOpen, setRtbfOpen] = useState(false);
+  const [rtbfLoading, setRtbfLoading] = useState(false);
+
+  const handleRtbf = async () => {
+    setRtbfLoading(true);
+    try {
+      await GFapi.delete('/api/user/rtbf/');
+      try {
+        await logoutMutation.mutateAsync();
+      } catch {
+        // Ignore logout error; user session may already be invalid
+      }
+      setRtbfOpen(false);
+      navigate('/auth');
+    } catch (e) {
+      console.error('RTBF deletion failed:', e);
+      alert('Deletion failed. Please try again.');
+    } finally {
+      setRtbfLoading(false);
     }
   };
 
@@ -138,6 +164,31 @@ function SettingsPage() {
               </div>
             </div>
           </section>
+
+          {/* Data & Privacy Section */}
+          <section className="settings-section">
+            <div className="section-header">
+              <SettingsIcon />
+              <h2>Data & Privacy</h2>
+            </div>
+            <p className="section-description">
+              Permanently delete your personal data. This action cannot be undone.
+            </p>
+            <div className="setting-item">
+              <div className="setting-info">
+                <h3>Right to be Forgotten</h3>
+                <p>
+                  This will remove all your goals, forums content (threads, comments, subcomments, votes), chats and messages,
+                  notifications, mentor relationships, challenges and progress, profile info, and your account.
+                </p>
+              </div>
+              <div className="setting-control">
+                <Button className="save-btn" onClick={() => setRtbfOpen(true)}>
+                  Delete Personal Data
+                </Button>
+              </div>
+            </div>
+          </section>
         </div>
 
         {/* Action Buttons */}
@@ -160,6 +211,26 @@ function SettingsPage() {
           </div>
         )}
       </div>
+
+      <Dialog open={rtbfOpen} onOpenChange={setRtbfOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Confirm Personal Data Deletion</DialogTitle>
+            <DialogDescription>
+              This will permanently delete all data associated with your account, including goals, forum activity,
+              chats, notifications, mentor relationships, challenges, profile, and your account. This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRtbfOpen(false)} className="cancel-btn">
+              Cancel
+            </Button>
+            <Button onClick={handleRtbf} disabled={rtbfLoading} className="save-btn">
+              {rtbfLoading ? 'Deleting...' : 'Delete Permanently'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Layout>
   );
 }

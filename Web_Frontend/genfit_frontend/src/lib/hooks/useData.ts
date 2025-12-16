@@ -69,7 +69,7 @@ export function useDailyAdvice() {
  */
 export function useRegenerateDailyAdvice() {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: () => GFapi.post<DailyAdvice>('/api/daily-advice/regenerate/', {}),
     onSuccess: () => {
@@ -123,9 +123,9 @@ export function useUserSettings() {
  */
 export function useUpdateUserSettings() {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
-    mutationFn: (settings: Partial<UserSettings>) => 
+    mutationFn: (settings: Partial<UserSettings>) =>
       GFapi.patch<UserSettings>('/api/user/settings/', settings),
     onSuccess: () => {
       // Invalidate settings query to refetch
@@ -232,24 +232,24 @@ export function useCommentVoteStatus(commentId?: number) {
  */
 export function useAddComment() {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: ({ threadId, content }: { threadId: number; content: string }) =>
       GFapi.post<Comment>(`/api/comments/add/${threadId}/`, { content }),
     onSuccess: (_data, variables) => {
       // Invalidate thread comments to show the new comment
-      queryClient.invalidateQueries({ 
+      queryClient.invalidateQueries({
         predicate: (query) => {
           const queryKey = query.queryKey as string[];
-          return queryKey.some(key => 
+          return queryKey.some(key =>
             typeof key === 'string' && key.includes(`/api/comments/thread/${variables.threadId}`)
           );
         }
       });
-      
+
       // Invalidate thread data to update comment count
-      queryClient.invalidateQueries({ 
-        queryKey: createQueryKey(`/api/threads/${variables.threadId}/`) 
+      queryClient.invalidateQueries({
+        queryKey: createQueryKey(`/api/threads/${variables.threadId}/`)
       });
     },
   });
@@ -284,7 +284,7 @@ export function useSubcommentVoteStatus(subcommentId?: number) {
  */
 export function useVoteSubcomment() {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: ({ subcommentId, voteType }: { subcommentId: number; voteType: 'UPVOTE' | 'DOWNVOTE' }) =>
       GFapi.post<Vote>('/api/forum/vote/', {
@@ -294,30 +294,30 @@ export function useVoteSubcomment() {
       }),
     onSuccess: (_data, variables) => {
       // Invalidate vote status for this subcomment
-      queryClient.invalidateQueries({ 
-        queryKey: createQueryKey(`/api/forum/vote/subcomment/${variables.subcommentId}/status/`) 
+      queryClient.invalidateQueries({
+        queryKey: createQueryKey(`/api/forum/vote/subcomment/${variables.subcommentId}/status/`)
       });
-      
+
       // Invalidate subcomment data to refresh like count
-      queryClient.invalidateQueries({ 
-        queryKey: createQueryKey(`/api/subcomments/${variables.subcommentId}/`) 
+      queryClient.invalidateQueries({
+        queryKey: createQueryKey(`/api/subcomments/${variables.subcommentId}/`)
       });
-      
+
       // Invalidate all subcomments queries to refresh the list
-      queryClient.invalidateQueries({ 
+      queryClient.invalidateQueries({
         predicate: (query) => {
           const queryKey = query.queryKey as string[];
-          return queryKey.some(key => 
+          return queryKey.some(key =>
             typeof key === 'string' && key.includes('/api/subcomments/comment/')
           );
         }
       });
-      
+
       // Invalidate all thread comments queries to refresh the comment list
-      queryClient.invalidateQueries({ 
+      queryClient.invalidateQueries({
         predicate: (query) => {
           const queryKey = query.queryKey as string[];
-          return queryKey.some(key => 
+          return queryKey.some(key =>
             typeof key === 'string' && key.includes('/api/comments/thread/')
           );
         }
@@ -331,36 +331,36 @@ export function useVoteSubcomment() {
  */
 export function useRemoveVoteSubcomment() {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: (subcommentId: number) =>
       GFapi.delete(`/api/forum/vote/subcomment/${subcommentId}/`),
     onSuccess: (_data, subcommentId) => {
       // Invalidate vote status for this subcomment
-      queryClient.invalidateQueries({ 
-        queryKey: createQueryKey(`/api/forum/vote/subcomment/${subcommentId}/status/`) 
+      queryClient.invalidateQueries({
+        queryKey: createQueryKey(`/api/forum/vote/subcomment/${subcommentId}/status/`)
       });
-      
+
       // Invalidate subcomment data to refresh like count
-      queryClient.invalidateQueries({ 
-        queryKey: createQueryKey(`/api/subcomments/${subcommentId}/`) 
+      queryClient.invalidateQueries({
+        queryKey: createQueryKey(`/api/subcomments/${subcommentId}/`)
       });
-      
+
       // Invalidate all subcomments queries to refresh the list
-      queryClient.invalidateQueries({ 
+      queryClient.invalidateQueries({
         predicate: (query) => {
           const queryKey = query.queryKey as string[];
-          return queryKey.some(key => 
+          return queryKey.some(key =>
             typeof key === 'string' && key.includes('/api/subcomments/comment/')
           );
         }
       });
-      
+
       // Invalidate all thread comments queries to refresh the comment list
-      queryClient.invalidateQueries({ 
+      queryClient.invalidateQueries({
         predicate: (query) => {
           const queryKey = query.queryKey as string[];
-          return queryKey.some(key => 
+          return queryKey.some(key =>
             typeof key === 'string' && key.includes('/api/comments/thread/')
           );
         }
@@ -374,26 +374,26 @@ export function useRemoveVoteSubcomment() {
  */
 export function useUpdateSubcomment() {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: ({ subcommentId, content }: { subcommentId: number; content: string }) =>
       GFapi.put<Subcomment>(`/api/subcomments/update/${subcommentId}/`, { content }),
     onSuccess: (data) => {
       // Invalidate subcomments for the parent comment
-      queryClient.invalidateQueries({ 
+      queryClient.invalidateQueries({
         predicate: (query) => {
           const queryKey = query.queryKey as string[];
-          return queryKey.some(key => 
+          return queryKey.some(key =>
             typeof key === 'string' && key.includes(`/api/subcomments/comment/${data.comment_id}`)
           );
         }
       });
-      
+
       // Invalidate all thread comments queries to refresh the comment list
-      queryClient.invalidateQueries({ 
+      queryClient.invalidateQueries({
         predicate: (query) => {
           const queryKey = query.queryKey as string[];
-          return queryKey.some(key => 
+          return queryKey.some(key =>
             typeof key === 'string' && key.includes('/api/comments/thread/')
           );
         }
@@ -407,26 +407,26 @@ export function useUpdateSubcomment() {
  */
 export function useDeleteSubcomment() {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: (subcommentId: number) =>
       GFapi.delete(`/api/subcomments/delete/${subcommentId}/`),
     onSuccess: () => {
       // Invalidate all subcomments queries to refresh the lists
-      queryClient.invalidateQueries({ 
+      queryClient.invalidateQueries({
         predicate: (query) => {
           const queryKey = query.queryKey as string[];
-          return queryKey.some(key => 
+          return queryKey.some(key =>
             typeof key === 'string' && key.includes('/api/subcomments/comment/')
           );
         }
       });
-      
+
       // Invalidate all thread comments queries to refresh comment counts
-      queryClient.invalidateQueries({ 
+      queryClient.invalidateQueries({
         predicate: (query) => {
           const queryKey = query.queryKey as string[];
-          return queryKey.some(key => 
+          return queryKey.some(key =>
             typeof key === 'string' && key.includes('/api/comments/thread/')
           );
         }
@@ -440,7 +440,7 @@ export function useDeleteSubcomment() {
  */
 export function useVoteComment() {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: ({ commentId, voteType }: { commentId: number; voteType: 'UPVOTE' | 'DOWNVOTE' }) =>
       GFapi.post<Vote>('/api/forum/vote/', {
@@ -450,20 +450,20 @@ export function useVoteComment() {
       }),
     onSuccess: (_data, variables) => {
       // Invalidate vote status for this comment
-      queryClient.invalidateQueries({ 
-        queryKey: createQueryKey(`/api/forum/vote/comment/${variables.commentId}/status/`) 
+      queryClient.invalidateQueries({
+        queryKey: createQueryKey(`/api/forum/vote/comment/${variables.commentId}/status/`)
       });
-      
+
       // Invalidate comment data to refresh like count
-      queryClient.invalidateQueries({ 
-        queryKey: createQueryKey(`/api/comments/${variables.commentId}/`) 
+      queryClient.invalidateQueries({
+        queryKey: createQueryKey(`/api/comments/${variables.commentId}/`)
       });
-      
+
       // Invalidate all thread comments queries (this will match any thread ID)
-      queryClient.invalidateQueries({ 
+      queryClient.invalidateQueries({
         predicate: (query) => {
           const queryKey = query.queryKey as string[];
-          return queryKey.some(key => 
+          return queryKey.some(key =>
             typeof key === 'string' && key.includes('/api/comments/thread/')
           );
         }
@@ -501,7 +501,7 @@ export function useThreadVoteStatus(threadId?: number) {
  */
 export function useVoteThread() {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: ({ threadId, voteType }: { threadId: number; voteType: 'UPVOTE' | 'DOWNVOTE' }) =>
       GFapi.post<Vote>('/api/forum/vote/', {
@@ -511,13 +511,13 @@ export function useVoteThread() {
       }),
     onSuccess: (_data, variables) => {
       // Invalidate vote status for this thread
-      queryClient.invalidateQueries({ 
-        queryKey: createQueryKey(`/api/forum/vote/thread/${variables.threadId}/status/`) 
+      queryClient.invalidateQueries({
+        queryKey: createQueryKey(`/api/forum/vote/thread/${variables.threadId}/status/`)
       });
-      
+
       // Invalidate thread data to refresh like count
-      queryClient.invalidateQueries({ 
-        queryKey: createQueryKey(`/api/threads/${variables.threadId}/`) 
+      queryClient.invalidateQueries({
+        queryKey: createQueryKey(`/api/threads/${variables.threadId}/`)
       });
     },
   });
@@ -528,19 +528,19 @@ export function useVoteThread() {
  */
 export function useRemoveVoteThread() {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: (threadId: number) =>
       GFapi.delete(`/api/forum/vote/thread/${threadId}/`),
     onSuccess: (_data, threadId) => {
       // Invalidate vote status for this thread
-      queryClient.invalidateQueries({ 
-        queryKey: createQueryKey(`/api/forum/vote/thread/${threadId}/status/`) 
+      queryClient.invalidateQueries({
+        queryKey: createQueryKey(`/api/forum/vote/thread/${threadId}/status/`)
       });
-      
+
       // Invalidate thread data to refresh like count
-      queryClient.invalidateQueries({ 
-        queryKey: createQueryKey(`/api/threads/${threadId}/`) 
+      queryClient.invalidateQueries({
+        queryKey: createQueryKey(`/api/threads/${threadId}/`)
       });
     },
   });
@@ -551,26 +551,26 @@ export function useRemoveVoteThread() {
  */
 export function useRemoveVoteComment() {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: (commentId: number) =>
       GFapi.delete(`/api/forum/vote/comment/${commentId}/`),
     onSuccess: (_data, commentId) => {
       // Invalidate vote status for this comment
-      queryClient.invalidateQueries({ 
-        queryKey: createQueryKey(`/api/forum/vote/comment/${commentId}/status/`) 
+      queryClient.invalidateQueries({
+        queryKey: createQueryKey(`/api/forum/vote/comment/${commentId}/status/`)
       });
-      
+
       // Invalidate comment data to refresh like count
-      queryClient.invalidateQueries({ 
-        queryKey: createQueryKey(`/api/comments/${commentId}/`) 
+      queryClient.invalidateQueries({
+        queryKey: createQueryKey(`/api/comments/${commentId}/`)
       });
-      
+
       // Invalidate all thread comments queries (this will match any thread ID)
-      queryClient.invalidateQueries({ 
+      queryClient.invalidateQueries({
         predicate: (query) => {
           const queryKey = query.queryKey as string[];
-          return queryKey.some(key => 
+          return queryKey.some(key =>
             typeof key === 'string' && key.includes('/api/comments/thread/')
           );
         }
@@ -584,21 +584,21 @@ export function useRemoveVoteComment() {
  */
 export function useUpdateComment() {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: ({ commentId, content }: { commentId: number; content: string }) =>
       GFapi.put<Comment>(`/api/comments/update/${commentId}/`, { content }),
     onSuccess: (_data, variables) => {
       // Invalidate the specific comment
-      queryClient.invalidateQueries({ 
-        queryKey: createQueryKey(`/api/comments/${variables.commentId}/`) 
+      queryClient.invalidateQueries({
+        queryKey: createQueryKey(`/api/comments/${variables.commentId}/`)
       });
-      
+
       // Invalidate all thread comments queries to refresh the comment list
-      queryClient.invalidateQueries({ 
+      queryClient.invalidateQueries({
         predicate: (query) => {
           const queryKey = query.queryKey as string[];
-          return queryKey.some(key => 
+          return queryKey.some(key =>
             typeof key === 'string' && key.includes('/api/comments/thread/')
           );
         }
@@ -612,26 +612,26 @@ export function useUpdateComment() {
  */
 export function useDeleteComment() {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: (commentId: number) =>
       GFapi.delete(`/api/comments/delete/${commentId}/`),
     onSuccess: () => {
       // Invalidate all thread comments queries to refresh the comment list
-      queryClient.invalidateQueries({ 
+      queryClient.invalidateQueries({
         predicate: (query) => {
           const queryKey = query.queryKey as string[];
-          return queryKey.some(key => 
+          return queryKey.some(key =>
             typeof key === 'string' && key.includes('/api/comments/thread/')
           );
         }
       });
-      
+
       // Invalidate thread data to update comment count
-      queryClient.invalidateQueries({ 
+      queryClient.invalidateQueries({
         predicate: (query) => {
           const queryKey = query.queryKey as string[];
-          return queryKey.some(key => 
+          return queryKey.some(key =>
             typeof key === 'string' && key.includes('/api/threads/')
           );
         }
@@ -645,7 +645,7 @@ export function useDeleteComment() {
  */
 export function useSubcomments(commentId?: number, sortBy: 'date' | 'likes' = 'date') {
   const endpoint = commentId ? `/api/subcomments/comment/${commentId}/?sort_by=${sortBy}` : null;
-  
+
   return useQuery({
     queryKey: endpoint ? createQueryKey(endpoint) : [],
     queryFn: () => GFapi.get<Subcomment[]>(endpoint!),
@@ -659,31 +659,31 @@ export function useSubcomments(commentId?: number, sortBy: 'date' | 'likes' = 'd
  */
 export function useAddSubcomment() {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: ({ commentId, content }: { commentId: number; content: string }) =>
       GFapi.post<Subcomment>(`/api/subcomments/add/${commentId}/`, { content }),
     onSuccess: (_data, variables) => {
       // Invalidate subcomments for this comment
-      queryClient.invalidateQueries({ 
+      queryClient.invalidateQueries({
         predicate: (query) => {
           const queryKey = query.queryKey as string[];
-          return queryKey.some(key => 
+          return queryKey.some(key =>
             typeof key === 'string' && key.includes(`/api/subcomments/comment/${variables.commentId}`)
           );
         }
       });
-      
+
       // Invalidate the parent comment to update subcomment count
-      queryClient.invalidateQueries({ 
-        queryKey: createQueryKey(`/api/comments/${variables.commentId}/`) 
+      queryClient.invalidateQueries({
+        queryKey: createQueryKey(`/api/comments/${variables.commentId}/`)
       });
-      
+
       // Invalidate all thread comments queries to refresh the comment list
-      queryClient.invalidateQueries({ 
+      queryClient.invalidateQueries({
         predicate: (query) => {
           const queryKey = query.queryKey as string[];
-          return queryKey.some(key => 
+          return queryKey.some(key =>
             typeof key === 'string' && key.includes('/api/comments/thread/')
           );
         }
@@ -697,29 +697,29 @@ export function useAddSubcomment() {
  */
 export function useUpdateThread() {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: ({ threadId, data }: { threadId: number; data: Partial<ForumThread> }) =>
       GFapi.put<ForumThread>(`/api/threads/${threadId}/`, data),
     onSuccess: (_data, variables) => {
       // Invalidate the specific thread
-      queryClient.invalidateQueries({ 
-        queryKey: createQueryKey(`/api/threads/${variables.threadId}/`) 
+      queryClient.invalidateQueries({
+        queryKey: createQueryKey(`/api/threads/${variables.threadId}/`)
       });
-      
+
       // Invalidate forum threads list
-      queryClient.invalidateQueries({ 
+      queryClient.invalidateQueries({
         predicate: (query) => {
           const queryKey = query.queryKey as string[];
-          return queryKey.some(key => 
+          return queryKey.some(key =>
             typeof key === 'string' && key.includes('/api/forums/') && key.includes('/threads/')
           );
         }
       });
-      
+
       // Invalidate all threads list
-      queryClient.invalidateQueries({ 
-        queryKey: createQueryKey('/api/threads/') 
+      queryClient.invalidateQueries({
+        queryKey: createQueryKey('/api/threads/')
       });
     },
   });
@@ -730,30 +730,63 @@ export function useUpdateThread() {
  */
 export function useDeleteThread() {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: (threadId: number) =>
       GFapi.delete(`/api/threads/${threadId}/`),
     onSuccess: (_data, threadId) => {
       // Invalidate the specific thread
-      queryClient.invalidateQueries({ 
-        queryKey: createQueryKey(`/api/threads/${threadId}/`) 
+      queryClient.invalidateQueries({
+        queryKey: createQueryKey(`/api/threads/${threadId}/`)
       });
-      
+
       // Invalidate forum threads list
-      queryClient.invalidateQueries({ 
+      queryClient.invalidateQueries({
         predicate: (query) => {
           const queryKey = query.queryKey as string[];
-          return queryKey.some(key => 
+          return queryKey.some(key =>
             typeof key === 'string' && key.includes('/api/forums/') && key.includes('/threads/')
           );
         }
       });
-      
+
       // Invalidate all threads list
-      queryClient.invalidateQueries({ 
-        queryKey: createQueryKey('/api/threads/') 
+      queryClient.invalidateQueries({
+        queryKey: createQueryKey('/api/threads/')
       });
     },
+  });
+}
+/**
+ * Hook to toggle thread bookmark
+ */
+export function useBookmarkThread() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (threadId: number) =>
+      GFapi.post<{ status: string; is_bookmarked: boolean }>(`/api/threads/${threadId}/bookmark/`, {}),
+    onSuccess: (_data, threadId) => {
+      // Invalidate the specific thread to update bookmark status
+      queryClient.invalidateQueries({
+        queryKey: createQueryKey(`/api/threads/${threadId}/`)
+      });
+
+      // Invalidate bookmarked threads list
+      queryClient.invalidateQueries({
+        queryKey: createQueryKey('/api/threads/bookmarked/')
+      });
+    },
+  });
+}
+
+/**
+ * Hook to fetch bookmarked threads
+ */
+export function useBookmarkedThreads() {
+  return useQuery({
+    queryKey: createQueryKey('/api/threads/bookmarked/'),
+    queryFn: () => GFapi.get<ForumThread[]>('/api/threads/bookmarked/'),
+    staleTime: 5 * 60 * 1000,
   });
 }

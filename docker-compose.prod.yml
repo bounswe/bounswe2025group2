@@ -33,6 +33,7 @@ services:
       - SECRET_KEY=${SECRET_KEY}
       - DEBUG=False
       - GROQ_API_KEY=${GROQ_API_KEY}
+      - EXERCISEDB_API_KEY=${EXERCISEDB_API_KEY}
     depends_on:
       db:
         condition: service_healthy

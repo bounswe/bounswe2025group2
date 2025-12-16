@@ -2,15 +2,18 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 
 /**
- * Parses message text and converts special links (challenges, hashtags) to clickable elements
+ * Parses message text and converts special links (challenges, hashtags) and exercise mentions to clickable elements.
  * Challenge link format: challenge://{id}
  * Hashtag format: #{term}
+ * Exercise mention format: @ExerciseName or @Exercise Name (with spaces)
+ * Example: "Check out challenge://42 for a great workout! Try @Push Up and #cardio"
  */
 
 interface LinkSegment {
-  type: 'text' | 'challenge' | 'hashtag';
+  type: 'text' | 'challenge' | 'exercise' | 'hashtag';
   content: string;
   challengeId?: number;
+  exerciseName?: string;
   hashtag?: string;
 }
 
@@ -18,56 +21,119 @@ interface LinkSegment {
  * Regular expressions
  */
 const CHALLENGE_LINK_REGEX = /challenge:\/\/(\d+)/g;
-
-// Combined regex for tokenization
-const TOKEN_REGEX = /(challenge:\/\/\d+)|(#[a-zA-Z0-9_]+)/g;
+const HASHTAG_REGEX = /#[a-zA-Z0-9_]+/g;
 
 /**
- * Parses a message string and returns an array of text and link segments
+ * Regular expression to match exercise mentions
+ * Format: @ExerciseName (can include spaces, letters, hyphens, apostrophes, and parentheses)
+ * Matches: @Push Up, @Bench Press, @Pull-Up, @Farmer's Carry, @Single-Leg Deadlift, @A-Skip
+ * Requires Title Case format (each word starts with capital letter) to avoid false matches
+ * Example: "@Push Up" works, "@push up" doesn't (use correct capitalization)
+ * Note: For multi-word exercises, use Title Case: @Push Up, @Bench Press
+ */
+const EXERCISE_MENTION_REGEX = /@([A-Z]+[a-z]*(?:[\s\-'][A-Z]+[a-z]*)*(?:\s*\([^)]+\))?)/g;
+
+/**
+ * Parses a message string and returns an array of text, challenge links, exercise mentions, and hashtags
  */
 export const parseMessageForChallengeLinks = (message: string): LinkSegment[] => {
   const segments: LinkSegment[] = [];
-  let lastIndex = 0;
 
-  // Find all tokens in the message
-  const matches = message.matchAll(TOKEN_REGEX);
+  // Find all challenge links, exercise mentions, and hashtags with their positions
+  const allMatches: Array<{
+    type: 'challenge' | 'exercise' | 'hashtag';
+    start: number;
+    end: number;
+    challengeId?: number;
+    exerciseName?: string;
+    hashtag?: string;
+    fullMatch: string;
+  }> = [];
 
-  for (const match of matches) {
-    const matchStart = match.index!;
-    const matchEnd = matchStart + match[0].length;
-    const fullMatch = match[0];
-
-    // Add text before the link (if any)
-    if (matchStart > lastIndex) {
-      segments.push({
-        type: 'text',
-        content: message.substring(lastIndex, matchStart)
-      });
-    }
-
-    if (fullMatch.startsWith('challenge://')) {
-      // It's a challenge link
-      const matchId = fullMatch.match(/challenge:\/\/(\d+)/);
-      const challengeId = matchId ? parseInt(matchId[1], 10) : 0;
-      segments.push({
-        type: 'challenge',
-        content: fullMatch,
-        challengeId
-      });
-    } else if (fullMatch.startsWith('#')) {
-      // It's a hashtag
-      const hashtag = fullMatch.substring(1); // remove #
-      segments.push({
-        type: 'hashtag',
-        content: fullMatch,
-        hashtag
-      });
-    }
-
-    lastIndex = matchEnd;
+  // Find challenge links
+  const challengeMatches = message.matchAll(CHALLENGE_LINK_REGEX);
+  for (const match of challengeMatches) {
+    allMatches.push({
+      type: 'challenge',
+      start: match.index!,
+      end: match.index! + match[0].length,
+      challengeId: parseInt(match[1], 10),
+      fullMatch: match[0]
+    });
   }
 
-  // Add remaining text after the last link (if any)
+  // Find exercise mentions
+  const exerciseMatches = message.matchAll(EXERCISE_MENTION_REGEX);
+  for (const match of exerciseMatches) {
+    const exerciseName = match[1].trim();
+    allMatches.push({
+      type: 'exercise',
+      start: match.index!,
+      end: match.index! + match[0].length,
+      exerciseName,
+      fullMatch: match[0]
+    });
+  }
+
+  // Find hashtags
+  const hashtagMatches = message.matchAll(HASHTAG_REGEX);
+  for (const match of hashtagMatches) {
+    const hashtag = match[0].substring(1); // remove #
+    allMatches.push({
+      type: 'hashtag',
+      start: match.index!,
+      end: match.index! + match[0].length,
+      hashtag,
+      fullMatch: match[0]
+    });
+  }
+
+  // Sort matches by position to handle them in order
+  allMatches.sort((a, b) => a.start - b.start);
+
+  let lastIndex = 0;
+
+  // Process all matches in order
+  for (const match of allMatches) {
+    // If there is an overlap with a previous match, skip this one
+    // (This is a simple collision resolution: first match wins)
+    if (match.start < lastIndex) {
+      continue;
+    }
+
+    // Add text before the match (if any)
+    if (match.start > lastIndex) {
+      segments.push({
+        type: 'text',
+        content: message.substring(lastIndex, match.start)
+      });
+    }
+
+    // Add the match
+    if (match.type === 'challenge') {
+      segments.push({
+        type: 'challenge',
+        content: match.fullMatch,
+        challengeId: match.challengeId
+      });
+    } else if (match.type === 'exercise') {
+      segments.push({
+        type: 'exercise',
+        content: match.fullMatch,
+        exerciseName: match.exerciseName
+      });
+    } else if (match.type === 'hashtag') {
+      segments.push({
+        type: 'hashtag',
+        content: match.fullMatch,
+        hashtag: match.hashtag
+      });
+    }
+
+    lastIndex = match.end;
+  }
+
+  // Add remaining text after the last match (if any)
   if (lastIndex < message.length) {
     segments.push({
       type: 'text',
@@ -75,7 +141,7 @@ export const parseMessageForChallengeLinks = (message: string): LinkSegment[] =>
     });
   }
 
-  // If no tokens were found, return the entire message as text
+  // If no matches were found, return the entire message as text
   if (segments.length === 0) {
     segments.push({
       type: 'text',
@@ -117,6 +183,19 @@ export const renderMessageWithChallengeLinks = (message: string): React.ReactNod
           {segment.content}
         </Link>
       );
+    } else if (segment.type === 'exercise' && segment.exerciseName) {
+      return (
+        <a
+          key={index}
+          href={`/knowledge-hub?exercise=${encodeURIComponent(segment.exerciseName)}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="exercise-link"
+          title={`View ${segment.exerciseName} in glossary`}
+        >
+          @{segment.exerciseName}
+        </a>
+      );
     }
 
     return <span key={index}>{segment.content}</span>;
@@ -128,6 +207,13 @@ export const renderMessageWithChallengeLinks = (message: string): React.ReactNod
  */
 export const hasChallengeLinks = (message: string): boolean => {
   return CHALLENGE_LINK_REGEX.test(message);
+};
+
+/**
+ * Checks if a message contains any exercise mentions
+ */
+export const hasExerciseMentions = (message: string): boolean => {
+  return EXERCISE_MENTION_REGEX.test(message);
 };
 
 /**
@@ -146,3 +232,16 @@ export const extractChallengeIds = (message: string): number[] => {
   return ids;
 };
 
+/**
+ * Extracts all exercise names from a message
+ */
+export const extractExerciseNames = (message: string): string[] => {
+  const names: string[] = [];
+  const matches = message.matchAll(EXERCISE_MENTION_REGEX);
+
+  for (const match of matches) {
+    names.push(match[1].trim());
+  }
+
+  return names;
+};
