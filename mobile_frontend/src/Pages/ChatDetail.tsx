@@ -231,11 +231,17 @@ const ChatDetail = ({ route, navigation }: any) => {
     sendMessage, 
     connectToChat, 
     disconnectFromChat,
-    chats 
+    chats,
+    contacts,
+    fetchContacts 
   } = useChat();
   const { isAuthenticated, currentUser, getAuthHeader } = useAuth();
   const [messageText, setMessageText] = useState('');
   const [showChallengeModal, setShowChallengeModal] = useState(false);
+  const [mentionSuggestions, setMentionSuggestions] = useState<Array<{id: number, username: string}>>([]);
+  const [showMentionSuggestions, setShowMentionSuggestions] = useState(false);
+  const [mentionQuery, setMentionQuery] = useState('');
+  const [mentionStartIndex, setMentionStartIndex] = useState(-1);
   const flatListRef = useRef<FlatList>(null);
 
   // Find the current chat to get the other user's name
@@ -245,12 +251,13 @@ const ChatDetail = ({ route, navigation }: any) => {
   useEffect(() => {
     if (isAuthenticated && chatId) {
       connectToChat(chatId);
+      fetchContacts(); // Fetch contacts for mention autocomplete
     }
 
     return () => {
       disconnectFromChat();
     };
-  }, [chatId, isAuthenticated]);
+  }, [chatId, isAuthenticated, connectToChat, fetchContacts]);
 
   // Additional cleanup on component unmount
   useEffect(() => {
@@ -285,10 +292,107 @@ const ChatDetail = ({ route, navigation }: any) => {
     }
   }, [messages]);
 
+  // Handle mention autocomplete
+  const handleMessageTextChange = (text: string) => {
+    setMessageText(text);
+    
+    // Check if user is typing a mention (starts with @)
+    const lastAtIndex = text.lastIndexOf('@');
+    if (lastAtIndex !== -1) {
+      // Check if there's a space after @ or if it's at the end
+      const afterAt = text.substring(lastAtIndex + 1);
+      const spaceIndex = afterAt.indexOf(' ');
+      
+      if (spaceIndex === -1) {
+        // No space found, user is still typing the username
+        const query = afterAt.toLowerCase();
+        setMentionQuery(query);
+        setMentionStartIndex(lastAtIndex);
+        
+        // Filter contacts based on query
+        const filtered = contacts
+          .filter(contact => 
+            contact.username.toLowerCase().startsWith(query) &&
+            contact.username !== currentUser?.username
+          )
+          .slice(0, 5)
+          .map(contact => ({ id: contact.id, username: contact.username }));
+        
+        setMentionSuggestions(filtered);
+        setShowMentionSuggestions(filtered.length > 0);
+      } else {
+        // Space found, mention is complete
+        setShowMentionSuggestions(false);
+      }
+    } else {
+      // No @ found, hide suggestions
+      setShowMentionSuggestions(false);
+    }
+  };
+
+  // Handle selecting a mention from suggestions
+  const handleSelectMention = (username: string) => {
+    if (mentionStartIndex !== -1) {
+      const beforeMention = messageText.substring(0, mentionStartIndex);
+      const afterMention = messageText.substring(mentionStartIndex + 1 + mentionQuery.length);
+      const newText = `${beforeMention}@${username}${afterMention}`;
+      setMessageText(newText);
+      setShowMentionSuggestions(false);
+      setMentionQuery('');
+      setMentionStartIndex(-1);
+    }
+  };
+
+  // Parse mentions in message text
+  const parseMessageWithMentions = (text: string) => {
+    const mentionRegex = /@(\w+)/g;
+    const parts: Array<{ type: 'text' | 'mention'; content: string; username?: string }> = [];
+    let lastIndex = 0;
+    let match;
+
+    while ((match = mentionRegex.exec(text)) !== null) {
+      // Add text before mention
+      if (match.index > lastIndex) {
+        parts.push({
+          type: 'text',
+          content: text.substring(lastIndex, match.index)
+        });
+      }
+
+      // Add mention
+      const username = match[1];
+      parts.push({
+        type: 'mention',
+        content: match[0],
+        username: username
+      });
+
+      lastIndex = match.index + match[0].length;
+    }
+
+    // Add remaining text
+    if (lastIndex < text.length) {
+      parts.push({
+        type: 'text',
+        content: text.substring(lastIndex)
+      });
+    }
+
+    // If no mentions found, return the whole text as one part
+    if (parts.length === 0) {
+      parts.push({ type: 'text', content: text });
+    }
+
+    return parts;
+  };
+
   const handleSendMessage = () => {
     if (messageText.trim() && isConnected) {
       sendMessage(messageText.trim());
       setMessageText('');
+      setShowMentionSuggestions(false);
+      setMentionQuery('');
+      setMentionStartIndex(-1);
     } else if (!isConnected) {
       Toast.show({
         type: 'error',
@@ -523,14 +627,37 @@ const ChatDetail = ({ route, navigation }: any) => {
               },
             ]}
         >
-          <CustomText
-            style={[
-              styles.messageText,
-              { color: isMyMessage ? colors.userMessageText : colors.text }
-            ]}
-          >
-            {item.body}
-          </CustomText>
+          {(() => {
+            const messageParts = parseMessageWithMentions(item.body);
+            return (
+              <CustomText
+                style={[
+                  styles.messageText,
+                  { color: isMyMessage ? colors.userMessageText : colors.text }
+                ]}
+              >
+                {messageParts.map((part, index) => {
+                  if (part.type === 'mention') {
+                    return (
+                      <CustomText
+                        key={index}
+                        onPress={() => {
+                          navigation.navigate('Profile' as never, { username: part.username } as never);
+                        }}
+                        style={[
+                          styles.mentionText,
+                          { color: '#3b82f6' } // Blue color for mentions
+                        ]}
+                      >
+                        {part.content}
+                      </CustomText>
+                    );
+                  }
+                  return part.content;
+                })}
+              </CustomText>
+            );
+          })()}
           {showTime && (
             <CustomText
               style={[
@@ -624,19 +751,47 @@ const ChatDetail = ({ route, navigation }: any) => {
           backgroundColor: colors.navBar,
           borderTopColor: colors.border 
         }]}>
-          <TextInput
-            style={[styles.messageInput, { 
-              backgroundColor: colors.background,
-              color: colors.text,
-              borderColor: colors.border 
-            }]}
-            value={messageText}
-            onChangeText={setMessageText}
-            placeholder="Type a message..."
-            placeholderTextColor={colors.subText}
-            multiline
-            maxLength={1000}
-          />
+          <View style={styles.inputWrapper}>
+            <TextInput
+              style={[styles.messageInput, { 
+                backgroundColor: colors.background,
+                color: colors.text,
+                borderColor: colors.border 
+              }]}
+              value={messageText}
+              onChangeText={handleMessageTextChange}
+              placeholder="Type a message..."
+              placeholderTextColor={colors.subText}
+              multiline
+              maxLength={1000}
+            />
+            {/* Mention Suggestions */}
+            {showMentionSuggestions && mentionSuggestions.length > 0 && (
+              <View style={[styles.mentionSuggestionsContainer, { 
+                backgroundColor: colors.background,
+                borderColor: colors.border 
+              }]}>
+                <FlatList
+                  data={mentionSuggestions}
+                  keyExtractor={(item) => item.id.toString()}
+                  renderItem={({ item }) => (
+                    <TouchableOpacity
+                      style={[styles.mentionSuggestionItem, {
+                        backgroundColor: colors.navBar,
+                        borderBottomColor: colors.border
+                      }]}
+                      onPress={() => handleSelectMention(item.username)}
+                    >
+                      <CustomText style={[styles.mentionSuggestionText, { color: colors.text }]}>
+                        {item.username}
+                      </CustomText>
+                    </TouchableOpacity>
+                  )}
+                  nestedScrollEnabled
+                />
+              </View>
+            )}
+          </View>
         <TouchableOpacity
           style={[
             styles.sendButton,
@@ -744,6 +899,10 @@ const styles = StyleSheet.create({
     padding: 16,
     borderTopWidth: 1,
   },
+  inputWrapper: {
+    flex: 1,
+    position: 'relative',
+  },
   messageInput: {
     flex: 1,
     borderWidth: 1,
@@ -753,6 +912,35 @@ const styles = StyleSheet.create({
     marginRight: 12,
     maxHeight: 100,
     fontSize: 16,
+  },
+  mentionSuggestionsContainer: {
+    position: 'absolute',
+    bottom: '100%',
+    left: 0,
+    right: 0,
+    marginBottom: 4,
+    marginRight: 12,
+    maxHeight: 200,
+    borderRadius: 12,
+    borderWidth: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+    zIndex: 1000,
+  },
+  mentionSuggestionItem: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+  },
+  mentionSuggestionText: {
+    fontSize: 16,
+  },
+  mentionText: {
+    fontWeight: '600',
+    textDecorationLine: 'underline',
   },
   sendButton: {
     paddingHorizontal: 20,
@@ -829,14 +1017,6 @@ const styles = StyleSheet.create({
   },
   challengeDifficulty: {
     fontSize: 12,
-  },
-  emptyContainer: {
-    padding: 32,
-    alignItems: 'center',
-  },
-  emptyText: {
-    fontSize: 16,
-    textAlign: 'center',
   },
 });
 
