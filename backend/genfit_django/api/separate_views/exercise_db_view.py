@@ -86,6 +86,13 @@ def search_exercises(request):
     api_key = getattr(settings, 'EXERCISEDB_API_KEY', None)
     api_host = getattr(settings, 'EXERCISEDB_API_HOST', 'exercisedb-api1.p.rapidapi.com')
     
+    # TEMPORARY DEBUG LOGGING - REMOVE AFTER FIXING (LOGS SENSITIVE DATA)
+    import os
+    env_key = os.environ.get('EXERCISEDB_API_KEY', 'NOT_SET')
+    logger.warning(f"DEBUG: Environment EXERCISEDB_API_KEY = '{env_key}'")
+    logger.warning(f"DEBUG: Settings EXERCISEDB_API_KEY = '{api_key}'")
+    logger.warning(f"DEBUG: GROQ_API_KEY for comparison = '{os.environ.get('GROQ_API_KEY', 'NOT_SET')[:10]}...'")
+    
     if not api_key:
         logger.error("EXERCISEDB_API_KEY not configured in settings")
         return Response({
