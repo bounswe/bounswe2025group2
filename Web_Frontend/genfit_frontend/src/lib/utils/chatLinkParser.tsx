@@ -225,8 +225,14 @@ export const renderMessageWithChallengeLinks = (message: string): React.ReactNod
 
       if (segment.exerciseId) {
         // Direct ID reference (exercise://1)
-        displayText = `Exercise #${segment.exerciseId}`;
-        titleText = `View Exercise #${segment.exerciseId} in glossary`;
+        const exercise = glossaryExercises.find(ex => ex.id === segment.exerciseId);
+        if (exercise) {
+          displayText = `@${exercise.name}`;
+          titleText = `View ${exercise.name} in glossary`;
+        } else {
+          displayText = `Exercise #${segment.exerciseId}`;
+          titleText = `View Exercise #${segment.exerciseId} in glossary`;
+        }
       } else if (segment.exerciseName) {
         // Name-based reference (@Push Up)
         const foundId = findExerciseIdByName(segment.exerciseName);
