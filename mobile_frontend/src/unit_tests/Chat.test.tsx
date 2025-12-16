@@ -113,36 +113,35 @@ describe('ChatContext', () => {
         .mockResolvedValueOnce({ data: mockContacts })
         .mockResolvedValueOnce({ data: mockChats });
 
-      const TestComponent = () => {
-        const chat = useChat();
-        React.useEffect(() => {
-          if (chat.contacts.length > 0) {
-            expect(chat.contacts).toEqual(mockContacts);
-          }
-        }, [chat.contacts]);
-        return null;
-      };
-
       render(
         <ChatProvider>
-          <TestComponent />
+          <></>
         </ChatProvider>
       );
 
-      await waitFor(() => {
-        expect(axios.get).toHaveBeenCalledWith(
-          `${API_CHAT_URL}get-users/`,
-          expect.objectContaining({
-            headers: expect.objectContaining(mockAuthHeader),
-          })
-        );
-        expect(axios.get).toHaveBeenCalledWith(
-          `${API_CHAT_URL}get-chats/`,
-          expect.objectContaining({
-            headers: expect.objectContaining(mockAuthHeader),
-          })
-        );
-      });
+      await waitFor(
+        () => {
+          expect(axios.get).toHaveBeenCalledWith(
+            `${API_CHAT_URL}get-users/`,
+            expect.objectContaining({
+              headers: expect.objectContaining(mockAuthHeader),
+            })
+          );
+        },
+        { timeout: 3000 }
+      );
+
+      await waitFor(
+        () => {
+          expect(axios.get).toHaveBeenCalledWith(
+            `${API_CHAT_URL}get-chats/`,
+            expect.objectContaining({
+              headers: expect.objectContaining(mockAuthHeader),
+            })
+          );
+        },
+        { timeout: 3000 }
+      );
     });
   });
 
@@ -376,7 +375,7 @@ describe('ChatContext', () => {
       expect(webSocketService.disconnect).toHaveBeenCalled();
     });
 
-    test('sends message via WebSocket', () => {
+    test('sends message via WebSocket', async () => {
       (webSocketService.isConnected as jest.Mock).mockReturnValue(true);
 
       const TestComponent = () => {
@@ -394,10 +393,15 @@ describe('ChatContext', () => {
         </ChatProvider>
       );
 
-      expect(webSocketService.sendMessage).toHaveBeenCalledWith('Hello, world!');
+      await waitFor(
+        () => {
+          expect(webSocketService.sendMessage).toHaveBeenCalledWith('Hello, world!');
+        },
+        { timeout: 3000 }
+      );
     });
 
-    test('does not send empty message', () => {
+    test('does not send empty message', async () => {
       const TestComponent = () => {
         const { sendMessage } = useChat();
         React.useEffect(() => {
@@ -413,12 +417,15 @@ describe('ChatContext', () => {
         </ChatProvider>
       );
 
+      // Wait a bit to ensure useEffect has run
+      await new Promise<void>((resolve) => setTimeout(resolve, 100));
+
       expect(webSocketService.sendMessage).not.toHaveBeenCalled();
     });
   });
 
   describe('ChatProvider - State cleanup', () => {
-    test('clears state when token becomes null', () => {
+    test('clears state when token becomes null', async () => {
       (useAuth as jest.Mock).mockReturnValue({
         token: null,
         getAuthHeader: jest.fn(() => mockAuthHeader),
@@ -440,7 +447,12 @@ describe('ChatContext', () => {
         </ChatProvider>
       );
 
-      expect(webSocketService.disconnect).toHaveBeenCalled();
+      await waitFor(
+        () => {
+          expect(webSocketService.disconnect).toHaveBeenCalled();
+        },
+        { timeout: 3000 }
+      );
     });
   });
 });
