@@ -1777,6 +1777,7 @@ export default function GlossaryPage() { // Note: Function name should probably 
     if (exerciseName) {
       // Switch to exercise library tab
       setActiveTab('glossary');
+      setSearchTerm(exerciseName);
 
       // Find the exercise by name (case-insensitive)
       const foundExercise = glossaryExercises.find(

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+
 
 /**
  * Parses message text and converts special links (challenges, hashtags) and exercise mentions to clickable elements.
@@ -174,14 +174,16 @@ export const renderMessageWithChallengeLinks = (message: string): React.ReactNod
       );
     } else if (segment.type === 'hashtag' && segment.hashtag) {
       return (
-        <Link
+        <a
           key={index}
-          to={`/knowledge-hub?term=${segment.hashtag}`}
+          href={`/knowledge-hub?term=${segment.hashtag}`}
+          target="_blank"
+          rel="noopener noreferrer"
           className="hashtag-link text-blue-500 hover:underline"
           title={`Look up "${segment.hashtag}" in Glossary`}
         >
           {segment.content}
-        </Link>
+        </a>
       );
     } else if (segment.type === 'exercise' && segment.exerciseName) {
       return (
