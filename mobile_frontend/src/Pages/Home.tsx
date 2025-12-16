@@ -626,9 +626,11 @@ const Home = () => {
                           {deadline.title}
                         </CustomText>
                         <View style={styles.deadlineMeta}>
-                          <Chip mode="flat" compact style={styles.deadlineTypeChip}>
-                            {deadline.type}
-                          </Chip>
+                          <View style={[styles.deadlineTypeBadge, { backgroundColor: customTheme.colors.navBar }]}>
+                            <CustomText style={[styles.deadlineTypeText, { color: customTheme.colors.subText }]}>
+                              {deadline.type}
+                            </CustomText>
+                          </View>
                           <CustomText style={[styles.deadlineDate, { color: customTheme.colors.subText }]}>
                             {deadline.daysUntil === 0 ? 'Today' :
                              deadline.daysUntil === 1 ? 'Tomorrow' :
@@ -1028,8 +1030,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
   },
-  deadlineTypeChip: {
-    height: 20,
+  deadlineTypeBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 8,
+  },
+  deadlineTypeText: {
+    fontSize: 11,
+    fontWeight: '500',
+    textTransform: 'capitalize',
   },
   deadlineDate: {
     fontSize: 12,
