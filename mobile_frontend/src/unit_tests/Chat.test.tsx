@@ -5,7 +5,7 @@
  */
 
 import React from 'react';
-import { render, waitFor, fireEvent } from '@testing-library/react-native';
+import { render, waitFor, fireEvent, act } from '@testing-library/react-native';
 import { ChatProvider, useChat, Message, Chat, Contact } from '../context/ChatContext';
 import MessageBubble from '../components/MessageBubble';
 import ChatListItem from '../components/ChatListItem';
@@ -123,28 +123,23 @@ describe('ChatContext', () => {
       await waitFor(
         () => {
           expect(axios.get).toHaveBeenCalled();
-          const calls = (axios.get as jest.Mock).mock.calls;
-          const getUserCall = calls.find((call: any[]) => 
-            call[0]?.includes('get-users')
-          );
-          const getChatsCall = calls.find((call: any[]) => 
-            call[0]?.includes('get-chats')
-          );
-          expect(getUserCall).toBeDefined();
-          expect(getChatsCall).toBeDefined();
         },
-        { timeout: 5000 }
+        { timeout: 3000 }
       );
 
-      // Verify the calls were made with correct URLs
-      expect(axios.get).toHaveBeenCalledWith(
-        expect.stringContaining('get-users'),
-        expect.any(Object)
+      // Wait a bit more for the second call
+      await waitFor(
+        () => {
+          expect(axios.get).toHaveBeenCalledTimes(2);
+        },
+        { timeout: 3000 }
       );
-      expect(axios.get).toHaveBeenCalledWith(
-        expect.stringContaining('get-chats'),
-        expect.any(Object)
-      );
+
+      // Verify both calls were made with correct URLs
+      const calls = (axios.get as jest.Mock).mock.calls;
+      const urls = calls.map((call: any[]) => call[0] || '');
+      expect(urls.some((url: string) => url.includes('get-users'))).toBe(true);
+      expect(urls.some((url: string) => url.includes('get-chats'))).toBe(true);
     });
   });
 
@@ -385,7 +380,9 @@ describe('ChatContext', () => {
 
       const TestComponent = () => {
         const chat = useChat();
-        sendMessageFn = chat.sendMessage;
+        React.useEffect(() => {
+          sendMessageFn = chat.sendMessage;
+        }, [chat.sendMessage]);
         return null;
       };
 
@@ -395,7 +392,7 @@ describe('ChatContext', () => {
         </ChatProvider>
       );
 
-      // Wait for context to be available
+      // Wait for context to be available and sendMessage to be set
       await waitFor(
         () => {
           expect(sendMessageFn).toBeDefined();
@@ -408,7 +405,7 @@ describe('ChatContext', () => {
         sendMessageFn('Hello, world!');
       }
 
-      // Verify it was called
+      // Verify it was called immediately (sendMessage is synchronous)
       expect(webSocketService.sendMessage).toHaveBeenCalledWith('Hello, world!');
     });
 
