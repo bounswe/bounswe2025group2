@@ -84,6 +84,7 @@ export interface Goal {
   title: string;
   description: string;
   user: number;
+  mentor?: number | null;
   goal_type: string;
   target_value: number;
   current_value: number;
@@ -92,6 +93,8 @@ export interface Goal {
   target_date: string;
   status: string;
   last_updated: string;
+  progress_percentage?: number;
+  progress?: number; // computed field for compatibility
 }
 
 // Challenge Types
@@ -297,18 +300,43 @@ export interface AiMessage {
 }
 
 // Nutrition Types
+export interface NutrientValue {
+  value: number;
+  unit: string;
+}
+
 export interface FoodItem {
-  food_name: string;
-  nf_calories: number;
-  nf_protein: number;
-  nf_total_carbohydrate: number;
-  nf_total_fat: number;
-  serving_qty: number;
-  serving_unit: string;
-  serving_weight_grams: number;
+  fdcId: number;
+  description: string;
+  brandOwner: string;
+  brandName: string;
+  ingredients: string;
+  servingSize: number | null;
+  servingSizeUnit: string;
+  nutrients: {
+    'Energy'?: NutrientValue;
+    'Protein'?: NutrientValue;
+    'Total lipid (fat)'?: NutrientValue;
+    'Carbohydrate, by difference'?: NutrientValue;
+    'Fiber, total dietary'?: NutrientValue;
+    'Total Sugars'?: NutrientValue;
+    'Sodium, Na'?: NutrientValue;
+    'Potassium, K'?: NutrientValue;
+    'Calcium, Ca'?: NutrientValue;
+    'Iron, Fe'?: NutrientValue;
+    'Vitamin C, total ascorbic acid'?: NutrientValue;
+    'Cholesterol'?: NutrientValue;
+    'Fatty acids, total saturated'?: NutrientValue;
+    'Caffeine'?: NutrientValue;
+    'Vitamin D (D2 + D3)'?: NutrientValue;
+    'Vitamin E (alpha-tocopherol)'?: NutrientValue;
+    'Vitamin B-12'?: NutrientValue;
+  };
 }
 
 export interface NutritionResponse {
+  totalHits: number;
+  query: string;
   foods: FoodItem[];
 }
 

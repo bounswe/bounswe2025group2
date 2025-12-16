@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { StyleSheet, View, ScrollView, Alert, Platform } from 'react-native';
+import React, { useState, useEffect, useMemo } from 'react';
+import { StyleSheet, View, ScrollView, Alert, Platform, Pressable } from 'react-native';
 import {
   ActivityIndicator,
   Avatar,
@@ -12,17 +12,24 @@ import {
   Modal,
   Portal,
   ProgressBar,
+  Surface,
   Text,
   TextInput,
   useTheme,
   MD3Colors,
 } from 'react-native-paper';
+import Toast from 'react-native-toast-message';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../context/AuthContext';
+import { useChat } from '../context/ChatContext';
 import Cookies from '@react-native-cookies/cookies';
 import { launchImageLibrary } from 'react-native-image-picker';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import { API_URL } from '@constants/api';
+import { useGoals, FitnessGoal } from '../services/goalApi';
+import GoalFormModal from '../components/goals/GoalFormModal';
+import GoalDetailModal from '../components/goals/GoalDetailModal';
 
 interface ProfileDetailsResponse {
   username: string;
@@ -32,6 +39,7 @@ interface ProfileDetailsResponse {
   location: string;
   birth_date: string;
   age: number | string;
+  is_coach?: boolean;
 }
 
 interface Goal {
@@ -50,13 +58,33 @@ interface Goal {
   last_updated: string;
 }
 
-const API_BASE = 'http://164.90.166.81:8000';
+interface MentorRelationship {
+  id: number;
+  mentor: number;
+  mentee: number;
+  status: string;
+  sender: number;
+  receiver: number;
+  mentor_username: string;
+  mentee_username: string;
+  created_at: string;
+  updated_at: string;
+}
+
+interface User {
+  id: number;
+  username: string;
+  is_coach?: boolean;
+  user_type?: string;
+}
+
 
 const Profile = () => {
   const theme = useTheme();
   const route = useRoute();
   const navigation = useNavigation();
   const { getAuthHeader } = useAuth();
+  const { createChat, chats } = useChat();
   const queryClient = useQueryClient();
   
   // @ts-ignore
@@ -75,15 +103,106 @@ const Profile = () => {
   const [selectedGoal, setSelectedGoal] = useState<Goal | null>(null);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [pictureRefreshKey, setPictureRefreshKey] = useState(Date.now());
+  
+  // Goals state
+  const [isGoalFormOpen, setIsGoalFormOpen] = useState(false);
+  const [editingGoal, setEditingGoal] = useState<FitnessGoal | null>(null);
+  const [selectedGoalForDetail, setSelectedGoalForDetail] = useState<FitnessGoal | null>(null);
+  const [isGoalModalOpen, setIsGoalModalOpen] = useState(false);
+  
+  // Collapsible sections state
+  const [isMentorshipExpanded, setIsMentorshipExpanded] = useState(true);
+
+  // Toast helper functions
+  const showSuccessToast = (message: string) => {
+    Toast.show({ type: 'success', text1: message });
+  };
+  
+  const showErrorToast = (message: string) => {
+    Toast.show({ type: 'error', text1: 'Error', text2: message });
+  };
+
+  // Extract origin for Referer header (same pattern as Login.tsx)
+  const origin = API_URL.replace(/\/api\/?$/, '');
+
+  const getSanitizedAuthHeader = (): Record<string, string> => {
+    const header = getAuthHeader() as { Authorization?: string };
+    const authValue = header?.Authorization;
+    if (authValue && authValue.trim().length > 0) {
+      return { Authorization: authValue };
+    }
+    return {};
+  };
+
+  // Fetch current user (like web version does)
+  const { data: me } = useQuery<User | null>({
+    queryKey: ['currentUser'],
+    queryFn: async () => {
+      const response = await fetch(`${API_URL}user/`, {
+        headers: {
+          ...getSanitizedAuthHeader(),
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        credentials: 'include',
+      });
+      
+      if (response.status === 401 || response.status === 403) {
+        return null;
+      }
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch current user');
+      }
+      
+      return response.json();
+    },
+    staleTime: 5 * 60_000, // 5 minutes like web
+    retry: false,
+  });
+
+  // Fetch user details from /users/ endpoint to get is_coach info
+  const { data: userDetails } = useQuery<User | null>({
+    queryKey: ['userDetails', otherUsername || me?.username],
+    queryFn: async () => {
+      const response = await fetch(`${API_URL}users/`, {
+        headers: {
+          ...getSanitizedAuthHeader(),
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        credentials: 'include',
+      });
+      
+      if (!response.ok) {
+        console.error('Failed to fetch users list for coach info');
+        return null;
+      }
+      
+      const allUsers: User[] = await response.json();
+      const targetUsername = otherUsername || me?.username;
+      const foundUser = allUsers.find(u => u.username === targetUsername);
+      
+      // Compute is_coach from user_type if not present
+      if (foundUser && !foundUser.is_coach && foundUser.user_type) {
+        foundUser.is_coach = foundUser.user_type === 'Coach';
+      }
+      
+      console.log('Found user with coach info:', foundUser);
+      return foundUser || null;
+    },
+    enabled: !!(me?.username || otherUsername),
+    staleTime: 5 * 60_000,
+  });
 
   // Fetch profile details
   const { data: profileDetails, isLoading: isLoadingProfile } = useQuery<ProfileDetailsResponse>({
     queryKey: ['profile', otherUsername || 'me'],
     queryFn: async () => {
-      const endpoint = otherUsername ? `/api/profile/other/${otherUsername}/` : '/api/profile/';
-      const response = await fetch(`${API_BASE}${endpoint}`, {
+      const endpoint = otherUsername ? `profile/other/${otherUsername}/` : 'profile/';
+      const response = await fetch(`${API_URL}${endpoint}`, {
         headers: {
-          ...getAuthHeader(),
+          ...getSanitizedAuthHeader(),
           'Content-Type': 'application/json',
         },
         credentials: 'include',
@@ -93,8 +212,17 @@ const Profile = () => {
         throw new Error(`Failed to fetch profile: ${response.status}`);
       }
       
-      return response.json();
+      const profileData = await response.json();
+      
+      // Merge is_coach from userDetails if available
+      if (userDetails?.is_coach !== undefined) {
+        profileData.is_coach = userDetails.is_coach;
+      }
+      
+      console.log('Profile data with coach status:', profileData);
+      return profileData;
     },
+    enabled: !!userDetails || isLoadingProfile === false,
   });
 
   // Fetch profile picture
@@ -102,15 +230,15 @@ const Profile = () => {
     queryKey: ['profilePicture', otherUsername || 'me', pictureRefreshKey],
     queryFn: async () => {
       const endpoint = otherUsername 
-        ? `/api/profile/other/picture/${otherUsername}/` 
-        : '/api/profile/picture/';
+        ? `profile/other/picture/${otherUsername}/` 
+        : 'profile/picture/';
       
       // Add cache-busting timestamp to the URL
       const cacheBuster = `?t=${Date.now()}`;
       
-      const response = await fetch(`${API_BASE}${endpoint}${cacheBuster}`, {
+      const response = await fetch(`${API_URL}${endpoint}${cacheBuster}`, {
         headers: {
-          ...getAuthHeader(),
+          ...getSanitizedAuthHeader(),
         },
         credentials: 'include',
       });
@@ -119,7 +247,7 @@ const Profile = () => {
       
       const contentType = response.headers.get('Content-Type') || '';
       if (contentType.startsWith('image/')) {
-        return `${API_BASE}${endpoint}${cacheBuster}`;
+        return `${API_URL}${endpoint}${cacheBuster}`;
       } 
       
       if (contentType.includes('application/json')) {
@@ -133,150 +261,514 @@ const Profile = () => {
     gcTime: 0,
   });
 
-  // Fetch goals - only for own profile
-  const { data: goals = [], isLoading: isLoadingGoals } = useQuery<Goal[]>({
-    queryKey: ['goals', otherUsername || 'me'],
+  // Fetch mentor-mentee relationships
+  const { data: relationships = [] } = useQuery<MentorRelationship[]>({
+    queryKey: ['mentor-relationships', 'me'],
     queryFn: async () => {
-      // Only fetch goals for own profile
-      // Goals are private and only visible to user and their mentor
-      // Since we can't determine mentor relationship from frontend, don't show goals for other users
-      if (otherUsername) {
-        return [];
-      }
-      
-      const response = await fetch(`${API_BASE}/api/goals/`, {
+      const response = await fetch(`${API_URL}mentor-relationships/user/`, {
         headers: {
-          ...getAuthHeader(),
+          ...getSanitizedAuthHeader(),
           'Content-Type': 'application/json',
+          'Accept': 'application/json',
         },
         credentials: 'include',
       });
       
-      if (!response.ok) return [];
-      const data = await response.json();
-      return Array.isArray(data) ? data : [];
+      if (!response.ok) throw new Error('Failed to fetch relationships');
+      return response.json();
     },
-    enabled: !otherUsername, // Only run query for own profile
+    enabled: !!me,
+    staleTime: 60_000,
   });
+
+  // Fetch users list to get user IDs
+  const { data: users = [] } = useQuery<User[]>({
+    queryKey: ['users'],
+    queryFn: async () => {
+      const response = await fetch(`${API_URL}users/`, {
+        headers: {
+          ...getSanitizedAuthHeader(),
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        credentials: 'include',
+      });
+      
+      if (!response.ok) throw new Error('Failed to fetch users');
+      return response.json();
+    },
+    enabled: !!otherUsername,
+    staleTime: 5 * 60_000,
+  });
+
+  // Calculate relationship states
+  const otherUserId = otherUsername ? (users.find(u => u.username === otherUsername)?.id ?? null) : null;
+  // Use me.id directly from the /api/user/ endpoint (like web version)
+  const myUserId = me?.id ?? null;
+  
+  useEffect(() => {
+    console.log('Mentor relationship context', {
+      me,
+      myUserId,
+      otherUsername,
+      otherUserId,
+    });
+  }, [me, myUserId, otherUsername, otherUserId]);
+
+  // Invalidate and refetch relationships when navigating to different user's profile
+  useEffect(() => {
+    queryClient.invalidateQueries({ queryKey: ['mentor-relationships', 'me'] });
+  }, [otherUsername, queryClient]);
+
+  // Poll current user and relationships every 1 second to detect login changes
+  useEffect(() => {
+    const intervalId = setInterval(() => {
+      // Refetch current user and relationships
+      queryClient.invalidateQueries({ queryKey: ['currentUser'] });
+      queryClient.invalidateQueries({ queryKey: ['mentor-relationships', 'me'] });
+    }, 1000); // 1 second
+
+    return () => clearInterval(intervalId);
+  }, [queryClient]);
+
+  const relatedRels = useMemo(() => {
+    if (!myUserId || !otherUserId) return [];
+    return relationships.filter((r: MentorRelationship) => (
+      (r.mentor === myUserId && r.mentee === otherUserId) ||
+      (r.mentor === otherUserId && r.mentee === myUserId)
+    ));
+  }, [myUserId, otherUserId, relationships]);
+
+  const selectedRel = relatedRels.find((r: MentorRelationship) => r.status === 'ACCEPTED' && r.mentor === myUserId)
+    || relatedRels.find((r: MentorRelationship) => r.status === 'ACCEPTED' && r.mentee === myUserId)
+    || relatedRels.find((r: MentorRelationship) => r.status === 'PENDING' && r.receiver === myUserId)
+    || relatedRels.find((r: MentorRelationship) => r.status === 'PENDING' && r.sender === myUserId)
+    || undefined;
+
+  const isSender = !!(selectedRel && selectedRel.sender === myUserId);
+  const isReceiver = !!(selectedRel && selectedRel.receiver === myUserId);
+  const isMentorOfOther = !!(selectedRel && selectedRel.status === 'ACCEPTED' && selectedRel.mentor === myUserId);
+
+  const acceptedRels = relationships.filter((r: MentorRelationship) => r.status === 'ACCEPTED' && r.mentor !== r.mentee);
+  const myMentors = myUserId ? acceptedRels.filter((r: MentorRelationship) => r.mentee === myUserId).map((r: MentorRelationship) => ({ id: r.mentor, username: r.mentor_username })) : [];
+  const myMentees = myUserId ? acceptedRels.filter((r: MentorRelationship) => r.mentor === myUserId).map((r: MentorRelationship) => ({ id: r.mentee, username: r.mentee_username })) : [];
+  const myPendingRequests = myUserId ? relationships.filter((r: MentorRelationship) => r.status === 'PENDING' && (r.sender === myUserId || r.receiver === myUserId) && r.mentor !== r.mentee) : [];
+  const mentorshipUsernames = Array.from(new Set([...myMentors, ...myMentees].map(u => u.username))).filter(Boolean);
+
+  // Fetch profile pictures for mentors and mentees
+  const { data: mentorshipPictures = {} } = useQuery<Record<string, string>>({
+    queryKey: ['mentorshipPictures', mentorshipUsernames.join(',')],
+    queryFn: async () => {
+      const entries: Record<string, string> = {};
+      for (const uname of mentorshipUsernames) {
+        try {
+          const endpoint = `profile/other/picture/${uname}/`;
+          const cacheBuster = `?t=${Date.now()}`;
+          const response = await fetch(`${API_URL}${endpoint}${cacheBuster}`, {
+            headers: {
+              ...getSanitizedAuthHeader(),
+            },
+            credentials: 'include',
+          });
+          
+          if (!response.ok) continue;
+          const contentType = response.headers.get('Content-Type') || '';
+          if (contentType.startsWith('image/')) {
+            entries[uname] = `${API_URL}${endpoint}${cacheBuster}`;
+          }
+        } catch (e) {
+          console.warn('Mentorship picture fetch failed', uname, e);
+        }
+      }
+      return entries;
+    },
+    enabled: !otherUsername && mentorshipUsernames.length > 0,
+    staleTime: 5 * 60_000,
+  });
+
+  // Fetch goals - using the custom hook
+  const { data: goals = [], isLoading: isLoadingGoals } = useGoals(otherUsername);
 
   // Update profile mutation
   const updateProfileMutation = useMutation({
     mutationFn: async (payload: typeof editedProfile) => {
-      const cookies = await Cookies.get(API_BASE);
-      const csrfToken = cookies.csrftoken?.value;
-      
-      const response = await fetch(`${API_BASE}/api/profile/`, {
-        method: 'PUT',
-        headers: {
-          ...getAuthHeader(),
-          'Content-Type': 'application/json',
-          ...(csrfToken ? { 'X-CSRFToken': csrfToken } : {}),
-        },
-        credentials: 'include',
-        body: JSON.stringify(payload),
-      });
-      
-      if (!response.ok) throw new Error('Failed to update profile');
-      return response.json();
+      try {
+        // Filter out empty string values - only send fields with actual data
+        const filteredPayload = Object.entries(payload).reduce((acc, [key, value]) => {
+          if (value !== '') {
+            acc[key] = value;
+          }
+          return acc;
+        }, {} as Record<string, string>);
+        
+        console.log('Updating profile with payload:', filteredPayload);
+        console.log('API_URL:', API_URL);
+        console.log('Origin:', origin);
+        
+        const cookies = await Cookies.get(API_URL);
+        const csrfToken = cookies.csrftoken?.value;
+        console.log('CSRF token:', csrfToken ? 'Present' : 'Missing');
+        
+        const response = await fetch(`${API_URL}profile/`, {
+          method: 'PUT',
+          headers: {
+            ...getSanitizedAuthHeader(),
+            'Content-Type': 'application/json',
+            'Referer': origin,
+            ...(csrfToken ? { 'X-CSRFToken': csrfToken } : {}),
+          },
+          credentials: 'include',
+          body: JSON.stringify(filteredPayload),
+        });
+        
+        console.log('Response status:', response.status);
+        
+        if (!response.ok) {
+          const contentType = response.headers.get('content-type');
+          let errorData: any = {};
+          
+          if (contentType && contentType.includes('application/json')) {
+            errorData = await response.json();
+          } else {
+            const text = await response.text();
+            console.error('Non-JSON error response:', text.substring(0, 500));
+          }
+          
+          console.error('Update profile error details:', errorData);
+          
+          // Show more specific error messages
+          if (errorData.detail) {
+            throw new Error(errorData.detail);
+          } else if (errorData.name || errorData.surname || errorData.bio || errorData.location || errorData.birth_date) {
+            // Field-specific errors
+            const fieldErrors = Object.entries(errorData)
+              .map(([field, errors]: [string, any]) => `${field}: ${Array.isArray(errors) ? errors.join(', ') : errors}`)
+              .join('\n');
+            throw new Error(`Validation errors:\n${fieldErrors}`);
+          } else {
+            throw new Error(`Failed to update profile: ${response.status}`);
+          }
+        }
+        
+        return response.json();
+      } catch (error) {
+        console.error('Update profile error:', error);
+        throw error;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['profile', 'me'] });
       setIsEditing(false);
-      Alert.alert('Success', 'Profile updated successfully');
+      showSuccessToast('Profile updated successfully');
     },
-    onError: () => {
-      Alert.alert('Error', 'Failed to update profile');
+    onError: (error: Error) => {
+      showErrorToast(error.message || 'Failed to update profile');
     },
   });
 
   // Upload picture mutation
   const uploadPictureMutation = useMutation({
     mutationFn: async (uri: string) => {
-      const cookies = await Cookies.get(API_BASE);
-      const csrfToken = cookies.csrftoken?.value;
-      
-      const formData = new FormData();
-      formData.append('profile_picture', {
-        uri,
-        name: 'profile.jpg',
-        type: 'image/jpeg',
-      } as any);
-      
-      const response = await fetch(`${API_BASE}/api/profile/picture/upload/`, {
-        method: 'POST',
-        headers: {
-          ...getAuthHeader(),
-          ...(csrfToken ? { 'X-CSRFToken': csrfToken } : {}),
-        },
-        credentials: 'include',
-        body: formData,
-      });
-      
-      if (!response.ok) throw new Error('Failed to upload picture');
-      return response.json();
+      try {
+        const cookies = await Cookies.get(API_URL);
+        const csrfToken = cookies.csrftoken?.value;
+        
+        const formData = new FormData();
+        formData.append('profile_picture', {
+          uri,
+          name: 'profile.jpg',
+          type: 'image/jpeg',
+        } as any);
+        
+        const response = await fetch(`${API_URL}profile/picture/upload/`, {
+          method: 'POST',
+          headers: {
+            ...getSanitizedAuthHeader(),
+            'Referer': origin,
+            ...(csrfToken ? { 'X-CSRFToken': csrfToken } : {}),
+          },
+          credentials: 'include',
+          body: formData,
+        });
+        
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          console.error('Upload picture error details:', errorData);
+          throw new Error(errorData.detail || 'Failed to upload picture');
+        }
+        
+        return response.json();
+      } catch (error) {
+        console.error('Upload picture error:', error);
+        throw error;
+      }
     },
     onSuccess: () => {
-      // Update the refresh key to force re-fetch
       setPictureRefreshKey(Date.now());
-      Alert.alert('Success', 'Profile picture updated');
+      showSuccessToast('Profile picture updated');
     },
-    onError: () => {
-      Alert.alert('Error', 'Failed to upload picture');
+    onError: (error: Error) => {
+      showErrorToast(error.message || 'Failed to upload picture');
     },
   });
 
   // Delete picture mutation
   const deletePictureMutation = useMutation({
     mutationFn: async () => {
-      const cookies = await Cookies.get(API_BASE);
-      const csrfToken = cookies.csrftoken?.value;
-      
-      const response = await fetch(`${API_BASE}/api/profile/picture/delete/`, {
-        method: 'DELETE',
-        headers: {
-          ...getAuthHeader(),
-          ...(csrfToken ? { 'X-CSRFToken': csrfToken } : {}),
-        },
-        credentials: 'include',
-      });
-      
-      if (!response.ok) throw new Error('Failed to delete picture');
-      return response.json();
+      try {
+        const cookies = await Cookies.get(API_URL);
+        const csrfToken = cookies.csrftoken?.value;
+        
+        const response = await fetch(`${API_URL}profile/picture/delete/`, {
+          method: 'DELETE',
+          headers: {
+            ...getSanitizedAuthHeader(),
+            'Referer': origin,
+            ...(csrfToken ? { 'X-CSRFToken': csrfToken } : {}),
+          },
+          credentials: 'include',
+        });
+        
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          console.error('Delete picture error details:', errorData);
+          throw new Error(errorData.detail || 'Failed to delete picture');
+        }
+        
+        return response.json();
+      } catch (error) {
+        console.error('Delete picture error:', error);
+        throw error;
+      }
     },
     onSuccess: () => {
-      // Update the refresh key to force re-fetch
       setPictureRefreshKey(Date.now());
-      Alert.alert('Success', 'Profile picture deleted');
+      showSuccessToast('Profile picture deleted');
     },
-    onError: () => {
-      Alert.alert('Error', 'Failed to delete picture');
+    onError: (error: Error) => {
+      showErrorToast(error.message || 'Failed to delete picture');
     },
   });
 
   // Delete goal mutation
   const deleteGoalMutation = useMutation({
     mutationFn: async (goalId: number) => {
-      const cookies = await Cookies.get(API_BASE);
-      const csrfToken = cookies.csrftoken?.value;
-      
-      const response = await fetch(`${API_BASE}/api/goals/${goalId}/`, {
-        method: 'DELETE',
-        headers: {
-          ...getAuthHeader(),
-          ...(csrfToken ? { 'X-CSRFToken': csrfToken } : {}),
-        },
-        credentials: 'include',
-      });
-      
-      if (!response.ok) throw new Error('Failed to delete goal');
+      try {
+        const cookies = await Cookies.get(API_URL);
+        const csrfToken = cookies.csrftoken?.value;
+        
+        const response = await fetch(`${API_URL}goals/${goalId}/`, {
+          method: 'DELETE',
+          headers: {
+            ...getSanitizedAuthHeader(),
+            'Referer': origin,
+            ...(csrfToken ? { 'X-CSRFToken': csrfToken } : {}),
+          },
+          credentials: 'include',
+        });
+        
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          console.error('Delete goal error details:', errorData);
+          throw new Error(errorData.detail || 'Failed to delete goal');
+        }
+      } catch (error) {
+        console.error('Delete goal error:', error);
+        throw error;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['goals', 'me'] });
       closeGoalDetails();
-      Alert.alert('Success', 'Goal deleted successfully');
+      showSuccessToast('Goal deleted successfully');
     },
-    onError: () => {
-      Alert.alert('Error', 'Failed to delete goal');
+    onError: (error: Error) => {
+      showErrorToast(error.message || 'Failed to delete goal');
+    },
+  });
+
+  // Request as mentor mutation
+  const requestAsMentor = useMutation({
+    mutationFn: async () => {
+      console.log('requestAsMentor called with:', {
+        me,
+        otherUserId,
+        otherUsername,
+        usersCount: users.length,
+        checkUser: users.find(u => u.username === otherUsername),
+      });
+
+      if (!me) {
+        throw new Error('You must be logged in');
+      }
+      
+      if (!otherUserId) {
+        throw new Error('Unable to identify the user. Please refresh and try again.');
+      }
+
+      // Prevent sending request to self
+      if (me.id === otherUserId) {
+        console.error('Self-request detected:', { meId: me.id, otherUserId, comparison: me.id === otherUserId });
+        throw new Error('You cannot send a mentor request to yourself');
+      }
+
+      console.log('Sending mentor request', { mentor: me.id, mentee: otherUserId });
+
+      const cookies = await Cookies.get(API_URL);
+      const csrfToken = cookies.csrftoken?.value;
+      
+      const response = await fetch(`${API_URL}mentor-relationships/`, {
+        method: 'POST',
+        headers: {
+          ...getSanitizedAuthHeader(),
+          'Content-Type': 'application/json',
+          'Referer': origin,
+          ...(csrfToken ? { 'X-CSRFToken': csrfToken } : {}),
+          'Accept': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({ mentor: me.id, mentee: otherUserId }),
+      });
+
+      const rawText = await response.text();
+
+      if (!response.ok) {
+        console.error('Mentor request failed', {
+          status: response.status,
+          statusText: response.statusText,
+          bodyPreview: rawText.slice(0, 500),
+          payload: { mentor: me.id, mentee: otherUserId },
+        });
+
+        try {
+          const errorJson = JSON.parse(rawText);
+          throw new Error(errorJson.detail || 'Failed to send mentor request');
+        } catch {
+          throw new Error(`Server error (${response.status})`);
+        }
+      }
+
+      try {
+        return JSON.parse(rawText);
+      } catch {
+        console.error('Unexpected mentor request response', rawText.slice(0, 200));
+        throw new Error('Unexpected response format from server');
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['mentor-relationships', 'me'] });
+      showSuccessToast('Mentor request sent');
+    },
+    onError: (error: Error) => {
+      console.error('Request as mentor error:', error);
+      showErrorToast(error.message);
+    },
+  });
+
+  // Request as mentee mutation
+  const requestAsMentee = useMutation({
+    mutationFn: async () => {
+      if (!me) {
+        throw new Error('You must be logged in');
+      }
+      
+      if (!otherUserId) {
+        throw new Error('Unable to identify the user. Please refresh and try again.');
+      }
+
+      // Prevent sending request to self
+      if (me.id === otherUserId) {
+        throw new Error('You cannot send a mentor request to yourself');
+      }
+
+      console.log('Sending mentee request', { mentor: otherUserId, mentee: me.id });
+
+      const cookies = await Cookies.get(API_URL);
+      const csrfToken = cookies.csrftoken?.value;
+      
+      const response = await fetch(`${API_URL}mentor-relationships/`, {
+        method: 'POST',
+        headers: {
+          ...getSanitizedAuthHeader(),
+          'Content-Type': 'application/json',
+          'Referer': origin,
+          ...(csrfToken ? { 'X-CSRFToken': csrfToken } : {}),
+          'Accept': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({ mentor: otherUserId, mentee: me.id }),
+      });
+
+      const rawText = await response.text();
+
+      if (!response.ok) {
+        console.error('Mentee request failed', {
+          status: response.status,
+          statusText: response.statusText,
+          bodyPreview: rawText.slice(0, 500),
+          payload: { mentor: otherUserId, mentee: me.id },
+        });
+
+        try {
+          const errorJson = JSON.parse(rawText);
+          throw new Error(errorJson.detail || 'Failed to send mentor request');
+        } catch {
+          throw new Error(`Server error (${response.status})`);
+        }
+      }
+
+      try {
+        return JSON.parse(rawText);
+      } catch {
+        console.error('Unexpected mentee request response', rawText.slice(0, 200));
+        throw new Error('Unexpected response format from server');
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['mentor-relationships', 'me'] });
+      showSuccessToast('Mentor request sent');
+    },
+    onError: (error: Error) => {
+      console.error('Request as mentee error:', error);
+      showErrorToast(error.message);
+    },
+  });
+
+  // Change relationship status mutation
+  const changeRelationshipStatus = useMutation({
+    mutationFn: async ({ relationshipId, status }: { relationshipId: number; status: string }) => {
+      const cookies = await Cookies.get(API_URL);
+      const csrfToken = cookies.csrftoken?.value;
+      
+      const response = await fetch(`${API_URL}mentor-relationships/${relationshipId}/status/`, {
+        method: 'POST',
+        headers: {
+          ...getSanitizedAuthHeader(),
+          'Content-Type': 'application/json',
+          'Referer': origin,
+          ...(csrfToken ? { 'X-CSRFToken': csrfToken } : {}),
+        },
+        credentials: 'include',
+        body: JSON.stringify({ status }),
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.detail || 'Failed to update relationship');
+      }
+      return response.json();
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['mentor-relationships', 'me'] });
+      const statusMessages: Record<string, string> = {
+        ACCEPTED: 'Request accepted',
+        REJECTED: 'Request rejected',
+        TERMINATED: 'Relationship terminated',
+      };
+      showSuccessToast(statusMessages[variables.status] || 'Relationship updated');
+    },
+    onError: (error: Error) => {
+      showErrorToast(error.message);
     },
   });
 
@@ -361,7 +853,7 @@ const Profile = () => {
     const parsed = new Date(dateString);
     return isNaN(parsed.getTime()) ? new Date() : parsed;
   };
-  
+
   // Update local state when profile data is fetched
   useEffect(() => {
     if (profileDetails) {
@@ -378,7 +870,7 @@ const Profile = () => {
   if (isLoadingProfile) {
     return (
       <View style={[styles.container, styles.loader, { backgroundColor: theme.colors.background }]}>
-        <ActivityIndicator animating={true} size="large" />
+        <ActivityIndicator animating={true} size="large" testID="activity-indicator" />
       </View>
     );
   }
@@ -389,57 +881,133 @@ const Profile = () => {
     <>
       <ScrollView style={[styles.container, { backgroundColor: theme.colors.background }]}>
         {/* Profile Hero Section */}
-        <Card mode="contained" style={[styles.heroCard, { backgroundColor: theme.colors.primaryContainer }]}>
+        <Card mode="elevated" style={styles.heroCard}>
           <Card.Content style={styles.heroContent}>
-            <View style={styles.avatarWrapper}>
-              {profilePictureUri ? (
-                <Avatar.Image
-                  size={120}
-                  source={{ 
-                    uri: profilePictureUri,
-                    headers: getAuthHeader(),
-                  }}
-                  key={pictureRefreshKey}
-                />
-              ) : (
-                <Avatar.Text size={120} label={avatarInitial} />
-              )}
-              {!otherUsername && (
-                <View style={styles.avatarActionsBelow}>
-                  <IconButton 
-                    icon="camera" 
-                    size={20} 
-                    onPress={handleChoosePhoto}
-                    mode="contained-tonal"
-                    disabled={uploadPictureMutation.isPending}
+            {/* Avatar with action overlay */}
+            <View style={styles.avatarSection}>
+              <View style={styles.avatarContainer}>
+                {profilePictureUri ? (
+                  <Avatar.Image
+                    size={140}
+                    source={{ 
+                      uri: profilePictureUri,
+                      headers: getAuthHeader(),
+                    }}
+                    key={pictureRefreshKey}
                   />
-                  {profilePictureUri && (
+                ) : (
+                  <Avatar.Text 
+                    size={140} 
+                    label={avatarInitial}
+                    style={{ backgroundColor: theme.colors.primaryContainer }}
+                    labelStyle={{ color: theme.colors.onPrimaryContainer, fontSize: 48 }}
+                  />
+                )}
+                {/* Photo action buttons overlay */}
+                {!otherUsername && (
+                  <View style={[styles.avatarOverlay, { backgroundColor: theme.colors.surface }]}>
                     <IconButton 
-                      icon="delete" 
-                      size={20} 
-                      onPress={handleDeletePhoto}
-                      mode="contained-tonal"
-                      disabled={deletePictureMutation.isPending}
+                      icon="camera" 
+                      size={18} 
+                      onPress={handleChoosePhoto}
+                      mode="contained"
+                      containerColor={theme.colors.primary}
+                      iconColor={theme.colors.onPrimary}
+                      disabled={uploadPictureMutation.isPending}
+                      testID="camera-button"
+                      style={styles.avatarActionButton}
                     />
-                  )}
-                </View>
-              )}
+                    {profilePictureUri && (
+                      <IconButton 
+                        icon="delete-outline" 
+                        size={18} 
+                        onPress={handleDeletePhoto}
+                        mode="contained"
+                        containerColor={theme.colors.errorContainer}
+                        iconColor={theme.colors.onErrorContainer}
+                        disabled={deletePictureMutation.isPending}
+                        testID="delete-picture-button"
+                        style={styles.avatarActionButton}
+                      />
+                    )}
+                  </View>
+                )}
+              </View>
             </View>
-            <View style={styles.heroTextContainer}>
-              <Text variant="headlineMedium" style={{ color: theme.colors.onPrimaryContainer }}>
+            
+            {/* Name and info section */}
+            <View style={styles.profileInfoSection}>
+              <Text variant="headlineSmall" style={[styles.displayName, { color: theme.colors.onSurface }]}>
                 {profileDetails?.name && profileDetails?.surname 
                   ? `${profileDetails.name} ${profileDetails.surname}` 
                   : profileDetails?.username}
               </Text>
-              <Text variant="titleMedium" style={{ color: theme.colors.onPrimaryContainer }}>
+              <Text variant="bodyLarge" style={[styles.username, { color: theme.colors.onSurfaceVariant }]}>
                 @{profileDetails?.username}
               </Text>
+              {(userDetails?.is_coach || profileDetails?.is_coach) && (
+                <Chip 
+                  mode="flat" 
+                  compact 
+                  icon="school"
+                  style={[styles.coachBadge, { backgroundColor: theme.colors.tertiaryContainer }]}
+                  textStyle={{ color: theme.colors.onTertiaryContainer, fontSize: 12, fontWeight: '600' }}
+                >
+                  Coach
+                </Chip>
+              )}
+              {/* Chat Button for other users */}
+              {otherUsername && otherUserId && (
+                <View style={styles.chatButtonContainer}>
+                  <Button
+                    mode="contained"
+                    icon="message-text"
+                    onPress={async () => {
+                      try {
+                        // Check if chat already exists
+                        const existingChat = chats.find(chat => 
+                          chat.other_user?.username === otherUsername || 
+                          chat.other_user?.id === otherUserId
+                        );
+                        
+                        if (existingChat) {
+                          // Navigate to existing chat
+                          navigation.navigate('ChatDetail' as never, { chatId: existingChat.id } as never);
+                        } else {
+                          // Create new chat
+                          const newChat = await createChat(otherUserId);
+                          if (newChat) {
+                            navigation.navigate('ChatDetail' as never, { chatId: newChat.id } as never);
+                          } else {
+                            Toast.show({
+                              type: 'error',
+                              text1: 'Error',
+                              text2: 'Failed to create chat. Please try again.',
+                            });
+                          }
+                        }
+                      } catch (error) {
+                        console.error('Error creating/opening chat:', error);
+                        Toast.show({
+                          type: 'error',
+                          text1: 'Error',
+                          text2: 'Failed to start chat. Please try again.',
+                        });
+                      }
+                    }}
+                    style={styles.chatButton}
+                    contentStyle={styles.chatButtonContent}
+                  >
+                    Chat
+                  </Button>
+                </View>
+              )}
             </View>
           </Card.Content>
         </Card>
 
         {/* Profile Information Section */}
-        <Card style={styles.sectionCard}>
+        <Card mode="elevated" style={styles.sectionCard}>
           <Card.Title
             title="Profile Information"
             right={(props) => !otherUsername && !isEditing ? (
@@ -496,26 +1064,47 @@ const Profile = () => {
           </Card.Content>
         </Card>
 
-        {/* Goals Section - Only show for own profile */}
-        {!otherUsername && (
-          <Card style={styles.sectionCard}>
+        {/* Goals Section - Show for own profile or when viewing mentee as mentor */}
+        {(!otherUsername || (otherUsername && selectedRel && selectedRel.status === 'ACCEPTED' && selectedRel.mentor === myUserId)) && (
+          <Card mode="elevated" style={styles.sectionCard}>
             <Card.Title
               title="Goals"
-              right={(props) => goals.length > 0 ? (
-                <Button {...props} icon="plus" onPress={() => {
-                  // @ts-ignore
-                  navigation.navigate('Main', { 
-                    screen: 'Goals',
-                    params: { openCreate: true }
-                  })
-                }}>New</Button>
-              ) : null}
+              right={(props) => {
+                // Show "New" button for own profile or when viewing mentee as mentor
+                const isMentorOfOther = otherUsername && selectedRel && selectedRel.status === 'ACCEPTED' && selectedRel.mentor === myUserId;
+                
+                if (!otherUsername) {
+                  return (
+                    <Button {...props} icon="plus" onPress={() => setIsGoalFormOpen(true)}>New</Button>
+                  );
+                }
+                if (isMentorOfOther) {
+                  return (
+                    <Button {...props} icon="plus" onPress={() => {
+                      setEditingGoal(null);
+                      setIsGoalFormOpen(true);
+                    }}>Add for Mentee</Button>
+                  );
+                }
+                return null;
+              }}
             />
             <Card.Content>
               {isLoadingGoals ? <ActivityIndicator/> : goals.length > 0 ? (
-                  goals.map((goal: Goal, index: number) => (
+                  goals.map((goal: FitnessGoal, index: number) => (
                     <React.Fragment key={goal.id}>
-                      <GoalCard goal={goal} onPress={() => openGoalDetails(goal)} />
+                      <Pressable onPress={() => {
+                        setSelectedGoalForDetail(goal);
+                        setIsGoalModalOpen(true);
+                      }}>
+                        <GoalCard 
+                          goal={goal} 
+                          onPress={() => {
+                            setSelectedGoalForDetail(goal);
+                            setIsGoalModalOpen(true);
+                          }}
+                        />
+                      </Pressable>
                       {index < goals.length - 1 && <Divider style={styles.goalDivider} />}
                     </React.Fragment>
                   ))
@@ -524,17 +1113,299 @@ const Profile = () => {
                   <Avatar.Icon icon="flag-checkered" size={48} style={{backgroundColor: theme.colors.surfaceVariant}}/>
                   <Text variant="titleMedium" style={styles.emptyStateText}>No Goals Set</Text>
                   <Text variant="bodyMedium" style={styles.emptyStateText}>
-                    You haven't set any goals yet.
+                    {otherUsername 
+                      ? 'No goals set for this mentee yet. Tap "Add for Mentee" to create one.'
+                      : "You haven't set any goals yet."}
                   </Text>
-                  <Button mode="contained" style={styles.emptyStateButton} onPress={() => {
-                    // @ts-ignore
-                    navigation.navigate('Main', { 
-                      screen: 'Goals',
-                      params: { openCreate: true }
-                    })
-                  }}>Set Your First Goal</Button>
+                  {!otherUsername && (
+                    <Button mode="contained" style={styles.emptyStateButton} onPress={() => setIsGoalFormOpen(true)}>Set Your First Goal</Button>
+                  )}
+                  {otherUsername && (
+                    <Button mode="contained" style={styles.emptyStateButton} onPress={() => {
+                      setEditingGoal(null);
+                      setIsGoalFormOpen(true);
+                    }}>Add Goal for Mentee</Button>
+                  )}
                 </View>
               )}
+            </Card.Content>
+          </Card>
+        )}
+
+        {/* Mentorship Section - Own Profile */}
+        {!otherUsername && (
+          <Card mode="elevated" style={styles.sectionCard}>
+            <Pressable onPress={() => setIsMentorshipExpanded(!isMentorshipExpanded)}>
+              <Card.Title 
+                title="Mentorship" 
+                right={(props) => (
+                  <IconButton 
+                    {...props} 
+                    icon={isMentorshipExpanded ? 'chevron-up' : 'chevron-down'} 
+                    onPress={() => setIsMentorshipExpanded(!isMentorshipExpanded)}
+                  />
+                )}
+              />
+            </Pressable>
+            {isMentorshipExpanded && (
+            <Card.Content>
+              {/* My Mentors */}
+              <Text variant="titleMedium" style={{ marginBottom: 12, fontWeight: '600' }}>Your Mentors</Text>
+              {myMentors.length > 0 ? (
+                <View style={styles.mentorshipList}>
+                  {myMentors.map((u) => (
+                    <Pressable 
+                      key={`mentor-${u.id}`}
+                      onPress={() => {
+                        // @ts-ignore
+                        navigation.push('Profile', { username: u.username });
+                      }}
+                      style={{ width: '100%' }}
+                    >
+                      <Card mode="elevated" style={styles.mentorCard}>
+                        <Card.Content style={styles.mentorCardContent}>
+                          {mentorshipPictures[u.username] ? (
+                            <Avatar.Image size={56} source={{ uri: mentorshipPictures[u.username], headers: getAuthHeader() }} />
+                          ) : (
+                            <Avatar.Text size={56} label={u.username?.[0]?.toUpperCase() || 'U'} />
+                          )}
+                          <View style={styles.mentorInfo}>
+                            <Text variant="titleMedium" style={styles.mentorName}>{u.username}</Text>
+                            <Chip compact mode="flat" icon="school" style={[styles.roleChip, { backgroundColor: theme.colors.primaryContainer }]}>
+                              <Text style={{ color: theme.colors.onPrimaryContainer, fontSize: 12 }}>Mentor</Text>
+                            </Chip>
+                          </View>
+                          <IconButton icon="chevron-right" size={24} />
+                        </Card.Content>
+                      </Card>
+                    </Pressable>
+                  ))}
+                </View>
+              ) : (
+                <Card mode="outlined" style={styles.emptyCard}>
+                  <Card.Content>
+                    <Text variant="bodyMedium" style={{ textAlign: 'center', opacity: 0.7 }}>
+                      You currently have no mentors.
+                    </Text>
+                  </Card.Content>
+                </Card>
+              )}
+
+              <Divider style={styles.sectionDivider} />
+
+              {/* My Mentees */}
+              <Text variant="titleMedium" style={{ marginBottom: 12, fontWeight: '600' }}>Your Mentees</Text>
+              {myMentees.length > 0 ? (
+                <View style={styles.mentorshipList}>
+                  {myMentees.map((u) => (
+                    <Pressable 
+                      key={`mentee-${u.id}`}
+                      onPress={() => {
+                        // @ts-ignore
+                        navigation.push('Profile', { username: u.username });
+                      }}
+                      style={{ width: '100%' }}
+                    >
+                      <Card mode="elevated" style={styles.mentorCard}>
+                        <Card.Content style={styles.mentorCardContent}>
+                          {mentorshipPictures[u.username] ? (
+                            <Avatar.Image size={56} source={{ uri: mentorshipPictures[u.username], headers: getAuthHeader() }} />
+                          ) : (
+                            <Avatar.Text size={56} label={u.username?.[0]?.toUpperCase() || 'U'} />
+                          )}
+                          <View style={styles.mentorInfo}>
+                            <Text variant="titleMedium" style={styles.mentorName}>{u.username}</Text>
+                            <Chip compact mode="flat" icon="account" style={[styles.roleChip, { backgroundColor: theme.colors.secondaryContainer }]}>
+                              <Text style={{ color: theme.colors.onSecondaryContainer, fontSize: 12 }}>Mentee</Text>
+                            </Chip>
+                          </View>
+                          <IconButton icon="chevron-right" size={24} />
+                        </Card.Content>
+                      </Card>
+                    </Pressable>
+                  ))}
+                </View>
+              ) : (
+                <Card mode="outlined" style={styles.emptyCard}>
+                  <Card.Content>
+                    <Text variant="bodyMedium" style={{ textAlign: 'center', opacity: 0.7 }}>
+                      You currently have no mentees.
+                    </Text>
+                  </Card.Content>
+                </Card>
+              )}
+
+              <Divider style={styles.sectionDivider} />
+
+              {/* Pending Requests */}
+              <Text variant="titleMedium" style={{ marginBottom: 12, fontWeight: '600' }}>Pending Requests</Text>
+              {myPendingRequests.length > 0 ? (
+                <View style={{ gap: 12 }}>
+                  {myPendingRequests.map((r) => {
+                    const amReceiver = r.receiver === myUserId;
+                    const amMentor = r.mentor === myUserId;
+                    const otherUsernameLabel = amMentor ? r.mentee_username : r.mentor_username;
+                    const roleWord = amMentor ? 'mentee' : 'mentor';
+                    const sentence = amReceiver
+                      ? `${otherUsernameLabel} asked to be your ${roleWord}`
+                      : `You asked ${otherUsernameLabel} to be your ${roleWord}`;
+                    
+                    return (
+                      <Card key={`pending-${r.id}`} mode="elevated" style={styles.pendingRequestCard}>
+                        <Card.Content>
+                          <Pressable 
+                            onPress={() => {
+                              // @ts-ignore
+                              navigation.push('Profile', { username: otherUsernameLabel });
+                            }}
+                            style={styles.pendingRequestHeader}
+                          >
+                            <Avatar.Text size={40} label={otherUsernameLabel?.[0]?.toUpperCase() || 'U'} />
+                            <Text variant="bodyMedium" style={{ flex: 1, marginLeft: 12 }}>{sentence}</Text>
+                          </Pressable>
+                          <View style={styles.pendingRequestActions}>
+                            {amReceiver ? (
+                              <>
+                                <Button 
+                                  mode="contained" 
+                                  compact 
+                                  onPress={() => changeRelationshipStatus.mutate({ relationshipId: r.id, status: 'ACCEPTED' })}
+                                  disabled={changeRelationshipStatus.isPending}
+                                  style={{ flex: 1 }}
+                                >
+                                  Accept
+                                </Button>
+                                <Button 
+                                  mode="outlined" 
+                                  compact 
+                                  onPress={() => changeRelationshipStatus.mutate({ relationshipId: r.id, status: 'REJECTED' })}
+                                  disabled={changeRelationshipStatus.isPending}
+                                  style={{ flex: 1 }}
+                                >
+                                  Reject
+                                </Button>
+                              </>
+                            ) : (
+                              <Button 
+                                mode="outlined" 
+                                compact 
+                                onPress={() => changeRelationshipStatus.mutate({ relationshipId: r.id, status: 'REJECTED' })}
+                                disabled={changeRelationshipStatus.isPending}
+                                style={{ flex: 1 }}
+                              >
+                                Cancel Request
+                              </Button>
+                            )}
+                          </View>
+                        </Card.Content>
+                      </Card>
+                    );
+                  })}
+                </View>
+              ) : (
+                <Card mode="outlined" style={styles.emptyCard}>
+                  <Card.Content>
+                    <Text variant="bodyMedium" style={{ textAlign: 'center', opacity: 0.7 }}>
+                      You have no pending requests.
+                    </Text>
+                  </Card.Content>
+                </Card>
+              )}
+            </Card.Content>
+            )}
+          </Card>
+        )}
+
+        {/* Mentorship Section - Other User's Profile */}
+        {otherUsername && (
+          <Card mode="elevated" style={styles.sectionCard}>
+            <Card.Title title="Mentorship" />
+            <Card.Content>
+              <Surface style={styles.relationshipStatusSurface} elevation={1}>
+                <Text variant="bodyMedium" style={{ textAlign: 'center' }}>
+                  {selectedRel && selectedRel.status === 'ACCEPTED'
+                    ? (selectedRel.mentor === myUserId
+                        ? `${otherUsername} is your mentee`
+                        : `${otherUsername} is your mentor`)
+                    : selectedRel && selectedRel.status === 'PENDING' && isSender
+                      ? (selectedRel.mentor === myUserId
+                          ? `You have asked ${otherUsername} to be your mentee`
+                          : `You have asked ${otherUsername} to be your mentor`)
+                      : selectedRel && selectedRel.status === 'PENDING' && isReceiver
+                        ? (selectedRel.mentor === otherUserId
+                            ? `${otherUsername} has asked to be your mentor`
+                            : `${otherUsername} has asked to be your mentee`)
+                        : `You and ${otherUsername} are not connected`}
+                </Text>
+              </Surface>
+              <View style={styles.relationshipActions}>
+                {selectedRel && selectedRel.status === 'ACCEPTED' && (
+                  <Button 
+                    mode="outlined" 
+                    onPress={() => changeRelationshipStatus.mutate({ relationshipId: selectedRel.id, status: 'TERMINATED' })}
+                    disabled={changeRelationshipStatus.isPending}
+                    icon="link-variant-off"
+                    textColor={theme.colors.error}
+                    style={{ borderColor: theme.colors.error }}
+                  >
+                    End Relationship
+                  </Button>
+                )}
+                {selectedRel && selectedRel.status === 'PENDING' && isSender && (
+                  <Button 
+                    mode="outlined" 
+                    onPress={() => changeRelationshipStatus.mutate({ relationshipId: selectedRel.id, status: 'REJECTED' })}
+                    disabled={changeRelationshipStatus.isPending}
+                    icon="close"
+                  >
+                    Cancel Request
+                  </Button>
+                )}
+                {selectedRel && selectedRel.status === 'PENDING' && isReceiver && (
+                  <View style={{ flexDirection: 'row', gap: 12, width: '100%' }}>
+                    <Button 
+                      mode="contained" 
+                      onPress={() => changeRelationshipStatus.mutate({ relationshipId: selectedRel.id, status: 'ACCEPTED' })}
+                      disabled={changeRelationshipStatus.isPending}
+                      icon="check"
+                      style={{ flex: 1 }}
+                    >
+                      Accept
+                    </Button>
+                    <Button 
+                      mode="outlined" 
+                      onPress={() => changeRelationshipStatus.mutate({ relationshipId: selectedRel.id, status: 'REJECTED' })}
+                      disabled={changeRelationshipStatus.isPending}
+                      icon="close"
+                      style={{ flex: 1 }}
+                    >
+                      Reject
+                    </Button>
+                  </View>
+                )}
+                {(!selectedRel || (selectedRel && ['REJECTED', 'TERMINATED'].includes(selectedRel.status))) && (
+                  <View style={{ flexDirection: 'row', gap: 12, width: '100%' }}>
+                    <Button 
+                      mode="contained" 
+                      onPress={() => requestAsMentor.mutate()}
+                      disabled={requestAsMentor.isPending || !me || !otherUserId}
+                      icon="account-supervisor"
+                      style={{ flex: 1 }}
+                    >
+                      Be Their Mentor
+                    </Button>
+                    <Button 
+                      mode="contained" 
+                      onPress={() => requestAsMentee.mutate()}
+                      disabled={requestAsMentee.isPending || !me || !otherUserId}
+                      icon="school"
+                      style={{ flex: 1 }}
+                    >
+                      Request as Mentor
+                    </Button>
+                  </View>
+                )}
+              </View>
             </Card.Content>
           </Card>
         )}
@@ -565,6 +1436,40 @@ const Profile = () => {
            </Dialog.Actions>
         </Modal>
       </Portal>
+
+      {/* Goal Form Modal */}
+      <GoalFormModal
+        isVisible={isGoalFormOpen}
+        onClose={() => {
+          setIsGoalFormOpen(false);
+          setEditingGoal(null);
+        }}
+        editingGoal={editingGoal}
+        targetUserId={otherUserId || undefined}
+        onSuccess={() => {
+          queryClient.invalidateQueries({ queryKey: ['goals'] });
+        }}
+      />
+
+      {/* Goal Detail Modal */}
+      <GoalDetailModal
+        isVisible={isGoalModalOpen}
+        goal={selectedGoalForDetail}
+        onClose={() => {
+          setIsGoalModalOpen(false);
+          setSelectedGoalForDetail(null);
+        }}
+        isOwner={selectedGoalForDetail?.user === myUserId}
+        isMentor={selectedGoalForDetail?.mentor === myUserId}
+        onGoalUpdated={() => {
+          queryClient.invalidateQueries({ queryKey: ['goals'] });
+        }}
+        onGoalDeleted={() => {
+          queryClient.invalidateQueries({ queryKey: ['goals'] });
+          setIsGoalModalOpen(false);
+          setSelectedGoalForDetail(null);
+        }}
+      />
     </>
   );
 };
@@ -585,12 +1490,31 @@ const InfoRow = ({ label, value, isLast = false }: { label: string, value: strin
 const GoalCard = ({ goal, onPress }: { goal: any, onPress: () => void }) => {
   const theme = useTheme();
   const progress = (goal.current_value / goal.target_value);
+  
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'ACTIVE': return { bg: theme.colors.primaryContainer, text: theme.colors.onPrimaryContainer };
+      case 'COMPLETED': return { bg: theme.colors.tertiaryContainer, text: theme.colors.onTertiaryContainer };
+      case 'INACTIVE': return { bg: theme.colors.surfaceVariant, text: theme.colors.onSurfaceVariant };
+      default: return { bg: theme.colors.secondaryContainer, text: theme.colors.onSecondaryContainer };
+    }
+  };
+  
+  const statusColors = getStatusColor(goal.status);
+  
   return (
-    <Card mode="outlined" onPress={onPress} style={styles.goalCard}>
+    <Card mode="elevated" onPress={onPress} style={styles.goalCard}>
       <Card.Content>
         <View style={styles.goalHeader}>
-          <Text variant="titleMedium">{goal.title}</Text>
-          <Chip compact>{goal.status}</Chip>
+          <Text variant="titleMedium" style={{ flex: 1 }}>{goal.title}</Text>
+          <Chip 
+            compact 
+            mode="flat"
+            style={{ backgroundColor: statusColors.bg }}
+            textStyle={{ color: statusColors.text, fontSize: 11 }}
+          >
+            {goal.status}
+          </Chip>
         </View>
         <Text variant="bodyMedium" style={styles.goalDescription}>{goal.description}</Text>
         <View style={styles.progressContainer}>
@@ -615,20 +1539,63 @@ const styles = StyleSheet.create({
   },
   heroCard: {
     margin: 16,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    borderBottomLeftRadius: 20,
-    borderBottomRightRadius: 20,
+    borderRadius: 24,
   },
   heroContent: {
     alignItems: 'center',
-    padding: 16,
+    paddingVertical: 32,
+    paddingHorizontal: 24,
   },
-  avatarWrapper: {
-    alignItems: 'center',
-    marginBottom: 16,
+  avatarSection: {
+    marginBottom: 20,
   },
   avatarContainer: {
+    position: 'relative',
+    alignItems: 'center',
+  },
+  avatarOverlay: {
+    position: 'absolute',
+    bottom: -8,
+    flexDirection: 'row',
+    gap: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 24,
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+  },
+  avatarActionButton: {
+    margin: 0,
+  },
+  profileInfoSection: {
+    alignItems: 'center',
+    gap: 4,
+  },
+  displayName: {
+    fontWeight: '700',
+    textAlign: 'center',
+  },
+  username: {
+    textAlign: 'center',
+  },
+  coachBadge: {
+    marginTop: 8,
+  },
+  chatButtonContainer: {
+    marginTop: 12,
+    width: '100%',
+    alignItems: 'center',
+  },
+  chatButton: {
+    minWidth: 120,
+  },
+  chatButtonContent: {
+    paddingVertical: 4,
+  },
+  avatarWrapper: {
     alignItems: 'center',
     marginBottom: 16,
   },
@@ -656,6 +1623,7 @@ const styles = StyleSheet.create({
   sectionCard: {
     marginHorizontal: 16,
     marginBottom: 16,
+    borderRadius: 16,
   },
   input: {
     marginBottom: 12,
@@ -680,8 +1648,61 @@ const styles = StyleSheet.create({
     flexShrink: 1,
     textAlign: 'right',
   },
+  mentorshipList: {
+    gap: 12,
+    marginBottom: 16,
+  },
+  mentorCard: {
+    width: '100%',
+    marginBottom: 0,
+  },
+  mentorCardContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+  },
+  mentorInfo: {
+    flex: 1,
+    marginLeft: 16,
+  },
+  mentorName: {
+    fontWeight: '600',
+  },
+  roleChip: {
+    marginTop: 4,
+    alignSelf: 'flex-start',
+  },
+  emptyCard: {
+    marginBottom: 16,
+  },
+  sectionDivider: {
+    marginVertical: 16,
+  },
+  pendingRequestCard: {
+    marginBottom: 8,
+  },
+  pendingRequestHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  pendingRequestActions: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  relationshipStatusSurface: {
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 16,
+  },
+  relationshipActions: {
+    gap: 12,
+    alignItems: 'center',
+  },
   goalCard: {
     marginBottom: 8,
+    borderRadius: 16,
   },
   goalDivider: {
     marginVertical: 4,

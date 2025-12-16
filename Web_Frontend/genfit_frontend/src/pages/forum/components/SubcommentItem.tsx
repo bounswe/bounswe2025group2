@@ -5,6 +5,7 @@ import { User, Save, X } from 'lucide-react';
 import { useUpdateSubcomment } from '../../../lib/hooks/useData';
 import SubcommentActions from './SubcommentActions';
 import type { Subcomment } from '../../../lib/types/api';
+import { useNavigate } from 'react-router-dom';
 
 interface SubcommentItemProps {
   subcomment: Subcomment;
@@ -14,6 +15,7 @@ const SubcommentItem: React.FC<SubcommentItemProps> = ({ subcomment }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState(subcomment.content);
   const updateSubcommentMutation = useUpdateSubcomment();
+  const navigate = useNavigate();
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -28,6 +30,10 @@ const SubcommentItem: React.FC<SubcommentItemProps> = ({ subcomment }) => {
   const handleEdit = () => {
     setIsEditing(true);
     setEditContent(subcomment.content);
+  };
+
+  const handleUsernameClick = (username: string) => {
+    navigate(`/profile/other/${username}`);
   };
 
   const handleSave = async () => {
@@ -57,13 +63,18 @@ const SubcommentItem: React.FC<SubcommentItemProps> = ({ subcomment }) => {
         <div className="comment-header">
           <div className="comment-author">
             <User className="w-4 h-4" />
-            <span className="author-name">{subcomment.author_username}</span>
+            <span
+              onClick={() => handleUsernameClick(subcomment.author_username)}
+              className="author-name clickable-username"
+            >
+              {subcomment.author_username}
+            </span>
           </div>
           <div className="comment-date">
             {formatDate(subcomment.created_at)}
           </div>
         </div>
-        
+
         <div className="comment-body">
           {isEditing ? (
             <div className="edit-mode">
@@ -101,13 +112,13 @@ const SubcommentItem: React.FC<SubcommentItemProps> = ({ subcomment }) => {
             <p>{subcomment.content}</p>
           )}
         </div>
-        
+
         <div className="flex items-center justify-between mt-4 pt-3 border-t border-slate-100">
           <SubcommentActions subcomment={subcomment} onEdit={handleEdit} />
           {/* No voting section for subcomments as requested */}
         </div>
       </div>
-      
+
       {/* Visual indicator for subcomment - different color to distinguish from main comments */}
       <div className="absolute left-0 top-0 bottom-0 w-1 bg-blue-300 rounded-r-sm opacity-60"></div>
     </Card>

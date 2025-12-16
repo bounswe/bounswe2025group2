@@ -16,6 +16,8 @@ import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import CookieManager from '@react-native-cookies/cookies';
 import { useRoute, useFocusEffect } from '@react-navigation/native';
+import { API_URL } from '../constants/api';
+import Toast from 'react-native-toast-message';
 
 // ──────────────────────────────────────────────────────────────────────────────
 // 📋 TYPE DEFINITIONS
@@ -30,7 +32,7 @@ interface Goal {
   description: string;
   user: number;
   mentor: number | null;
-  goal_type: 'WALKING_RUNNING' | 'WORKOUT' | 'CYCLING' | 'SPORTS' | 'SWIMMING';
+  goal_type: 'WALKING_RUNNING' | 'WORKOUT' | 'CYCLING' | 'SPORTS' | 'SWIMMING' | 'YOGA' | 'WEIGHTLIFTING' | 'HIKING' | 'STEP_COUNT' | 'MEDITATION' | 'BASKETBALL' | 'FOOTBALL' | 'TENNIS';
   target_value: number;
   current_value: number;
   unit: string;
@@ -75,21 +77,73 @@ type TabFilter = 'ACTIVE' | 'COMPLETED' | 'ALL';
  */
 type ModalType = 'create' | 'edit' | 'progress' | null;
 
+/**
+ * Goal Suggestions API response
+ */
+interface GoalSuggestionResponse {
+  is_realistic: boolean;
+  warning_message: string | null;
+  target_value: number;
+  unit: string;
+  days_to_complete: number;
+  goal_type: 'WALKING_RUNNING' | 'WORKOUT' | 'CYCLING' | 'SWIMMING' | 'SPORTS' | 'YOGA' | 'WEIGHTLIFTING' | 'HIKING' | 'STEP_COUNT' | 'MEDITATION' | 'BASKETBALL' | 'FOOTBALL' | 'TENNIS';
+  tips: string[];
+  improved_title?: string;  // Optional: AI-improved title - should be provided by API
+  improved_description?: string;  // Optional: AI-improved description - should be provided by API
+}
+
 // ──────────────────────────────────────────────────────────────────────────────
 // 🌐 API CONFIGURATION
 // ──────────────────────────────────────────────────────────────────────────────
 
-const API_BASE_URL = 'http://164.90.166.81:8000/api';
 // Note: Trailing slash required for Django's APPEND_SLASH=True configuration
-const GOALS_ENDPOINT = `${API_BASE_URL}/goals/`;
+const GOALS_ENDPOINT = `${API_URL}goals/`;
+const GOAL_SUGGESTIONS_ENDPOINT = `${API_URL}goals/suggestions/`;
+
+/**
+ * Extracts the origin (base URL) for Referer header
+ */
+const getOrigin = (): string => {
+  return API_URL.replace(/\/api\/?$/, '');
+};
 
 /**
  * Fetches CSRF token from cookies for authenticated requests
+ * If not available, bootstraps it by making a GET request
  */
 const getCSRFToken = async (): Promise<string> => {
   try {
-    const cookies = await CookieManager.get('http://164.90.166.81:8000');
-    return cookies?.csrftoken?.value || '';
+    const cookies = await CookieManager.get(API_URL);
+    const token = cookies?.csrftoken?.value || '';
+    
+    // If we have a valid token, return it
+    if (token && token.length >= 32) {
+      return token;
+    }
+    
+    // Bootstrap CSRF token by making a GET request (similar to Login.tsx)
+    const origin = getOrigin();
+    const bootstrapUrl = `${API_URL}quotes/random/`;
+    try {
+      await fetch(bootstrapUrl, {
+        method: 'GET',
+        headers: {
+          'Referer': origin,
+        },
+        credentials: 'include',
+      });
+      
+      // Try to get token again after bootstrap
+      const cookiesAfter = await CookieManager.get(API_URL);
+      const tokenAfter = cookiesAfter?.csrftoken?.value || '';
+      if (tokenAfter && tokenAfter.length >= 32) {
+        return tokenAfter;
+      }
+    } catch (bootstrapError) {
+      console.warn('Failed to bootstrap CSRF token:', bootstrapError);
+    }
+    
+    return '';
   } catch (error) {
     console.error('Failed to get CSRF token:', error);
     return '';
@@ -106,6 +160,14 @@ const GOAL_TYPES: { label: string; value: Goal['goal_type'] }[] = [
   { label: 'Cycling', value: 'CYCLING' },
   { label: 'Sports', value: 'SPORTS' },
   { label: 'Swimming', value: 'SWIMMING' },
+  { label: 'Yoga', value: 'YOGA' },
+  { label: 'Weightlifting', value: 'WEIGHTLIFTING' },
+  { label: 'Hiking', value: 'HIKING' },
+  { label: 'Daily Steps', value: 'STEP_COUNT' },
+  { label: 'Meditation', value: 'MEDITATION' },
+  { label: 'Basketball', value: 'BASKETBALL' },
+  { label: 'Football/Soccer', value: 'FOOTBALL' },
+  { label: 'Tennis', value: 'TENNIS' },
 ];
 
 // ──────────────────────────────────────────────────────────────────────────────
@@ -340,6 +402,8 @@ interface CreateGoalModalProps {
   onSubmit: (formData: CreateGoalForm) => void;
   colors: any;
   loading: boolean;
+  getAuthHeader: () => Record<string, string>;
+  isAuthenticated: boolean;
 }
 
 const CreateGoalModal: React.FC<CreateGoalModalProps> = ({
@@ -348,6 +412,8 @@ const CreateGoalModal: React.FC<CreateGoalModalProps> = ({
   onSubmit,
   colors,
   loading,
+  getAuthHeader,
+  isAuthenticated,
 }) => {
   const [formData, setFormData] = useState<CreateGoalForm>({
     title: '',
@@ -358,6 +424,10 @@ const CreateGoalModal: React.FC<CreateGoalModalProps> = ({
     target_date: new Date(),
   });
   const [showDatePicker, setShowDatePicker] = useState(false);
+  const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
+  const [suggestionError, setSuggestionError] = useState<string | null>(null);
+  const [suggestionResult, setSuggestionResult] = useState<GoalSuggestionResponse | null>(null);
+  const [showSuggestionModal, setShowSuggestionModal] = useState(false);
 
   const resetForm = () => {
     setFormData({
@@ -368,6 +438,9 @@ const CreateGoalModal: React.FC<CreateGoalModalProps> = ({
       unit: '',
       target_date: new Date(),
     });
+    setSuggestionError(null);
+    setSuggestionResult(null);
+    setShowSuggestionModal(false);
   };
 
   // Reset form to default values when modal becomes visible to prevent stale data
@@ -377,6 +450,159 @@ const CreateGoalModal: React.FC<CreateGoalModalProps> = ({
     }
   }, [visible]);
 
+  const fetchSuggestions = async () => {
+    if (!isAuthenticated) {
+      Alert.alert('Error', 'You must be logged in to get suggestions.');
+      return;
+    }
+
+    // Require both title AND description to be filled
+    if (!formData.title.trim()) {
+      Alert.alert('Error', 'Please enter a goal title to get suggestions.');
+      return;
+    }
+
+    if (!formData.description.trim()) {
+      Alert.alert('Error', 'Please enter a goal description to get suggestions.');
+      return;
+    }
+
+    try {
+      setIsLoadingSuggestions(true);
+      setSuggestionError(null);
+      setSuggestionResult(null);
+
+      const csrfToken = await getCSRFToken();
+
+      const origin = getOrigin();
+      const response = await fetch(GOAL_SUGGESTIONS_ENDPOINT, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Referer': origin,
+          ...(csrfToken ? { 'X-CSRFToken': csrfToken } : {}),
+          ...getAuthHeader(),
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          title: formData.title,
+          description: formData.description || '',
+        }),
+      });
+
+      // Handle 400 Bad Request (missing title)
+      if (response.status === 400) {
+        const errorData = await response.json().catch(() => ({ detail: 'Title is required' }));
+        const errorMessage = errorData.detail || errorData.message || 'Title is required';
+        Toast.show({
+          type: 'error',
+          text1: 'Error',
+          text2: errorMessage,
+        });
+        return;
+      }
+
+      // Handle 429 Rate Limit
+      if (response.status === 429) {
+        const data = await response.json().catch(() => ({}));
+        const retryAfter = data.retry_after_seconds || data.detail?.match(/\d+/)?.[0] || 0;
+        const waitMinutes = Math.ceil(retryAfter / 60);
+        Toast.show({
+          type: 'error',
+          text1: 'Rate Limit Reached',
+          text2: `You've reached the hourly limit for AI suggestions. Try again in ${waitMinutes} minutes.`,
+        });
+        return;
+      }
+
+      // Handle 500 Server Error
+      if (response.status === 500) {
+        Toast.show({
+          type: 'error',
+          text1: 'Service Unavailable',
+          text2: 'Suggestions feature is currently unavailable. Please create your goal manually.',
+        });
+        return;
+      }
+
+      if (!response.ok) {
+        try {
+          const errorData = await response.json();
+          console.error('Goal suggestions error response:', response.status, errorData);
+        } catch (jsonError) {
+          console.error('Goal suggestions error response:', response.status, 'Failed to parse JSON');
+        }
+        Toast.show({
+          type: 'error',
+          text1: 'Error',
+          text2: 'Suggestions feature is currently unavailable. Please create your goal manually.',
+        });
+        return;
+      }
+
+      const data: GoalSuggestionResponse = await response.json();
+      setSuggestionResult(data);
+      setShowSuggestionModal(true); // Show modal with suggestions
+    } catch (error) {
+      console.error('Failed to fetch suggestions:', error);
+      Toast.show({
+        type: 'error',
+        text1: 'Network Error',
+        text2: 'Suggestions feature is currently unavailable. Please create your goal manually.',
+      });
+    } finally {
+      setIsLoadingSuggestions(false);
+    }
+  };
+
+  const applySuggestion = (suggestion: GoalSuggestionResponse) => {
+    const now = new Date();
+    const targetDate = new Date(now.getTime() + suggestion.days_to_complete * 24 * 60 * 60 * 1000);
+    
+    // Always update title and description with AI-improved versions when applying suggestions
+    let improvedTitle = suggestion.improved_title;
+    let improvedDescription = suggestion.improved_description;
+    
+    // If API didn't provide improved versions, generate them based on the safe alternative
+    if (!improvedTitle) {
+      // Create an improved title based on the safe target and timeline
+      const goalTypeLabel = GOAL_TYPES.find(type => type.value === suggestion.goal_type)?.label || suggestion.goal_type;
+      improvedTitle = `${goalTypeLabel}: ${suggestion.target_value} ${suggestion.unit} in ${suggestion.days_to_complete} days`;
+    }
+    
+    if (!improvedDescription) {
+      // Create an improved description incorporating the safe alternative and tips
+      const targetInfo = `Target: ${suggestion.target_value} ${suggestion.unit} over ${suggestion.days_to_complete} days.`;
+      const tipsText = suggestion.tips.length > 0 
+        ? `\n\nKey strategies:\n${suggestion.tips.map((tip, i) => `${i + 1}. ${tip}`).join('\n')}`
+        : '';
+      
+      if (suggestion.warning_message) {
+        // For unrealistic goals, incorporate the warning message context
+        improvedDescription = `${targetInfo}${tipsText}`;
+      } else {
+        // For realistic goals, enhance the original description
+        improvedDescription = formData.description 
+          ? `${formData.description}\n\n${targetInfo}${tipsText}`
+          : `${targetInfo}${tipsText}`;
+      }
+    }
+    
+    // Auto-fill form with all suggested values including improved title and description
+    setFormData({
+      ...formData,
+      title: improvedTitle,  // Always update with improved title
+      description: improvedDescription,  // Always update with improved description
+      goal_type: suggestion.goal_type,
+      target_value: suggestion.target_value.toString(),
+      unit: suggestion.unit,
+      target_date: targetDate,
+    });
+    
+    setSuggestionResult(null);
+    setShowSuggestionModal(false);
+  };
+
   const handleSubmit = () => {
     // Validate form data - only title and target_value are required
     if (!formData.title.trim()) {
@@ -385,6 +611,28 @@ const CreateGoalModal: React.FC<CreateGoalModalProps> = ({
     }
     if (!formData.target_value || isNaN(Number(formData.target_value)) || Number(formData.target_value) <= 0) {
       Alert.alert('Error', 'Please enter a valid target value');
+      return;
+    }
+
+    // Warn if unit is empty, but allow them to proceed with default value
+    if (!formData.unit.trim()) {
+      Alert.alert(
+        'Warning',
+        'You haven\'t entered a unit. A default unit will be used. It\'s recommended to specify a unit (e.g., steps, km, min) for your goal.',
+        [
+          {
+            text: 'Go Back',
+            style: 'cancel',
+          },
+          {
+            text: 'Continue',
+            onPress: () => {
+              // Submit with default unit value
+              onSubmit({ ...formData, unit: 'unit' });
+            },
+          },
+        ]
+      );
       return;
     }
 
@@ -445,6 +693,29 @@ const CreateGoalModal: React.FC<CreateGoalModalProps> = ({
           </View>
 
           <View style={styles.inputGroup}>
+            <TouchableOpacity
+              style={[
+                styles.suggestionButton,
+                { backgroundColor: colors.active },
+                (!formData.title.trim() || !formData.description.trim() || isLoadingSuggestions || loading) && {
+                  backgroundColor: colors.border,
+                  opacity: 0.6,
+                },
+              ]}
+              onPress={fetchSuggestions}
+              disabled={!formData.title.trim() || !formData.description.trim() || isLoadingSuggestions || loading}
+            >
+              {isLoadingSuggestions ? (
+                <ActivityIndicator size="small" color={colors.background} />
+              ) : (
+                <CustomText style={[styles.suggestionButtonText, { color: colors.background }]}>
+                  Get AI Suggestions
+                </CustomText>
+              )}
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.inputGroup}>
             <CustomText style={[styles.inputLabel, { color: colors.text }]}>
               Goal Type
             </CustomText>
@@ -470,14 +741,14 @@ const CreateGoalModal: React.FC<CreateGoalModalProps> = ({
                 style={[styles.textInput, { backgroundColor: colors.navBar, color: colors.text, borderColor: colors.border }]}
                 value={formData.target_value}
                 onChangeText={(text) => setFormData({ ...formData, target_value: text })}
-                placeholder="100"
+                placeholder="1,10,100"
                 placeholderTextColor={colors.subText}
                 keyboardType="numeric"
               />
             </View>
             <View style={[styles.inputGroup, styles.inputGroupHalf, styles.inputGroupRight]}>
               <CustomText style={[styles.inputLabel, { color: colors.text }]}>
-                Unit
+                Unit*
               </CustomText>
               <TextInput
                 style={[styles.textInput, { backgroundColor: colors.navBar, color: colors.text, borderColor: colors.border }]}
@@ -518,6 +789,116 @@ const CreateGoalModal: React.FC<CreateGoalModalProps> = ({
           )}
         </ScrollView>
       </View>
+
+      {/* AI Suggestions Modal */}
+      {showSuggestionModal && suggestionResult && (
+        <Modal
+          visible={showSuggestionModal}
+          animationType="slide"
+          transparent={false}
+          onRequestClose={() => setShowSuggestionModal(false)}
+        >
+          <View style={[styles.suggestionModalContainer, { backgroundColor: colors.background }]}>
+            <View style={[styles.suggestionModalHeader, { borderBottomColor: colors.border }]}>
+              <TouchableOpacity
+                onPress={() => setShowSuggestionModal(false)}
+              >
+                <CustomText style={[styles.modalButton, { color: colors.active }]}>
+                  Close
+                </CustomText>
+              </TouchableOpacity>
+              <CustomText style={[styles.modalTitle, { color: colors.text }]}>
+                AI Suggestions
+              </CustomText>
+              <View style={{ width: 50 }} />
+            </View>
+
+            <ScrollView style={styles.suggestionModalContent}>
+              {!suggestionResult.is_realistic && (
+                <View style={[styles.suggestionWarning, { backgroundColor: 'rgba(255, 193, 7, 0.2)', borderColor: 'rgba(255, 193, 7, 0.5)' }]}>
+                  <CustomText style={[styles.suggestionWarningTitle, { color: '#ff9800' }]}>
+                    ⚠️ Unrealistic Goal Detected
+                  </CustomText>
+                  {suggestionResult.warning_message && (
+                    <CustomText style={[styles.suggestionWarningMessage, { color: colors.text }]}>
+                      {suggestionResult.warning_message}
+                    </CustomText>
+                  )}
+                </View>
+              )}
+
+              <View style={[styles.suggestionContainer, { backgroundColor: colors.navBar, borderColor: colors.border }]}>
+                <View style={styles.suggestionInfo}>
+                  <CustomText style={[styles.suggestionInfoLabel, { color: colors.text }]}>
+                    Suggested Target:
+                  </CustomText>
+                  <CustomText style={[styles.suggestionInfoValue, { color: colors.active }]}>
+                    {suggestionResult.target_value} {suggestionResult.unit}
+                  </CustomText>
+                </View>
+
+                <View style={styles.suggestionInfo}>
+                  <CustomText style={[styles.suggestionInfoLabel, { color: colors.text }]}>
+                    Timeline:
+                  </CustomText>
+                  <CustomText style={[styles.suggestionInfoValue, { color: colors.active }]}>
+                    {suggestionResult.days_to_complete} days
+                  </CustomText>
+                </View>
+
+                <View style={styles.suggestionInfo}>
+                  <CustomText style={[styles.suggestionInfoLabel, { color: colors.text }]}>
+                    Goal Type:
+                  </CustomText>
+                  <CustomText style={[styles.suggestionInfoValue, { color: colors.active }]}>
+                    {GOAL_TYPES.find(type => type.value === suggestionResult.goal_type)?.label || suggestionResult.goal_type}
+                  </CustomText>
+                </View>
+
+                <View style={styles.suggestionTips}>
+                  <CustomText style={[styles.suggestionTipsTitle, { color: colors.text }]}>
+                    Tips:
+                  </CustomText>
+                  {suggestionResult.tips.map((tip, index) => (
+                    <View key={index} style={styles.suggestionTipItem}>
+                      <CustomText style={[styles.suggestionTipNumber, { color: colors.active }]}>
+                        {index + 1}.
+                      </CustomText>
+                      <CustomText style={[styles.suggestionTipText, { color: colors.subText }]}>
+                        {tip}
+                      </CustomText>
+                    </View>
+                  ))}
+                </View>
+
+                <View style={styles.suggestionActions}>
+                  <TouchableOpacity
+                    style={[styles.suggestionActionButton, { backgroundColor: colors.active, flex: 1 }]}
+                    onPress={() => applySuggestion(suggestionResult)}
+                  >
+                    <CustomText style={[styles.suggestionActionButtonText, { color: colors.background }]}>
+                      {suggestionResult.is_realistic ? 'Apply Suggestions' : 'Use Safe Alternative'}
+                    </CustomText>
+                  </TouchableOpacity>
+                  {!suggestionResult.is_realistic && (
+                    <TouchableOpacity
+                      style={[styles.suggestionActionButton, { backgroundColor: colors.navBar, borderWidth: 1, borderColor: colors.border, flex: 1, marginLeft: 8 }]}
+                      onPress={() => {
+                        setShowSuggestionModal(false);
+                        setSuggestionResult(null);
+                      }}
+                    >
+                      <CustomText style={[styles.suggestionActionButtonText, { color: colors.text }]}>
+                        Edit My Goal
+                      </CustomText>
+                    </TouchableOpacity>
+                  )}
+                </View>
+              </View>
+            </ScrollView>
+          </View>
+        </Modal>
+      )}
     </Modal>
   );
 };
@@ -669,7 +1050,7 @@ const EditGoalModal: React.FC<EditGoalModalProps> = ({
             </View>
             <View style={[styles.inputGroup, styles.inputGroupHalf, styles.inputGroupRight]}>
               <CustomText style={[styles.inputLabel, { color: colors.text }]}>
-                Unit
+                Unit*
               </CustomText>
               <TextInput
                 style={[styles.textInput, { backgroundColor: colors.navBar, color: colors.text, borderColor: colors.border }]}
@@ -865,12 +1246,15 @@ const Goals: React.FC = () => {
 
     try {
       setLoading(true);
+      const origin = getOrigin();
       const response = await fetch(GOALS_ENDPOINT, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
+          'Referer': origin,
           ...getAuthHeader(),
         },
+        credentials: 'include',
       });
 
       if (!response.ok) {
@@ -900,26 +1284,39 @@ const Goals: React.FC = () => {
     try {
       setActionLoading(true);
       const csrfToken = await getCSRFToken();
+      const origin = getOrigin();
 
       const response = await fetch(GOALS_ENDPOINT, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Referer': origin,
           'X-CSRFToken': csrfToken,
           ...getAuthHeader(),
         },
+        credentials: 'include',
         body: JSON.stringify({
           title: formData.title,
           description: formData.description,
           goal_type: formData.goal_type,
           target_value: Number(formData.target_value),
-          unit: formData.unit.trim() || "unit", // Send null if no unit entered
+          unit: formData.unit.trim() || "unit",
           target_date: formData.target_date.toISOString(),
         }),
       });
 
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        let errorMessage = `HTTP error! status: ${response.status}`;
+        try {
+          const errorData = await response.json();
+          if (errorData.error || errorData.message || errorData.detail) {
+            errorMessage = errorData.error || errorData.message || errorData.detail;
+          }
+        } catch (e) {
+          // If response is not JSON, use the status text
+          errorMessage = response.statusText || errorMessage;
+        }
+        throw new Error(errorMessage);
       }
 
       Alert.alert('Success', 'Goal created successfully!');
@@ -927,7 +1324,8 @@ const Goals: React.FC = () => {
       await fetchGoals();
     } catch (error) {
       console.error('Failed to create goal:', error);
-      Alert.alert('Error', 'Failed to create goal. Please try again.');
+      const errorMessage = error instanceof Error ? error.message : 'Failed to create goal. Please try again.';
+      Alert.alert('Error', errorMessage);
     } finally {
       setActionLoading(false);
     }
@@ -946,26 +1344,39 @@ const Goals: React.FC = () => {
     try {
       setActionLoading(true);
       const csrfToken = await getCSRFToken();
+      const origin = getOrigin();
 
       const response = await fetch(`${GOALS_ENDPOINT}${goalId}/`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
+          'Referer': origin,
           'X-CSRFToken': csrfToken,
           ...getAuthHeader(),
         },
+        credentials: 'include',
         body: JSON.stringify({
           title: formData.title,
           description: formData.description,
           goal_type: formData.goal_type,
           target_value: Number(formData.target_value),
-          unit: formData.unit.trim() || null, // Send null if no unit entered
+          unit: formData.unit.trim() || "unit",
           target_date: formData.target_date.toISOString(),
         }),
       });
 
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        let errorMessage = `HTTP error! status: ${response.status}`;
+        try {
+          const errorData = await response.json();
+          if (errorData.error || errorData.message || errorData.detail) {
+            errorMessage = errorData.error || errorData.message || errorData.detail;
+          }
+        } catch (e) {
+          // If response is not JSON, use the status text
+          errorMessage = response.statusText || errorMessage;
+        }
+        throw new Error(errorMessage);
       }
 
       Alert.alert('Success', 'Goal updated successfully!');
@@ -974,7 +1385,8 @@ const Goals: React.FC = () => {
       await fetchGoals();
     } catch (error) {
       console.error('Failed to update goal:', error);
-      Alert.alert('Error', 'Failed to update goal. Please try again.');
+      const errorMessage = error instanceof Error ? error.message : 'Failed to update goal. Please try again.';
+      Alert.alert('Error', errorMessage);
     } finally {
       setActionLoading(false);
     }
@@ -993,21 +1405,34 @@ const Goals: React.FC = () => {
     try {
       setActionLoading(true);
       const csrfToken = await getCSRFToken();
+      const origin = getOrigin();
 
       const response = await fetch(`${GOALS_ENDPOINT}${goalId}/progress/`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
+          'Referer': origin,
           'X-CSRFToken': csrfToken,
           ...getAuthHeader(),
         },
+        credentials: 'include',
         body: JSON.stringify({
           current_value: currentValue,
         }),
       });
 
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        let errorMessage = `HTTP error! status: ${response.status}`;
+        try {
+          const errorData = await response.json();
+          if (errorData.error || errorData.message || errorData.detail) {
+            errorMessage = errorData.error || errorData.message || errorData.detail;
+          }
+        } catch (e) {
+          // If response is not JSON, use the status text
+          errorMessage = response.statusText || errorMessage;
+        }
+        throw new Error(errorMessage);
       }
 
       // Show different message if progress was capped
@@ -1022,7 +1447,8 @@ const Goals: React.FC = () => {
       await fetchGoals();
     } catch (error) {
       console.error('Failed to update progress:', error);
-      Alert.alert('Error', 'Failed to update progress. Please try again.');
+      const errorMessage = error instanceof Error ? error.message : 'Failed to update progress. Please try again.';
+      Alert.alert('Error', errorMessage);
     } finally {
       setActionLoading(false);
     }
@@ -1229,6 +1655,8 @@ const Goals: React.FC = () => {
         onSubmit={createGoal}
         colors={colors}
         loading={actionLoading}
+        getAuthHeader={getAuthHeader}
+        isAuthenticated={isAuthenticated}
       />
 
       <EditGoalModal
@@ -1521,6 +1949,118 @@ const styles = StyleSheet.create({
     fontSize: 14,
     textAlign: 'center',
     lineHeight: 20,
+  },
+  suggestionButton: {
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 44,
+  },
+  suggestionButtonText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  suggestionErrorContainer: {
+    padding: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    marginBottom: 16,
+  },
+  suggestionErrorText: {
+    fontSize: 14,
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+  suggestionContainer: {
+    padding: 16,
+    borderRadius: 8,
+    borderWidth: 1,
+    marginBottom: 16,
+  },
+  suggestionWarning: {
+    padding: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    marginBottom: 16,
+  },
+  suggestionWarningTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginBottom: 8,
+  },
+  suggestionWarningMessage: {
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  suggestionInfo: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  suggestionInfoLabel: {
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  suggestionInfoValue: {
+    fontSize: 14,
+    fontWeight: 'bold',
+  },
+  suggestionTips: {
+    marginTop: 8,
+    marginBottom: 16,
+  },
+  suggestionTipsTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginBottom: 8,
+  },
+  suggestionTipItem: {
+    flexDirection: 'row',
+    marginBottom: 8,
+  },
+  suggestionTipNumber: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    marginRight: 8,
+    minWidth: 20,
+  },
+  suggestionTipText: {
+    fontSize: 14,
+    flex: 1,
+    lineHeight: 20,
+  },
+  suggestionActions: {
+    flexDirection: 'row',
+    marginTop: 8,
+  },
+  suggestionActionButton: {
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  suggestionActionButtonText: {
+    fontSize: 14,
+    fontWeight: 'bold',
+  },
+  suggestionModalContainer: {
+    flex: 1,
+  },
+  suggestionModalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+  },
+  suggestionModalContent: {
+    flex: 1,
+    padding: 16,
   },
 });
 

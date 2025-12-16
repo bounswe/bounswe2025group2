@@ -2,9 +2,10 @@ from rest_framework import serializers
 from django.contrib.auth import password_validation
 from django.core.validators import RegexValidator
 from django.contrib.auth import get_user_model
+from django.db.models import Q
 from django.utils import timezone
 from .utils import geocode_location
-from .models import Notification, UserWithType, FitnessGoal, Profile, Forum, Thread, Comment, Subcomment, Vote, Challenge, ChallengeParticipant, AiTutorChat, AiTutorResponse, UserAiMessage, DailyAdvice
+from .models import Notification, Report, UserWithType, FitnessGoal, Profile, ContactSubmission, Forum, Thread, Comment, Subcomment, Vote, Challenge, ChallengeParticipant, AiTutorChat, AiTutorResponse, UserAiMessage, DailyAdvice, MentorMenteeRelationship
 from django.utils import timezone
 
 
@@ -132,7 +133,7 @@ class NotificationSerializer(serializers.ModelSerializer):
 
 class FitnessGoalSerializer(serializers.ModelSerializer):
     progress_percentage = serializers.FloatField(read_only=True)
-    mentor = serializers.PrimaryKeyRelatedField(queryset=UserWithType.objects.filter(user_type='Coach'), required=False, allow_null=True)
+    mentor = serializers.PrimaryKeyRelatedField(queryset=UserWithType.objects.all(), required=False, allow_null=True)
 
     class Meta:
         model = FitnessGoal
@@ -140,9 +141,7 @@ class FitnessGoalSerializer(serializers.ModelSerializer):
         read_only_fields = ('user', 'current_value', 'status', 'last_updated', 'progress_percentage')
 
     def validate_mentor(self, value):
-        if value:
-            return True
-        return False
+        return value
 
 class FitnessGoalUpdateSerializer(serializers.ModelSerializer):
     class Meta:
@@ -355,6 +354,7 @@ class ChallengeSerializer(serializers.ModelSerializer):
     is_joined = serializers.SerializerMethodField()
     user_progress = serializers.SerializerMethodField()
     participant_count = serializers.SerializerMethodField()
+    difficulty_level = serializers.CharField(required=False, allow_blank=True, default='Beginner')
 
     class Meta:
         model = Challenge
@@ -466,3 +466,211 @@ class DailyAdviceSerializer(serializers.ModelSerializer):
         fields = ['id', 'user', 'advice_text', 'date', 'created_at']
         read_only_fields = ['created_at']
 
+
+class MentorMenteeRelationshipSerializer(serializers.ModelSerializer):
+    sender_username = serializers.CharField(source='sender.username', read_only=True)
+    receiver_username = serializers.CharField(source='receiver.username', read_only=True)
+    mentor_username = serializers.CharField(source='mentor.username', read_only=True)
+    mentee_username = serializers.CharField(source='mentee.username', read_only=True)
+    
+    # Explicitly define mentor and mentee fields for better error messages
+    mentor = serializers.PrimaryKeyRelatedField(
+        queryset=UserWithType.objects.all(),
+        error_messages={
+            'required': 'Mentor ID is required',
+            'does_not_exist': 'User with ID {pk_value} does not exist',
+            'incorrect_type': 'Invalid mentor ID format'
+        }
+    )
+    mentee = serializers.PrimaryKeyRelatedField(
+        queryset=UserWithType.objects.all(),
+        error_messages={
+            'required': 'Mentee ID is required',
+            'does_not_exist': 'User with ID {pk_value} does not exist',
+            'incorrect_type': 'Invalid mentee ID format'
+        }
+    )
+
+    class Meta:
+        model = MentorMenteeRelationship
+        fields = [
+            'id', 'sender', 'receiver', 'mentor', 'mentee', 'status',
+            'sender_username', 'receiver_username', 'mentor_username', 'mentee_username',
+            'created_at', 'updated_at'
+        ]
+        read_only_fields = ['id', 'sender', 'receiver', 'created_at', 'updated_at']
+        validators = []
+
+    def validate(self, data):
+        """Validate the mentor-mentee relationship data"""
+        request = self.context.get('request')
+        if not request or not request.user.is_authenticated:
+            raise serializers.ValidationError("Authentication required")
+        
+        mentor = data.get('mentor')
+        mentee = data.get('mentee')
+        
+        # Validate that both users exist (they should if DRF converted the IDs properly)
+        if not mentor:
+            raise serializers.ValidationError({"mentor": "Mentor user not found"})
+        if not mentee:
+            raise serializers.ValidationError({"mentee": "Mentee user not found"})
+        
+        if mentor.id == mentee.id:
+            raise serializers.ValidationError("Mentor and mentee cannot be the same user")
+
+        # The authenticated user must be either the mentor or the mentee
+        if request.user.id not in [mentor.id, mentee.id]:
+            raise serializers.ValidationError("You can only create relationships for yourself")
+        
+        # Check if relationship already exists
+        existing = MentorMenteeRelationship.objects.filter(
+            (Q(mentor=mentor, mentee=mentee) | Q(mentor=mentee, mentee=mentor))
+        ).exclude(status__in=['REJECTED', 'TERMINATED']).exists()
+        
+        if existing:
+            raise serializers.ValidationError("A relationship between this mentor and mentee already exists")
+        
+        return data
+
+    def create(self, validated_data):
+        """Create a new mentor-mentee relationship request"""
+        from django.db import IntegrityError, transaction
+        
+        request = self.context.get('request')
+        user = request.user
+        
+        mentor = validated_data['mentor']
+        mentee = validated_data['mentee']
+        
+        # Determine sender and receiver based on who is making the request
+        if user == mentor:
+            # Coach is sending the request to be a mentor
+            sender = mentor
+            receiver = mentee
+        elif user == mentee:
+            # User is sending the request to have a mentor
+            sender = mentee
+            receiver = mentor
+        else:
+            raise serializers.ValidationError("You can only create relationships for yourself")
+        
+        try:
+            with transaction.atomic():
+                # Check for existing relationship in the same orientation
+                existing_same_orientation = MentorMenteeRelationship.objects.filter(
+                    mentor=mentor,
+                    mentee=mentee
+                ).first()
+
+                if existing_same_orientation and existing_same_orientation.status in ['REJECTED', 'TERMINATED']:
+                    # Reactivate the existing relationship
+                    existing_same_orientation.sender = sender
+                    existing_same_orientation.receiver = receiver
+                    existing_same_orientation.status = 'PENDING'
+                    existing_same_orientation.save()
+                    relationship = existing_same_orientation
+                elif existing_same_orientation:
+                    # Relationship already exists in a non-terminal state
+                    raise serializers.ValidationError("A relationship request already exists between these users")
+                else:
+                    # Create new relationship
+                    relationship = MentorMenteeRelationship.objects.create(
+                        sender=sender,
+                        receiver=receiver,
+                        mentor=mentor,
+                        mentee=mentee,
+                        status='PENDING'
+                    )
+                
+                # Create notification for the receiver
+                Notification.objects.create(
+                    recipient=receiver,
+                    sender=sender,
+                    notification_type='MENTOR_REQUEST',
+                    title='New Mentor Request',
+                    message=f'{sender.username} wants to establish a mentor-mentee relationship with you.',
+                    related_object_id=relationship.id,
+                    related_object_type='MentorMenteeRelationship'
+                )
+                
+                return relationship
+                
+        except IntegrityError as e:
+            raise serializers.ValidationError(f"Database integrity error: A relationship might already exist. {str(e)}")
+
+class ContactSubmissionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ContactSubmission
+        fields = ['name', 'email', 'subject', 'message']
+    
+    def validate_name(self, value):
+        if len(value.strip()) < 2:
+            raise serializers.ValidationError("Name must be at least 2 characters long.")
+        return value.strip()
+    
+    def validate_subject(self, value):
+        if len(value.strip()) < 5:
+            raise serializers.ValidationError("Subject must be at least 5 characters long.")
+        return value.strip()
+    
+    def validate_message(self, value):
+        if len(value.strip()) < 10:
+            raise serializers.ValidationError("Message must be at least 10 characters long.")
+        return value.strip()
+
+
+class ReportSerializer(serializers.ModelSerializer):
+    reporter_username = serializers.CharField(source='reporter.username', read_only=True)
+    reason_display = serializers.CharField(source='get_reason_display', read_only=True)
+    status_display = serializers.CharField(source='get_status_display', read_only=True)
+    content_type_display = serializers.CharField(source='get_content_type_display', read_only=True)
+    
+    class Meta:
+        model = Report
+        fields = [
+            'id',
+            'reporter',
+            'reporter_username',
+            'content_type',
+            'content_type_display',
+            'object_id',
+            'reason',
+            'reason_display',
+            'description',
+            'status',
+            'status_display',
+            'admin_notes',
+            'created_at',
+            'updated_at',
+            'resolved_at',
+        ]
+        read_only_fields = [
+            'id', 'reporter', 'reporter_username', 'created_at', 
+            'updated_at', 'resolved_at', 'content_type_display',
+            'reason_display', 'status_display'
+        ]
+    
+    def validate(self, data):
+        """Validate the report data"""
+        request = self.context.get('request')
+        if not request or not request.user.is_authenticated:
+            raise serializers.ValidationError("Authentication required")
+        
+        # Validate description if reason is 'other'
+        if data.get('reason') == 'other' and not data.get('description'):
+            raise serializers.ValidationError({
+                'description': 'Please provide details when selecting "Other" as reason'
+            })
+        
+        return data
+    
+    def create(self, validated_data):
+        """Create a new report"""
+        request = self.context.get('request')
+        validated_data['reporter'] = request.user
+        
+        # Create the report
+        report = Report.objects.create(**validated_data)
+        
+        return report

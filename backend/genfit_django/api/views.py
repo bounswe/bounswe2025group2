@@ -11,8 +11,19 @@ from django.utils.encoding import force_bytes, force_str
 from django.contrib.sites.shortcuts import get_current_site
 from django.middleware.csrf import get_token
 from django.views.decorators.csrf import ensure_csrf_cookie
-from .serializers import UserRegistrationSerializer, UserLoginSerializer, NotificationSerializer, UserSerializer
-from .models import Notification
+from .serializers import UserRegistrationSerializer, UserLoginSerializer, ContactSubmissionSerializer, NotificationSerializer, UserSerializer
+from .models import Notification, ContactSubmission, FitnessGoal, MentorMenteeRelationship, Thread, Comment, Subcomment, Vote, Challenge, ChallengeParticipant, Profile, AiTutorChat, AiTutorResponse, UserAiMessage
+from chat.models import DirectChat, DirectMessage
+from django.contrib.contenttypes.models import ContentType
+from django.db import transaction
+from django.contrib import admin
+from .models import Report
+from .serializers import ReportSerializer
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from rest_framework import status
+from django.shortcuts import get_object_or_404
 
 
 User = get_user_model()
@@ -135,6 +146,58 @@ def delete_account(request):
     user.delete()
     # Return a success message
     return Response({"detail": "Account deleted successfully."}, status=status.HTTP_200_OK)
+
+
+@api_view(['DELETE'])
+@permission_classes([IsAuthenticated])
+def rtbf_delete_user_data(request):
+    user = request.user
+    with transaction.atomic():
+        Notification.objects.filter(recipient=user).delete()
+        Notification.objects.filter(sender=user).delete()
+        MentorMenteeRelationship.objects.filter(sender=user).delete()
+        MentorMenteeRelationship.objects.filter(receiver=user).delete()
+        MentorMenteeRelationship.objects.filter(mentor=user).delete()
+        MentorMenteeRelationship.objects.filter(mentee=user).delete()
+        FitnessGoal.objects.filter(user=user).delete()
+        FitnessGoal.objects.filter(mentor=user).delete()
+        Vote.objects.filter(user=user).delete()
+        thread_ct = ContentType.objects.get_for_model(Thread)
+        comment_ct = ContentType.objects.get_for_model(Comment)
+        subcomment_ct = ContentType.objects.get_for_model(Subcomment)
+        threads = list(Thread.objects.filter(author=user).values_list('id', flat=True))
+        if threads:
+            Vote.objects.filter(content_type=thread_ct, object_id__in=threads).delete()
+            comment_ids = list(Comment.objects.filter(thread_id__in=threads).values_list('id', flat=True))
+            if comment_ids:
+                Vote.objects.filter(content_type=comment_ct, object_id__in=comment_ids).delete()
+                sub_ids = list(Subcomment.objects.filter(comment_id__in=comment_ids).values_list('id', flat=True))
+                if sub_ids:
+                    Vote.objects.filter(content_type=subcomment_ct, object_id__in=sub_ids).delete()
+                Subcomment.objects.filter(comment_id__in=comment_ids).delete()
+            Comment.objects.filter(thread_id__in=threads).delete()
+            Thread.objects.filter(id__in=threads).delete()
+        user_comment_ids = list(Comment.objects.filter(author=user).values_list('id', flat=True))
+        if user_comment_ids:
+            Vote.objects.filter(content_type=comment_ct, object_id__in=user_comment_ids).delete()
+            Subcomment.objects.filter(comment_id__in=user_comment_ids).delete()
+            Comment.objects.filter(id__in=user_comment_ids).delete()
+        user_sub_ids = list(Subcomment.objects.filter(author=user).values_list('id', flat=True))
+        if user_sub_ids:
+            Vote.objects.filter(content_type=subcomment_ct, object_id__in=user_sub_ids).delete()
+            Subcomment.objects.filter(id__in=user_sub_ids).delete()
+        DirectMessage.objects.filter(sender=user).delete()
+        DirectChat.objects.filter(participants__id=user.id).delete()
+        UserAiMessage.objects.filter(user=user).delete()
+        AiTutorResponse.objects.filter(chat__user=user).delete()
+        AiTutorChat.objects.filter(user=user).delete()
+        ChallengeParticipant.objects.filter(user=user).delete()
+        ChallengeParticipant.objects.filter(challenge__coach=user).delete()
+        Challenge.objects.filter(coach=user).delete()
+        Profile.objects.filter(user=user).delete()
+        u = user
+        u.delete()
+    return Response({"detail": "User data deleted"}, status=status.HTTP_200_OK)
 
 
 # NOTIFICATION VIEWS
@@ -320,4 +383,145 @@ def user_settings(request):
         })
 
 
+@api_view(['POST'])
+def contact_submission(request):
+    if request.method == 'POST':
+        serializer = ContactSubmissionSerializer(data=request.data)
+        
+        if serializer.is_valid():
+            # Save the contact submission to database
+            contact = serializer.save()
+            
+            # Return success response
+            return Response({
+                'status': 'success',
+                'message': 'Thank you for your message! We will get back to you soon.',
+                'submission_id': contact.id
+            }, status=status.HTTP_201_CREATED)
+        else:
+            # Return validation errors
+            return Response({
+                'status': 'error',
+                'message': 'Please correct the errors below.',
+                'errors': serializer.errors
+            }, status=status.HTTP_400_BAD_REQUEST)
 
+@admin.register(ContactSubmission)
+class ContactSubmissionAdmin(admin.ModelAdmin):
+    list_display = ['name', 'email', 'subject', 'submitted_at']
+    list_filter = ['submitted_at']
+    search_fields = ['name', 'email', 'subject', 'message']
+    readonly_fields = ['name', 'email', 'subject', 'message', 'submitted_at']
+    
+    # Optional: Add these for better organization
+    list_per_page = 20
+    date_hierarchy = 'submitted_at'
+    
+    def has_add_permission(self, request):
+        # Prevent admin from adding new submissions manually
+        return False
+    
+    def has_change_permission(self, request, obj=None):
+        # Make submissions read-only
+        return False
+    
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def create_report(request):
+    """Create a new report"""
+    serializer = ReportSerializer(data=request.data, context={'request': request})
+    
+    if serializer.is_valid():
+        serializer.save()
+        return Response({
+            'status': 'success',
+            'message': 'Report submitted successfully. We will review it shortly.',
+            'report_id': serializer.data['id']
+        }, status=status.HTTP_201_CREATED)
+    else:
+        return Response({
+            'status': 'error',
+            'message': 'Please correct the errors below.',
+            'errors': serializer.errors
+        }, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_user_reports(request):
+    """Get all reports submitted by the current user"""
+    reports = Report.objects.filter(reporter=request.user)
+    serializer = ReportSerializer(reports, many=True)
+    return Response(serializer.data)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_report_detail(request, report_id):
+    """Get details of a specific report"""
+    report = get_object_or_404(Report, id=report_id, reporter=request.user)
+    serializer = ReportSerializer(report)
+    return Response(serializer.data)
+
+
+@api_view(['DELETE'])
+@permission_classes([IsAuthenticated])
+def delete_report(request, report_id):
+    """Delete a report (only if pending)"""
+    report = get_object_or_404(Report, id=report_id, reporter=request.user)
+    
+    # Only allow deletion if report is still pending
+    if report.status != 'pending':
+        return Response({
+            'error': 'Cannot delete report that has already been reviewed'
+        }, status=status.HTTP_400_BAD_REQUEST)
+    
+    report.delete()
+    return Response({
+        'message': 'Report deleted successfully'
+    }, status=status.HTTP_200_OK)
+
+
+# Admin endpoints (restrict to staff users)
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_all_reports(request):
+    """Get all reports (admin only)"""
+    if not request.user.is_staff:
+        return Response({'error': 'Permission denied'}, status=status.HTTP_403_FORBIDDEN)
+    
+    status_filter = request.query_params.get('status', None)
+    reports = Report.objects.all()
+    
+    if status_filter:
+        reports = reports.filter(status=status_filter)
+    
+    serializer = ReportSerializer(reports, many=True)
+    return Response(serializer.data)
+
+
+@api_view(['PATCH'])
+@permission_classes([IsAuthenticated])
+def update_report_status(request, report_id):
+    """Update report status (admin only)"""
+    if not request.user.is_staff:
+        return Response({'error': 'Permission denied'}, status=status.HTTP_403_FORBIDDEN)
+    
+    report = get_object_or_404(Report, id=report_id)
+    
+    # Update status
+    new_status = request.data.get('status')
+    admin_notes = request.data.get('admin_notes', '')
+    
+    if new_status and new_status in dict(Report.STATUS_CHOICES).keys():
+        report.status = new_status
+        report.admin_notes = admin_notes
+        report.save()
+        
+        serializer = ReportSerializer(report)
+        return Response({
+            'message': f'Report status updated to {new_status}',
+            'report': serializer.data
+        })
+    
+    return Response({'error': 'Invalid status'}, status=status.HTTP_400_BAD_REQUEST)    

@@ -18,6 +18,9 @@ from .separate_views import fitness_gif
 from .separate_views import ip_location
 from .separate_views import goal_suggestions
 from .separate_views import daily_advice_views
+from .separate_views import mentor_relationships
+from .separate_views import report_views
+from .separate_views import exercise_db_view
 
 
 urlpatterns = [
@@ -32,6 +35,7 @@ urlpatterns = [
     path('csrf-token/', views.get_csrf_token, name='get_csrf_token'),
     path('change-password/', views.change_password, name='change_password'),
     path('delete-account/', views.delete_account, name='delete_account'),
+    path('user/rtbf/', views.rtbf_delete_user_data, name='rtbf_delete_user_data'),
 
     # Notifications
     path('notifications/', views.get_user_notifications, name='get_notifications'),
@@ -126,6 +130,31 @@ urlpatterns = [
 
     # Challenge search
     path('challenges/search/', challenges.search_challenges, name='search-challenges'),
+
+    path('contact/', views.contact_submission, name='contact-submission'),
+
+
+    path('reports/', report_views.create_report, name='create_report'),
+    path('reports/user/', report_views.get_user_reports, name='get_user_reports'),
+    path('reports/<int:report_id>/', report_views.get_report_detail, name='get_report_detail'),
+    path('reports/<int:report_id>/delete/', report_views.delete_report, name='delete_report'),
+
+    # Admin report endpoints
+    path('admin/reports/', report_views.get_all_reports, name='get_all_reports'),
+    path('admin/reports/<int:report_id>/status/', report_views.update_report_status, name='update_report_status'),
+
+
+    # Mentor-Mentee Relationship endpoints
+    path('mentor-relationships/', mentor_relationships.create_mentor_relationship, name='create_mentor_relationship'),
+    path('mentor-relationships/user/', mentor_relationships.get_user_mentor_relationships, name='get_user_mentor_relationships'),
+    path('mentor-relationships/<int:relationship_id>/', mentor_relationships.get_mentor_relationship_detail, name='get_mentor_relationship_detail'),
+    path('mentor-relationships/<int:relationship_id>/status/', mentor_relationships.change_mentor_relationship_status, name='change_mentor_relationship_status'),
+
+    # ExerciseDB API endpoints
+    path('exercise-database/search/', exercise_db_view.search_exercises, name='search_exercises'),
+    path('exercise-database/filters/', exercise_db_view.get_exercise_filters, name='get_exercise_filters'),
+    path('exercise-database/rate-limit/', exercise_db_view.get_rate_limit_status, name='get_rate_limit_status'),
+    path('exercise-database/exercise/<str:exercise_id>/', exercise_db_view.get_exercise_detail, name='get_exercise_detail'),
 ]
 
 # Routers

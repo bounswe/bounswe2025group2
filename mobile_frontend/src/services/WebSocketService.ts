@@ -1,5 +1,6 @@
 import { Message } from '../context/ChatContext';
 import Cookies from '@react-native-cookies/cookies';
+import { API_URL } from '@constants/api';
 
 export class WebSocketService {
   private ws: any = null;
@@ -10,16 +11,12 @@ export class WebSocketService {
   private onDisconnectCallback: (() => void) | null = null;
 
   async connect(chatId: number, onMessage: (message: Message) => void, onError: (error: string) => void, onConnect: () => void, onDisconnect: () => void) {
-    // Disconnect from previous chat if connected to a different one
-    if (this.ws && this.chatId !== chatId) {
-      console.log('Disconnecting from previous chat:', this.chatId);
+    // Always disconnect any existing connection first to ensure fresh session
+    if (this.ws) {
+      console.log('Disconnecting existing WebSocket connection before reconnecting');
       this.disconnect();
-    }
-    
-    // Don't reconnect if already connected to the same chat
-    if (this.ws && this.chatId === chatId && this.ws.readyState === 1) {
-      console.log('Already connected to chat:', chatId);
-      return;
+      // Small delay to ensure cleanup completes
+      await new Promise<void>(resolve => setTimeout(() => resolve(), 100));
     }
     
     this.chatId = chatId;
@@ -30,7 +27,14 @@ export class WebSocketService {
 
     try {
       // Get session cookie for authentication
-      const cookies = await Cookies.get('http://164.90.166.81:8000');
+      // Try base URL first (where session is typically set), then fall back to API_URL
+      const baseUrl = API_URL.replace(/\/api\/?$/, '');
+      let cookies = await Cookies.get(baseUrl);
+      
+      // If no cookies at base URL, try API_URL
+      if (!cookies || Object.keys(cookies).length === 0) {
+        cookies = await Cookies.get(API_URL);
+      }
       
       if (!cookies || Object.keys(cookies).length === 0) {
         console.error('No session cookies found. User may not be authenticated.');
@@ -44,16 +48,25 @@ export class WebSocketService {
 
       if (!sessionCookie) {
         console.error('No session cookie found. User may not be authenticated.');
+        console.error('Available cookies:', Object.keys(cookies));
         if (this.onErrorCallback) {
           this.onErrorCallback('No session found. Please log in again.');
         }
         return;
       }
 
-      // WebSocket URL with session cookie as query parameter
-      const wsUrl = `ws://164.90.166.81:8000/ws/chat/${chatId}/?sessionid=${sessionCookie}`;
+      // Build base origin (remove trailing /api/) for WebSocket endpoint
+      const origin = API_URL.replace(/\/api\/?$/, '');
+      const wsProtocol = origin.startsWith('https') ? 'wss' : 'ws';
+      // URL encode the session cookie value to handle special characters
+      const encodedSessionId = encodeURIComponent(sessionCookie);
+      // Pass session cookie as query parameter (React Native WebSocket doesn't support headers)
+      // Note: Backend must be configured to read session from query parameters
+      const wsUrl = origin.replace(/^https?/, wsProtocol) + `/ws/chat/${chatId}/?sessionid=${encodedSessionId}`;
       
-      // Use native WebSocket API with session cookie in URL
+      console.log('Connecting to WebSocket:', wsUrl.replace(encodedSessionId, '***'));
+      
+      // React Native WebSocket doesn't support custom headers, so we use query parameter
       this.ws = new WebSocket(wsUrl);
     } catch (error) {
       console.error('Error checking authentication:', error);
@@ -73,19 +86,31 @@ export class WebSocketService {
     this.ws.onmessage = (event: any) => {
       // Check if this is still the active connection
       if (!this.ws || this.ws.readyState !== 1) {
-        console.log('Ignoring message from closed/inactive WebSocket');
+        console.log('[WebSocketService] Ignoring message from closed/inactive WebSocket');
         return;
       }
       
       try {
+        console.log('[WebSocketService] ========== RAW MESSAGE RECEIVED ==========');
+        console.log('[WebSocketService] Event data:', event.data);
+        console.log('[WebSocketService] Event data type:', typeof event.data);
+        
         const data = JSON.parse(event.data);
+        console.log('[WebSocketService] Parsed data:', JSON.stringify(data, null, 2));
         
         if (data.error) {
-          console.error('WebSocket error:', data.error);
+          console.error('[WebSocketService] ERROR in message:', data.error);
           if (this.onErrorCallback) {
             this.onErrorCallback(data.error);
           }
         } else if (data.message) {
+          console.log('[WebSocketService] ========== PROCESSING MESSAGE ==========');
+          console.log('[WebSocketService] Message ID:', data.message.id);
+          console.log('[WebSocketService] Sender:', data.message.sender);
+          console.log('[WebSocketService] Body:', data.message.body);
+          console.log('[WebSocketService] Body type:', typeof data.message.body);
+          console.log('[WebSocketService] Is challenge?', /^CHALLENGE:\d+$/.test(data.message.body || ''));
+          
           // Transform the message to match our Message type
           const message: Message = {
             id: data.message.id,
@@ -95,13 +120,21 @@ export class WebSocketService {
             is_read: data.message.is_read
           };
           
+          console.log('[WebSocketService] Transformed message:', JSON.stringify(message, null, 2));
           
           if (this.onMessageCallback) {
+            console.log('[WebSocketService] Calling message callback');
             this.onMessageCallback(message);
+            console.log('[WebSocketService] Message callback completed');
+          } else {
+            console.error('[WebSocketService] No message callback set!');
           }
+        } else {
+          console.warn('[WebSocketService] Message has no error or message field:', data);
         }
       } catch (error) {
-        console.error('Error parsing WebSocket message:', error);
+        console.error('[WebSocketService] ERROR parsing WebSocket message:', error);
+        console.error('[WebSocketService] Event data that failed:', event.data);
         if (this.onErrorCallback) {
           this.onErrorCallback('Failed to parse message');
         }
@@ -125,15 +158,27 @@ export class WebSocketService {
   }
 
   sendMessage(messageBody: string) {
+    console.log('[WebSocketService] ========== SENDING MESSAGE ==========');
+    console.log('[WebSocketService] Message body:', messageBody);
+    console.log('[WebSocketService] Message body type:', typeof messageBody);
+    console.log('[WebSocketService] WebSocket exists:', !!this.ws);
+    console.log('[WebSocketService] WebSocket readyState:', this.ws?.readyState);
+    console.log('[WebSocketService] Is OPEN (readyState === 1):', this.ws?.readyState === 1);
+    
     if (this.ws && this.ws.readyState === 1) { // WebSocket.OPEN = 1
       const message = {
         body: messageBody
       };
-      this.ws.send(JSON.stringify(message));
+      const messageJson = JSON.stringify(message);
+      console.log('[WebSocketService] Sending JSON:', messageJson);
+      this.ws.send(messageJson);
+      console.log('[WebSocketService] Message sent successfully');
     } else {
-      console.error('WebSocket is not connected');
+      const error = 'WebSocket is not connected';
+      console.error('[WebSocketService] ERROR:', error);
+      console.error('[WebSocketService] WebSocket state:', this.ws?.readyState);
       if (this.onErrorCallback) {
-        this.onErrorCallback('Not connected to chat');
+        this.onErrorCallback(error);
       }
     }
   }

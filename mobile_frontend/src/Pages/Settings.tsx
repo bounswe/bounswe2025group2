@@ -6,12 +6,14 @@ import {
   Pressable,
   Animated,
   Easing,
+  Alert,
 } from 'react-native';
 import CustomText from '@components/CustomText';
 import { useTheme } from '../context/ThemeContext';
 import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../context/AuthContext';
 import Cookies from '@react-native-cookies/cookies';
+import { API_URL } from '@constants/api';
 
 type SettingAction = {
   label: string;
@@ -39,13 +41,9 @@ const Settings = () => {
     navigation.push('Profile' as never);
   };
 
-  const handleNotifications = () => {
-    navigation.push('NotificationPreferences' as never);
-  };
-
   const handleLogout = async () => {
     try {
-      await fetch('http://164.90.166.81:8000/api/logout/', {
+      await fetch(`${API_URL}logout/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
       });
@@ -61,6 +59,56 @@ const Settings = () => {
     }
   };
 
+  const handleDeleteAccount = () => {
+    Alert.alert(
+      "Delete Account",
+      "Are you sure you want to delete your account? This action cannot be undone.",
+      [
+        {
+          text: "Cancel",
+          style: "cancel"
+        },
+        { 
+          text: "Delete", 
+          style: "destructive",
+          onPress: async () => {
+            try {
+              const cookies = await Cookies.get(API_URL);
+              const csrfToken = cookies.csrftoken?.value;
+
+              // Use the RTBF endpoint to ensure complete data deletion
+              const response = await fetch(`${API_URL}user/rtbf/`, {
+                method: 'DELETE',
+                headers: { 
+                  'Content-Type': 'application/json',
+                  'Referer': API_URL,
+                  ...(csrfToken ? { 'X-CSRFToken': csrfToken } : {}),
+                },
+              });
+
+              if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.detail || `Server returned ${response.status}`);
+              }
+
+              await Cookies.clearAll(true);
+              await logout?.();
+              navigation.reset({
+                index: 0,
+                routes: [{ name: 'Login' as never }],
+              });
+              
+              Alert.alert("Success", "Your account has been permanently deleted.");
+            } catch (error) {
+              console.error('Delete account error:', error);
+              Alert.alert("Error", "Failed to delete account. Please try again later.");
+            }
+          }
+        }
+      ]
+    );
+  };
+
   const actions = useMemo<SettingAction[]>(
     () => [
       {
@@ -69,14 +117,14 @@ const Settings = () => {
         onPress: handleEditProfile,
       },
       {
-        label: 'Notification Preferences',
-        subtitle: 'Manage alerts and reminders',
-        onPress: handleNotifications,
-      },
-      {
         label: 'Log Out',
         subtitle: 'Sign out from this device',
         onPress: handleLogout,
+      },
+      {
+        label: 'Delete Account',
+        subtitle: 'Permanently remove your account',
+        onPress: handleDeleteAccount,
       },
     ],
     [],

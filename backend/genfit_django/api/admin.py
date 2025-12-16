@@ -1,6 +1,9 @@
 from django.contrib import admin
 from .models import UserWithType, Notification, FitnessGoal, Profile, Forum, Thread, Comment, Subcomment, Vote, Challenge, ChallengeParticipant
 from .models import UserWithType, Notification, FitnessGoal, Profile, Forum, Thread, Comment, Subcomment, Vote, AiTutorChat, AiTutorResponse, UserAiMessage
+from django.contrib import admin
+from .models import Report
+from time import timezone
 
 
 @admin.register(UserWithType)
@@ -150,4 +153,92 @@ class UserAiMessageAdmin(admin.ModelAdmin):
     list_display = ('chat', 'message', 'created_at')
     search_fields = ('chat__user__username', 'message')
     readonly_fields = ('created_at',)
+
+@admin.register(Report)
+class ReportAdmin(admin.ModelAdmin):
+    list_display = [
+        'id', 
+        'reporter_username', 
+        'content_type', 
+        'reason_display', 
+        'status', 
+        'created_at',
+        'reported_content_preview'
+    ]
+    
+    list_filter = ['status', 'content_type', 'reason', 'created_at']
+    search_fields = [
+        'reporter__username', 
+        'description', 
+        'admin_notes',
+        'object_id'
+    ]
+    
+    readonly_fields = [
+        'reporter', 
+        'content_type', 
+        'object_id', 
+        'reason', 
+        'description',
+        'created_at', 
+        'updated_at', 
+        'resolved_at'
+    ]
+    
+    fieldsets = (
+        ('Report Information', {
+            'fields': ('reporter', 'content_type', 'object_id', 'reason', 'description')
+        }),
+        ('Admin Management', {
+            'fields': ('status', 'admin_notes')
+        }),
+        ('Timestamps', {
+            'fields': ('created_at', 'updated_at', 'resolved_at'),
+            'classes': ('collapse',)
+        }),
+    )
+    
+    list_per_page = 20
+    date_hierarchy = 'created_at'
+    ordering = ['-created_at']
+    
+    def reporter_username(self, obj):
+        return obj.reporter.username
+    reporter_username.short_description = 'Reporter'
+    
+    def reason_display(self, obj):
+        return obj.get_reason_display()
+    reason_display.short_description = 'Reason'
+    
+    def reported_content_preview(self, obj):
+        """Show preview of reported content"""
+        try:
+            if obj.reported_object:
+                if hasattr(obj.reported_object, 'content'):
+                    content = obj.reported_object.content
+                    return content[:50] + '...' if len(content) > 50 else content
+                return str(obj.reported_object)[:50]
+        except:
+            pass
+        return f"{obj.content_type} #{obj.object_id}"
+    reported_content_preview.short_description = 'Reported Content'
+    
+    def has_add_permission(self, request):
+        """Prevent manually adding reports in admin"""
+        return False
+    
+    actions = ['mark_as_resolved', 'mark_as_dismissed']
+    
+    def mark_as_resolved(self, request, queryset):
+        """Admin action to mark reports as resolved"""
+        queryset.update(status='resolved', resolved_at=timezone.now())
+        self.message_user(request, f"{queryset.count()} reports marked as resolved.")
+    mark_as_resolved.short_description = "Mark selected reports as resolved"
+    
+    def mark_as_dismissed(self, request, queryset):
+        """Admin action to mark reports as dismissed"""
+        queryset.update(status='dismissed')
+        self.message_user(request, f"{queryset.count()} reports marked as dismissed.")
+    mark_as_dismissed.short_description = "Mark selected reports as dismissed"
+
 

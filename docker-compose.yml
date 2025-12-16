@@ -27,7 +27,7 @@ services:
       context: ./backend/genfit_django
       dockerfile: Dockerfile
     container_name: genfit_backend
-    command: sh -c "python manage.py migrate && python manage.py populate_db && python manage.py add_inclusive_forums && python manage.py runserver 0.0.0.0:8000"
+    command: sh -c "python manage.py migrate && python manage.py prepare_presentation_data && python manage.py add_inclusive_forums && python manage.py runserver 0.0.0.0:8000"
     volumes:
       - ./backend/genfit_django:/app
     ports:
@@ -41,6 +41,7 @@ services:
       - SECRET_KEY=${SECRET_KEY:-django-insecure-p6p*^^1rp!n(^dqu72al_wq^+5v#kw=8lw#)1i9h5qgq42}
       - DEBUG=${DEBUG:-True}
       - GROQ_API_KEY=${GROQ_API_KEY}
+      - EXERCISEDB_API_KEY=${EXERCISEDB_API_KEY}
     depends_on:
       db:
         condition: service_healthy

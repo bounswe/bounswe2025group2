@@ -5,7 +5,7 @@ from rest_framework.response import Response
 from django.utils import timezone
 from django.db.models import Q
 
-from ..models import FitnessGoal, Notification, UserWithType
+from ..models import FitnessGoal, Notification, UserWithType, MentorMenteeRelationship
 from ..serializers import FitnessGoalSerializer, FitnessGoalUpdateSerializer
 
 @api_view(['GET', 'POST'])
@@ -31,24 +31,32 @@ def fitness_goals(request):
 
         serializer = FitnessGoalSerializer(data=request.data)
         if serializer.is_valid():
-            # Set the user who created the goal
-            serializer.save(user=request.user)
-
-            # If a mentor is setting the goal for a mentee
-            if request.user.user_type == 'Coach' and 'user' in request.data:
-                mentee = request.data['user']
-                # Create a notification for the mentee
+            target_user_id = request.data.get('user')
+            if target_user_id and str(target_user_id) != str(request.user.id):
+                try:
+                    target_user = UserWithType.objects.get(id=target_user_id)
+                except UserWithType.DoesNotExist:
+                    return Response({'detail': 'Target user not found'}, status=status.HTTP_404_NOT_FOUND)
+                rel_exists = MentorMenteeRelationship.objects.filter(
+                    mentor=request.user,
+                    mentee=target_user,
+                    status='ACCEPTED'
+                ).exists()
+                if not rel_exists:
+                    return Response({'detail': 'Not authorized to create goals for this user'}, status=status.HTTP_403_FORBIDDEN)
+                instance = serializer.save(user=target_user, mentor=request.user)
                 Notification.objects.create(
-                    recipient_id=mentee,
+                    recipient=target_user,
                     sender=request.user,
                     notification_type='GOAL',
                     title='New Fitness Goal Assigned',
-                    message=f'Your mentor has set a new fitness goal: {serializer.data["title"]}',
-                    related_object_id=serializer.data['id'],
+                    message=f'Your mentor has set a new fitness goal: {instance.title}',
+                    related_object_id=instance.id,
                     related_object_type='FitnessGoal'
                 )
-
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
+                return Response(FitnessGoalSerializer(instance).data, status=status.HTTP_201_CREATED)
+            instance = serializer.save(user=request.user, mentor=None)
+            return Response(FitnessGoalSerializer(instance).data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     else:
@@ -70,6 +78,13 @@ def fitness_goal_detail(request, goal_id):
         return Response(serializer.data)
 
     elif request.method == 'PUT':
+        # Owners can update any fields; mentors can update only goals they created and never progression
+        is_owner = request.user == goal.user
+        is_goal_mentor = request.user == goal.mentor
+        if not is_owner and not is_goal_mentor:
+            return Response({'detail': 'Not authorized to update this goal'}, status=status.HTTP_403_FORBIDDEN)
+        if is_goal_mentor and ('current_value' in request.data):
+            return Response({'detail': 'Mentors cannot update goal progression'}, status=status.HTTP_403_FORBIDDEN)
         serializer = FitnessGoalSerializer(goal, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
@@ -77,8 +92,13 @@ def fitness_goal_detail(request, goal_id):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     elif request.method == 'DELETE':
-        goal.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
+        # Owners can delete any of their goals; mentors can delete only the goals they created
+        if request.user != goal.user and request.user != goal.mentor:
+            return Response({'detail': 'Not authorized to delete this goal'}, status=status.HTTP_403_FORBIDDEN)
+        if request.user == goal.mentor or request.user == goal.user:
+            goal.delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        return Response({'detail': 'Not authorized to delete this goal'}, status=status.HTTP_403_FORBIDDEN)
 
     else:
         return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)

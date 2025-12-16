@@ -1,11 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator } from 'react-native';
-import CustomText from '@components/CustomText';
-import { useTheme } from '../context/ThemeContext';
+import { View, StyleSheet, FlatList } from 'react-native';
+import { ActivityIndicator, Button, Card, Text, useTheme } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../context/AuthContext';
-
-const API_BASE_URL = 'http://164.90.166.81:8000/api';
+import { API_URL } from '../constants/api';
 
 type Forum = {
   id: number;
@@ -14,7 +12,7 @@ type Forum = {
 };
 
 const Forum = () => {
-  const { colors } = useTheme();
+  const theme = useTheme();
   const navigation = useNavigation();
   const { getAuthHeader } = useAuth();
   const [forums, setForums] = useState<Forum[]>([]);
@@ -29,11 +27,13 @@ const Forum = () => {
     try {
       setIsLoading(true);
       setError(null);
-      const res = await fetch(`${API_BASE_URL}/forums/`, {
+      const res = await fetch(`${API_URL}forums/`, {
         headers: {
           'Content-Type': 'application/json',
+          'Accept': 'application/json',
           ...getAuthHeader(),
         },
+        credentials: 'include',
       });
       if (!res.ok) throw new Error(res.statusText || 'Failed to load forums');
       const data: Forum[] = await res.json();
@@ -47,31 +47,32 @@ const Forum = () => {
 
   if (isLoading) {
     return (
-      <View style={[styles.center, { flex: 1, backgroundColor: colors.background }]}> 
-        <ActivityIndicator size="large" color={colors.active} />
+      <View style={[styles.center, { flex: 1, backgroundColor: theme.colors.background }]}>
+        <ActivityIndicator animating={true} size="large" />
       </View>
     );
   }
 
   if (error) {
     return (
-      <View style={[styles.center, { flex: 1, backgroundColor: colors.background }]}> 
-        <CustomText style={{ color: colors.text }}>{error}</CustomText>
-        <TouchableOpacity onPress={fetchForums} style={[styles.retryButton, { backgroundColor: colors.active }]}> 
-          <CustomText style={{ color: colors.background }}>Retry</CustomText>
-        </TouchableOpacity>
+      <View style={[styles.center, { flex: 1, backgroundColor: theme.colors.background }]}>
+        <Text variant="bodyLarge" style={styles.errorText}>{error}</Text>
+        <Button mode="contained" onPress={fetchForums} style={styles.retryButton}>
+          Retry
+        </Button>
       </View>
     );
   }
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}> 
+    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <FlatList
         data={forums}
         keyExtractor={(item) => item.id.toString()}
         renderItem={({ item }) => (
-          <TouchableOpacity
-            style={[styles.forumItem, { borderColor: colors.border }]}
+          <Card
+            mode="elevated"
+            style={styles.forumCard}
             onPress={() => {
               const stackNav = navigation.getParent()?.getParent();
               if (stackNav) {
@@ -81,12 +82,15 @@ const Forum = () => {
               }
             }}
           >
-            <CustomText style={[styles.title, { color: colors.text }]}>{item.title}</CustomText>
-            <CustomText style={[styles.description, { color: colors.subText }]} numberOfLines={2}>
-              {item.description}
-            </CustomText>
-          </TouchableOpacity>
+            <Card.Content>
+              <Text variant="titleLarge" style={styles.title}>{item.title}</Text>
+              <Text variant="bodyMedium" numberOfLines={2} style={styles.description}>
+                {item.description}
+              </Text>
+            </Card.Content>
+          </Card>
         )}
+        contentContainerStyle={styles.listContent}
       />
     </View>
   );
@@ -95,10 +99,12 @@ const Forum = () => {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   center: { justifyContent: 'center', alignItems: 'center' },
-  forumItem: { padding: 16, borderBottomWidth: 1 },
-  title: { fontSize: 18, fontWeight: 'bold' },
-  description: { fontSize: 14, marginTop: 4 },
-  retryButton: { padding: 12, borderRadius: 8, marginTop: 12 },
+  listContent: { padding: 16, gap: 12 },
+  forumCard: { marginBottom: 8 },
+  title: { marginBottom: 8, fontWeight: 'bold' },
+  description: { opacity: 0.7 },
+  errorText: { marginBottom: 16, textAlign: 'center' },
+  retryButton: { marginTop: 8 },
 });
 
 export default Forum;

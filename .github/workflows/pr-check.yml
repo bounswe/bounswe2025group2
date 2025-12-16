@@ -32,7 +32,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '20'
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -60,6 +60,7 @@ jobs:
             -e POSTGRES_PORT=5432 \
             -e SECRET_KEY=django-insecure-test-key \
             -e DEBUG=True \
+            -e EXERCISEDB_API_KEY=${{ secrets.EXERCISEDB_API_KEY }} \
             genfit-backend-test \
             python manage.py test api.tests
 
@@ -90,7 +91,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '20'
 
       - name: Install Python dependencies
         run: |
@@ -111,3 +112,110 @@ jobs:
         run: |
           cd Web_Frontend/genfit_frontend
           npm run build
+
+  e2e-tests:
+    runs-on: ubuntu-latest
+    
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_DB: group2db
+          POSTGRES_USER: group2
+          POSTGRES_PASSWORD: group2
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U group2 -d group2db"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and start backend
+        run: |
+          echo "Building and starting backend..."
+          docker build -t genfit-backend ./backend/genfit_django
+          docker run -d --name backend \
+            --network host \
+            -e POSTGRES_DB=group2db \
+            -e POSTGRES_USER=group2 \
+            -e POSTGRES_PASSWORD=group2 \
+            -e POSTGRES_HOST=127.0.0.1 \
+            -e POSTGRES_PORT=5432 \
+            -e SECRET_KEY=django-insecure-test-key \
+            -e DEBUG=True \
+            -e ALLOWED_HOSTS=localhost,127.0.0.1 \
+            -e EXERCISEDB_API_KEY=${{ secrets.EXERCISEDB_API_KEY }} \
+            genfit-backend
+
+      - name: Wait for backend to be ready
+        run: |
+          echo "Waiting for backend to start..."
+          timeout 60 bash -c 'until curl -f http://localhost:8000/api/health/ 2>/dev/null; do sleep 2; done' || true
+          sleep 5
+
+      - name: Install frontend dependencies
+        run: |
+          cd Web_Frontend/genfit_frontend
+          npm ci
+
+      - name: Install Playwright Browsers
+        run: |
+          cd Web_Frontend/genfit_frontend
+          npx playwright install --with-deps chromium
+
+      - name: Build frontend
+        run: |
+          cd Web_Frontend/genfit_frontend
+          npm run build
+
+      - name: Start frontend server
+        run: |
+          cd Web_Frontend/genfit_frontend
+          npm run preview &
+          echo "Waiting for frontend to start..."
+          timeout 60 bash -c 'until curl -f http://localhost:4173 2>/dev/null; do sleep 2; done'
+        env:
+          VITE_API_BASE_URL: http://localhost:8000
+
+      - name: Run Playwright tests
+        run: |
+          cd Web_Frontend/genfit_frontend
+          npx playwright test
+        env:
+          PLAYWRIGHT_BASE_URL: http://localhost:4173
+
+      - name: Upload Playwright Report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-report
+          path: Web_Frontend/genfit_frontend/playwright-report/
+          retention-days: 30
+
+      - name: Upload Test Results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results
+          path: Web_Frontend/genfit_frontend/test-results/
+          retention-days: 30
+
+      - name: Cleanup
+        if: always()
+        run: |
+          docker stop backend || true
+          docker rm backend || true
+          docker rmi genfit-backend || true

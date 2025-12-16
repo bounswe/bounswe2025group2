@@ -11,10 +11,15 @@ import Cookies from '@react-native-cookies/cookies';
 import Toast from 'react-native-toast-message';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
+import { API_URL } from '@constants/api';
+import TermsModal from '../components/TermsModal';
+import PrivacyPolicyModal from '../components/PrivacyPolicyModal';
 
 const Login = ({ navigation }: any) => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [showTermsModal, setShowTermsModal] = useState(false);
+  const [showPrivacyModal, setShowPrivacyModal] = useState(false);
   const { colors, isDark } = useTheme();
   const { setCurrentUser } = useAuth();
 
@@ -29,21 +34,39 @@ const Login = ({ navigation }: any) => {
     }
 
     try {
+      const loginUrl = `${API_URL}login/`;
+      console.log('Login URL:', loginUrl);
+      
       // First, get CSRF token by making a GET request to quotes endpoint
-      await fetch('http://164.90.166.81:8000/api/quotes/random/', { 
+      const quotesUrl = `${API_URL}quotes/random/`;
+      console.log('Quotes URL:', quotesUrl);
+      
+      // Extract the origin (base URL) for Referer header
+      const origin = API_URL.replace(/\/api\/?$/, '');
+      
+      const quotesResponse = await fetch(quotesUrl, { 
         method: 'GET',
+        headers: {
+          'Referer': origin,
+        },
         credentials: 'include',
       });
       
+      if (!quotesResponse.ok) {
+        console.warn('Quotes endpoint returned:', quotesResponse.status, quotesResponse.statusText);
+      }
+      
       // Get the CSRF token from cookies
-      const cookies = await Cookies.get('http://164.90.166.81:8000');
-      const csrfToken = cookies.csrftoken?.value;
+      const cookies = await Cookies.get(API_URL);
+      const csrfToken = cookies?.csrftoken?.value;
+      console.log('CSRF token retrieved:', csrfToken ? 'Yes' : 'No');
 
-      // Now make the login request with the CSRF token
-      const response = await fetch('http://164.90.166.81:8000/api/login/', {
+      // Now make the login request with the CSRF token and Referer header
+      const response = await fetch(loginUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Referer': origin,
           ...(csrfToken ? { 'X-CSRFToken': csrfToken } : {}),
         },
         credentials: 'include',
@@ -53,7 +76,24 @@ const Login = ({ navigation }: any) => {
           remember_me: true,
         }),
       });
-      const data = await response.json();
+      
+      console.log('Login response status:', response.status, response.statusText);
+
+      // Check if response is JSON before parsing
+      const contentType = response.headers.get('content-type');
+      let data;
+      
+      if (contentType && contentType.includes('application/json')) {
+        data = await response.json();
+      } else {
+        // If response is not JSON, get text for debugging
+        const text = await response.text();
+        console.error('Non-JSON response from:', loginUrl);
+        console.error('Response status:', response.status, response.statusText);
+        console.error('Response text:', text.substring(0, 500)); // First 500 chars
+        throw new Error(`Server returned non-JSON response: ${response.status} ${response.statusText}. URL: ${loginUrl}`);
+      }
+      
       console.log('Login response:', data);
 
       if (response.ok) {
@@ -79,10 +119,11 @@ const Login = ({ navigation }: any) => {
       }
     } catch (error) {
       console.error('Login error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Network error occurred';
       Toast.show({
         type: 'error',
         text1: 'Error',
-        text2: 'Network error occurred',
+        text2: errorMessage.includes('503') ? 'Server unavailable. Please try again later.' : errorMessage,
       });
     }
   };
@@ -139,6 +180,25 @@ const Login = ({ navigation }: any) => {
             color: isDark ? '#e18d58' : '#800000'
           }]}>Don't have an account? Register</Text>
         </TouchableOpacity>
+
+        <TouchableOpacity 
+          style={styles.termsContainer}
+          onPress={() => {}}
+        >
+          <Text style={[styles.termsText, { color: colors.subText }]}>
+            By signing up and signing in, you acknowledge that you have read,
+            understood, and agree to be bound by the <Text onPress={() => setShowTermsModal(true)} style={{textDecorationLine: 'underline', color: colors.primary || (isDark ? '#e18d58' : '#800000')}}>Terms and Conditions</Text> and <Text onPress={() => setShowPrivacyModal(true)} style={{textDecorationLine: 'underline', color: colors.primary || (isDark ? '#e18d58' : '#800000')}}>Privacy Policy</Text>.
+          </Text>
+        </TouchableOpacity>
+
+        <TermsModal 
+          visible={showTermsModal} 
+          onClose={() => setShowTermsModal(false)} 
+        />
+        <PrivacyPolicyModal 
+          visible={showPrivacyModal} 
+          onClose={() => setShowPrivacyModal(false)} 
+        />
       </View>
     </SafeAreaView>
   );
@@ -185,6 +245,15 @@ const styles = StyleSheet.create({
   registerText: {
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  termsContainer: {
+    marginTop: 20,
+    paddingHorizontal: 10,
+  },
+  termsText: {
+    fontSize: 12,
+    textAlign: 'center',
+    lineHeight: 18,
   },
 });
 

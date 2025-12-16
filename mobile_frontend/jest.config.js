@@ -2,13 +2,18 @@ module.exports = {
   preset: 'react-native',
   setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
   transformIgnorePatterns: [
-    'node_modules/(?!(react-native|@react-native|@react-navigation|react-native-.*|@react-native-cookies|@react-native-async-storage|@react-native-community|@react-native-picker)/)',
+    'node_modules/(?!(react-native|@react-native|react-native-paper|@react-navigation|@tanstack/react-query|react-native-vector-icons|react-native-toast-message)/)',
   ],
   moduleNameMapper: {
-    '\\.(jpg|jpeg|png|gif|svg)$': '<rootDir>/__mocks__/fileMock.js',
+    '^@constants/(.*)$': '<rootDir>/src/constants/$1',
+    '^@/(.*)$': '<rootDir>/src/$1',
   },
-  testMatch: [
-    '**/__tests__/**/*.test.tsx',
-    '**/src/unit_tests/**/*.test.tsx',
+  testEnvironment: 'node',
+  moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'],
+  collectCoverageFrom: [
+    'src/**/*.{ts,tsx}',
+    '!src/**/*.d.ts',
+    '!src/**/__tests__/**',
+    '!src/**/index.{ts,tsx}',
   ],
 };

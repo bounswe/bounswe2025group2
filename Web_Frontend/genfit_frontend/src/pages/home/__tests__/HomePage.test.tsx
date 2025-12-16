@@ -221,29 +221,28 @@ describe('HomePage', () => {
     renderWithProviders(<HomePage />);
 
     await waitFor(() => {
-      expect(screen.getByPlaceholderText('e.g. 2 eggs and a banana')).toBeInTheDocument();
+      expect(screen.getByPlaceholderText('Enter food item')).toBeInTheDocument();
     });
 
-    const input = screen.getByPlaceholderText('e.g. 2 eggs and a banana');
+    const input = screen.getByPlaceholderText('Enter food item');
     const analyzeButton = screen.getByRole('button', { name: 'Analyze' });
 
     // Type in the input
-    await user.type(input, '2 eggs and a banana');
-    expect(input).toHaveValue('2 eggs and a banana');
+    await user.type(input, '2 eggs');
+    expect(input).toHaveValue('2 eggs');
 
     // Click analyze button
     await user.click(analyzeButton);
 
     await waitFor(() => {
       expect(GFapi.post).toHaveBeenCalledWith('/api/parse_food/', {
-        query: '2 eggs and a banana',
+        query: '2 eggs',
       });
     });
 
     // Check if food results are displayed
     await waitFor(() => {
-      expect(screen.getByText('egg')).toBeInTheDocument();
-      expect(screen.getByText('banana')).toBeInTheDocument();
+      expect(screen.getByText('Egg, whole, raw')).toBeInTheDocument();
     });
   });
 
@@ -256,13 +255,13 @@ describe('HomePage', () => {
     renderWithProviders(<HomePage />);
 
     await waitFor(() => {
-      expect(screen.getByPlaceholderText('e.g. 2 eggs and a banana')).toBeInTheDocument();
+      expect(screen.getByPlaceholderText('Enter food item')).toBeInTheDocument();
     });
 
-    const input = screen.getByPlaceholderText('e.g. 2 eggs and a banana');
+    const input = screen.getByPlaceholderText('Enter food item');
     const analyzeButton = screen.getByRole('button', { name: 'Analyze' });
 
-    await user.type(input, 'apple');
+    await user.type(input, '2 eggs');
     await user.click(analyzeButton);
 
     // Should show analyzing state
@@ -278,13 +277,13 @@ describe('HomePage', () => {
     renderWithProviders(<HomePage />);
 
     await waitFor(() => {
-      expect(screen.getByPlaceholderText('e.g. 2 eggs and a banana')).toBeInTheDocument();
+      expect(screen.getByPlaceholderText('Enter food item')).toBeInTheDocument();
     });
 
-    const input = screen.getByPlaceholderText('e.g. 2 eggs and a banana');
+    const input = screen.getByPlaceholderText('Enter food item');
     const analyzeButton = screen.getByRole('button', { name: 'Analyze' });
 
-    await user.type(input, 'invalid food');
+    await user.type(input, '2 eggs');
     await user.click(analyzeButton);
 
     await waitFor(() => {
@@ -296,7 +295,7 @@ describe('HomePage', () => {
     renderWithProviders(<HomePage />);
 
     await waitFor(() => {
-      expect(screen.getByPlaceholderText('e.g. 2 eggs and a banana')).toBeInTheDocument();
+      expect(screen.getByPlaceholderText('Enter food item')).toBeInTheDocument();
     });
 
     const analyzeButton = screen.getByRole('button', { name: 'Analyze' });
@@ -310,10 +309,10 @@ describe('HomePage', () => {
     renderWithProviders(<HomePage />);
 
     await waitFor(() => {
-      expect(screen.getByPlaceholderText('e.g. 2 eggs and a banana')).toBeInTheDocument();
+      expect(screen.getByPlaceholderText('Enter food item')).toBeInTheDocument();
     });
 
-    const input = screen.getByPlaceholderText('e.g. 2 eggs and a banana');
+    const input = screen.getByPlaceholderText('Enter food item');
     const analyzeButton = screen.getByRole('button', { name: 'Analyze' });
 
     await user.type(input, '2 eggs and a banana');
@@ -321,11 +320,11 @@ describe('HomePage', () => {
 
     await waitFor(() => {
       // Check egg nutritional info
-      expect(screen.getByText('143.0 cal')).toBeInTheDocument();
+      expect(screen.getByText('143.0 kcal')).toBeInTheDocument();
       expect(screen.getByText('12.6g')).toBeInTheDocument(); // protein
 
       // Check banana nutritional info
-      expect(screen.getByText('105.0 cal')).toBeInTheDocument();
+      expect(screen.getByText('105.0 kcal')).toBeInTheDocument();
       expect(screen.getByText('1.3g')).toBeInTheDocument(); // protein
     });
   });

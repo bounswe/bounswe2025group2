@@ -8,7 +8,7 @@ Please visit our **[wiki page](https://github.com/bounswe/bounswe2025group2/wiki
 ----
 
 Our brief project description is:
-
+ 
 > **Youth Sports & Fitness Hub**
 >
 > A platform connecting kids with local sports programs to keep them active and away from bad habits:
@@ -38,7 +38,7 @@ Our brief project description is:
 
 ## Running the Software
 
-Our deployed app can be found in this address: [http://164.90.166.81:3000/](http://164.90.166.81:3000/)
+Our deployed app can be found in this address: [https://genfit.website/](https://genfit.website/)
 
 - Our web app can be set up to run locally with Docker by following these instructions.
   -  First, clone our project repository using `git clone https://github.com/bounswe/bounswe2025group2.git`

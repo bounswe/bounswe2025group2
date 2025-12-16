@@ -16,10 +16,11 @@ const ThreadPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const isAuthenticated = useIsAuthenticated();
+
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   
   const threadId = id ? parseInt(id) : undefined;
-  
+
   const { data: thread, isLoading: threadLoading, error: threadError } = useThread(threadId);
   const { data: comments, isLoading: commentsLoading, error: commentsError } = useThreadComments(threadId);
   const updateThreadMutation = useUpdateThread();
@@ -64,6 +65,10 @@ const ThreadPage: React.FC = () => {
     });
   };
 
+  const handleUsernameClick = (username: string) => {
+    navigate(`/profile/other/${username}`);
+  }; // <-- ADDED MISSING CLOSING BRACE
+
   const handleEditThread = async (threadData: { title: string; content: string }) => {
     if (!threadId) return;
     
@@ -83,8 +88,8 @@ const ThreadPage: React.FC = () => {
     <Layout>
       <div className="thread-page">
         <div className="thread-header">
-          <Button 
-            variant="ghost" 
+          <Button
+            variant="ghost"
             onClick={() => navigate(-1)}
             className="back-button"
           >
@@ -103,11 +108,16 @@ const ThreadPage: React.FC = () => {
                 {thread.is_locked && <span className="badge locked">Locked</span>}
               </div>
             </div>
-            
+
             <div className="thread-meta">
               <div className="meta-item">
                 <User className="w-4 h-4" />
-                <span>{thread.author}</span>
+                <span
+                  onClick={() => handleUsernameClick(thread.author)}
+                  className="clickable-username"
+                >
+                  {thread.author}
+                </span>
               </div>
               <div className="meta-item">
                 <Calendar className="w-4 h-4" />
@@ -123,6 +133,8 @@ const ThreadPage: React.FC = () => {
               <p>{thread.content}</p>
             </div>
             
+            {/* Removed the duplicate <ThreadActions thread={thread} /> component */}
+
             <ThreadActions 
               thread={thread} 
               onEdit={() => setIsEditModalOpen(true)}
@@ -149,7 +161,7 @@ const ThreadPage: React.FC = () => {
           <h2 className="comments-title">
             Comments ({thread.comment_count})
           </h2>
-          
+
           {commentsLoading ? (
             <div className="loading">Loading comments...</div>
           ) : commentsError ? (

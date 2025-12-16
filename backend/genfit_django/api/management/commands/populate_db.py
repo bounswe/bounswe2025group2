@@ -124,7 +124,9 @@ class Command(BaseCommand):
         coaches = User.objects.filter(user_type='Coach')
         
         goal_types = [
-            'WALKING_RUNNING', 'WORKOUT', 'CYCLING', 'SWIMMING', 'SPORTS'
+            'WALKING_RUNNING', 'WORKOUT', 'CYCLING', 'SWIMMING', 'SPORTS',
+            'YOGA', 'WEIGHTLIFTING', 'HIKING', 'STEP_COUNT', 'MEDITATION',
+            'BASKETBALL', 'FOOTBALL', 'TENNIS'
         ]
         
         goal_titles = [
