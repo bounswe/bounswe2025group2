@@ -142,7 +142,6 @@ DATABASES = {
     }
 }
 
-
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",  # Frontend in Docker
     "http://localhost:5000",
