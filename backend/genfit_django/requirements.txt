@@ -12,7 +12,4 @@ daphne==4.1.2
 channels==4.2.2
 groq==0.24.0
 requests==2.32.3
-pytest==8.2.1
-pytest-django==4.8.0
-pytest-html==4.1.1
-pytest-xml==3.2.0
+
