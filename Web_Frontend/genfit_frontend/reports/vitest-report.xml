@@ -1,0 +1,474 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<testsuites name="vitest tests" tests="76" failures="0" errors="0" time="17.3577749">
+    <testsuite name="src/components/__tests__/ActivityDashboard.test.tsx" timestamp="2025-12-18T21:55:58.326Z" hostname="LAPTOP-M7QQLGU0" tests="7" failures="0" errors="0" skipped="0" time="0.5613501">
+        <testcase classname="src/components/__tests__/ActivityDashboard.test.tsx" name="ActivityDashboard &gt; renders loading state when stats are loading" time="0.1318855">
+        </testcase>
+        <testcase classname="src/components/__tests__/ActivityDashboard.test.tsx" name="ActivityDashboard &gt; renders stats correctly" time="0.0712873">
+        </testcase>
+        <testcase classname="src/components/__tests__/ActivityDashboard.test.tsx" name="ActivityDashboard &gt; renders calendar with current month" time="0.0497459">
+        </testcase>
+        <testcase classname="src/components/__tests__/ActivityDashboard.test.tsx" name="ActivityDashboard &gt; shows upcoming deadlines section" time="0.0386724">
+        </testcase>
+        <testcase classname="src/components/__tests__/ActivityDashboard.test.tsx" name="ActivityDashboard &gt; shows empty state when no upcoming deadlines" time="0.0312039">
+        </testcase>
+        <testcase classname="src/components/__tests__/ActivityDashboard.test.tsx" name="ActivityDashboard &gt; navigates to goals page when clicking on a goal deadline" time="0.112792">
+        </testcase>
+        <testcase classname="src/components/__tests__/ActivityDashboard.test.tsx" name="ActivityDashboard &gt; navigates to challenges page when clicking on a challenge deadline" time="0.1220394">
+        </testcase>
+    </testsuite>
+    <testsuite name="src/components/ui/__tests__/button.test.tsx" timestamp="2025-12-18T21:55:58.337Z" hostname="LAPTOP-M7QQLGU0" tests="8" failures="0" errors="0" skipped="0" time="0.237234">
+        <testcase classname="src/components/ui/__tests__/button.test.tsx" name="Button &gt; renders button with text" time="0.0700263">
+        </testcase>
+        <testcase classname="src/components/ui/__tests__/button.test.tsx" name="Button &gt; handles click events" time="0.0359491">
+        </testcase>
+        <testcase classname="src/components/ui/__tests__/button.test.tsx" name="Button &gt; can be disabled" time="0.0674342">
+        </testcase>
+        <testcase classname="src/components/ui/__tests__/button.test.tsx" name="Button &gt; renders with different variants" time="0.023095">
+        </testcase>
+        <testcase classname="src/components/ui/__tests__/button.test.tsx" name="Button &gt; renders with different sizes" time="0.0202337">
+        </testcase>
+        <testcase classname="src/components/ui/__tests__/button.test.tsx" name="Button &gt; can render as a child component" time="0.0091119">
+        </testcase>
+        <testcase classname="src/components/ui/__tests__/button.test.tsx" name="Button &gt; applies custom className" time="0.0043895">
+        </testcase>
+        <testcase classname="src/components/ui/__tests__/button.test.tsx" name="Button &gt; forwards ref correctly" time="0.0029016">
+        </testcase>
+    </testsuite>
+    <testsuite name="src/lib/hooks/__tests__/useAuth.test.tsx" timestamp="2025-12-18T21:55:58.339Z" hostname="LAPTOP-M7QQLGU0" tests="9" failures="0" errors="0" skipped="0" time="0.5968162">
+        <testcase classname="src/lib/hooks/__tests__/useAuth.test.tsx" name="useAuth Hooks &gt; useUser &gt; fetches user data successfully" time="0.1113019">
+        </testcase>
+        <testcase classname="src/lib/hooks/__tests__/useAuth.test.tsx" name="useAuth Hooks &gt; useUser &gt; handles error when fetching user data fails" time="0.0756281">
+        </testcase>
+        <testcase classname="src/lib/hooks/__tests__/useAuth.test.tsx" name="useAuth Hooks &gt; useIsAuthenticated &gt; returns true when user is authenticated" time="0.0651095">
+        </testcase>
+        <testcase classname="src/lib/hooks/__tests__/useAuth.test.tsx" name="useAuth Hooks &gt; useIsAuthenticated &gt; returns false when user is not authenticated" time="0.0132085">
+        </testcase>
+        <testcase classname="src/lib/hooks/__tests__/useAuth.test.tsx" name="useAuth Hooks &gt; useIsAuthenticated &gt; returns loading state while fetching" time="0.0044469">
+        </testcase>
+        <testcase classname="src/lib/hooks/__tests__/useAuth.test.tsx" name="useAuth Hooks &gt; useLogin &gt; logs in successfully and invalidates queries" time="0.0836149">
+        </testcase>
+        <testcase classname="src/lib/hooks/__tests__/useAuth.test.tsx" name="useAuth Hooks &gt; useLogin &gt; handles login error" time="0.0767742">
+            <system-err>
+Login failed: Error: Invalid credentials
+    at C:/Users/cck18/bounswe2025group2/Web_Frontend/genfit_frontend/src/lib/hooks/__tests__/useAuth.test.tsx:125:21
+    at [90mfile:///C:/Users/cck18/bounswe2025group2/Web_Frontend/genfit_frontend/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:157:11
+    at [90mfile:///C:/Users/cck18/bounswe2025group2/Web_Frontend/genfit_frontend/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:753:26
+    at [90mfile:///C:/Users/cck18/bounswe2025group2/Web_Frontend/genfit_frontend/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1636:20
+    at new Promise (&lt;anonymous&gt;)
+    at runWithTimeout [90m(file:///C:/Users/cck18/bounswe2025group2/Web_Frontend/genfit_frontend/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1602:10[90m)[39m
+    at runTest [90m(file:///C:/Users/cck18/bounswe2025group2/Web_Frontend/genfit_frontend/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1309:12[90m)[39m
+[90m    at runNextTicks (node:internal/process/task_queues:65:5)[39m
+[90m    at processTimers (node:internal/timers:520:9)[39m
+    at runSuite [90m(file:///C:/Users/cck18/bounswe2025group2/Web_Frontend/genfit_frontend/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1468:8[90m)[39m
+
+            </system-err>
+        </testcase>
+        <testcase classname="src/lib/hooks/__tests__/useAuth.test.tsx" name="useAuth Hooks &gt; useLogout &gt; logs out successfully and clears cache" time="0.0774806">
+        </testcase>
+        <testcase classname="src/lib/hooks/__tests__/useAuth.test.tsx" name="useAuth Hooks &gt; useLogout &gt; clears cache even when logout fails" time="0.0785202">
+            <system-err>
+Logout failed: Error: Logout failed
+    at C:/Users/cck18/bounswe2025group2/Web_Frontend/genfit_frontend/src/lib/hooks/__tests__/useAuth.test.tsx:156:21
+    at [90mfile:///C:/Users/cck18/bounswe2025group2/Web_Frontend/genfit_frontend/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:157:11
+    at [90mfile:///C:/Users/cck18/bounswe2025group2/Web_Frontend/genfit_frontend/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:753:26
+    at [90mfile:///C:/Users/cck18/bounswe2025group2/Web_Frontend/genfit_frontend/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1636:20
+    at new Promise (&lt;anonymous&gt;)
+    at runWithTimeout [90m(file:///C:/Users/cck18/bounswe2025group2/Web_Frontend/genfit_frontend/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1602:10[90m)[39m
+    at runTest [90m(file:///C:/Users/cck18/bounswe2025group2/Web_Frontend/genfit_frontend/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1309:12[90m)[39m
+    at runSuite [90m(file:///C:/Users/cck18/bounswe2025group2/Web_Frontend/genfit_frontend/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1468:8[90m)[39m
+    at runSuite [90m(file:///C:/Users/cck18/bounswe2025group2/Web_Frontend/genfit_frontend/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1468:8[90m)[39m
+    at runSuite [90m(file:///C:/Users/cck18/bounswe2025group2/Web_Frontend/genfit_frontend/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1468:8[90m)[39m
+
+            </system-err>
+        </testcase>
+    </testsuite>
+    <testsuite name="src/lib/utils/__tests__/index.test.ts" timestamp="2025-12-18T21:55:58.349Z" hostname="LAPTOP-M7QQLGU0" tests="4" failures="0" errors="0" skipped="0" time="0.0104735">
+        <testcase classname="src/lib/utils/__tests__/index.test.ts" name="Utility Functions &gt; cn (className utility) &gt; merges class names correctly" time="0.0028655">
+        </testcase>
+        <testcase classname="src/lib/utils/__tests__/index.test.ts" name="Utility Functions &gt; cn (className utility) &gt; handles conditional classes" time="0.0017581">
+        </testcase>
+        <testcase classname="src/lib/utils/__tests__/index.test.ts" name="Utility Functions &gt; cn (className utility) &gt; handles empty string values" time="0.0013708">
+        </testcase>
+        <testcase classname="src/lib/utils/__tests__/index.test.ts" name="Utility Functions &gt; cn (className utility) &gt; merges Tailwind classes correctly" time="0.0008766">
+        </testcase>
+    </testsuite>
+    <testsuite name="src/pages/contact/__tests__/ContactPage.test.tsx" timestamp="2025-12-18T21:55:58.351Z" hostname="LAPTOP-M7QQLGU0" tests="13" failures="0" errors="0" skipped="0" time="11.5508242">
+        <testcase classname="src/pages/contact/__tests__/ContactPage.test.tsx" name="ContactPage &gt; should render the contact page with main heading" time="0.0679654">
+        </testcase>
+        <testcase classname="src/pages/contact/__tests__/ContactPage.test.tsx" name="ContactPage &gt; should render the contact form" time="0.0350389">
+        </testcase>
+        <testcase classname="src/pages/contact/__tests__/ContactPage.test.tsx" name="ContactPage &gt; should render additional contact information" time="0.0136097">
+        </testcase>
+        <testcase classname="src/pages/contact/__tests__/ContactPage.test.tsx" name="ContactPage &gt; should update form fields when user types" time="1.1537214">
+        </testcase>
+        <testcase classname="src/pages/contact/__tests__/ContactPage.test.tsx" name="ContactPage &gt; should disable submit button when form is submitting" time="1.1935366">
+        </testcase>
+        <testcase classname="src/pages/contact/__tests__/ContactPage.test.tsx" name="ContactPage &gt; should show success message after successful submission" time="1.0579544">
+        </testcase>
+        <testcase classname="src/pages/contact/__tests__/ContactPage.test.tsx" name="ContactPage &gt; should show default success message when no message from API" time="1.1692856">
+        </testcase>
+        <testcase classname="src/pages/contact/__tests__/ContactPage.test.tsx" name="ContactPage &gt; should call fetch with correct parameters" time="1.1646726">
+        </testcase>
+        <testcase classname="src/pages/contact/__tests__/ContactPage.test.tsx" name="ContactPage &gt; should show error message when API request fails" time="1.1627661">
+            <system-err>
+Submission error: Error: Server error
+    at handleSubmit (C:/Users/cck18/bounswe2025group2/Web_Frontend/genfit_frontend/src/pages/contact/ContactPage.tsx:57:15)
+
+            </system-err>
+        </testcase>
+        <testcase classname="src/pages/contact/__tests__/ContactPage.test.tsx" name="ContactPage &gt; should show error message when API returns non-JSON response" time="1.1700277">
+            <system-err>
+Response is not JSON: Internal Server Error
+Submission error: Error: Server returned an unexpected response. Please try again.
+    at handleSubmit (C:/Users/cck18/bounswe2025group2/Web_Frontend/genfit_frontend/src/pages/contact/ContactPage.tsx:53:15)
+
+            </system-err>
+        </testcase>
+        <testcase classname="src/pages/contact/__tests__/ContactPage.test.tsx" name="ContactPage &gt; should show specific error message when fetch throws an Error instance" time="1.2048974">
+            <system-err>
+Submission error: Error: Network error
+    at C:/Users/cck18/bounswe2025group2/Web_Frontend/genfit_frontend/src/pages/contact/__tests__/ContactPage.test.tsx:278:51
+    at [90mfile:///C:/Users/cck18/bounswe2025group2/Web_Frontend/genfit_frontend/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:157:11
+    at [90mfile:///C:/Users/cck18/bounswe2025group2/Web_Frontend/genfit_frontend/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:753:26
+    at [90mfile:///C:/Users/cck18/bounswe2025group2/Web_Frontend/genfit_frontend/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1636:20
+    at new Promise (&lt;anonymous&gt;)
+    at runWithTimeout [90m(file:///C:/Users/cck18/bounswe2025group2/Web_Frontend/genfit_frontend/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1602:10[90m)[39m
+    at runTest [90m(file:///C:/Users/cck18/bounswe2025group2/Web_Frontend/genfit_frontend/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1309:12[90m)[39m
+    at runSuite [90m(file:///C:/Users/cck18/bounswe2025group2/Web_Frontend/genfit_frontend/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1468:8[90m)[39m
+    at runSuite [90m(file:///C:/Users/cck18/bounswe2025group2/Web_Frontend/genfit_frontend/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1468:8[90m)[39m
+    at runFiles [90m(file:///C:/Users/cck18/bounswe2025group2/Web_Frontend/genfit_frontend/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1526:3[90m)[39m
+
+            </system-err>
+        </testcase>
+        <testcase classname="src/pages/contact/__tests__/ContactPage.test.tsx" name="ContactPage &gt; should show generic error message when non-Error exception is thrown" time="1.0909611">
+            <system-err>
+Submission error: Some string error
+
+            </system-err>
+        </testcase>
+        <testcase classname="src/pages/contact/__tests__/ContactPage.test.tsx" name="ContactPage &gt; should handle missing CSRF token gracefully" time="1.0628398">
+        </testcase>
+    </testsuite>
+    <testsuite name="src/pages/notifications/__tests__/NotificationPage.test.tsx" timestamp="2025-12-18T21:55:58.355Z" hostname="LAPTOP-M7QQLGU0" tests="12" failures="0" errors="0" skipped="0" time="0.692452">
+        <testcase classname="src/pages/notifications/__tests__/NotificationPage.test.tsx" name="NotificationsPage - Minimal Environment Test &gt; should render the basic page structure without crashing" time="0.0518873">
+        </testcase>
+        <testcase classname="src/pages/notifications/__tests__/NotificationPage.test.tsx" name="NotificationsPage - Authentication Flow &gt; should redirect to auth page when user is not authenticated" time="0.0071761">
+        </testcase>
+        <testcase classname="src/pages/notifications/__tests__/NotificationPage.test.tsx" name="NotificationsPage - Authentication Flow &gt; should show loading state when authentication is loading" time="0.0055711">
+        </testcase>
+        <testcase classname="src/pages/notifications/__tests__/NotificationPage.test.tsx" name="NotificationsPage - Authentication Flow &gt; should show loading state when notifications are loading" time="0.0143582">
+        </testcase>
+        <testcase classname="src/pages/notifications/__tests__/NotificationPage.test.tsx" name="NotificationsPage - With Notification Data &gt; should display notifications when data is available" time="0.1179762">
+        </testcase>
+        <testcase classname="src/pages/notifications/__tests__/NotificationPage.test.tsx" name="NotificationsPage - With Notification Data &gt; should show correct tab counts" time="0.034182">
+        </testcase>
+        <testcase classname="src/pages/notifications/__tests__/NotificationPage.test.tsx" name="NotificationsPage - With Notification Data &gt; should filter notifications by unread tab" time="0.1400277">
+        </testcase>
+        <testcase classname="src/pages/notifications/__tests__/NotificationPage.test.tsx" name="NotificationsPage - With Notification Data &gt; should filter notifications by read tab" time="0.1082564">
+        </testcase>
+        <testcase classname="src/pages/notifications/__tests__/NotificationPage.test.tsx" name="NotificationsPage - User Interactions &gt; should mark a notification as read when Mark as Read button is clicked" time="0.0714847">
+        </testcase>
+        <testcase classname="src/pages/notifications/__tests__/NotificationPage.test.tsx" name="NotificationsPage - User Interactions &gt; should open modal when notification is clicked" time="0.1041389">
+            <system-err>
+Warning: Missing `Description` or `aria-describedby={undefined}` for {DialogContent}.
+
+            </system-err>
+        </testcase>
+        <testcase classname="src/pages/notifications/__tests__/NotificationPage.test.tsx" name="NotificationsPage - User Interactions &gt; should show Mark All as Read button when there are unread notifications" time="0.0141976">
+        </testcase>
+        <testcase classname="src/pages/notifications/__tests__/NotificationPage.test.tsx" name="NotificationsPage - User Interactions &gt; should not show Mark All as Read button when all notifications are read" time="0.0188721">
+        </testcase>
+    </testsuite>
+    <testsuite name="src/pages/home/__tests__/HomePage.test.tsx" timestamp="2025-12-18T21:55:58.359Z" hostname="LAPTOP-M7QQLGU0" tests="13" failures="0" errors="0" skipped="0" time="1.3780595">
+        <testcase classname="src/pages/home/__tests__/HomePage.test.tsx" name="HomePage &gt; shows loading state while checking authentication" time="0.0296661">
+        </testcase>
+        <testcase classname="src/pages/home/__tests__/HomePage.test.tsx" name="HomePage &gt; redirects to auth page when not authenticated" time="0.0090558">
+        </testcase>
+        <testcase classname="src/pages/home/__tests__/HomePage.test.tsx" name="HomePage &gt; shows loading state while fetching data" time="0.0095842">
+        </testcase>
+        <testcase classname="src/pages/home/__tests__/HomePage.test.tsx" name="HomePage &gt; shows error state when data fetching fails" time="0.0349643">
+        </testcase>
+        <testcase classname="src/pages/home/__tests__/HomePage.test.tsx" name="HomePage &gt; renders all main sections when data is loaded" time="0.0151498">
+        </testcase>
+        <testcase classname="src/pages/home/__tests__/HomePage.test.tsx" name="HomePage &gt; handles nutrition analyzer form submission" time="0.3518935">
+        </testcase>
+        <testcase classname="src/pages/home/__tests__/HomePage.test.tsx" name="HomePage &gt; shows analyzing state during food analysis" time="0.2435997">
+        </testcase>
+        <testcase classname="src/pages/home/__tests__/HomePage.test.tsx" name="HomePage &gt; handles nutrition analyzer error" time="0.1703001">
+            <system-err>
+Error analyzing food: Error: API Error
+    at C:/Users/cck18/bounswe2025group2/Web_Frontend/genfit_frontend/src/pages/home/__tests__/HomePage.test.tsx:275:45
+    at [90mfile:///C:/Users/cck18/bounswe2025group2/Web_Frontend/genfit_frontend/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:157:11
+    at [90mfile:///C:/Users/cck18/bounswe2025group2/Web_Frontend/genfit_frontend/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:753:26
+    at [90mfile:///C:/Users/cck18/bounswe2025group2/Web_Frontend/genfit_frontend/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1636:20
+    at new Promise (&lt;anonymous&gt;)
+    at runWithTimeout [90m(file:///C:/Users/cck18/bounswe2025group2/Web_Frontend/genfit_frontend/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1602:10[90m)[39m
+    at runTest [90m(file:///C:/Users/cck18/bounswe2025group2/Web_Frontend/genfit_frontend/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1309:12[90m)[39m
+    at runSuite [90m(file:///C:/Users/cck18/bounswe2025group2/Web_Frontend/genfit_frontend/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1468:8[90m)[39m
+    at runSuite [90m(file:///C:/Users/cck18/bounswe2025group2/Web_Frontend/genfit_frontend/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1468:8[90m)[39m
+    at runFiles [90m(file:///C:/Users/cck18/bounswe2025group2/Web_Frontend/genfit_frontend/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1526:3[90m)[39m
+
+            </system-err>
+        </testcase>
+        <testcase classname="src/pages/home/__tests__/HomePage.test.tsx" name="HomePage &gt; disables analyze button when input is empty" time="0.0208229">
+        </testcase>
+        <testcase classname="src/pages/home/__tests__/HomePage.test.tsx" name="HomePage &gt; displays nutritional information correctly" time="0.3995887">
+        </testcase>
+        <testcase classname="src/pages/home/__tests__/HomePage.test.tsx" name="HomePage &gt; shows empty state for nutrition analyzer initially" time="0.0136945">
+        </testcase>
+        <testcase classname="src/pages/home/__tests__/HomePage.test.tsx" name="HomePage &gt; does not render daily quote when there is an error" time="0.0149788">
+        </testcase>
+        <testcase classname="src/pages/home/__tests__/HomePage.test.tsx" name="HomePage &gt; handles refresh button click on error state" time="0.0620208">
+        </testcase>
+    </testsuite>
+    <testsuite name="src/pages/profile/__tests__/ProfilePage.test.tsx" timestamp="2025-12-18T21:55:58.362Z" hostname="LAPTOP-M7QQLGU0" tests="5" failures="0" errors="0" skipped="0" time="1.2415942">
+        <testcase classname="src/pages/profile/__tests__/ProfilePage.test.tsx" name="ProfilePage &gt; renders user information correctly" time="0.1570868">
+            <system-out>
+ProfilePage route/debug {
+  pathname: [32m&apos;/profile&apos;[39m,
+  otherUsername: [90mundefined[39m,
+  meUsername: [32m&apos;testuser&apos;[39m,
+  effectiveUsername: [90mundefined[39m,
+  isOwnProfile: [33mtrue[39m,
+  otherUserId: [1mnull[22m,
+  isLoadingUsers: [33mfalse[39m,
+  usersCount: [90mundefined[39m,
+  relatedRelsCount: [33m0[39m,
+  selectedRelStatus: [90mundefined[39m,
+  isSender: [33mfalse[39m,
+  isReceiver: [33mfalse[39m,
+  mentorsCount: [33m0[39m,
+  menteesCount: [33m0[39m
+}
+ProfilePage route/debug {
+  pathname: [32m&apos;/profile&apos;[39m,
+  otherUsername: [90mundefined[39m,
+  meUsername: [32m&apos;testuser&apos;[39m,
+  effectiveUsername: [90mundefined[39m,
+  isOwnProfile: [33mtrue[39m,
+  otherUserId: [1mnull[22m,
+  isLoadingUsers: [33mfalse[39m,
+  usersCount: [90mundefined[39m,
+  relatedRelsCount: [33m0[39m,
+  selectedRelStatus: [90mundefined[39m,
+  isSender: [33mfalse[39m,
+  isReceiver: [33mfalse[39m,
+  mentorsCount: [33m0[39m,
+  menteesCount: [33m0[39m
+}
+
+            </system-out>
+        </testcase>
+        <testcase classname="src/pages/profile/__tests__/ProfilePage.test.tsx" name="ProfilePage &gt; switches to edit mode when Edit Profile is clicked" time="0.4140687">
+            <system-out>
+ProfilePage route/debug {
+  pathname: [32m&apos;/profile&apos;[39m,
+  otherUsername: [90mundefined[39m,
+  meUsername: [32m&apos;testuser&apos;[39m,
+  effectiveUsername: [90mundefined[39m,
+  isOwnProfile: [33mtrue[39m,
+  otherUserId: [1mnull[22m,
+  isLoadingUsers: [33mfalse[39m,
+  usersCount: [90mundefined[39m,
+  relatedRelsCount: [33m0[39m,
+  selectedRelStatus: [90mundefined[39m,
+  isSender: [33mfalse[39m,
+  isReceiver: [33mfalse[39m,
+  mentorsCount: [33m0[39m,
+  menteesCount: [33m0[39m
+}
+ProfilePage route/debug {
+  pathname: [32m&apos;/profile&apos;[39m,
+  otherUsername: [90mundefined[39m,
+  meUsername: [32m&apos;testuser&apos;[39m,
+  effectiveUsername: [90mundefined[39m,
+  isOwnProfile: [33mtrue[39m,
+  otherUserId: [1mnull[22m,
+  isLoadingUsers: [33mfalse[39m,
+  usersCount: [90mundefined[39m,
+  relatedRelsCount: [33m0[39m,
+  selectedRelStatus: [90mundefined[39m,
+  isSender: [33mfalse[39m,
+  isReceiver: [33mfalse[39m,
+  mentorsCount: [33m0[39m,
+  menteesCount: [33m0[39m
+}
+
+ProfilePage route/debug {
+  pathname: [32m&apos;/profile&apos;[39m,
+  otherUsername: [90mundefined[39m,
+  meUsername: [32m&apos;testuser&apos;[39m,
+  effectiveUsername: [90mundefined[39m,
+  isOwnProfile: [33mtrue[39m,
+  otherUserId: [1mnull[22m,
+  isLoadingUsers: [33mfalse[39m,
+  usersCount: [90mundefined[39m,
+  relatedRelsCount: [33m0[39m,
+  selectedRelStatus: [90mundefined[39m,
+  isSender: [33mfalse[39m,
+  isReceiver: [33mfalse[39m,
+  mentorsCount: [33m0[39m,
+  menteesCount: [33m0[39m
+}
+
+            </system-out>
+        </testcase>
+        <testcase classname="src/pages/profile/__tests__/ProfilePage.test.tsx" name="ProfilePage &gt; cancels edit mode and reverts to view mode" time="0.5623611">
+            <system-out>
+ProfilePage route/debug {
+  pathname: [32m&apos;/profile&apos;[39m,
+  otherUsername: [90mundefined[39m,
+  meUsername: [32m&apos;testuser&apos;[39m,
+  effectiveUsername: [90mundefined[39m,
+  isOwnProfile: [33mtrue[39m,
+  otherUserId: [1mnull[22m,
+  isLoadingUsers: [33mfalse[39m,
+  usersCount: [90mundefined[39m,
+  relatedRelsCount: [33m0[39m,
+  selectedRelStatus: [90mundefined[39m,
+  isSender: [33mfalse[39m,
+  isReceiver: [33mfalse[39m,
+  mentorsCount: [33m0[39m,
+  menteesCount: [33m0[39m
+}
+ProfilePage route/debug {
+  pathname: [32m&apos;/profile&apos;[39m,
+  otherUsername: [90mundefined[39m,
+  meUsername: [32m&apos;testuser&apos;[39m,
+  effectiveUsername: [90mundefined[39m,
+  isOwnProfile: [33mtrue[39m,
+  otherUserId: [1mnull[22m,
+  isLoadingUsers: [33mfalse[39m,
+  usersCount: [90mundefined[39m,
+  relatedRelsCount: [33m0[39m,
+  selectedRelStatus: [90mundefined[39m,
+  isSender: [33mfalse[39m,
+  isReceiver: [33mfalse[39m,
+  mentorsCount: [33m0[39m,
+  menteesCount: [33m0[39m
+}
+
+ProfilePage route/debug {
+  pathname: [32m&apos;/profile&apos;[39m,
+  otherUsername: [90mundefined[39m,
+  meUsername: [32m&apos;testuser&apos;[39m,
+  effectiveUsername: [90mundefined[39m,
+  isOwnProfile: [33mtrue[39m,
+  otherUserId: [1mnull[22m,
+  isLoadingUsers: [33mfalse[39m,
+  usersCount: [90mundefined[39m,
+  relatedRelsCount: [33m0[39m,
+  selectedRelStatus: [90mundefined[39m,
+  isSender: [33mfalse[39m,
+  isReceiver: [33mfalse[39m,
+  mentorsCount: [33m0[39m,
+  menteesCount: [33m0[39m
+}
+
+ProfilePage route/debug {
+  pathname: [32m&apos;/profile&apos;[39m,
+  otherUsername: [90mundefined[39m,
+  meUsername: [32m&apos;testuser&apos;[39m,
+  effectiveUsername: [90mundefined[39m,
+  isOwnProfile: [33mtrue[39m,
+  otherUserId: [1mnull[22m,
+  isLoadingUsers: [33mfalse[39m,
+  usersCount: [90mundefined[39m,
+  relatedRelsCount: [33m0[39m,
+  selectedRelStatus: [90mundefined[39m,
+  isSender: [33mfalse[39m,
+  isReceiver: [33mfalse[39m,
+  mentorsCount: [33m0[39m,
+  menteesCount: [33m0[39m
+}
+
+            </system-out>
+        </testcase>
+        <testcase classname="src/pages/profile/__tests__/ProfilePage.test.tsx" name="ProfilePage &gt; renders empty state when user has no goals" time="0.0547303">
+            <system-out>
+ProfilePage route/debug {
+  pathname: [32m&apos;/profile&apos;[39m,
+  otherUsername: [90mundefined[39m,
+  meUsername: [32m&apos;testuser&apos;[39m,
+  effectiveUsername: [90mundefined[39m,
+  isOwnProfile: [33mtrue[39m,
+  otherUserId: [1mnull[22m,
+  isLoadingUsers: [33mfalse[39m,
+  usersCount: [90mundefined[39m,
+  relatedRelsCount: [33m0[39m,
+  selectedRelStatus: [90mundefined[39m,
+  isSender: [33mfalse[39m,
+  isReceiver: [33mfalse[39m,
+  mentorsCount: [33m0[39m,
+  menteesCount: [33m0[39m
+}
+ProfilePage route/debug {
+  pathname: [32m&apos;/profile&apos;[39m,
+  otherUsername: [90mundefined[39m,
+  meUsername: [32m&apos;testuser&apos;[39m,
+  effectiveUsername: [90mundefined[39m,
+  isOwnProfile: [33mtrue[39m,
+  otherUserId: [1mnull[22m,
+  isLoadingUsers: [33mfalse[39m,
+  usersCount: [90mundefined[39m,
+  relatedRelsCount: [33m0[39m,
+  selectedRelStatus: [90mundefined[39m,
+  isSender: [33mfalse[39m,
+  isReceiver: [33mfalse[39m,
+  mentorsCount: [33m0[39m,
+  menteesCount: [33m0[39m
+}
+
+            </system-out>
+        </testcase>
+        <testcase classname="src/pages/profile/__tests__/ProfilePage.test.tsx" name="ProfilePage &gt; renders goals list when goals data is present" time="0.0506773">
+            <system-out>
+ProfilePage route/debug {
+  pathname: [32m&apos;/profile&apos;[39m,
+  otherUsername: [90mundefined[39m,
+  meUsername: [32m&apos;testuser&apos;[39m,
+  effectiveUsername: [90mundefined[39m,
+  isOwnProfile: [33mtrue[39m,
+  otherUserId: [1mnull[22m,
+  isLoadingUsers: [33mfalse[39m,
+  usersCount: [90mundefined[39m,
+  relatedRelsCount: [33m0[39m,
+  selectedRelStatus: [90mundefined[39m,
+  isSender: [33mfalse[39m,
+  isReceiver: [33mfalse[39m,
+  mentorsCount: [33m0[39m,
+  menteesCount: [33m0[39m
+}
+ProfilePage route/debug {
+  pathname: [32m&apos;/profile&apos;[39m,
+  otherUsername: [90mundefined[39m,
+  meUsername: [32m&apos;testuser&apos;[39m,
+  effectiveUsername: [90mundefined[39m,
+  isOwnProfile: [33mtrue[39m,
+  otherUserId: [1mnull[22m,
+  isLoadingUsers: [33mfalse[39m,
+  usersCount: [90mundefined[39m,
+  relatedRelsCount: [33m0[39m,
+  selectedRelStatus: [90mundefined[39m,
+  isSender: [33mfalse[39m,
+  isReceiver: [33mfalse[39m,
+  mentorsCount: [33m0[39m,
+  menteesCount: [33m0[39m
+}
+
+            </system-out>
+        </testcase>
+    </testsuite>
+    <testsuite name="src/pages/settings/__tests__/SettingsPage.test.tsx" timestamp="2025-12-18T21:55:58.365Z" hostname="LAPTOP-M7QQLGU0" tests="5" failures="0" errors="0" skipped="0" time="1.0889712">
+        <testcase classname="src/pages/settings/__tests__/SettingsPage.test.tsx" name="SettingsPage &gt; renders settings information correctly" time="0.2079161">
+        </testcase>
+        <testcase classname="src/pages/settings/__tests__/SettingsPage.test.tsx" name="SettingsPage &gt; shows action buttons when toggle is changed" time="0.2834874">
+        </testcase>
+        <testcase classname="src/pages/settings/__tests__/SettingsPage.test.tsx" name="SettingsPage &gt; calls update mutation when Save is clicked" time="0.2594602">
+        </testcase>
+        <testcase classname="src/pages/settings/__tests__/SettingsPage.test.tsx" name="SettingsPage &gt; reverts changes when Cancel is clicked" time="0.220175">
+        </testcase>
+        <testcase classname="src/pages/settings/__tests__/SettingsPage.test.tsx" name="SettingsPage &gt; renders error state and refresh button when fetching fails" time="0.1151317">
+        </testcase>
+    </testsuite>
+</testsuites>

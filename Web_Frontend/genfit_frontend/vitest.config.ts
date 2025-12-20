@@ -1,7 +1,6 @@
-/// <reference types="vitest" />
 import path from "path"
 import tailwindcss from "@tailwindcss/vite"
-import { defineConfig } from 'vite'
+import { defineConfig } from 'vitest/config'
 import react from '@vitejs/plugin-react'
 
 export default defineConfig({
@@ -16,11 +15,24 @@ export default defineConfig({
     environment: 'happy-dom',
     setupFiles: './src/test/setup.ts',
     css: true,
-    // Exclude E2E tests - they use Playwright, not Vitest
+
+    onConsoleLog(log, type) {
+    if (type === 'stderr') return false; // This hides console.error from the report
+    },
+    
+    // --- REPORTING CONFIGURATION START ---
+    // 'default' prints to console, 'junit' creates XML, 'html' creates the UI report
+    reporters: ['default', 'junit', 'html'], 
+    outputFile: {
+      junit: './reports/vitest-report.xml',
+      html: './reports/html-report/index.html',
+    },
+    // --- REPORTING CONFIGURATION END ---
+
     exclude: [
       '**/node_modules/**',
       '**/dist/**',
-      '**/e2e/**', // Playwright E2E tests
+      '**/e2e/**', 
       '**/.{idea,git,cache,output,temp}/**',
       '**/{karma,rollup,webpack,vite,vitest,jest,ava,babel,nyc,cypress,tsup,build}.config.*'
     ],
@@ -38,7 +50,7 @@ export default defineConfig({
         '**/*.config.*',
         '**/mockData',
         'dist/',
-        'e2e/', // Exclude E2E tests from coverage
+        'e2e/',
       ],
     },
   },
