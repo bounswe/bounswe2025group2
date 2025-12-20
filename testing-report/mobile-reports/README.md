@@ -1,0 +1,1 @@
+Place the mobile reports in the correct folders and explain how to view or reach the reports.

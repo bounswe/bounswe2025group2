@@ -5,11 +5,19 @@
 
 import '@testing-library/jest-dom';
 import { cleanup } from '@testing-library/react';
-import { afterEach, vi } from 'vitest';
+import { afterEach, beforeAll, vi } from 'vitest';
 
 // Cleanup after each test
 afterEach(() => {
   cleanup();
+});
+
+// Silence console.error, console.log, console.warn, and console.debug during tests to suppress all logs
+beforeAll(() => {
+  vi.spyOn(console, 'error').mockImplementation(() => {});
+  vi.spyOn(console, 'log').mockImplementation(() => {});
+  vi.spyOn(console, 'warn').mockImplementation(() => {});
+  vi.spyOn(console, 'debug').mockImplementation(() => {});
 });
 
 // Mock environment variables
@@ -56,4 +64,3 @@ globalThis.scrollTo = vi.fn();
 
 // Mock fetch globally (can be overridden in individual tests)
 globalThis.fetch = vi.fn();
-
