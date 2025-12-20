@@ -24,9 +24,13 @@ export default defineConfig({
       '**/.{idea,git,cache,output,temp}/**',
       '**/{karma,rollup,webpack,vite,vitest,jest,ava,babel,nyc,cypress,tsup,build}.config.*'
     ],
+    reporters: [
+      'default',
+      ['junit', { outputFile: 'junit.xml' }]
+    ],
     coverage: {
       provider: 'v8',
-      reporter: ['text', 'json', 'html'],
+      reporter: ['text', 'json', 'html', 'cobertura'],
       exclude: [
         'node_modules/',
         'src/test/',
@@ -39,4 +43,3 @@ export default defineConfig({
     },
   },
 })
-

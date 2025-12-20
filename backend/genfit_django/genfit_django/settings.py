@@ -249,3 +249,8 @@ DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 # ExerciseDB API Configuration
 EXERCISEDB_API_KEY = os.environ.get('EXERCISEDB_API_KEY', '')
 EXERCISEDB_API_HOST = 'exercisedb-api1.p.rapidapi.com'
+
+# Set a default DJANGO_SETTINGS_MODULE for test environments if not already set
+# (No longer needed, handled by pytest.ini)
+# if os.environ.get('PYTEST_CURRENT_TEST') and not os.environ.get('DJANGO_SETTINGS_MODULE'):
+#     os.environ['DJANGO_SETTINGS_MODULE'] = 'genfit_django.settings'
