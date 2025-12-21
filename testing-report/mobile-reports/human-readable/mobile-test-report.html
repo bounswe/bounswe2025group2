@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8"/>
+    <title id="head-title">Mobile Frontend Test Report</title>
+    <style>
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+        line-height: 1.6;
+        color: #333;
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 20px;
+        background-color: #f5f5f5;
+      }
+      .header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 30px;
+        border-radius: 10px;
+        margin-bottom: 30px;
+      }
+      h1 {
+        margin: 0 0 10px 0;
+      }
+      .meta-info {
+        font-size: 0.9em;
+        opacity: 0.9;
+      }
+      .summary {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 20px;
+        margin-bottom: 30px;
+      }
+      .summary-card {
+        background: white;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      }
+      .summary-card h3 {
+        margin: 0 0 10px 0;
+        color: #667eea;
+        font-size: 0.9em;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+      .summary-value {
+        font-size: 2em;
+        font-weight: bold;
+        margin: 10px 0;
+      }
+      .passed { color: #10b981; }
+      .failed { color: #ef4444; }
+      .coverage { color: #3b82f6; }
+      
+      .section {
+        background: white;
+        padding: 25px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      }
+      .section h2 {
+        margin: 0 0 20px 0;
+        color: #667eea;
+        border-bottom: 2px solid #667eea;
+        padding-bottom: 10px;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 15px 0;
+      }
+      th, td {
+        padding: 12px;
+        text-align: left;
+        border-bottom: 1px solid #e5e7eb;
+      }
+      th {
+        background-color: #f9fafb;
+        font-weight: 600;
+        color: #374151;
+      }
+      tr:hover {
+        background-color: #f9fafb;
+      }
+      .test-suite {
+        margin-bottom: 15px;
+      }
+      .test-suite-name {
+        font-weight: 600;
+        color: #1f2937;
+        margin-bottom: 5px;
+      }
+      .test-case {
+        padding: 8px 0;
+        padding-left: 20px;
+      }
+      .test-status {
+        display: inline-block;
+        padding: 2px 8px;
+        border-radius: 4px;
+        font-size: 0.85em;
+        font-weight: 500;
+      }
+      .status-pass {
+        background-color: #d1fae5;
+        color: #065f46;
+      }
+      .status-fail {
+        background-color: #fee2e2;
+        color: #991b1b;
+      }
+      .progress-bar {
+        width: 100%;
+        height: 30px;
+        background-color: #e5e7eb;
+        border-radius: 15px;
+        overflow: hidden;
+        margin: 10px 0;
+      }
+      .progress-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #10b981 0%, #059669 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: 600;
+        transition: width 0.3s ease;
+      }
+      .file-coverage {
+        margin: 10px 0;
+      }
+      .file-name {
+        font-family: 'Courier New', monospace;
+        font-size: 0.9em;
+        color: #4b5563;
+      }
+      .coverage-metrics {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 10px;
+        margin-top: 10px;
+      }
+      .metric {
+        text-align: center;
+        padding: 10px;
+        background-color: #f9fafb;
+        border-radius: 6px;
+      }
+      .metric-label {
+        font-size: 0.8em;
+        color: #6b7280;
+        margin-bottom: 5px;
+      }
+      .metric-value {
+        font-size: 1.2em;
+        font-weight: 600;
+      }
+      .good { color: #10b981; }
+      .warning { color: #f59e0b; }
+      .poor { color: #ef4444; }
+    </style>
+  </head>
+  <body>
+    <div class="header">
+      <h1>Mobile Frontend Test Report</h1>
+      <div class="meta-info">
+        <p>Generated on December 21, 2025 | React Native Testing with Jest</p>
+        <p>Framework: Jest 29.6.3 | Testing Library: @testing-library/react-native 13.3.3</p>
+      </div>
+    </div>
+
+    <div class="summary">
+      <div class="summary-card">
+        <h3>Total Tests</h3>
+        <div class="summary-value">127</div>
+        <p>Test cases executed</p>
+      </div>
+      <div class="summary-card">
+        <h3>Passed</h3>
+        <div class="summary-value passed">92</div>
+        <p>72.4% success rate</p>
+      </div>
+      <div class="summary-card">
+        <h3>Failed</h3>
+        <div class="summary-value failed">35</div>
+        <p>27.6% failure rate</p>
+      </div>
+      <div class="summary-card">
+        <h3>Code Coverage</h3>
+        <div class="summary-value coverage">9.25%</div>
+        <p>Statement coverage</p>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>Test Execution Summary</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Metric</th>
+            <th>Value</th>
+            <th>Details</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Test Suites</td>
+            <td>7 total</td>
+            <td>4 passed, 3 failed</td>
+          </tr>
+          <tr>
+            <td>Tests</td>
+            <td>127 total</td>
+            <td>92 passed, 35 failed</td>
+          </tr>
+          <tr>
+            <td>Execution Time</td>
+            <td>7.418s</td>
+            <td>Average time per test: ~58ms</td>
+          </tr>
+          <tr>
+            <td>Snapshots</td>
+            <td>0 total</td>
+            <td>No snapshot tests</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="section">
+      <h2>Test Suite Results</h2>
+      
+      <div class="test-suite">
+        <div class="test-suite-name">✅ PASS: __tests__/App.test.tsx</div>
+        <div class="test-case">
+          <span class="test-status status-pass">PASS</span> App component renders correctly
+        </div>
+      </div>
+
+      <div class="test-suite">
+        <div class="test-suite-name">✅ PASS: src/unit_tests/Forum.test.tsx</div>
+        <div class="test-case">
+          <span class="test-status status-pass">PASS</span> Forum Component - 29 tests (All Passing)
+          <ul style="margin: 5px 0 0 20px; color: #6b7280;">
+            <li>Rendering Tests (5/5)</li>
+            <li>API Integration Tests (5/5)</li>
+            <li>User Interaction Tests (4/4)</li>
+            <li>State Management Tests (4/4)</li>
+            <li>Edge Cases Tests (5/5)</li>
+            <li>Lifecycle Tests (3/3)</li>
+            <li>Accessibility Tests (3/3)</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="test-suite">
+        <div class="test-suite-name">✅ PASS: src/Pages/__tests__/ThreadDetail.test.tsx</div>
+        <div class="test-case">
+          <span class="test-status status-pass">PASS</span> ThreadDetail Component - 7 tests (All Passing)
+          <ul style="margin: 5px 0 0 20px; color: #6b7280;">
+            <li>Component rendering and data fetching</li>
+            <li>Thread details display</li>
+            <li>Comments handling</li>
+            <li>Like functionality</li>
+            <li>Error states</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="test-suite">
+        <div class="test-suite-name">❌ FAIL: src/unit_tests/Home.test.tsx</div>
+        <div class="test-case">
+          <span class="test-status status-fail">FAIL</span> Home Component - 35 failed tests
+          <ul style="margin: 5px 0 0 20px; color: #ef4444;">
+            <li>Error: useNavigation hook not properly mocked</li>
+            <li>Tests affected: Profile Picture Fetching, Focus Effect, Thread Rendering, Date Sorting, Edge Cases</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="test-suite">
+        <div class="test-suite-name">❌ FAIL: src/unit_tests/Settings.test.tsx</div>
+        <div class="test-case">
+          <span class="test-status status-fail">FAIL</span> Settings Component - Test timeout and rendering issues
+          <ul style="margin: 5px 0 0 20px; color: #ef4444;">
+            <li>Timeout exceeded (5000ms)</li>
+            <li>Missing UI elements in rendered component</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="test-suite">
+        <div class="test-suite-name">❌ FAIL: src/Pages/__tests__/Profile.test.tsx</div>
+        <div class="test-case">
+          <span class="test-status status-fail">FAIL</span> Profile Component - SafeAreaProvider issue
+          <ul style="margin: 5px 0 0 20px; color: #ef4444;">
+            <li>Error: No safe area value available</li>
+            <li>Missing SafeAreaProvider wrapper in tests</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>Code Coverage Analysis</h2>
+      
+      <div class="coverage-metrics">
+        <div class="metric">
+          <div class="metric-label">Statements</div>
+          <div class="metric-value poor">9.25%</div>
+        </div>
+        <div class="metric">
+          <div class="metric-label">Branches</div>
+          <div class="metric-value poor">4.81%</div>
+        </div>
+        <div class="metric">
+          <div class="metric-label">Functions</div>
+          <div class="metric-value poor">3.84%</div>
+        </div>
+        <div class="metric">
+          <div class="metric-label">Lines</div>
+          <div class="metric-value poor">9.68%</div>
+        </div>
+      </div>
+
+      <h3 style="margin-top: 30px; color: #1f2937;">Coverage by Directory</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>Directory/File</th>
+            <th>Statements</th>
+            <th>Branches</th>
+            <th>Functions</th>
+            <th>Lines</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="file-name">src/Pages/Forum.tsx</td>
+            <td class="good">96.87%</td>
+            <td class="warning">75%</td>
+            <td class="good">100%</td>
+            <td class="good">96.77%</td>
+          </tr>
+          <tr>
+            <td class="file-name">src/Pages/ThreadDetail.tsx</td>
+            <td class="warning">53.84%</td>
+            <td class="poor">37.7%</td>
+            <td class="warning">50%</td>
+            <td class="warning">55.35%</td>
+          </tr>
+          <tr>
+            <td class="file-name">src/Pages/Settings.tsx</td>
+            <td class="warning">63.82%</td>
+            <td class="poor">11.11%</td>
+            <td class="warning">61.53%</td>
+            <td class="warning">65.21%</td>
+          </tr>
+          <tr>
+            <td class="file-name">src/Pages/Profile.tsx</td>
+            <td class="poor">18.42%</td>
+            <td class="poor">21.59%</td>
+            <td class="poor">5.26%</td>
+            <td class="poor">19.14%</td>
+          </tr>
+          <tr>
+            <td class="file-name">src/Pages/Home.tsx</td>
+            <td class="poor">8%</td>
+            <td class="poor">0%</td>
+            <td class="poor">3.33%</td>
+            <td class="poor">8.33%</td>
+          </tr>
+          <tr>
+            <td class="file-name">src/constants/*</td>
+            <td class="good">100%</td>
+            <td class="good">100%</td>
+            <td class="good">100%</td>
+            <td class="good">100%</td>
+          </tr>
+          <tr>
+            <td class="file-name">src/theme/theme.ts</td>
+            <td class="good">83.33%</td>
+            <td class="poor">18.75%</td>
+            <td class="poor">0%</td>
+            <td class="good">83.33%</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="section">
+      <h2>Test Environment</h2>
+      <table>
+        <tbody>
+          <tr>
+            <td><strong>Framework</strong></td>
+            <td>React Native 0.78.1</td>
+          </tr>
+          <tr>
+            <td><strong>Test Runner</strong></td>
+            <td>Jest 29.6.3</td>
+          </tr>
+          <tr>
+            <td><strong>Testing Library</strong></td>
+            <td>@testing-library/react-native 13.3.3</td>
+          </tr>
+          <tr>
+            <td><strong>Node Version</strong></td>
+            <td>Compatible with React Native 0.78.1</td>
+          </tr>
+          <tr>
+            <td><strong>Platform</strong></td>
+            <td>Cross-platform (iOS & Android)</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="section">
+      <h2>Recommendations</h2>
+      <ol>
+        <li><strong>Fix Navigation Mocking</strong>: Update Home.test.tsx to properly mock React Navigation hooks (useNavigation)</li>
+        <li><strong>Add SafeAreaProvider</strong>: Wrap Profile component tests with SafeAreaProvider to fix context errors</li>
+        <li><strong>Increase Test Timeout</strong>: Adjust timeout values for Settings tests or optimize component rendering</li>
+        <li><strong>Improve Coverage</strong>: Add tests for untested components (Challenges, Exercises, Goals, etc.)</li>
+        <li><strong>Mock External Services</strong>: Properly mock WebSocket and API services in tests</li>
+        <li><strong>Add Integration Tests</strong>: Consider adding more integration tests for critical user flows</li>
+        <li><strong>Target Coverage</strong>: Aim for minimum 80% coverage across all metrics</li>
+      </ol>
+    </div>
+
+    <div class="section">
+      <h2>Successfully Tested Features</h2>
+      <ul>
+        <li>✅ Forum list rendering and error handling</li>
+        <li>✅ Forum API integration with authentication</li>
+        <li>✅ Forum user interactions (retry, navigation)</li>
+        <li>✅ Forum edge cases (empty lists, large datasets, missing fields)</li>
+        <li>✅ Thread detail display and comments</li>
+        <li>✅ Thread like functionality</li>
+        <li>✅ Main app component rendering</li>
+      </ul>
+    </div>
+
+    <div class="section">
+      <h2>Known Issues</h2>
+      <ul>
+        <li>❌ Home component tests failing due to navigation mock issues (35 tests)</li>
+        <li>❌ Settings component tests timing out (needs optimization)</li>
+        <li>❌ Profile component tests failing due to missing SafeAreaProvider</li>
+        <li>⚠️ Overall code coverage is low (9.25% statements) - needs significant improvement</li>
+        <li>⚠️ Many components lack test coverage entirely</li>
+      </ul>
+    </div>
+
+    <div style="margin-top: 40px; padding: 20px; background-color: #f9fafb; border-left: 4px solid #667eea; border-radius: 4px;">
+      <h3 style="margin-top: 0; color: #667eea;">Test Report Summary</h3>
+      <p><strong>Status:</strong> Partial Success - Core features tested but significant issues remain</p>
+      <p><strong>Pass Rate:</strong> 72.4% (92 of 127 tests passing)</p>
+      <p><strong>Coverage:</strong> 9.25% (Below recommended 80% threshold)</p>
+      <p><strong>Priority Actions:</strong> Fix navigation mocking, add SafeAreaProvider, increase test coverage</p>
+    </div>
+  </body>
+</html>
