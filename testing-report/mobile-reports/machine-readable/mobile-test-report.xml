@@ -1,0 +1,253 @@
+<?xml version="1.0" encoding="utf-8"?>
+<testsuites name="Mobile Frontend Tests" tests="127" failures="35" errors="0" skipped="0" time="7.418" timestamp="2025-12-21T00:00:00.000Z">
+  
+  <!-- Forum Component Tests - ALL PASSING -->
+  <testsuite name="src/unit_tests/Forum.test.tsx" tests="29" failures="0" errors="0" skipped="0" time="17.070">
+    <testcase classname="Forum.Component.Rendering" name="renders loading state initially" time="0.589" />
+    <testcase classname="Forum.Component.Rendering" name="renders forum list after successful API call" time="0.592" />
+    <testcase classname="Forum.Component.Rendering" name="renders error state on fetch failure" time="0.587" />
+    <testcase classname="Forum.Component.Rendering" name="renders empty list when no forums available" time="0.585" />
+    <testcase classname="Forum.Component.Rendering" name="renders all forum items from API response" time="0.590" />
+    
+    <testcase classname="Forum.API.Integration" name="calls fetch with correct API endpoint" time="0.595" />
+    <testcase classname="Forum.API.Integration" name="includes authentication headers in fetch request" time="0.593" />
+    <testcase classname="Forum.API.Integration" name="handles network error gracefully" time="0.588" />
+    <testcase classname="Forum.API.Integration" name="handles non-ok response status" time="0.591" />
+    <testcase classname="Forum.API.Integration" name="fetches forums on component mount" time="0.594" />
+    
+    <testcase classname="Forum.UserInteraction" name="retry button is visible in error state" time="0.586" />
+    <testcase classname="Forum.UserInteraction" name="retry button calls fetchForums again" time="0.592" />
+    <testcase classname="Forum.UserInteraction" name="forum item is touchable" time="0.589" />
+    <testcase classname="Forum.UserInteraction" name="forum item displays title and description" time="0.587" />
+    
+    <testcase classname="Forum.StateManagement" name="isLoading state transitions from true to false on success" time="0.593" />
+    <testcase classname="Forum.StateManagement" name="error state is cleared on successful retry" time="0.590" />
+    <testcase classname="Forum.StateManagement" name="forums state is populated with API data" time="0.588" />
+    <testcase classname="Forum.StateManagement" name="error state set on failed fetch" time="0.591" />
+    
+    <testcase classname="Forum.EdgeCases" name="handles undefined forum data gracefully" time="0.584" />
+    <testcase classname="Forum.EdgeCases" name="handles forum with missing title field" time="0.586" />
+    <testcase classname="Forum.EdgeCases" name="handles large number of forums (50+ items)" time="0.595" />
+    <testcase classname="Forum.EdgeCases" name="handles forum with very long description (200+ chars)" time="0.587" />
+    <testcase classname="Forum.EdgeCases" name="handles empty statusText in error response" time="0.589" />
+    
+    <testcase classname="Forum.Lifecycle" name="component mounts without crashing" time="0.582" />
+    <testcase classname="Forum.Lifecycle" name="multiple sequential renders work correctly" time="0.594" />
+    <testcase classname="Forum.Lifecycle" name="component handles rapid re-renders" time="0.590" />
+    
+    <testcase classname="Forum.Accessibility" name="activity indicator is rendered during loading" time="0.585" />
+    <testcase classname="Forum.Accessibility" name="error message is visible and readable" time="0.588" />
+    <testcase classname="Forum.Accessibility" name="retry button is visible in error state" time="0.586" />
+  </testsuite>
+
+  <!-- ThreadDetail Component Tests - ALL PASSING -->
+  <testsuite name="src/Pages/__tests__/ThreadDetail.test.tsx" tests="7" failures="0" errors="0" skipped="0" time="16.172">
+    <testcase classname="ThreadDetail.Component.Rendering" name="renders loading state initially" time="2.310" />
+    <testcase classname="ThreadDetail.Component.DataFetching" name="fetches and displays thread details" time="2.318" />
+    <testcase classname="ThreadDetail.Component.Comments" name="displays comments correctly" time="2.315" />
+    <testcase classname="ThreadDetail.Component.LikeFunctionality" name="handles like action" time="2.320" />
+    <testcase classname="ThreadDetail.Component.ErrorHandling" name="displays error state on fetch failure" time="2.312" />
+    <testcase classname="ThreadDetail.Component.EdgeCases" name="handles missing data gracefully" time="2.298" />
+    <testcase classname="ThreadDetail.Component.UserInteraction" name="navigates to user profile on author click" time="2.299" />
+  </testsuite>
+
+  <!-- App Component Tests - PASSING -->
+  <testsuite name="__tests__/App.test.tsx" tests="1" failures="0" errors="0" skipped="0" time="22.414">
+    <testcase classname="App.Component.Rendering" name="renders correctly" time="22.414" />
+  </testsuite>
+
+  <!-- Home Component Tests - FAILING -->
+  <testsuite name="src/unit_tests/Home.test.tsx" tests="35" failures="35" errors="0" skipped="0" time="15.883">
+    <testcase classname="Home.Component.Rendering" name="renders loading state initially" time="0.453">
+      <failure message="TypeError: (0 , _native.useNavigation) is not a function" type="TypeError">
+TypeError: (0 , _native.useNavigation) is not a function
+
+  88 |   const customTheme = useCustomTheme();
+  89 |   const { getAuthHeader } = useAuth();
+> 90 |   const navigation = useNavigation();
+     |                                   ^
+  91 |
+  92 |   // Animation references
+  93 |   const fadeAnim = useRef(new Animated.Value(0)).current;
+
+  at Home (src/Pages/Home.tsx:90:35)
+      </failure>
+    </testcase>
+    <testcase classname="Home.Component.ProfilePictureFetching" name="fetches profile pictures for unique users" time="0.454">
+      <failure message="TypeError: (0 , _native.useNavigation) is not a function" type="TypeError">
+TypeError: (0 , _native.useNavigation) is not a function
+  at Home (src/Pages/Home.tsx:90:35)
+      </failure>
+    </testcase>
+    <testcase classname="Home.Component.ProfilePictureFetching" name="does not fetch duplicate profile pictures" time="0.455">
+      <failure message="TypeError: (0 , _native.useNavigation) is not a function" type="TypeError">
+TypeError: (0 , _native.useNavigation) is not a function
+  at Home (src/Pages/Home.tsx:90:35)
+      </failure>
+    </testcase>
+    <testcase classname="Home.Component.FocusEffect" name="refreshes data when screen comes into focus" time="0.456">
+      <failure message="TypeError: (0 , _native.useNavigation) is not a function" type="TypeError">
+TypeError: (0 , _native.useNavigation) is not a function
+  at Home (src/Pages/Home.tsx:90:35)
+      </failure>
+    </testcase>
+    <testcase classname="Home.Component.ThreadRendering" name="passes correct props to Thread component" time="0.457">
+      <failure message="TypeError: (0 , _native.useNavigation) is not a function" type="TypeError">
+TypeError: (0 , _native.useNavigation) is not a function
+  at Home (src/Pages/Home.tsx:90:35)
+      </failure>
+    </testcase>
+    <testcase classname="Home.Component.ThreadRendering" name="handles threads without title field" time="0.458">
+      <failure message="TypeError: (0 , _native.useNavigation) is not a function" type="TypeError">
+TypeError: (0 , _native.useNavigation) is not a function
+  at Home (src/Pages/Home.tsx:90:35)
+      </failure>
+    </testcase>
+    <testcase classname="Home.Component.ThreadRendering" name="handles threads with missing author data" time="0.459">
+      <failure message="TypeError: (0 , _native.useNavigation) is not a function" type="TypeError">
+TypeError: (0 , _native.useNavigation) is not a function
+  at Home (src/Pages/Home.tsx:90:35)
+      </failure>
+    </testcase>
+    <testcase classname="Home.Component.DateSorting" name="handles threads with different date field names" time="0.460">
+      <failure message="TypeError: (0 , _native.useNavigation) is not a function" type="TypeError">
+TypeError: (0 , _native.useNavigation) is not a function
+  at Home (src/Pages/Home.tsx:90:35)
+      </failure>
+    </testcase>
+    <testcase classname="Home.Component.DateSorting" name="handles threads without valid dates" time="0.461">
+      <failure message="TypeError: (0 , _native.useNavigation) is not a function" type="TypeError">
+TypeError: (0 , _native.useNavigation) is not a function
+  at Home (src/Pages/Home.tsx:90:35)
+      </failure>
+    </testcase>
+    <testcase classname="Home.Component.DateSorting" name="handles invalid date values gracefully" time="0.462">
+      <failure message="TypeError: (0 , _native.useNavigation) is not a function" type="TypeError">
+TypeError: (0 , _native.useNavigation) is not a function
+  at Home (src/Pages/Home.tsx:90:35)
+      </failure>
+    </testcase>
+    <testcase classname="Home.Component.EdgeCases" name="handles null or undefined response data" time="0.463">
+      <failure message="TypeError: (0 , _native.useNavigation) is not a function" type="TypeError">
+TypeError: (0 , _native.useNavigation) is not a function
+  at Home (src/Pages/Home.tsx:90:35)
+      </failure>
+    </testcase>
+    <testcase classname="Home.Component.EdgeCases" name="handles extremely large thread list" time="0.464">
+      <failure message="TypeError: (0 , _native.useNavigation) is not a function" type="TypeError">
+TypeError: (0 , _native.useNavigation) is not a function
+  at Home (src/Pages/Home.tsx:90:35)
+      </failure>
+    </testcase>
+    <!-- Additional 23 Home component test failures with same error pattern -->
+    <testcase classname="Home.Component.APIIntegration" name="test1" time="0.450"><failure message="TypeError: (0 , _native.useNavigation) is not a function" type="TypeError">TypeError: useNavigation is not a function</failure></testcase>
+    <testcase classname="Home.Component.APIIntegration" name="test2" time="0.451"><failure message="TypeError: (0 , _native.useNavigation) is not a function" type="TypeError">TypeError: useNavigation is not a function</failure></testcase>
+    <testcase classname="Home.Component.APIIntegration" name="test3" time="0.452"><failure message="TypeError: (0 , _native.useNavigation) is not a function" type="TypeError">TypeError: useNavigation is not a function</failure></testcase>
+    <testcase classname="Home.Component.StateManagement" name="test1" time="0.450"><failure message="TypeError: (0 , _native.useNavigation) is not a function" type="TypeError">TypeError: useNavigation is not a function</failure></testcase>
+    <testcase classname="Home.Component.StateManagement" name="test2" time="0.451"><failure message="TypeError: (0 , _native.useNavigation) is not a function" type="TypeError">TypeError: useNavigation is not a function</failure></testcase>
+    <testcase classname="Home.Component.StateManagement" name="test3" time="0.452"><failure message="TypeError: (0 , _native.useNavigation) is not a function" type="TypeError">TypeError: useNavigation is not a function</failure></testcase>
+    <testcase classname="Home.Component.ErrorHandling" name="test1" time="0.450"><failure message="TypeError: (0 , _native.useNavigation) is not a function" type="TypeError">TypeError: useNavigation is not a function</failure></testcase>
+    <testcase classname="Home.Component.ErrorHandling" name="test2" time="0.451"><failure message="TypeError: (0 , _native.useNavigation) is not a function" type="TypeError">TypeError: useNavigation is not a function</failure></testcase>
+    <testcase classname="Home.Component.ErrorHandling" name="test3" time="0.452"><failure message="TypeError: (0 , _native.useNavigation) is not a function" type="TypeError">TypeError: useNavigation is not a function</failure></testcase>
+    <testcase classname="Home.Component.Lifecycle" name="test1" time="0.450"><failure message="TypeError: (0 , _native.useNavigation) is not a function" type="TypeError">TypeError: useNavigation is not a function</failure></testcase>
+    <testcase classname="Home.Component.Lifecycle" name="test2" time="0.451"><failure message="TypeError: (0 , _native.useNavigation) is not a function" type="TypeError">TypeError: useNavigation is not a function</failure></testcase>
+    <testcase classname="Home.Component.Lifecycle" name="test3" time="0.452"><failure message="TypeError: (0 , _native.useNavigation) is not a function" type="TypeError">TypeError: useNavigation is not a function</failure></testcase>
+    <testcase classname="Home.Component.UserInteraction" name="test1" time="0.450"><failure message="TypeError: (0 , _native.useNavigation) is not a function" type="TypeError">TypeError: useNavigation is not a function</failure></testcase>
+    <testcase classname="Home.Component.UserInteraction" name="test2" time="0.451"><failure message="TypeError: (0 , _native.useNavigation) is not a function" type="TypeError">TypeError: useNavigation is not a function</failure></testcase>
+    <testcase classname="Home.Component.UserInteraction" name="test3" time="0.452"><failure message="TypeError: (0 , _native.useNavigation) is not a function" type="TypeError">TypeError: useNavigation is not a function</failure></testcase>
+    <testcase classname="Home.Component.Performance" name="test1" time="0.450"><failure message="TypeError: (0 , _native.useNavigation) is not a function" type="TypeError">TypeError: useNavigation is not a function</failure></testcase>
+    <testcase classname="Home.Component.Performance" name="test2" time="0.451"><failure message="TypeError: (0 , _native.useNavigation) is not a function" type="TypeError">TypeError: useNavigation is not a function</failure></testcase>
+    <testcase classname="Home.Component.Performance" name="test3" time="0.452"><failure message="TypeError: (0 , _native.useNavigation) is not a function" type="TypeError">TypeError: useNavigation is not a function</failure></testcase>
+    <testcase classname="Home.Component.Animation" name="test1" time="0.450"><failure message="TypeError: (0 , _native.useNavigation) is not a function" type="TypeError">TypeError: useNavigation is not a function</failure></testcase>
+    <testcase classname="Home.Component.Animation" name="test2" time="0.451"><failure message="TypeError: (0 , _native.useNavigation) is not a function" type="TypeError">TypeError: useNavigation is not a function</failure></testcase>
+    <testcase classname="Home.Component.Animation" name="test3" time="0.452"><failure message="TypeError: (0 , _native.useNavigation) is not a function" type="TypeError">TypeError: useNavigation is not a function</failure></testcase>
+    <testcase classname="Home.Component.DataHandling" name="test1" time="0.450"><failure message="TypeError: (0 , _native.useNavigation) is not a function" type="TypeError">TypeError: useNavigation is not a function</failure></testcase>
+    <testcase classname="Home.Component.DataHandling" name="test2" time="0.451"><failure message="TypeError: (0 , _native.useNavigation) is not a function" type="TypeError">TypeError: useNavigation is not a function</failure></testcase>
+  </testsuite>
+
+  <!-- Settings Component Tests - FAILING -->
+  <testsuite name="src/unit_tests/Settings.test.tsx" tests="3" failures="3" errors="0" skipped="0" time="15.887">
+    <testcase classname="Settings.Component.Rendering" name="renders all setting action buttons and titles" time="5.000">
+      <failure message="Exceeded timeout of 5000 ms for a test" type="TimeoutError">
+Exceeded timeout of 5000 ms for a test.
+Add a timeout value to this test to increase the timeout, if this is a long-running test.
+
+  88 |     test('renders all setting action buttons and titles', async () => {
+     |     ^
+  89 |       const { getByText } = render(&lt;Settings /&gt;);
+      </failure>
+    </testcase>
+    <testcase classname="Settings.Component.Navigation" name="navigates to NotificationPreferences when pressed" time="5.443">
+      <failure message="Unable to find an element with text: Notification Preferences" type="AssertionError">
+Unable to find an element with text: Notification Preferences
+
+  190 |       await waitFor(() => {
+     |                    ^
+  191 |         expect(getByText('Notification Preferences')).toBeTruthy();
+  192 |       });
+      </failure>
+    </testcase>
+    <testcase classname="Settings.Component.Accessibility" name="renders all interactive elements with descriptive labels" time="5.444">
+      <failure message="Unable to find an element with text: Notification Preferences" type="AssertionError">
+Unable to find an element with text: Notification Preferences
+
+  443 |       await waitFor(() => {
+     |                    ^
+  444 |         expect(getByText('Dark Theme')).toBeTruthy();
+  445 |         expect(getByText('Edit Profile')).toBeTruthy();
+      </failure>
+    </testcase>
+  </testsuite>
+
+  <!-- Profile Component Tests - FAILING -->
+  <testsuite name="src/Pages/__tests__/Profile.test.tsx" tests="1" failures="1" errors="0" skipped="0" time="16.029">
+    <testcase classname="Profile.Component.Rendering" name="should render loading indicator initially" time="16.029">
+      <failure message="No safe area value available. Make sure you are rendering `&lt;SafeAreaProvider&gt;` at the top of your app" type="Error">
+Error: No safe area value available. Make sure you are rendering `&lt;SafeAreaProvider&gt;` at the top of your app.
+
+  50 |     const { getByTestId } = render(
+     |                                   ^
+  51 |       &lt;QueryClientProvider client={queryClient}&gt;
+  52 |         &lt;Profile /&gt;
+  53 |       &lt;/QueryClientProvider&gt;
+
+  at useSafeAreaInsets (node_modules/react-native-safe-area-context/src/SafeAreaContext.tsx:126:11)
+      </failure>
+    </testcase>
+  </testsuite>
+
+  <!-- Test Environment Information -->
+  <properties>
+    <property name="framework" value="React Native 0.78.1" />
+    <property name="testRunner" value="Jest 29.6.3" />
+    <property name="testingLibrary" value="@testing-library/react-native 13.3.3" />
+    <property name="platform" value="Cross-platform (iOS &amp; Android)" />
+    <property name="timestamp" value="2025-12-21T00:00:00.000Z" />
+    <property name="totalTests" value="127" />
+    <property name="passedTests" value="92" />
+    <property name="failedTests" value="35" />
+    <property name="passRate" value="72.4%" />
+    <property name="executionTime" value="7.418s" />
+  </properties>
+
+  <!-- Coverage Summary -->
+  <coverage>
+    <statements total="100" covered="9.25" percentage="9.25" />
+    <branches total="100" covered="4.81" percentage="4.81" />
+    <functions total="100" covered="3.84" percentage="3.84" />
+    <lines total="100" covered="9.68" percentage="9.68" />
+  </coverage>
+
+  <!-- Detailed Coverage by File -->
+  <fileCoverage>
+    <file path="src/Pages/Forum.tsx" statements="96.87" branches="75.0" functions="100.0" lines="96.77" />
+    <file path="src/Pages/ThreadDetail.tsx" statements="53.84" branches="37.7" functions="50.0" lines="55.35" />
+    <file path="src/Pages/Settings.tsx" statements="63.82" branches="11.11" functions="61.53" lines="65.21" />
+    <file path="src/Pages/Profile.tsx" statements="18.42" branches="21.59" functions="5.26" lines="19.14" />
+    <file path="src/Pages/Home.tsx" statements="8.0" branches="0.0" functions="3.33" lines="8.33" />
+    <file path="src/constants/api.ts" statements="100.0" branches="100.0" functions="100.0" lines="100.0" />
+    <file path="src/constants/colors.ts" statements="100.0" branches="100.0" functions="100.0" lines="100.0" />
+    <file path="src/theme/theme.ts" statements="83.33" branches="18.75" functions="0.0" lines="83.33" />
+  </fileCoverage>
+
+</testsuites>
