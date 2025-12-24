@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react'
-import { useParams, useLocation } from 'react-router-dom'
+import { useParams, useLocation, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation } from '@tanstack/react-query'
 import { createQueryKey, queryClient } from '../../lib/query/queryClient'
 import GFapi from '../../lib/api/GFapi'
@@ -12,7 +12,7 @@ import { Label } from '../../components/ui/label'
 import { Textarea } from '../../components/ui/textarea'
 import { UserCheck } from 'lucide-react'
 import './profile_page.css'
-import { useGoals, useUser } from '../../lib'
+import { useGoals, useUser, useCreateChat } from '../../lib'
 import GoalFormDialog from '../goal/GoalFormDialog'
 
 interface ProfileDetailsResponse {
@@ -31,6 +31,7 @@ interface ProfileDetailsResponse {
 export default function ProfilePage() {
   const params = useParams();
   const location = useLocation();
+  const navigate = useNavigate();
   const otherUsername = params.username;
   const { data: me } = useUser();
   const usernameFromPath = location.pathname.startsWith('/profile/other/')
@@ -208,6 +209,19 @@ export default function ProfilePage() {
     }
   });
 
+  const createChatMutation = useCreateChat();
+
+  const handleStartChat = async () => {
+    if (!otherUserId) return;
+    try {
+      const chat = await createChatMutation.mutateAsync(otherUserId);
+      navigate('/chatting', { state: { selectedChatId: chat.id } });
+    } catch (error: any) {
+      console.error('Failed to start chat:', error);
+      alert(error.message || 'Failed to start chat');
+    }
+  };
+
   const { data: profilePicture } = useQuery<string | { image: string }>({
     queryKey: createQueryKey(otherUsername ? `/api/profile/other/picture/${otherUsername}/` : '/api/profile/picture/'),
     queryFn: async () => {
@@ -328,12 +342,25 @@ export default function ProfilePage() {
                     </Button>
                   </div>
                 )}
+                {otherUsername && (
+                  <div className="avatar-buttons" style={{ marginTop: '10px' }}>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleStartChat}
+                      disabled={!otherUserId}
+                      style={{ backgroundColor: 'white', color: '#dc2626', borderColor: '#dc2626' }}
+                    >
+                      Chat
+                    </Button>
+                  </div>
+                )}
               </div>
             </div>
-              <div className="hero-center">
-                <h1 className="profile-username">{profileDetails?.username ?? 'Profile'}</h1>
-                <div className="username-badge">@{profileDetails?.username ?? 'user'}</div>
-                </div>
+            <div className="hero-center">
+              <h1 className="profile-username">{profileDetails?.username ?? 'Profile'}</h1>
+              <div className="username-badge">@{profileDetails?.username ?? 'user'}</div>
+            </div>
           </div>
         </section>
 
@@ -428,7 +455,7 @@ export default function ProfilePage() {
                     <div className="label">Your Mentors</div>
                     <div className="mentorship-grid">
                       {myMentors.length > 0 ? myMentors.map(u => (
-                        <div key={`mentor-${u.id}`} className="mentorship-item" onClick={() => window.location.href = `/profile/other/${u.username}`}> 
+                        <div key={`mentor-${u.id}`} className="mentorship-item" onClick={() => window.location.href = `/profile/other/${u.username}`}>
                           <div className="mentorship-avatar">
                             {mentorshipPictures[u.username] ? (
                               <img src={mentorshipPictures[u.username]} alt={u.username} />
@@ -448,7 +475,7 @@ export default function ProfilePage() {
                     <div className="label">Your Mentees</div>
                     <div className="mentorship-grid">
                       {myMentees.length > 0 ? myMentees.map(u => (
-                        <div key={`mentee-${u.id}`} className="mentorship-item" onClick={() => window.location.href = `/profile/other/${u.username}`}> 
+                        <div key={`mentee-${u.id}`} className="mentorship-item" onClick={() => window.location.href = `/profile/other/${u.username}`}>
                           <div className="mentorship-avatar">
                             {mentorshipPictures[u.username] ? (
                               <img src={mentorshipPictures[u.username]} alt={u.username} />
@@ -471,8 +498,8 @@ export default function ProfilePage() {
                         const amReceiver = r.receiver === me!.id;
                         const amMentor = r.mentor === me!.id;
                         const otherUsernameLabel = amMentor ? r.mentee_username : r.mentor_username;
-                        const displayName = otherUsernameLabel && otherUsernameLabel.length > 16 
-                          ? `${otherUsernameLabel.slice(0, 14)}…` 
+                        const displayName = otherUsernameLabel && otherUsernameLabel.length > 16
+                          ? `${otherUsernameLabel.slice(0, 14)}…`
                           : otherUsernameLabel;
                         const roleWord = amMentor ? 'mentee' : 'mentor';
                         const sentence = amReceiver
@@ -522,16 +549,16 @@ export default function ProfilePage() {
                     <div className="value">
                       {selectedRel && selectedRel.status === 'ACCEPTED'
                         ? (selectedRel.mentor === me?.id
-                            ? `${otherUsername} is your mentee`
-                            : `${otherUsername} is your mentor`)
+                          ? `${otherUsername} is your mentee`
+                          : `${otherUsername} is your mentor`)
                         : selectedRel && selectedRel.status === 'PENDING' && isSender
                           ? (selectedRel.mentor === me?.id
-                              ? `You have asked ${otherUsername} to be your mentee`
-                              : `You have asked ${otherUsername} to be your mentor`)
+                            ? `You have asked ${otherUsername} to be your mentee`
+                            : `You have asked ${otherUsername} to be your mentor`)
                           : selectedRel && selectedRel.status === 'PENDING' && isReceiver
                             ? (selectedRel.mentor === otherUserId
-                                ? `${otherUsername} has asked to be your mentor`
-                                : `${otherUsername} has asked to be your mentee`)
+                              ? `${otherUsername} has asked to be your mentor`
+                              : `${otherUsername} has asked to be your mentee`)
                             : `You and ${otherUsername} are not connected with a mentor-mentee relationship`}
                     </div>
                   </div>
@@ -563,19 +590,19 @@ export default function ProfilePage() {
 
         <section className="profile-section">
           <Card className="profile-card">
-              <CardHeader className="profile-card-header goals-header">
-                <CardTitle>Goals</CardTitle>
-                {!otherUsername && goals.length > 0 && (
-                  <Button className="nav-btn" onClick={() => window.location.href = '/goals?new=true'}>
-                    Create Goal
-                  </Button>
-                )}
-                {otherUsername && isMentorOfOther && (
-                  <Button className="nav-btn" onClick={() => { setEditingGoal(null); setIsGoalFormOpen(true); }}>
-                    Add Goal for {otherUsername}
-                  </Button>
-                )}
-              </CardHeader>
+            <CardHeader className="profile-card-header goals-header">
+              <CardTitle>Goals</CardTitle>
+              {!otherUsername && goals.length > 0 && (
+                <Button className="nav-btn" onClick={() => window.location.href = '/goals?new=true'}>
+                  Create Goal
+                </Button>
+              )}
+              {otherUsername && isMentorOfOther && (
+                <Button className="nav-btn" onClick={() => { setEditingGoal(null); setIsGoalFormOpen(true); }}>
+                  Add Goal for {otherUsername}
+                </Button>
+              )}
+            </CardHeader>
             <CardContent className="profile-card-content">
               {goals.length > 0 ? (
                 <div className="goals-grid">
@@ -662,9 +689,9 @@ export default function ProfilePage() {
           </DialogContent>
         </Dialog>
 
-        
 
-        
+
+
       </div>
     </Layout>
   )

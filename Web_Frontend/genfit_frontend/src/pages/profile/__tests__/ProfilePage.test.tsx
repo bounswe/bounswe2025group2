@@ -3,17 +3,17 @@ import { screen, waitFor } from '@testing-library/react';
 import { renderWithProviders, userEvent } from '../../../test/test-utils';
 import ProfilePage from '../ProfilePage';
 import GFapi from '../../../lib/api/GFapi';
-import { useUser, useGoals, useIsAuthenticated, useLogout, useNotifications } from '../../../lib'; 
+import { useUser, useGoals, useIsAuthenticated, useLogout, useNotifications } from '../../../lib';
 
 import { useQuery } from '@tanstack/react-query';
-import type { UseQueryResult } from '@tanstack/react-query'; 
+import type { UseQueryResult } from '@tanstack/react-query';
 
 // 1. MOCK TANSTACK QUERY
 vi.mock('@tanstack/react-query', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@tanstack/react-query')>();
   return {
     ...actual,
-    useQuery: vi.fn(), 
+    useQuery: vi.fn(),
     useMutation: vi.fn(),
   };
 });
@@ -35,6 +35,7 @@ vi.mock('../../../lib', () => ({
   useIsAuthenticated: vi.fn(),
   useLogout: vi.fn(),
   useNotifications: vi.fn(),
+  useCreateChat: vi.fn(),
 }));
 
 // 4. MOCK REACT ROUTER
@@ -57,7 +58,7 @@ describe('ProfilePage', () => {
     birth_date: '1990-01-01',
     age: 30,
     preferred_sports: 'Running',
-    relationships: [], 
+    relationships: [],
   };
 
   beforeEach(() => {
@@ -71,7 +72,7 @@ describe('ProfilePage', () => {
       // If fetching relationships, return an Array
       if (keyString && (keyString.includes('relationship') || keyString.includes('mentors') || keyString.includes('mentees'))) {
         return {
-          data: [], 
+          data: [],
           isLoading: false,
           isSuccess: true,
           isError: false,
@@ -109,12 +110,12 @@ describe('ProfilePage', () => {
       isSuccess: true,
       isError: false,
     } as any);
-    
+
     vi.mocked(useNotifications).mockReturnValue({
-        data: [], 
-        isLoading: false,
-        isSuccess: true,
-        isError: false,
+      data: [],
+      isLoading: false,
+      isSuccess: true,
+      isError: false,
     } as any);
 
     vi.mocked(useGoals).mockReturnValue({
@@ -122,7 +123,7 @@ describe('ProfilePage', () => {
       isLoading: false,
     } as any);
 
-    vi.mocked(GFapi.get).mockResolvedValue({}); 
+    vi.mocked(GFapi.get).mockResolvedValue({});
   });
 
   it('renders user information correctly', async () => {
@@ -148,14 +149,14 @@ describe('ProfilePage', () => {
     await user.click(screen.getByRole('button', { name: /edit profile/i }));
 
     const nameInput = screen.getByRole('textbox', { name: 'Name' });
-    const surnameInput = screen.getByRole('textbox', { name: 'Surname' }); 
+    const surnameInput = screen.getByRole('textbox', { name: 'Surname' });
     const bioInput = screen.getByRole('textbox', { name: /bio/i });
 
     // Check if the page is now in edit mode by looking for form elements
     expect(nameInput).toBeInTheDocument();
     expect(surnameInput).toBeInTheDocument();
     expect(bioInput).toBeInTheDocument();
-    
+
     // Check if form fields are pre-filled with mock data
     expect(nameInput).toHaveValue('John');
   });
@@ -171,7 +172,7 @@ describe('ProfilePage', () => {
 
     // Enter edit mode
     await user.click(screen.getByRole('button', { name: /edit profile/i }));
-    
+
     // Verify Save Changes button appears
     await waitFor(() => {
       expect(screen.getByRole('button', { name: /save changes/i })).toBeInTheDocument();
@@ -221,7 +222,7 @@ describe('ProfilePage', () => {
     await waitFor(() => {
       expect(screen.getByText('Run 5k')).toBeInTheDocument();
     });
-    
+
     // Check for progress text rendering
     expect(screen.getByText(/2 \/ 5 km/i)).toBeInTheDocument();
   });

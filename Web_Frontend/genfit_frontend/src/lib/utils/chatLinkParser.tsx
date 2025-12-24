@@ -1,28 +1,31 @@
 import React from 'react';
-import { glossaryExercises } from '../../pages/knowledge-hub/GlossaryPage';
+import { glossaryExercises } from '../../pages/knowledge-hub/glossaryData';
+
 
 /**
- * Parses message text and converts challenge links and exercise links to clickable React elements
+ * Parses message text and converts special links to clickable elements.
  * Challenge link format: challenge://{id}
+ * Hashtag format: #{term}
  * Exercise link formats: 
  *   - exercise://{id} (direct ID reference)
  *   - @ExerciseName (name-based reference, converted to ID)
- * Example: "Check out challenge://42 for a great workout! Try exercise://1 or @Push Up"
+ * Example: "Check out challenge://42 for a great workout! Try exercise://1 or @Push Up and #cardio"
  */
 
 interface LinkSegment {
-  type: 'text' | 'challenge' | 'exercise';
+  type: 'text' | 'challenge' | 'exercise' | 'hashtag';
   content: string;
   challengeId?: number;
   exerciseId?: number;
   exerciseName?: string;
+  hashtag?: string;
 }
 
 /**
- * Regular expression to match challenge links
- * Format: challenge://{numeric_id}
+ * Regular expressions
  */
 const CHALLENGE_LINK_REGEX = /challenge:\/\/(\d+)/g;
+const HASHTAG_REGEX = /#[a-zA-Z0-9_]+/g;
 
 /**
  * Regular expression to match exercise links (by ID)
@@ -39,19 +42,20 @@ const EXERCISE_LINK_REGEX = /exercise:\/\/(\d+)/g;
 const EXERCISE_MENTION_REGEX = /@([A-Z]+[a-z]*(?:[\s\-'][A-Z]+[a-z]*)*(?:\s*\([^)]+\))?)/g;
 
 /**
- * Parses a message string and returns an array of text, challenge links, and exercise links
+ * Parses a message string and returns an array of text, challenge links, exercise mentions, and hashtags
  */
 export const parseMessageForChallengeLinks = (message: string): LinkSegment[] => {
   const segments: LinkSegment[] = [];
-  
-  // Find all challenge links, exercise links, and exercise mentions with their positions
+
+  // Find all challenge links, exercise mentions, and hashtags with their positions
   const allMatches: Array<{
-    type: 'challenge' | 'exercise';
+    type: 'challenge' | 'exercise' | 'hashtag';
     start: number;
     end: number;
     challengeId?: number;
     exerciseId?: number;
     exerciseName?: string;
+    hashtag?: string;
     fullMatch: string;
   }> = [];
 
@@ -92,13 +96,32 @@ export const parseMessageForChallengeLinks = (message: string): LinkSegment[] =>
     });
   }
 
-  // Sort matches by position
+  // Find hashtags
+  const hashtagMatches = message.matchAll(HASHTAG_REGEX);
+  for (const match of hashtagMatches) {
+    const hashtag = match[0].substring(1); // remove #
+    allMatches.push({
+      type: 'hashtag',
+      start: match.index!,
+      end: match.index! + match[0].length,
+      hashtag,
+      fullMatch: match[0]
+    });
+  }
+
+  // Sort matches by position to handle them in order
   allMatches.sort((a, b) => a.start - b.start);
 
   let lastIndex = 0;
 
   // Process all matches in order
   for (const match of allMatches) {
+    // If there is an overlap with a previous match, skip this one
+    // (This is a simple collision resolution: first match wins)
+    if (match.start < lastIndex) {
+      continue;
+    }
+
     // Add text before the match (if any)
     if (match.start > lastIndex) {
       segments.push({
@@ -114,12 +137,18 @@ export const parseMessageForChallengeLinks = (message: string): LinkSegment[] =>
         content: match.fullMatch,
         challengeId: match.challengeId
       });
-    } else {
+    } else if (match.type === 'exercise') {
       segments.push({
         type: 'exercise',
         content: match.fullMatch,
         exerciseId: match.exerciseId,
         exerciseName: match.exerciseName
+      });
+    } else if (match.type === 'hashtag') {
+      segments.push({
+        type: 'hashtag',
+        content: match.fullMatch,
+        hashtag: match.hashtag
       });
     }
 
@@ -175,9 +204,20 @@ export const renderMessageWithChallengeLinks = (message: string): React.ReactNod
           Challenge #{segment.challengeId}
         </a>
       );
-    }
-
-    if (segment.type === 'exercise') {
+    } else if (segment.type === 'hashtag' && segment.hashtag) {
+      return (
+        <a
+          key={index}
+          href={`/knowledge-hub?term=${segment.hashtag}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="hashtag-link text-blue-500 hover:underline"
+          title={`Look up "${segment.hashtag}" in Glossary`}
+        >
+          {segment.content}
+        </a>
+      );
+    } else if (segment.type === 'exercise') {
       // Handle both ID-based and name-based exercise links
       let exerciseId = segment.exerciseId;
       let displayText = '';
@@ -185,16 +225,29 @@ export const renderMessageWithChallengeLinks = (message: string): React.ReactNod
 
       if (segment.exerciseId) {
         // Direct ID reference (exercise://1)
-        displayText = `Exercise #${segment.exerciseId}`;
-        titleText = `View Exercise #${segment.exerciseId} in glossary`;
+        const exercise = glossaryExercises.find(ex => ex.id === segment.exerciseId);
+        if (exercise) {
+          displayText = `@${exercise.name}`;
+          titleText = `View ${exercise.name} in glossary`;
+        } else {
+          displayText = `Exercise #${segment.exerciseId}`;
+          titleText = `View Exercise #${segment.exerciseId} in glossary`;
+        }
       } else if (segment.exerciseName) {
         // Name-based reference (@Push Up)
-        exerciseId = findExerciseIdByName(segment.exerciseName);
-        displayText = `@${segment.exerciseName}`;
-        titleText = `View ${segment.exerciseName} in glossary`;
+        const foundId = findExerciseIdByName(segment.exerciseName);
+        if (foundId) {
+          exerciseId = foundId;
+          displayText = `@${segment.exerciseName}`;
+          titleText = `View ${segment.exerciseName} in glossary`;
+        } else {
+          // Fallback if name not found in local glossary, still link to query param
+          displayText = `@${segment.exerciseName}`;
+          titleText = `Search ${segment.exerciseName} in glossary`;
+        }
       }
 
-      // Only render link if we have a valid exercise ID
+      // If we have an ID, allow lookup by ID. If not, allow lookup by name.
       if (exerciseId) {
         return (
           <a
@@ -208,8 +261,21 @@ export const renderMessageWithChallengeLinks = (message: string): React.ReactNod
             {displayText}
           </a>
         );
+      } else if (segment.exerciseName) {
+        return (
+          <a
+            key={index}
+            href={`/knowledge-hub?exercise=${encodeURIComponent(segment.exerciseName)}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="exercise-link"
+            title={titleText}
+          >
+            {displayText}
+          </a>
+        );
       } else {
-        // If exercise not found, render as plain text
+        // If exercise not found and no name to search, render as plain text
         return <span key={index}>{segment.content}</span>;
       }
     }
@@ -247,7 +313,9 @@ export const extractChallengeIds = (message: string): number[] => {
   const matches = message.matchAll(CHALLENGE_LINK_REGEX);
 
   for (const match of matches) {
-    ids.push(parseInt(match[1], 10));
+    if (match[1]) {
+      ids.push(parseInt(match[1], 10));
+    }
   }
 
   return ids;

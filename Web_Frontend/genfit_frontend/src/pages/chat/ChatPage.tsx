@@ -1,9 +1,9 @@
 import { useState, useRef, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { 
-  useIsAuthenticated, 
-  useChatUsers, 
-  useChats, 
+import { useNavigate, Link, useLocation } from 'react-router-dom';
+import {
+  useIsAuthenticated,
+  useChatUsers,
+  useChats,
   useCreateChat,
   useAiChats,
   useCreateAiChat,
@@ -35,12 +35,13 @@ const formatDate = (dateString: string) => {
 const ChatPage = () => {
   const { isAuthenticated, isLoading: authLoading, user } = useIsAuthenticated();
   const navigate = useNavigate();
-  
+  const location = useLocation();
+
   // Data hooks
   const { data: users = [], isLoading: usersLoading, error: usersError } = useChatUsers();
   const { data: chats = [], isLoading: chatsLoading, error: chatsError, refetch: refetchChats } = useChats();
   const { data: aiChats = [], error: aiChatsError, refetch: refetchAiChats } = useAiChats();
-  
+
   // Mutation hooks
   const createChatMutation = useCreateChat();
   const createAiChatMutation = useCreateAiChat();
@@ -53,17 +54,18 @@ const ChatPage = () => {
   const [connected, setConnected] = useState(false);
   const [showUserList, setShowUserList] = useState(false);
   const [showConnectionError, setShowConnectionError] = useState(false);
-  
+
   // State for AI chat
   const [selectedAiChat, setSelectedAiChat] = useState<AiTutorChat | null>(null);
   const [aiMessages, setAiMessages] = useState<AiMessage[]>([]);
   const [aiMessageInput, setAiMessageInput] = useState('');
   const [isLoadingAiResponse, setIsLoadingAiResponse] = useState(false);
-  
+
   // UI state
   const [showAiChat, setShowAiChat] = useState(false);
   const [showChallengePicker, setShowChallengePicker] = useState(false);
-  
+  const [searchQuery, setSearchQuery] = useState('');
+
   // Refs
   const websocket = useRef<WebSocket | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -80,6 +82,18 @@ const ChatPage = () => {
     scrollToBottom();
   }, [messages, aiMessages]);
 
+  // Handle auto-selection of chat from navigation state
+  useEffect(() => {
+    if (location.state?.selectedChatId && chats.length > 0) {
+      const chatToSelect = chats.find(c => c.id === location.state.selectedChatId);
+      if (chatToSelect && (!selectedChat || selectedChat.id !== chatToSelect.id)) {
+        setSelectedChat(chatToSelect);
+        // Clean up state to prevent re-selection issues if needed, 
+        // though strictly not necessary if we check for inequality.
+      }
+    }
+  }, [location.state, chats]);
+
   // Handle connection error display with delay
   useEffect(() => {
     if (!connected && selectedChat) {
@@ -87,7 +101,7 @@ const ChatPage = () => {
       const timer = setTimeout(() => {
         setShowConnectionError(true);
       }, 2000);
-      
+
       return () => clearTimeout(timer);
     } else {
       setShowConnectionError(false);
@@ -154,7 +168,7 @@ const ChatPage = () => {
         const userMessages = (aiChatHistory as any).user_messages || [];
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const aiResponses = (aiChatHistory as any).ai_responses || [];
-        
+
         const combinedMessages = [
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           ...userMessages.map((msg: any) => ({
@@ -171,7 +185,7 @@ const ChatPage = () => {
             sender: 'ai'
           }))
         ].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
-        
+
         setAiMessages(combinedMessages);
       } else if (selectedAiChat && !aiChatHistory) {
         // Clear messages if we have a selected chat but no history yet (loading state)
@@ -187,7 +201,7 @@ const ChatPage = () => {
   const sendMessage = (e: React.FormEvent) => {
     e.preventDefault();
     if (!messageInput.trim() || !websocket.current) return;
-    
+
     const messageData = { body: messageInput };
     websocket.current.send(JSON.stringify(messageData));
     setMessageInput('');
@@ -197,9 +211,9 @@ const ChatPage = () => {
   const sendAiMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!aiMessageInput.trim() || !selectedAiChat || isLoadingAiResponse) return;
-    
+
     setIsLoadingAiResponse(true);
-    
+
     try {
       await sendAiMessageMutation.mutateAsync({
         chatId: selectedAiChat.id,
@@ -243,13 +257,13 @@ const ChatPage = () => {
   const handleSelectChallenge = (challengeId: number, challengeTitle: string) => {
     const challengeLink = `challenge://${challengeId}`;
     const linkText = `Check out "${challengeTitle}" - ${challengeLink}`;
-    
+
     if (showAiChat) {
       setAiMessageInput((prev) => prev ? `${prev} ${linkText}` : linkText);
     } else {
       setMessageInput((prev) => prev ? `${prev} ${linkText}` : linkText);
     }
-    
+
     setShowChallengePicker(false);
   };
 
@@ -333,22 +347,35 @@ const ChatPage = () => {
                             <X className="w-4 h-4" />
                           </Button>
                         </div>
+                        <div className="p-4 border-b">
+                          <input
+                            type="text"
+                            placeholder="Search users..."
+                            className="w-full px-3 py-2 text-sm border rounded-md"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                          />
+                        </div>
                         <div className="user-list">
                           {usersLoading ? (
                             <div className="user-list-loading">Loading users...</div>
                           ) : users.length === 0 ? (
                             <div className="user-list-empty">No users found</div>
                           ) : (
-                            users.map((user) => (
-                              <div
-                                key={user.id}
-                                onClick={() => handleCreateChat(user.id)}
-                                className="user-item"
-                              >
-                                <UserAvatar user={user} className="user-avatar" size="md" />
-                                <span className="user-name">{user.username}</span>
-                              </div>
-                            ))
+                            users
+                              .filter(user =>
+                                user.username.toLowerCase().includes(searchQuery.toLowerCase())
+                              )
+                              .map((user) => (
+                                <div
+                                  key={user.id}
+                                  onClick={() => handleCreateChat(user.id)}
+                                  className="user-item"
+                                >
+                                  <UserAvatar user={user} className="user-avatar" size="md" />
+                                  <span className="user-name">{user.username}</span>
+                                </div>
+                              ))
                           )}
                         </div>
                       </div>
@@ -421,10 +448,14 @@ const ChatPage = () => {
                       {/* Chat header */}
                       <CardHeader className="chat-header">
                         <div className="chat-header-content">
-                          <UserAvatar user={selectedChat.other_user} className="chat-header-avatar" size="lg" />
+                          <Link to={`/profile/other/${selectedChat.other_user?.username}`}>
+                            <UserAvatar user={selectedChat.other_user} className="chat-header-avatar" size="lg" />
+                          </Link>
                           <div className="chat-header-info">
                             <h2 className="chat-header-name">
-                              {selectedChat.other_user?.username || 'Unknown User'}
+                              <Link to={`/profile/other/${selectedChat.other_user?.username}`} className="text-inherit hover:underline">
+                                {selectedChat.other_user?.username || 'Unknown User'}
+                              </Link>
                             </h2>
                             <div className="chat-header-status">
                               <span className={`status-indicator ${connected ? 'online' : 'offline'}`}></span>
